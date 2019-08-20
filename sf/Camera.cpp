@@ -1,0 +1,48 @@
+#include "Camera.h"
+//#define PI 3.14159265358979323846264338
+//#define DEG2RAD 2.0 * PI / 180.0
+
+void Camera::UpdateCameraMatrix()
+{
+	m_cameraMatrix = glm::perspective(glm::radians(m_fieldOfView), m_aspectRatio, m_nearClippingPlane, m_farClippingPlane);
+
+	glm::mat4 rotationMatrix = (glm::mat4) glm::conjugate(m_rotation);
+
+	m_cameraMatrix *= rotationMatrix;
+	m_cameraMatrix = glm::translate(m_cameraMatrix, -m_position);
+
+	m_matrixUpdatePending = false;
+	/* Euler Angles */
+	/*m_transformations = glm::rotate(m_transformations, m_rotation.x, glm::vec3(1.0, 0.0, 0.0));
+	m_transformations = glm::rotate(m_transformations, m_rotation.y, glm::vec3(0.0, 1.0, 0.0));
+	m_transformations = glm::rotate(m_transformations, m_rotation.z, glm::vec3(0.0, 0.0, 1.0));*/
+}
+
+Camera::Camera(float aspectRatio, float fieldOfView, float nearClippingPlane, float farClippingPlane)
+{
+	m_position = glm::vec3(0.0, 0.0, 0.0);
+	m_rotation = glm::fquat(1.0, 0.0, 0.0, 0.0);
+	m_nearClippingPlane = nearClippingPlane;
+	m_farClippingPlane = farClippingPlane;
+	m_fieldOfView = fieldOfView;
+	m_aspectRatio = aspectRatio;
+
+	m_cameraMatrix = glm::mat4();
+}
+
+void Camera::SendMatrixToShader(Shader& theShader)//updateshadermatrix
+{
+	if (m_matrixUpdatePending)
+		UpdateCameraMatrix();
+	theShader.SetUniformMatrix4fv("cameraMatrix", &m_cameraMatrix[0][0]);
+}
+/*
+void Camera::SetRotation(glm::vec3& newRotation)
+{
+	m_rotation = glm::fquat(newRotation);
+}
+
+void Camera::SetPosition(glm::vec3& newPosition)
+{
+	m_position = newPosition;
+}*/

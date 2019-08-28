@@ -123,6 +123,7 @@ void ModelLoader::LoadFacetedOBJFile(std::vector<Vertex>& vertexVector, std::vec
 			for (int i = 2; i < faceVerts.size(); i++) // triangulate
 			{
 				glm::vec3 faceNormal = glm::cross((tvv[faceVerts[i - 1] - 1].position - tvv[faceVerts[0] - 1].position), (tvv[faceVerts[i] - 1].position - tvv[faceVerts[0] - 1].position));
+				faceNormal = glm::normalize(faceNormal);
 
 				indexVector.push_back(vertexVector.size());
 				vertexVector.push_back(tvv[faceVerts[0] - 1]);
@@ -140,6 +141,28 @@ void ModelLoader::LoadFacetedOBJFile(std::vector<Vertex>& vertexVector, std::vec
 				vertexVector.back().textureCoord.x = tcv[(faceCoords[i] - 1) * 2];
 				vertexVector.back().textureCoord.y = tcv[(faceCoords[i] - 1) * 2 + 1];
 
+				// tangent space
+				glm::vec3 edge1 = vertexVector[vertexVector.size() - 2].position - vertexVector[vertexVector.size() - 3].position;
+				glm::vec3 edge2 = vertexVector[vertexVector.size() - 1].position - vertexVector[vertexVector.size() - 3].position;
+				glm::vec2 deltaUV1 = vertexVector[vertexVector.size() - 2].textureCoord - vertexVector[vertexVector.size() - 3].textureCoord;
+				glm::vec2 deltaUV2 = vertexVector[vertexVector.size() - 1].textureCoord - vertexVector[vertexVector.size() - 3].textureCoord;
+
+				float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+
+				glm::vec3 t, b;
+
+				t.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
+				t.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
+				t.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+				t = glm::normalize(t);
+
+				b.x = f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
+				b.y = f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
+				b.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
+				b = glm::normalize(b);
+
+				vertexVector.back().tangent = vertexVector[vertexVector.size() - 2].tangent = vertexVector[vertexVector.size() - 3].tangent = t;
+				vertexVector.back().bitangent = vertexVector[vertexVector.size() - 2].bitangent = vertexVector[vertexVector.size() - 3].bitangent = b;
 
 				/*
 				indexVector.push_back(faceVerts[0] - 1);

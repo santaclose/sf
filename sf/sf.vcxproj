@@ -132,19 +132,24 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Entity.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Math.cpp" />
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="ModelLoader.cpp" />
     <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="Texture.cpp" />
     <ClCompile Include="vendor\glad\src\glad.c" />
     <ClCompile Include="vendor\glm\include\glm\detail\glm.cpp" />
+    <ClCompile Include="vendor\stb_image\stb_image.cpp" />
     <ClCompile Include="Vertex.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Entity.h" />
     <ClInclude Include="Input.inl" />
+    <ClInclude Include="Math.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="Shader.h" />
+    <ClInclude Include="Texture.h" />
     <ClInclude Include="vendor\glm\include\glm\common.hpp" />
     <ClInclude Include="vendor\glm\include\glm\detail\compute_common.hpp" />
     <ClInclude Include="vendor\glm\include\glm\detail\compute_vector_relational.hpp" />
@@ -386,13 +391,18 @@
     <ClInclude Include="vendor\glm\include\glm\vec3.hpp" />
     <ClInclude Include="vendor\glm\include\glm\vec4.hpp" />
     <ClInclude Include="vendor\glm\include\glm\vector_relational.hpp" />
+    <ClInclude Include="vendor\stb_image\stb_image.h" />
     <ClInclude Include="Vertex.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ModelPrimitives.inl" />
     <None Include="ModelLoader.h" />
-    <None Include="res\shaders\default.frag" />
-    <None Include="res\shaders\default.vert" />
+    <None Include="res\shaders\defaultF.shader" />
+    <None Include="res\shaders\defaultV.shader" />
+    <None Include="user\noiseF.shader" />
+    <None Include="user\noiseV.shader" />
+    <None Include="user\randomColorsF.shader" />
+    <None Include="user\randomColorsV.shader" />
     <None Include="vendor\glm\include\glm\detail\func_common.inl" />
     <None Include="vendor\glm\include\glm\detail\func_common_simd.inl" />
     <None Include="vendor\glm\include\glm\detail\func_exponential.inl" />

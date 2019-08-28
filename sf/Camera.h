@@ -22,7 +22,10 @@ class Camera : public Entity
 
 public:
 	Camera(float aspectRatio, float fieldOfView = 90.0, float nearClippingPlane = 0.1, float farClippingPlane = 100.0);
-	void SendMatrixToShader(Shader& theShader);
+	void Bind();
+
+	static Camera* boundCamera;
+	static void SendMatrixToShader(Shader& theShader);
 	//void SetRotation(glm::vec3& newRotation);
 	//void SetPosition(glm::vec3& newPosition);
 };

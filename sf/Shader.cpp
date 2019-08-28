@@ -59,7 +59,7 @@ Shader::~Shader()
 void Shader::Bind() const
 {
 	glUseProgram(m_id);
-	std::cout << "Shader " << m_id << " bound\n";
+	//std::cout << "Shader " << m_id << " bound\n";
 }
 
 int Shader::GetUniformLocation(const std::string& name)

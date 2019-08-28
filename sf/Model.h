@@ -20,12 +20,17 @@ class Model : public Entity
 	std::vector<Vertex> m_vertexVector;
 	std::vector<unsigned int> m_indexVector;
 	glm::mat4 m_transformMatrix;
+
+	Shader* m_shader;
+	// TODO materials
+
 public:
 	~Model();
 	void CreatePlane(float size);
 	void CreateCube(float size);
-	void LoadFromOBJ(const std::string& filePath, float size = 1.0);
-	void draw(Shader& theShader);
-	static void drawAll(Shader& theShader);
+	void CreateFromOBJ(const std::string& filePath, float size = 1.0, bool faceted = false);
+	void SetShader(Shader* theShader);
+	void draw();
+	static void drawAll();
 };
 

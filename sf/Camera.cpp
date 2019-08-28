@@ -2,6 +2,8 @@
 //#define PI 3.14159265358979323846264338
 //#define DEG2RAD 2.0 * PI / 180.0
 
+Camera* Camera::boundCamera = nullptr;
+
 void Camera::UpdateCameraMatrix()
 {
 	m_cameraMatrix = glm::perspective(glm::radians(m_fieldOfView), m_aspectRatio, m_nearClippingPlane, m_farClippingPlane);
@@ -20,6 +22,9 @@ void Camera::UpdateCameraMatrix()
 
 Camera::Camera(float aspectRatio, float fieldOfView, float nearClippingPlane, float farClippingPlane)
 {
+	if (boundCamera == nullptr)
+		boundCamera = this;
+
 	m_position = glm::vec3(0.0, 0.0, 0.0);
 	m_rotation = glm::fquat(1.0, 0.0, 0.0, 0.0);
 	m_nearClippingPlane = nearClippingPlane;
@@ -30,12 +35,18 @@ Camera::Camera(float aspectRatio, float fieldOfView, float nearClippingPlane, fl
 	m_cameraMatrix = glm::mat4();
 }
 
+void Camera::Bind()
+{
+	boundCamera = this;
+}
+
 void Camera::SendMatrixToShader(Shader& theShader)//updateshadermatrix
 {
-	if (m_matrixUpdatePending)
-		UpdateCameraMatrix();
-	theShader.SetUniformMatrix4fv("cameraMatrix", &m_cameraMatrix[0][0]);
+	if (boundCamera->m_matrixUpdatePending)
+		boundCamera->UpdateCameraMatrix();
+	theShader.SetUniformMatrix4fv("cameraMatrix", &(boundCamera->m_cameraMatrix[0][0]));
 }
+
 /*
 void Camera::SetRotation(glm::vec3& newRotation)
 {

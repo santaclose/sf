@@ -9,8 +9,9 @@
 #include "Camera.h"
 #include "Math.h"
 #include "Texture.h"
+#include "ModelReference.h"
 
-#define BACKGROUND_COLOR 0.0
+#define BACKGROUND_COLOR 1.0
 #define MSAA_COUNT 8
 
 float time = 0.0;
@@ -20,8 +21,8 @@ double deltaTime = 0.0;
 
 float shipSpeed = 5.0;
 glm::fquat targetShipRotation(1.0, 0.0, 0.0, 0.0);
-Camera theCamera(1.7777777777777, 95.0, 0.1, 1000.0);
-Camera lookBackCamera(1.7777777777777, 95.0, 0.1, 1000.0);
+Camera theCamera(1.7777777777777, 90.0, 0.1, 10000.0);
+Camera lookBackCamera(1.7777777777777, 120.0, 0.1, 1000.0);
 #include "Input.inl"
 
 int main(void)
@@ -77,6 +78,11 @@ int main(void)
 	Texture butterflyTexture("user/64/butterfly/Butterfly Fighter_pink_AlbedoTransparency.png", Texture::Type::Albedo);
 	Texture butterflyNormalmap("user/64/butterfly/Butterfly Fighter_pink_Normal.png", Texture::Type::NormalMap);
 
+	Texture babyTexture("user/64/bb/young_darkskinned_male_diffuse.png", Texture::Type::Albedo);
+
+	Material colorsMaterial(&colorShader);
+	Material noiseMaterial(&noiseShader);
+
 	Material shipMaterial(&theShader);
 	shipMaterial.SetUniform("albedo", &shipTexture, Material::UniformType::_Texture);
 	shipMaterial.SetUniform("normalMap", &shipNormalmap, Material::UniformType::_Texture);
@@ -89,24 +95,26 @@ int main(void)
 	ship.CreateFromOBJ("user/64/wolfen/Wolfen.obj", 0.3, true);
 	//ship.SetShader(&theShader);
 	ship.SetMaterial(&shipMaterial);
+	targetShipRotation = ship.GetRotation();
 
-	Material colorsMaterial(&colorShader);
-	Material noiseMaterial(&noiseShader);
+	Model monkey;
+	monkey.CreateFromOBJ("user/64/Butterfly Fighter.obj", 1.0, true);
+	monkey.SetMaterial(&butterflyMaterial);
 
-	Model* monkeys = new Model[400];
-	for (int i = 0; i < 400; i++)
+	ModelReference* monkeys = new ModelReference[4000];
+	for (int i = 0; i < 4000; i++)
 	{
-		monkeys[i].CreateFromOBJ("user/64/Butterfly Fighter.obj", Math::Random() * 20.0 + 1.0, true);
+		monkeys[i].CreateFomModel(monkey);
+		monkeys[i].SetScale(Math::Random() * 20.0 + 1.0);
 		//monkeys[i].CreateFromOBJ("user/monkey.obj", RandomValue() * 20.0 + 1.0);
-		monkeys[i].SetPosition(glm::vec3((Math::Random() - 0.5) * 100.0, (Math::Random() - 0.5) * 50.0, (float)(i * -15)));
+		monkeys[i].SetPosition(glm::vec3((Math::Random() - 0.5) * 500.0, (Math::Random() - 0.5) * 500.0, (float)(i * -5)));
 		monkeys[i].SetRotation(glm::fquat(glm::vec3(0.0, glm::radians(180.0), glm::radians(Math::Random() * 360.0))));
 		float choice = Math::Random();
-		//if (choice < 0.333333)
-			monkeys[i].SetMaterial(&butterflyMaterial);
-		//else if (choice < 0.666666)
-		//	monkeys[i].SetMaterial(&colorsMaterial);
-		//else
-		//	monkeys[i].SetMaterial(&noiseMaterial);
+		if (choice < 0.333333);
+		else if (choice < 0.666666)
+			monkeys[i].SetMaterial(&colorsMaterial);
+		else
+			monkeys[i].SetMaterial(&noiseMaterial);
 	}
 
 	/* Loop until the user closes the window */
@@ -121,19 +129,21 @@ int main(void)
 		//-------------//
 		ship.SetPosition(ship.GetPosition() + ship.Forward() * shipSpeed * deltaTime);
 		//ship.SetRotation(glm::mix(ship.GetRotation(), targetShipRotation, (float)(deltaTime * 3.0)));
-		ship.SetRotation(glm::slerp(ship.GetRotation(), targetShipRotation, (float)(deltaTime * 7.0)));
+		//ship.SetRotation(glm::slerp(ship.GetRotation(), targetShipRotation, (float)(deltaTime * 7.0)));
+		ship.SetRotation(targetShipRotation);
 		theCamera.SetPosition(glm::mix(theCamera.GetPosition(), ship.GetPosition() - (ship.Forward() * 4.0) + (ship.Up()), (float)(deltaTime * 2.0)));
 		theCamera.LookAt(ship.GetPosition(), ship.Up());
 		lookBackCamera.SetPosition(ship.GetPosition() + ship.Forward() * 4.0);
 		lookBackCamera.LookAt(ship.GetPosition(), ship.Up());
 
-		for (int i = 0; i < 400; i++)
+		for (int i = 0; i < 4000; i++)
 		{
 			monkeys[i].SetRotation(monkeys[i].GetRotation() * glm::fquat(glm::vec3(0, 0, sqrt(time) * 0.00001 * i)));
 		}
 		time += deltaTime;
 		//-------------//
-		Model::drawAll();
+		Model::DrawAll();
+		ModelReference::DrawAll();
 
 		/* Swap front and back buffers */
 		glfwSwapBuffers(window);

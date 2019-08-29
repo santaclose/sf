@@ -6,8 +6,8 @@
 class Entity
 {
 protected:
-	glm::vec3 m_position;
-	glm::fquat m_rotation;
+	glm::vec3 m_position = glm::vec3(0.0, 0.0, 0.0);
+	glm::fquat m_rotation = glm::fquat(1.0, 0.0, 0.0, 0.0);
 	bool m_matrixUpdatePending = true;
 
 public:

@@ -14,18 +14,6 @@ void Model::SendMatrixToShader()
 	m_material->m_shader->SetUniformMatrix4fv("modelMatrix", &m_transformMatrix[0][0]);
 }
 
-void Model::UpdateTransformMatrix()
-{
-	//std::cout << "Updating model matrix\n";
-
-	m_transformMatrix = glm::translate(glm::mat4(1.0), m_position);
-
-	glm::mat4 rotationMatrix = (glm::mat4) m_rotation;
-	m_transformMatrix *= rotationMatrix;
-
-	m_matrixUpdatePending = false;
-}
-
 Model::~Model()
 {
 	m_indexVector.clear();
@@ -34,8 +22,6 @@ Model::~Model()
 
 void Model::CreatePlane(float size)
 {
-	m_transformMatrix = glm::mat4(1.0);
-
 	ModelPrimitives::Plane(m_vertexVector, m_indexVector, size);
 
 	glGenBuffers(1, &m_gl_vertexBuffer);
@@ -62,8 +48,6 @@ void Model::CreatePlane(float size)
 
 void Model::CreateCube(float size)
 {
-	m_transformMatrix = glm::mat4(1.0);
-
 	ModelPrimitives::Cube(m_vertexVector, m_indexVector, size);
 
 	glGenBuffers(1, &m_gl_vertexBuffer);
@@ -116,17 +100,12 @@ void Model::CreateFromOBJ(const std::string& filePath, float size, bool faceted)
 	models.push_back(this);
 }
 
-/*void Model::SetShader(Shader* theShader)
-{
-	m_shader = theShader;
-}*/
-
 void Model::SetMaterial(Material* theMaterial)
 {
 	m_material = theMaterial;
 }
 
-void Model::draw()
+void Model::Draw()
 {
 	glBindBuffer(GL_ARRAY_BUFFER, m_gl_vertexBuffer);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_gl_indexBuffer);
@@ -144,11 +123,11 @@ void Model::draw()
 	glDrawElements(GL_TRIANGLES, m_indexVector.size(), GL_UNSIGNED_INT, nullptr);
 }
 
-void Model::drawAll()
+void Model::DrawAll()
 {
 	for (Model* m : models)
 	{
-		m->draw();
+		m->Draw();
 	}
 	//glBufferData(GL_ARRAY_BUFFER, vertexVector.size() * sizeof(Vertex), &vertexVector[0], GL_DYNAMIC_DRAW);						// update vertices
 	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexVector.size() * sizeof(unsigned int), &indexVector[0], GL_DYNAMIC_DRAW);		// update indices to draw

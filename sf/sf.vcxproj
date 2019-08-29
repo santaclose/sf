@@ -136,6 +136,8 @@
     <ClCompile Include="Math.cpp" />
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="ModelLoader.cpp" />
+    <ClCompile Include="ModelReference.cpp" />
+    <ClCompile Include="Object.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="vendor\glad\src\glad.c" />
@@ -150,6 +152,8 @@
     <ClInclude Include="Material.h" />
     <ClInclude Include="Math.h" />
     <ClInclude Include="Model.h" />
+    <ClInclude Include="ModelReference.h" />
+    <ClInclude Include="Object.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="vendor\glm\include\glm\common.hpp" />

@@ -14,10 +14,6 @@ void Camera::UpdateCameraMatrix()
 	m_cameraMatrix = glm::translate(m_cameraMatrix, -m_position);
 
 	m_matrixUpdatePending = false;
-	/* Euler Angles */
-	/*m_transformations = glm::rotate(m_transformations, m_rotation.x, glm::vec3(1.0, 0.0, 0.0));
-	m_transformations = glm::rotate(m_transformations, m_rotation.y, glm::vec3(0.0, 1.0, 0.0));
-	m_transformations = glm::rotate(m_transformations, m_rotation.z, glm::vec3(0.0, 0.0, 1.0));*/
 }
 
 Camera::Camera(float aspectRatio, float fieldOfView, float nearClippingPlane, float farClippingPlane)
@@ -46,14 +42,3 @@ void Camera::SendMatrixToShader(Shader& theShader)//updateshadermatrix
 		boundCamera->UpdateCameraMatrix();
 	theShader.SetUniformMatrix4fv("cameraMatrix", &(boundCamera->m_cameraMatrix[0][0]));
 }
-
-/*
-void Camera::SetRotation(glm::vec3& newRotation)
-{
-	m_rotation = glm::fquat(newRotation);
-}
-
-void Camera::SetPosition(glm::vec3& newPosition)
-{
-	m_position = newPosition;
-}*/

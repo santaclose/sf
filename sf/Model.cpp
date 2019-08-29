@@ -7,11 +7,11 @@
 
 std::vector<Model*> Model::models;
 
-void Model::SendMatrixToShader(Shader& theShader)
+void Model::SendMatrixToShader()
 {
 	if (m_matrixUpdatePending)
 		UpdateTransformMatrix();
-	theShader.SetUniformMatrix4fv("modelMatrix", &m_transformMatrix[0][0]);//&m_transformMatrix[0][0]);
+	m_material->m_shader->SetUniformMatrix4fv("modelMatrix", &m_transformMatrix[0][0]);
 }
 
 void Model::UpdateTransformMatrix()
@@ -116,9 +116,14 @@ void Model::CreateFromOBJ(const std::string& filePath, float size, bool faceted)
 	models.push_back(this);
 }
 
-void Model::SetShader(Shader* theShader)
+/*void Model::SetShader(Shader* theShader)
 {
 	m_shader = theShader;
+}*/
+
+void Model::SetMaterial(Material* theMaterial)
+{
+	m_material = theMaterial;
 }
 
 void Model::draw()
@@ -130,10 +135,11 @@ void Model::draw()
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 6)); // tangent
 	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 9)); // bitangent
 	glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 12)); // texture coords
-	m_shader->Bind();
+	//m_shader->Bind();
+	m_material->Bind();
 
-	Camera::boundCamera->SendMatrixToShader(*m_shader);
-	SendMatrixToShader(*m_shader);
+	Camera::SendMatrixToShader(*(m_material->m_shader));
+	SendMatrixToShader();
 
 	glDrawElements(GL_TRIANGLES, m_indexVector.size(), GL_UNSIGNED_INT, nullptr);
 }

@@ -10,7 +10,7 @@
 #include "Math.h"
 #include "Texture.h"
 
-#define BACKGROUND_COLOR 1.0
+#define BACKGROUND_COLOR 0.0
 #define MSAA_COUNT 8
 
 float time = 0.0;
@@ -74,15 +74,24 @@ int main(void)
 	Texture shipTexture("user/64/wolfen/Wolfen_plate_BaseColor.png", Texture::Type::Albedo);
 	Texture shipNormalmap("user/64/wolfen/Wolfen_plate_Normal.png", Texture::Type::NormalMap);
 
-	theShader.Bind();
-	shipTexture.Bind();
-	theShader.SetUniform1i("albedo", 0);
-	shipNormalmap.Bind(1);
-	theShader.SetUniform1i("normalMap", 1);
+	Texture butterflyTexture("user/64/butterfly/Butterfly Fighter_pink_AlbedoTransparency.png", Texture::Type::Albedo);
+	Texture butterflyNormalmap("user/64/butterfly/Butterfly Fighter_pink_Normal.png", Texture::Type::NormalMap);
+
+	Material shipMaterial(&theShader);
+	shipMaterial.SetUniform("albedo", &shipTexture, Material::UniformType::_Texture);
+	shipMaterial.SetUniform("normalMap", &shipNormalmap, Material::UniformType::_Texture);
+
+	Material butterflyMaterial(&theShader);
+	butterflyMaterial.SetUniform("albedo", &butterflyTexture, Material::UniformType::_Texture);
+	butterflyMaterial.SetUniform("normalMap", &butterflyNormalmap, Material::UniformType::_Texture);
 
 	Model ship;
 	ship.CreateFromOBJ("user/64/wolfen/Wolfen.obj", 0.3, true);
-	ship.SetShader(&theShader);
+	//ship.SetShader(&theShader);
+	ship.SetMaterial(&shipMaterial);
+
+	Material colorsMaterial(&colorShader);
+	Material noiseMaterial(&noiseShader);
 
 	Model* monkeys = new Model[400];
 	for (int i = 0; i < 400; i++)
@@ -92,12 +101,12 @@ int main(void)
 		monkeys[i].SetPosition(glm::vec3((Math::Random() - 0.5) * 100.0, (Math::Random() - 0.5) * 50.0, (float)(i * -15)));
 		monkeys[i].SetRotation(glm::fquat(glm::vec3(0.0, glm::radians(180.0), glm::radians(Math::Random() * 360.0))));
 		float choice = Math::Random();
-		if (choice < 0.333333)
-			monkeys[i].SetShader(&theShader);
-		else if (choice < 0.666666)
-			monkeys[i].SetShader(&colorShader);
-		else
-			monkeys[i].SetShader(&noiseShader);
+		//if (choice < 0.333333)
+			monkeys[i].SetMaterial(&butterflyMaterial);
+		//else if (choice < 0.666666)
+		//	monkeys[i].SetMaterial(&colorsMaterial);
+		//else
+		//	monkeys[i].SetMaterial(&noiseMaterial);
 	}
 
 	/* Loop until the user closes the window */

@@ -26,7 +26,5 @@ public:
 
 	static Camera* boundCamera;
 	static void SendMatrixToShader(Shader& theShader);
-	//void SetRotation(glm::vec3& newRotation);
-	//void SetPosition(glm::vec3& newPosition);
 };
 

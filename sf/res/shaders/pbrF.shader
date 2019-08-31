@@ -51,17 +51,26 @@ vec3 fresnelSchlick(vec3 F0, float cosTheta)
 void main()
 {
 	// define lights
-	vec3 lightPos[2];
+	bool lightType[3];
+	lightType[0] = lightType[1] = true;
+	lightType[2] = false;
+	vec3 lightPos[3];
 	lightPos[0] = vec3(-5.0, 0.0, 0.0);
 	lightPos[1] = vec3(5.0, 0.0, 0.0);
-	vec3 lightRadiance[2];
-	lightRadiance[0] = vec3(1.0, 0.0, 0.0);
-	lightRadiance[1] = vec3(0.0, 1.0, 0.0);
+	vec3 lightRadiance[3];
+	lightRadiance[0] = vec3(1.0, 0.0, 1.0);
+	lightRadiance[1] = vec3(1.0, 1.0, 1.0);
+	lightRadiance[2] = vec3(1.0, 1.0, 1.0);
+	float lightRadius[2];
+	lightRadius[0] = 30.0;
+	lightRadius[1] = 50000.0;
+	// directional light
+	lightPos[2] = vec3(1.0, -1.0, -1.0);
 
 	// Sample input textures to get shading model params.
-	vec3 albedo = texture(albedoTexture, vin.texcoord).rgb;
-	float metalness = texture(metalnessTexture, vin.texcoord).r;
-	float roughness = texture(roughnessTexture, vin.texcoord).r;
+	vec3 albedo = texture(albedoTexture, texCoord).rgb;
+	float metalness = texture(metalnessTexture, texCoord).r;
+	float roughness = texture(roughnessTexture, texCoord).r;
 
 	// Outgoing light direction (vector from world-space fragment position to the "eye").
 	vec3 Lo = normalize(camPos - worldPos);
@@ -82,10 +91,20 @@ void main()
 	// Direct lighting calculation for analytical lights.
 	vec3 directLighting = vec3(0);
 
-	for (int i = 0; i < 2; ++i) // for each light
+	for (int i = 0; i < 3; ++i) // for each light
 	{
-		vec3 Li = normalize(lightPos[i] - worldPos); //-lights[i].direction;
-		vec3 Lradiance = lightRadiance[i]; //lights[i].radiance;
+		vec3 Li;
+		vec3 Lradiance;
+		if (lightType[i] == true) {
+			Li = normalize(lightPos[i] - worldPos); //-lights[i].direction;
+			float d = distance(lightPos[i], worldPos);
+			Lradiance = lightRadiance[i] * lightRadius[i] / d / d; //lights[i].radiance;
+		}
+		else
+		{
+			Li = normalize(-lightPos[i]); //-lights[i].direction;
+			Lradiance = lightRadiance[i];
+		}
 
 		// Half-vector between Li and Lo.
 		vec3 Lh = normalize(Li + Lo);

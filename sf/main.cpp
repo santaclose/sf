@@ -68,28 +68,29 @@ int main(void)
 	glEnable(GL_DEPTH_TEST);
 	glClearColor(BACKGROUND_COLOR, BACKGROUND_COLOR, BACKGROUND_COLOR, 1);
 
-	Shader theShader("res/shaders/defaultV.shader", "res/shaders/defaultF.shader");
-	Shader noiseShader("user/noiseV.shader", "user/noiseF.shader");
-	Shader colorShader("user/randomColorsV.shader", "user/randomColorsF.shader");
+	Shader pbrShader("res/shaders/pbrV.shader", "res/shaders/pbrF.shader");
 
 	Texture shipTexture("user/64/wolfen/Wolfen_plate_BaseColor.png", Texture::Type::Albedo);
-	Texture shipNormalmap("user/64/wolfen/Wolfen_plate_Normal.png", Texture::Type::NormalMap);
+	Texture shipNormals("user/64/wolfen/Wolfen_plate_Normal.png", Texture::Type::NormalMap);
+	Texture shipRoughness("user/64/wolfen/Wolfen_plate_Roughness.png", Texture::Type::Albedo);
+	Texture shipMetallic("user/64/wolfen/Wolfen_plate_Metallic.png", Texture::Type::Albedo);
 
-	Texture butterflyTexture("user/64/butterfly/Butterfly Fighter_pink_AlbedoTransparency.png", Texture::Type::Albedo);
-	Texture butterflyNormalmap("user/64/butterfly/Butterfly Fighter_pink_Normal.png", Texture::Type::NormalMap);
+	Texture bTexture("user/64/butterfly/Butterfly Fighter_pink_BaseColor.png", Texture::Type::Albedo);
+	Texture bNormals("user/64/butterfly/Butterfly Fighter_pink_Normal.png", Texture::Type::NormalMap);
+	Texture bRoughness("user/64/butterfly/Butterfly Fighter_pink_Roughness.png", Texture::Type::Albedo);
+	Texture bMetallic("user/64/butterfly/Butterfly Fighter_pink_Metallic.png", Texture::Type::Albedo);
 
-	Texture babyTexture("user/64/bb/young_darkskinned_male_diffuse.png", Texture::Type::Albedo);
+	Material shipMaterial(&pbrShader);
+	shipMaterial.SetUniform("albedoTexture", &shipTexture, Material::UniformType::_Texture);
+	shipMaterial.SetUniform("normalTexture", &shipNormals, Material::UniformType::_Texture);
+	shipMaterial.SetUniform("roughnessTexture", &shipRoughness, Material::UniformType::_Texture);
+	shipMaterial.SetUniform("metalnessTexture", &shipMetallic, Material::UniformType::_Texture);
 
-	Material colorsMaterial(&colorShader);
-	Material noiseMaterial(&noiseShader);
-
-	Material shipMaterial(&theShader);
-	shipMaterial.SetUniform("albedo", &shipTexture, Material::UniformType::_Texture);
-	shipMaterial.SetUniform("normalMap", &shipNormalmap, Material::UniformType::_Texture);
-
-	Material butterflyMaterial(&theShader);
-	butterflyMaterial.SetUniform("albedo", &butterflyTexture, Material::UniformType::_Texture);
-	butterflyMaterial.SetUniform("normalMap", &butterflyNormalmap, Material::UniformType::_Texture);
+	Material bMaterial(&pbrShader);
+	bMaterial.SetUniform("albedoTexture", &bTexture, Material::UniformType::_Texture);
+	bMaterial.SetUniform("normalTexture", &bNormals, Material::UniformType::_Texture);
+	bMaterial.SetUniform("roughnessTexture", &bRoughness, Material::UniformType::_Texture);
+	bMaterial.SetUniform("metalnessTexture", &bMetallic, Material::UniformType::_Texture);
 
 	Model ship;
 	ship.CreateFromOBJ("user/64/wolfen/Wolfen.obj", 0.3, true);
@@ -99,7 +100,7 @@ int main(void)
 
 	Model monkey;
 	monkey.CreateFromOBJ("user/64/Butterfly Fighter.obj", 1.0, true);
-	monkey.SetMaterial(&butterflyMaterial);
+	monkey.SetMaterial(&bMaterial);
 
 	ModelReference* monkeys = new ModelReference[4000];
 	for (int i = 0; i < 4000; i++)
@@ -112,9 +113,9 @@ int main(void)
 		float choice = Math::Random();
 		if (choice < 0.333333);
 		else if (choice < 0.666666)
-			monkeys[i].SetMaterial(&colorsMaterial);
+			monkeys[i].SetMaterial(&bMaterial);
 		else
-			monkeys[i].SetMaterial(&noiseMaterial);
+			monkeys[i].SetMaterial(&bMaterial);
 	}
 
 	/* Loop until the user closes the window */

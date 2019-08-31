@@ -41,4 +41,5 @@ void Camera::SendMatrixToShader(Shader& theShader)//updateshadermatrix
 	if (boundCamera->m_matrixUpdatePending)
 		boundCamera->UpdateCameraMatrix();
 	theShader.SetUniformMatrix4fv("cameraMatrix", &(boundCamera->m_cameraMatrix[0][0]));
+	theShader.SetUniform3fv("camPos", &(boundCamera->m_position[0]));
 }

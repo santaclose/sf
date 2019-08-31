@@ -1231,5 +1231,7 @@
     <None Include="res\shaders\defaultV.shader" />
     <None Include="user\randomColorsF.shader" />
     <None Include="user\randomColorsV.shader" />
+    <None Include="res\shaders\pbrF.shader" />
+    <None Include="res\shaders\pbrV.shader" />
   </ItemGroup>
 </Project>

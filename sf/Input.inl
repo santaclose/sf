@@ -14,12 +14,9 @@ namespace Input
 		mousePosDelta[0] = xpos - lastMousePos[0];
 		mousePosDelta[1] = ypos - lastMousePos[1];
 
-		//std::cout << xpos << std::endl;
-		//std::cout << ypos << std::endl;
-		targetShipRotation *= fquat(vec3(mousePosDelta[1] * SENSITIVITY, 0.0, -mousePosDelta[0] * SENSITIVITY));
-		//targetShipRotation *= fquat(vec3(0.0, 0.0, mousePosDelta[0] * SENSITIVITY));
-		//ter.z += xpos * SENSITIVITY;
-		//shipRotation.x += ypos * SENSITIVITY;
+		//-------------------//
+		targetModelRotation += glm::vec3(mousePosDelta[1], mousePosDelta[0], 0.0) * SENSITIVITY;
+		//-------------------//
 
 		lastMousePos[0] = xpos;
 		lastMousePos[1] = ypos;
@@ -27,8 +24,7 @@ namespace Input
 
 	void OnScroll(GLFWwindow* window, double xoffset, double yoffset)
 	{
-		//std::cout << yoffset << std::endl;
-		shipSpeed += yoffset; // / *SENSITIVITY;
+		currentZoom -= yoffset * .1;
 	}
 
 	void OnKey(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -45,12 +41,6 @@ namespace Input
 				break;
 			case GLFW_KEY_B:
 				glPolygonMode(GL_FRONT, GL_FILL);
-				break;
-			case GLFW_KEY_SPACE:
-				if (Camera::boundCamera == &theCamera)
-					lookBackCamera.Bind();
-				else
-					theCamera.Bind();
 				break;
 			}
 		}

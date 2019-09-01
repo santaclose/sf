@@ -6,13 +6,21 @@ namespace Input
 {
 	glm::vec2 mousePosDelta;
 	glm::vec2 lastMousePos;
-	//double mousePosDelta[2];
-	//double lastMousePos[2];
+	bool firstFrame = true;
 
 	void OnMouseMoved(GLFWwindow* window, double xpos, double ypos)
 	{
-		mousePosDelta.x = xpos - lastMousePos.x;
-		mousePosDelta.y = ypos - lastMousePos.y;
+		if (firstFrame) // first frame
+		{
+			mousePosDelta.x = 0;
+			mousePosDelta.y = 0;
+			firstFrame = false;
+		}
+		else
+		{
+			mousePosDelta.x = xpos - lastMousePos.x;
+			mousePosDelta.y = ypos - lastMousePos.y;
+		}
 
 		//-------------------//
 		targetModelRotation.y += mousePosDelta.x * SENSITIVITY;

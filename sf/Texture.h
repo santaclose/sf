@@ -10,7 +10,7 @@ private:
 	int m_width, m_height, m_BPP;
 public:
 	enum Type {
-		Albedo, NormalMap
+		ColorData, NonColorData
 	};
 
 	Texture(const std::string& path, Type t);

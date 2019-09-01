@@ -137,8 +137,8 @@ void main()
 		directLighting += (diffuseBRDF + specularBRDF) * Lradiance * cosLi;
 	}
 
-	// Ambient lighting (IBL).
-	vec3 ambientLighting;
+	// TODO Ambient lighting (IBL).
+	vec3 ambientLighting = vec3(0.0);/*
 	{
 		// Sample diffuse irradiance at normal direction.
 		vec3 irradiance = vec3(0.4);//texture(irradianceTexture, N).rgb;
@@ -168,8 +168,14 @@ void main()
 
 		// Total ambient lighting contribution.
 		ambientLighting = diffuseIBL + specularIBL;
-	}
+	}*/
 
 	// Final fragment color.
 	color = vec4(directLighting + ambientLighting, 1.0);
+
+	// tone map the HDR color using the Reinhard operator
+	color.rgb = color.rgb / (color.rgb + vec3(1.0));
+
+	// gamma correction
+	color.rgb = pow(color.rgb, vec3(1.0 / 2.2));
 }

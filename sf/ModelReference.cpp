@@ -1,3 +1,5 @@
+// saves space in gpu
+
 #include "ModelReference.h"
 #include "Camera.h"
 

@@ -81,7 +81,8 @@ int main(void)
 	material.SetUniform("metalnessTexture", &met, Material::UniformType::_Texture);
 
 	Model model;
-	model.CreateFromOBJ("user/revolver/untitled.obj", 3.0, true);
+	model.CreateFromOBJ("user/revolver/untitled.obj", 3.0, false);
+	//model.CreateFromOBJ("user/tstcube.obj");
 
 	model.SetMaterial(&material);
 	model.SetRotation(glm::vec3(0.0, 0.0, 0.0));
@@ -100,6 +101,7 @@ int main(void)
 
 		//-------------//
 		model.SetRotation(glm::slerp(model.GetRotation(), glm::fquat(targetModelRotation), (float)(deltaTime * 7.0)));
+		//model.SetRotation(targetModelRotation);
 		theCamera.SetPosition(0.0, 0.0, currentZoom);
 		//-------------//
 		time += deltaTime;

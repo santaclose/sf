@@ -76,7 +76,7 @@ void main()
 	vec3 Lo = normalize(camPos - worldPos);
 
 	// Get current fragment's normal and transform to world space.
-	vec3 N = normalize(2.0 * texture(normalTexture, texCoord).rgb - 1.0);
+	vec3 N = 2.0 * texture(normalTexture, texCoord).rgb - 1.0;
 	N = normalize(TBN * N);
 
 	// Angle between surface normal and outgoing light direction.

@@ -4,22 +4,23 @@
 
 namespace Input
 {
-	double mousePosDelta[2];
-	double lastMousePos[2];
+	glm::vec2 mousePosDelta;
+	glm::vec2 lastMousePos;
+	//double mousePosDelta[2];
+	//double lastMousePos[2];
 
 	void OnMouseMoved(GLFWwindow* window, double xpos, double ypos)
 	{
-		using namespace glm;
-
-		mousePosDelta[0] = xpos - lastMousePos[0];
-		mousePosDelta[1] = ypos - lastMousePos[1];
+		mousePosDelta.x = xpos - lastMousePos.x;
+		mousePosDelta.y = ypos - lastMousePos.y;
 
 		//-------------------//
-		targetModelRotation += glm::vec3(mousePosDelta[1], mousePosDelta[0], 0.0) * SENSITIVITY;
+		targetModelRotation.y += mousePosDelta.x * SENSITIVITY;
+		targetModelRotation.x += mousePosDelta.y * SENSITIVITY;
 		//-------------------//
 
-		lastMousePos[0] = xpos;
-		lastMousePos[1] = ypos;
+		lastMousePos.x = xpos;
+		lastMousePos.y = ypos;
 	}
 
 	void OnScroll(GLFWwindow* window, double xoffset, double yoffset)

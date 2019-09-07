@@ -1,0 +1,1 @@
+python loadLighting.py

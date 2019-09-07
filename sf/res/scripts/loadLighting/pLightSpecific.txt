@@ -1,0 +1,3 @@
+		vec3 Li = normalize(pLightPos[i] - worldPos); //-lights[i].direction;
+		float d = distance(pLightPos[i], worldPos);
+		vec3 Lradiance = pLightRad[i] * pLightRa[i] / d / d; //lights[i].radiance;

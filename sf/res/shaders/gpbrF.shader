@@ -17,9 +17,8 @@ uniform sampler2D normalTexture;
 uniform sampler2D metalnessTexture;
 uniform sampler2D roughnessTexture;
 
-uniform vec3 pLightPos[2] = vec3[](vec3(5.0, 0.0, 0.0), vec3(-5.0, 0.0, 0.0));
-uniform vec3 pLightRad[2] = vec3[](vec3(1.0, 1.0, 1.0), vec3(1.0, 1.0, 1.0));
-uniform float pLightRa[2] = float[](30.0, 30.0);
+uniform vec3 dLightDir[1] = vec3[](vec3(0.1, -0.1, -1.0));
+uniform vec3 dLightRad[1] = vec3[](vec3(8.0, 8.0, 8.0));
 
 // GGX/Towbridge-Reitz normal distribution function.
 // Uses Disney's reparametrization of alpha = roughness^2.
@@ -54,23 +53,6 @@ vec3 fresnelSchlick(vec3 F0, float cosTheta)
 
 void main()
 {
-	// define lights
-	/*bool lightType[3];
-	lightType[0] = lightType[1] = true;
-	lightType[2] = false;
-	vec3 lightPos[3];
-	lightPos[0] = vec3(-5.0, 0.0, 0.0);
-	lightPos[1] = vec3(5.0, 0.0, 0.0);
-	vec3 lightRadiance[3];
-	lightRadiance[0] = vec3(0.0, 0.0, 0.0);
-	lightRadiance[1] = vec3(0.0, 0.0, 0.0);
-	lightRadiance[2] = vec3(1.0, 1.0, 1.0);
-	float lightRadius[2];
-	lightRadius[0] = 30.0;
-	lightRadius[1] = 30.0;
-	// directional light
-	lightPos[2] = vec3(0.1, -0.1, -1.0);*/
-
 	// Sample input textures to get shading model params.
 	vec3 albedo = texture(albedoTexture, texCoord).rgb;
 	float metalness = texture(metalnessTexture, texCoord).r;
@@ -95,20 +77,10 @@ void main()
 	// Direct lighting calculation for analytical lights.
 	vec3 directLighting = vec3(0);
 
-	for (int i = 0; i < 3; ++i) // for each light
+	for (int i = 0; i < 1; i++) // for each directional light
 	{
-		vec3 Li;
-		vec3 Lradiance;
-		//if (lightType[i] == true) {
-			Li = normalize(pLightPos[i] - worldPos); //-lights[i].direction;
-			float d = distance(pLightPos[i], worldPos);
-			Lradiance = pLightRad[i] * pLightRa[i] / d / d; //lights[i].radiance;
-		//}
-		//else
-		//{
-		//	Li = normalize(-lightPos[i]); //-lights[i].direction;
-		//	Lradiance = lightRadiance[i];
-		//}
+		vec3 Li = normalize(-dLightDir[i]); //-lights[i].direction;
+		vec3 Lradiance = dLightRad[i];
 
 		// Half-vector between Li and Lo.
 		vec3 Lh = normalize(Li + Lo);

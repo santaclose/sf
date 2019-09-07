@@ -66,7 +66,7 @@ int main(void)
 	glEnable(GL_DEPTH_TEST);
 	glClearColor(BACKGROUND_COLOR, BACKGROUND_COLOR, BACKGROUND_COLOR, 1);
 
-	Shader pbrShader("res/shaders/pbrV.shader", "res/shaders/pbrF.shader");
+	Shader pbrShader("res/shaders/pbrV.shader", "res/shaders/gpbrF.shader");
 
 	Texture alb("user/revolver/Cerberus_A.tga", Texture::Type::ColorData);
 	Texture nor("user/revolver/Cerberus_N.tga", Texture::Type::NonColorData);

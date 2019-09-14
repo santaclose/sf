@@ -1,5 +1,5 @@
 #include "Model.h"
-#include "ModelPrimitives.inl"
+#include "ModelReference.h"
 #include "ModelLoader.h"
 #include "Camera.h"
 #include "Texture.h"
@@ -20,57 +20,7 @@ Model::~Model()
 	m_vertexVector.clear();
 }
 
-void Model::CreatePlane(float size)
-{
-	ModelPrimitives::Plane(m_vertexVector, m_indexVector, size);
-
-	glGenBuffers(1, &m_gl_vertexBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, m_gl_vertexBuffer);
-	glBufferData(GL_ARRAY_BUFFER, m_vertexVector.size() * sizeof(Vertex), &m_vertexVector[0], GL_STATIC_DRAW);						// update vertices
-	glGenBuffers(1, &m_gl_indexBuffer);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_gl_indexBuffer);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indexVector.size() * sizeof(unsigned int), &m_indexVector[0], GL_STATIC_DRAW);		// update indices to draw
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0); // position
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 3)); // normal
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 6)); // tangent
-	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 9)); // bitangent
-	glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 12)); // texture coords
-
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
-	glEnableVertexAttribArray(2);
-	glEnableVertexAttribArray(3);
-	glEnableVertexAttribArray(4);
-
-	models.push_back(this);
-}
-
-void Model::CreateCube(float size)
-{
-	ModelPrimitives::Cube(m_vertexVector, m_indexVector, size);
-
-	glGenBuffers(1, &m_gl_vertexBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, m_gl_vertexBuffer);
-	glBufferData(GL_ARRAY_BUFFER, m_vertexVector.size() * sizeof(Vertex), &m_vertexVector[0], GL_STATIC_DRAW);						// update vertices
-	glGenBuffers(1, &m_gl_indexBuffer);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_gl_indexBuffer);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indexVector.size() * sizeof(unsigned int), &m_indexVector[0], GL_STATIC_DRAW);		// update indices to draw
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0); // position
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 3)); // normal
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 6)); // tangent
-	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 9)); // bitangent
-	glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 12)); // texture coords
-
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
-	glEnableVertexAttribArray(2);
-	glEnableVertexAttribArray(3);
-	glEnableVertexAttribArray(4);
-
-	models.push_back(this);
-}
+// obj should be treated by other code and here load an engine format instead
 void Model::CreateFromOBJ(const std::string& filePath, float size, bool faceted)
 {
 	if (faceted)
@@ -78,24 +28,32 @@ void Model::CreateFromOBJ(const std::string& filePath, float size, bool faceted)
 	else
 		ModelLoader::LoadOBJFile(m_vertexVector, m_indexVector, filePath, size);
 
+	glGenVertexArrays(1, &m_gl_vao);
 	glGenBuffers(1, &m_gl_vertexBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, m_gl_vertexBuffer);
-	glBufferData(GL_ARRAY_BUFFER, m_vertexVector.size() * sizeof(Vertex), &m_vertexVector[0], GL_STATIC_DRAW);						// update vertices
 	glGenBuffers(1, &m_gl_indexBuffer);
+
+	glBindVertexArray(m_gl_vao);
+	glBindBuffer(GL_ARRAY_BUFFER, m_gl_vertexBuffer);
+
+	// update vertices
+	glBufferData(GL_ARRAY_BUFFER, m_vertexVector.size() * sizeof(Vertex), &m_vertexVector[0], GL_STATIC_DRAW);
+	
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_gl_indexBuffer);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indexVector.size() * sizeof(unsigned int), &m_indexVector[0], GL_STATIC_DRAW);		// update indices to draw
+	// update indices to draw
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indexVector.size() * sizeof(unsigned int), &m_indexVector[0], GL_STATIC_DRAW);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0); // position
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 3)); // normal
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 6)); // tangent
-	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 9)); // bitangent
-	glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 12)); // texture coords
+	glEnableVertexAttribArray(0); // position
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
+	glEnableVertexAttribArray(1); // normal
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 3));
+	glEnableVertexAttribArray(2); // tangent
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 6));
+	glEnableVertexAttribArray(3); // bitangent
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 9));
+	glEnableVertexAttribArray(4); // texture coords
+	glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 12));
 
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
-	glEnableVertexAttribArray(2);
-	glEnableVertexAttribArray(3);
-	glEnableVertexAttribArray(4);
+	glBindVertexArray(0);
 
 	models.push_back(this);
 }
@@ -107,20 +65,20 @@ void Model::SetMaterial(Material* theMaterial)
 
 void Model::Draw()
 {
-	glBindBuffer(GL_ARRAY_BUFFER, m_gl_vertexBuffer);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_gl_indexBuffer);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0); // position
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 3)); // normal
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 6)); // tangent
-	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 9)); // bitangent
-	glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 12)); // texture coords
-	//m_shader->Bind();
 	m_material->Bind();
 
 	Camera::SendMatrixToShader(*(m_material->m_shader));
 	SendMatrixToShader();
 
+	glBindVertexArray(m_gl_vao);
 	glDrawElements(GL_TRIANGLES, m_indexVector.size(), GL_UNSIGNED_INT, nullptr);
+	for (ModelReference* m : m_references)
+	{
+		// replace model matrix and draw again
+		m->SendMatrixToShader();
+		glDrawElements(GL_TRIANGLES, m_indexVector.size(), GL_UNSIGNED_INT, nullptr);
+	}
+	glBindVertexArray(0);
 }
 
 void Model::DrawAll()
@@ -129,8 +87,4 @@ void Model::DrawAll()
 	{
 		m->Draw();
 	}
-	//glBufferData(GL_ARRAY_BUFFER, vertexVector.size() * sizeof(Vertex), &vertexVector[0], GL_DYNAMIC_DRAW);						// update vertices
-	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexVector.size() * sizeof(unsigned int), &indexVector[0], GL_DYNAMIC_DRAW);		// update indices to draw
-
-	//glDrawElements(GL_TRIANGLES, indexVector.size(), GL_UNSIGNED_INT, nullptr);
 }

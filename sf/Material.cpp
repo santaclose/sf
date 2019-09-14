@@ -1,6 +1,8 @@
 #include "Material.h"
 #include "Texture.h"
 
+Material* Material::boundMaterial = nullptr;
+
 Material::Material(Shader* theShader)
 {
 	m_shader = theShader;
@@ -15,8 +17,13 @@ void Material::SetUniform(const std::string& name, void* data, UniformType type)
 
 void Material::Bind()
 {
+	if (boundMaterial == this) // no need to bind
+		return;
+
+	if (boundMaterial == nullptr || boundMaterial->m_shader != m_shader)
+		m_shader->Bind();
+
 	int textureCounter = 0;
-	m_shader->Bind();
 	for (int i = 0; i < m_uniformData.size(); i++)
 	{
 		switch (m_uniformTypes[i])
@@ -30,4 +37,5 @@ void Material::Bind()
 			break;
 		}
 	}
+	boundMaterial = this;
 }

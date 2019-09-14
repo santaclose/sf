@@ -401,7 +401,6 @@
     <ClInclude Include="Vertex.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="ModelPrimitives.inl" />
     <None Include="ModelLoader.h" />
     <None Include="res\shaders\defaultF.shader" />
     <None Include="res\shaders\defaultV.shader" />

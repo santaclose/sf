@@ -20,16 +20,16 @@ class Model : public Object
 
 	unsigned int m_gl_vertexBuffer;
 	unsigned int m_gl_indexBuffer;
+	unsigned int m_gl_vao;
 	std::vector<Vertex> m_vertexVector;
 	std::vector<unsigned int> m_indexVector;
 
 	Material* m_material;
 
+	std::vector<ModelReference*> m_references;
+
 public:
 	~Model();
-
-	void CreatePlane(float size);
-	void CreateCube(float size);
 
 	void CreateFromOBJ(const std::string& filePath, float size = 1.0, bool faceted = false);
 

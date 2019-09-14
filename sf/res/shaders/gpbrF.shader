@@ -17,8 +17,12 @@ uniform sampler2D normalTexture;
 uniform sampler2D metalnessTexture;
 uniform sampler2D roughnessTexture;
 
-uniform vec3 dLightDir[1] = vec3[](vec3(0.1, -0.1, -1.0));
-uniform vec3 dLightRad[1] = vec3[](vec3(8.0, 8.0, 8.0));
+uniform vec3 pLightPos[4] = vec3[](vec3(1.45, 0.5, 0.0), vec3(-1.45, 0.5, 0.0), vec3(0.0, 0.5, 1.45), vec3(0.0, 0.5, -1.45));
+uniform vec3 pLightRad[4] = vec3[](vec3(10.0, 1.0, 0.5), vec3(10.0, 1.0, 0.5), vec3(10.0, 1.0, 0.5), vec3(10.0, 1.0, 0.5));
+uniform float pLightRa[4] = float[](0.2, 0.2, 0.2, 0.2);
+
+uniform vec3 dLightDir[2] = vec3[](vec3(-0.2, -0.2, -1.0), vec3(0.2, -0.2, -1.0));
+uniform vec3 dLightRad[2] = vec3[](vec3(1.0, 1.0, 1.0), vec3(1.0, 1.0, 1.0));
 
 // GGX/Towbridge-Reitz normal distribution function.
 // Uses Disney's reparametrization of alpha = roughness^2.
@@ -77,7 +81,44 @@ void main()
 	// Direct lighting calculation for analytical lights.
 	vec3 directLighting = vec3(0);
 
-	for (int i = 0; i < 1; i++) // for each directional light
+	for (int i = 0; i < 4; i++) // for each point light
+	{
+		vec3 Li = normalize(pLightPos[i] - worldPos); //-lights[i].direction;
+		float d = distance(pLightPos[i], worldPos);
+		vec3 Lradiance = pLightRad[i] * pLightRa[i] / d / d; //lights[i].radiance;
+
+		// Half-vector between Li and Lo.
+		vec3 Lh = normalize(Li + Lo);
+
+		// Calculate angles between surface normal and various light vectors.
+		float cosLi = max(0.0, dot(N, Li));
+		float cosLh = max(0.0, dot(N, Lh));
+
+		// Calculate Fresnel term for direct lighting. 
+		vec3 F = fresnelSchlick(F0, max(0.0, dot(Lh, Lo)));
+		// Calculate normal distribution for specular BRDF.
+		float D = ndfGGX(cosLh, roughness);
+		// Calculate geometric attenuation for specular BRDF.
+		float G = gaSchlickGGX(cosLi, cosLo, roughness);
+
+		// Diffuse scattering happens due to light being refracted multiple times by a dielectric medium.
+		// Metals on the other hand either reflect or absorb energy, so diffuse contribution is always zero.
+		// To be energy conserving we must scale diffuse BRDF contribution based on Fresnel factor & metalness.
+		vec3 kd = mix(vec3(1.0) - F, vec3(0.0), metalness);
+
+		// Lambert diffuse BRDF.
+		// We don't scale by 1/PI for lighting & material units to be more convenient.
+		// See: https://seblagarde.wordpress.com/2012/01/08/pi-or-not-to-pi-in-game-lighting-equation/
+		vec3 diffuseBRDF = kd * albedo;
+
+		// Cook-Torrance specular microfacet BRDF.
+		vec3 specularBRDF = (F * D * G) / max(Epsilon, 4.0 * cosLi * cosLo);
+
+		// Total contribution for this light.
+		directLighting += (diffuseBRDF + specularBRDF) * Lradiance * cosLi;
+	}
+
+	for (int i = 0; i < 2; i++) // for each directional light
 	{
 		vec3 Li = normalize(-dLightDir[i]); //-lights[i].direction;
 		vec3 Lradiance = dLightRad[i];

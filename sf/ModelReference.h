@@ -7,22 +7,11 @@
 class ModelReference : public Object
 {
 	friend Model;
-	static std::vector<ModelReference*> modelReferences;
 
+	Model* m_originalModel;
 	void SendMatrixToShader();
 
-	unsigned int m_gl_vertexBuffer;
-	unsigned int m_gl_indexBuffer;
-	unsigned int m_indexCount;
-
-	Material* m_material;
-
 public:
-	void CreateFomModel(const Model& theModel);
-
-	void SetMaterial(Material* theMaterial);
-
-	void Draw();
-	static void DrawAll();
+	//ModelReference(const Model& theModel);
+	void CreateFomModel(Model& theModel);
 };
-

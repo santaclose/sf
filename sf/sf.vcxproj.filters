@@ -1219,9 +1219,6 @@
     <None Include="vendor\glm\include\glm\gtx\wrap.inl">
       <Filter>Header Files</Filter>
     </None>
-    <None Include="ModelPrimitives.inl">
-      <Filter>Header Files</Filter>
-    </None>
     <None Include="ModelLoader.h">
       <Filter>Header Files</Filter>
     </None>

@@ -23,5 +23,7 @@ public:
 	Material(Shader* theShader);
 	void SetUniform(const std::string& name, void* data, UniformType type);
 	void Bind();
+
+	static Material* boundMaterial;
 };
 

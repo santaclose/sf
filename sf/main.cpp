@@ -117,7 +117,7 @@ int main(void)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		//-------------//
-		glm::fquat targetRotationQuat = glm::slerp(model.GetRotation(), glm::fquat(targetModelRotation), (float)(deltaTime * 7.0));
+		glm::fquat targetRotationQuat = glm::slerp(targetRotationQuat, glm::fquat(targetModelRotation), (float)(deltaTime * 7.0));
 		model.SetRotation(targetRotationQuat);
 		lBut.SetRotation(glm::conjugate(targetRotationQuat));
 		rBut.SetRotation(targetRotationQuat);
@@ -125,7 +125,7 @@ int main(void)
 		//-------------//
 		time += deltaTime;
 		Model::DrawAll();
-		ModelReference::DrawAll();
+		//ModelReference::DrawAll();
 
 		/* Swap front and back buffers */
 		glfwSwapBuffers(window);

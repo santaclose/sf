@@ -60,6 +60,9 @@
     <ClCompile Include="ModelReference.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="user\sfGame.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Vertex.h">
@@ -821,6 +824,9 @@
     <ClInclude Include="ModelReference.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="user\sfGame.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="vendor\glm\include\glm\detail\func_common.inl">
@@ -1230,5 +1236,6 @@
     <None Include="user\randomColorsV.shader" />
     <None Include="res\shaders\pbrF.shader" />
     <None Include="res\shaders\pbrV.shader" />
+    <None Include="res\shaders\shadelessF.shader" />
   </ItemGroup>
 </Project>

@@ -13,7 +13,8 @@ public:
 		ColorData, NonColorData
 	};
 
-	Texture(const std::string& path, Type t);
+	//Texture(const std::string& path, Type t);
+	void CreateFromFile(const std::string& path, Type t);
 	~Texture();
 
 	void Bind(unsigned int slot = 0) const;

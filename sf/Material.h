@@ -20,7 +20,8 @@ private:
 	std::vector<UniformType> m_uniformTypes;
 
 public:
-	Material(Shader* theShader);
+	//Material(Shader* theShader);
+	void CreateFromShader(Shader* theShader);
 	void SetUniform(const std::string& name, void* data, UniformType type);
 	void Bind();
 

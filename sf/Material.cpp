@@ -3,7 +3,13 @@
 
 Material* Material::boundMaterial = nullptr;
 
-Material::Material(Shader* theShader)
+/*Material::Material(Shader* theShader)
+{
+	m_shader = theShader;
+}
+*/
+
+void Material::CreateFromShader(Shader* theShader)
 {
 	m_shader = theShader;
 }

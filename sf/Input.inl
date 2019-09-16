@@ -23,8 +23,7 @@ namespace Input
 		}
 
 		//-------------------//
-		targetModelRotation.y += mousePosDelta.x * SENSITIVITY;
-		targetModelRotation.x += mousePosDelta.y * SENSITIVITY;
+		Game::OnMouseMove(xpos, ypos, mousePosDelta);
 		//-------------------//
 
 		lastMousePos.x = xpos;
@@ -33,25 +32,15 @@ namespace Input
 
 	void OnScroll(GLFWwindow* window, double xoffset, double yoffset)
 	{
-		currentZoom -= yoffset * .1;
+		//-------------------//
+		Game::OnScroll(xoffset, yoffset);
+		//-------------------//
 	}
 
 	void OnKey(GLFWwindow* window, int key, int scancode, int action, int mods)
 	{
-		if (action == GLFW_PRESS)
-		{
-			switch (key)
-			{
-			case GLFW_KEY_M:
-				glPolygonMode(GL_FRONT, GL_POINT);
-				break;
-			case GLFW_KEY_N:
-				glPolygonMode(GL_FRONT, GL_LINE);
-				break;
-			case GLFW_KEY_B:
-				glPolygonMode(GL_FRONT, GL_FILL);
-				break;
-			}
-		}
+		//-------------------//
+		Game::OnKey(key, action);
+		//-------------------//
 	}
 }

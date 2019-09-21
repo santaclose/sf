@@ -28,34 +28,19 @@ unsigned int Shader::CompileShader(unsigned int type, const std::string& source)
 }
 
 Shader::Shader() : m_id(-1) {}
-/*Shader::Shader(const std::string& vertexShaderPath, const std::string& fragmentShaderPath)
-{
-	std::ifstream ifs(vertexShaderPath);
-	std::string vertexShaderSource((std::istreambuf_iterator<char>(ifs)),
-		(std::istreambuf_iterator<char>()));
-	std::ifstream ifs2(fragmentShaderPath);
-	std::string fragmentShaderSource((std::istreambuf_iterator<char>(ifs2)),
-		(std::istreambuf_iterator<char>()));
-
-	m_id = glCreateProgram();
-	unsigned int vs = CompileShader(GL_VERTEX_SHADER, vertexShaderSource);
-	unsigned int fs = CompileShader(GL_FRAGMENT_SHADER, fragmentShaderSource);
-
-	glAttachShader(m_id, vs);
-	glAttachShader(m_id, fs);
-	glLinkProgram(m_id);
-	glValidateProgram(m_id);
-
-	glDeleteShader(vs);
-	glDeleteShader(fs);
-}*/
 
 void Shader::CreateFromFiles(const std::string& vertexShaderPath, const std::string& fragmentShaderPath)
 {
 	std::ifstream ifs(vertexShaderPath);
+	std::ifstream ifs2(fragmentShaderPath);
+
+	if (ifs.fail())
+		std::cout << "Could not read vertex shader file: " << vertexShaderPath << std::endl;
+	if (ifs2.fail())
+		std::cout << "Could not read fragment shader file: " << fragmentShaderPath << std::endl;
+
 	std::string vertexShaderSource((std::istreambuf_iterator<char>(ifs)),
 		(std::istreambuf_iterator<char>()));
-	std::ifstream ifs2(fragmentShaderPath);
 	std::string fragmentShaderSource((std::istreambuf_iterator<char>(ifs2)),
 		(std::istreambuf_iterator<char>()));
 

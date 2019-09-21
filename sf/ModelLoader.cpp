@@ -21,7 +21,8 @@ inline bool haveToDuplicateVertex(const TempVertex& a, const std::vector<TempVer
 void ModelLoader::LoadOBJFile(std::vector<Vertex>& vertexVector, std::vector<unsigned int>& indexVector, const std::string& filePath, float scaleFactor)
 {
 	std::ifstream infile(filePath);
-	if (infile.fail()) std::cout << "file " << filePath << " not found\n";
+	if (infile.fail())
+		std::cout << "Could not read model file: " << filePath << "\n";
 
 	std::string line;
 
@@ -160,7 +161,8 @@ void ModelLoader::LoadFacetedOBJFile(std::vector<Vertex>& vertexVector, std::vec
 	std::vector<float> tcv; // temporal coord vector
 
 	std::ifstream infile(filePath);
-	if (infile.fail()) std::cout << "file " << filePath << " not found\n";
+	if (infile.fail())
+		std::cout << "Could not read model file: " << filePath << "\n";
 	std::string line;
 
 	float currentU, currentV;

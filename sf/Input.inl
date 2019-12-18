@@ -23,7 +23,7 @@ namespace Input
 		}
 
 		//-------------------//
-		Game::OnMouseMove(xpos, ypos, mousePosDelta);
+		User::Game::OnMouseMove(xpos, ypos, mousePosDelta);
 		//-------------------//
 
 		lastMousePos.x = xpos;
@@ -33,14 +33,14 @@ namespace Input
 	void OnScroll(GLFWwindow* window, double xoffset, double yoffset)
 	{
 		//-------------------//
-		Game::OnScroll(xoffset, yoffset);
+		User::Game::OnScroll(xoffset, yoffset);
 		//-------------------//
 	}
 
 	void OnKey(GLFWwindow* window, int key, int scancode, int action, int mods)
 	{
 		//-------------------//
-		Game::OnKey(key, action);
+		User::Game::OnKey(key, action);
 		//-------------------//
 	}
 }

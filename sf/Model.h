@@ -32,6 +32,7 @@ public:
 	~Model();
 
 	void CreateFromOBJ(const std::string& filePath, float size = 1.0, bool faceted = false);
+	void CreateFromCode(void (*generateModelFunc)(), bool smooth = true);
 
 	void SetMaterial(Material* theMaterial);
 

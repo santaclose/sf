@@ -3,6 +3,7 @@
 #include "ModelLoader.h"
 #include "Camera.h"
 #include "Texture.h"
+#include "ofv/ml.h"
 #include <iostream>
 
 std::vector<Model*> Model::models;
@@ -38,6 +39,41 @@ void Model::CreateFromOBJ(const std::string& filePath, float size, bool faceted)
 	// update vertices
 	glBufferData(GL_ARRAY_BUFFER, m_vertexVector.size() * sizeof(Vertex), &m_vertexVector[0], GL_STATIC_DRAW);
 	
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_gl_indexBuffer);
+	// update indices to draw
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indexVector.size() * sizeof(unsigned int), &m_indexVector[0], GL_STATIC_DRAW);
+
+	glEnableVertexAttribArray(0); // position
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
+	glEnableVertexAttribArray(1); // normal
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 3));
+	glEnableVertexAttribArray(2); // tangent
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 6));
+	glEnableVertexAttribArray(3); // bitangent
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 9));
+	glEnableVertexAttribArray(4); // texture coords
+	glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 12));
+
+	glBindVertexArray(0);
+
+	models.push_back(this);
+}
+
+void Model::CreateFromCode(void (*generateModelFunc)(), bool smooth)
+{
+	ofv::ml::Initialize(smooth, &m_vertexVector, &m_indexVector);
+	generateModelFunc();
+
+	glGenVertexArrays(1, &m_gl_vao);
+	glGenBuffers(1, &m_gl_vertexBuffer);
+	glGenBuffers(1, &m_gl_indexBuffer);
+
+	glBindVertexArray(m_gl_vao);
+	glBindBuffer(GL_ARRAY_BUFFER, m_gl_vertexBuffer);
+
+	// update vertices
+	glBufferData(GL_ARRAY_BUFFER, m_vertexVector.size() * sizeof(Vertex), &m_vertexVector[0], GL_STATIC_DRAW);
+
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_gl_indexBuffer);
 	// update indices to draw
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indexVector.size() * sizeof(unsigned int), &m_indexVector[0], GL_STATIC_DRAW);

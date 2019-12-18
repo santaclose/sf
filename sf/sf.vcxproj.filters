@@ -63,6 +63,15 @@
     <ClCompile Include="user\sfGame.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ofv\vl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ofv\ml.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="user\errt.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Vertex.h">
@@ -825,6 +834,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="user\sfGame.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ofv\ml.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ofv\vl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="user\errt.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

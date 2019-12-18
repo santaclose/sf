@@ -62,7 +62,7 @@ int main(void)
 	glClearColor(BACKGROUND_COLOR, BACKGROUND_COLOR, BACKGROUND_COLOR, 1);
 
 	//-------------------//
-	Game::Initialize();
+	User::Game::Initialize();
 	//-------------------//
 
 	/* Loop until the user closes the window */
@@ -75,7 +75,7 @@ int main(void)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		//-------------------//
-		Game::OnUpdate(deltaTime, time);
+		User::Game::OnUpdate(deltaTime, time);
 		//-------------------//
 
 		time += deltaTime;

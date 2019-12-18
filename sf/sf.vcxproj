@@ -138,8 +138,11 @@
     <ClCompile Include="ModelLoader.cpp" />
     <ClCompile Include="ModelReference.cpp" />
     <ClCompile Include="Object.cpp" />
+    <ClCompile Include="ofv\ml.cpp" />
+    <ClCompile Include="ofv\vl.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="Texture.cpp" />
+    <ClCompile Include="user\errt.cpp" />
     <ClCompile Include="user\sfGame.cpp" />
     <ClCompile Include="vendor\glad\src\glad.c" />
     <ClCompile Include="vendor\glm\include\glm\detail\glm.cpp" />
@@ -155,8 +158,11 @@
     <ClInclude Include="Model.h" />
     <ClInclude Include="ModelReference.h" />
     <ClInclude Include="Object.h" />
+    <ClInclude Include="ofv\ml.h" />
+    <ClInclude Include="ofv\vl.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="Texture.h" />
+    <ClInclude Include="user\errt.h" />
     <ClInclude Include="user\sfGame.h" />
     <ClInclude Include="vendor\glm\include\glm\common.hpp" />
     <ClInclude Include="vendor\glm\include\glm\detail\compute_common.hpp" />

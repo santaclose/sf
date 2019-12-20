@@ -34,13 +34,16 @@ void Material::Bind()
 	{
 		switch (m_uniformTypes[i])
 		{
-		case UniformType::_Texture:
+		case UniformType::_Texture: {
 			Texture* currentTexture = (Texture*)m_uniformData[i];
 			currentTexture->Bind(textureCounter);
 			m_shader->SetUniform1i(m_uniformNames[i], textureCounter);
 
 			textureCounter++;
-			break;
+			break; }
+		case UniformType::_Color: {
+			m_shader->SetUniform4fv(m_uniformNames[i], (float*)m_uniformData[i]);
+			break; }
 		}
 	}
 	boundMaterial = this;

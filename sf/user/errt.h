@@ -2,5 +2,9 @@
 
 namespace User
 {
-	void GenerateModel();
+	namespace Models
+	{
+		extern int seed;
+		void GenerateModel();
+	}
 }

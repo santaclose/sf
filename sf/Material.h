@@ -10,7 +10,8 @@ class Material
 {
 public:
 	enum UniformType {
-		_Texture
+		_Texture,
+		_Color
 	};
 
 	Shader* m_shader;

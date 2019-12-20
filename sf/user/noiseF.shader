@@ -3,6 +3,8 @@
 in vec2 screenPos;
 out vec4 color;
 
+uniform vec3 camPos;
+
 float random(vec2 st) {
 	return fract(sin(dot(st.xy,
 		vec2(12.9898, 78.233))) *

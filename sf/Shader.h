@@ -21,5 +21,6 @@ public:
 	void Bind() const;
 	void SetUniformMatrix4fv(const std::string& name, const float* pointer);
 	void SetUniform3fv(const std::string& name, const float* pointer);
+	void SetUniform4fv(const std::string& name, const float* pointer);
 	void SetUniform1i(const std::string& name, const int value);
 };

@@ -27,8 +27,8 @@ int main(void)
 	/* Create a windowed mode window and its OpenGL context */
 	glfwWindowHint(GLFW_SAMPLES, MSAA_COUNT);
 
-	//window = glfwCreateWindow(1280, 720, "sf", NULL, NULL);
-	window = glfwCreateWindow(1920, 1080, "sf", glfwGetPrimaryMonitor(), NULL);
+	window = glfwCreateWindow(1280, 720, "sf", NULL, NULL);
+	//window = glfwCreateWindow(1920, 1080, "sf", glfwGetPrimaryMonitor(), NULL);
 
 	if (!window)
 	{

@@ -9,6 +9,9 @@
 
 #define SENSITIVITY 0.007
 
+#define COUNT 4000
+#define SPAWN_RANGE 700.0
+
 namespace User
 {
 	float Game::shipSpeed = 5.0;
@@ -16,8 +19,10 @@ namespace User
 	Camera Game::theCamera = Camera(1.7777777777777, 90.0, 0.1, 10000.0);
 	Camera Game::lookBackCamera = Camera(1.7777777777777, 120.0, 0.1, 1000.0);
 
-	Shader theShader;
+	Shader pbrShader;
 	Shader colorShader;
+	Shader noiseShader;
+
 	Texture shipTexture;
 	Texture shipNormalmap;
 	Texture shipRoughness;
@@ -26,23 +31,25 @@ namespace User
 	Texture butterflyNormalmap;
 	Texture butterflyRoughness;
 	Texture butterflyMetallic;
+
 	Material shipMaterial;
 	Material butterflyMaterial;
 
 	Material colorsMaterial;
+	Material noiseMaterial;
 
 	Model ship;
-	Model monkey;
-	ModelReference* monkeys;
-
-	Model errt;
+	Model butterfly[3];
+	ModelReference* butterflies;
 
 	void Game::Initialize()
 	{
-		theShader.CreateFromFiles("res/shaders/pbrV.shader", "res/shaders/gpbrF.shader");
-		colorShader.CreateFromFiles("user/noiseV.shader", "user/noiseF.shader");
+		pbrShader.CreateFromFiles("res/shaders/pbrV.shader", "res/shaders/gpbrF.shader");
+		colorShader.CreateFromFiles("user/randomColorsV.shader", "user/randomColorsF.shader");
+		noiseShader.CreateFromFiles("user/noiseV.shader", "user/noiseF.shader");
 
 		colorsMaterial.CreateFromShader(&colorShader);
+		noiseMaterial.CreateFromShader(&noiseShader);
 
 		shipTexture.CreateFromFile("user/64/wolfen/Wolfen_plate_BaseColor.png", Texture::Type::ColorData);
 		shipNormalmap.CreateFromFile("user/64/wolfen/Wolfen_plate_Normal.png", Texture::Type::NonColorData);
@@ -52,12 +59,12 @@ namespace User
 		butterflyNormalmap.CreateFromFile("user/64/butterfly/Butterfly Fighter_pink_Normal.png", Texture::Type::NonColorData);
 		butterflyRoughness.CreateFromFile("user/64/butterfly/Butterfly Fighter_pink_Roughness.png", Texture::Type::NonColorData);
 		butterflyMetallic.CreateFromFile("user/64/butterfly/Butterfly Fighter_pink_Metallic.png", Texture::Type::NonColorData);
-		shipMaterial.CreateFromShader(&theShader);
+		shipMaterial.CreateFromShader(&pbrShader);
 		shipMaterial.SetUniform("albedoTexture", &shipTexture, Material::UniformType::_Texture);
 		shipMaterial.SetUniform("normalTexture", &shipNormalmap, Material::UniformType::_Texture);
 		shipMaterial.SetUniform("roughnessTexture", &shipRoughness, Material::UniformType::_Texture);
 		shipMaterial.SetUniform("metalnessTexture", &shipMetallic, Material::UniformType::_Texture);
-		butterflyMaterial.CreateFromShader(&theShader);
+		butterflyMaterial.CreateFromShader(&pbrShader);
 		butterflyMaterial.SetUniform("albedoTexture", &butterflyTexture, Material::UniformType::_Texture);
 		butterflyMaterial.SetUniform("normalTexture", &butterflyNormalmap, Material::UniformType::_Texture);
 		butterflyMaterial.SetUniform("roughnessTexture", &butterflyRoughness, Material::UniformType::_Texture);
@@ -67,37 +74,37 @@ namespace User
 		ship.SetMaterial(&shipMaterial);
 		targetShipRotation = ship.GetRotation();
 
-		monkey.CreateFromOBJ("user/64/Butterfly Fighter.obj", 1.0, true);
-		monkey.SetMaterial(&butterflyMaterial);
+		butterfly[0].CreateFromOBJ("user/64/Butterfly Fighter.obj", 1.0, true);
+		butterfly[0].SetMaterial(&butterflyMaterial);
+		butterfly[1].CreateFromOBJ("user/64/Butterfly Fighter.obj", 1.0, true);
+		butterfly[1].SetMaterial(&colorsMaterial);
+		butterfly[2].CreateFromOBJ("user/64/Butterfly Fighter.obj", 1.0, true);
+		butterfly[2].SetMaterial(&noiseMaterial);
 
-		errt.CreateFromCode(User::GenerateModel, false);
-		errt.SetMaterial(&colorsMaterial);
-
-		monkeys = new ModelReference[4000];
-		for (int i = 0; i < 4000; i++)
+		butterflies = new ModelReference[COUNT];
+		for (int i = 0; i < COUNT; i++)
 		{
-			monkeys[i].CreateFomModel(monkey);
-			monkeys[i].SetScale(Math::Random() * 20.0 + 1.0);
-			//monkeys[i].CreateFromOBJ("user/monkey.obj", RandomValue() * 20.0 + 1.0);
-			monkeys[i].SetPosition(glm::vec3((Math::Random() - 0.5) * 500.0, (Math::Random() - 0.5) * 500.0, (float)(i * -5)));
-			monkeys[i].SetRotation(glm::fquat(glm::vec3(0.0, glm::radians(180.0), glm::radians(Math::Random() * 360.0))));
+			butterflies[i].CreateFomModel(butterfly[rand() % 3]);
+			butterflies[i].SetScale(Math::Random() * (COUNT - i)/200.0 + 1.0);
+
+			butterflies[i].SetPosition(glm::vec3((Math::Random() - 0.5) * SPAWN_RANGE, (Math::Random() - 0.5) * SPAWN_RANGE, (float)(i * -2)));
+			butterflies[i].SetRotation(glm::fquat(glm::vec3(0.0, glm::radians(180.0), glm::radians(Math::Random() * 360.0))));
 		}
 	}
 
 	void Game::OnUpdate(float deltaTime, float time)
 	{
 		ship.SetPosition(ship.GetPosition() + ship.Forward() * shipSpeed * deltaTime);
-		//ship.SetRotation(glm::mix(ship.GetRotation(), targetShipRotation, (float)(deltaTime * 3.0)));
-		//ship.SetRotation(glm::slerp(ship.GetRotation(), targetShipRotation, (float)(deltaTime * 7.0)));
+
 		ship.SetRotation(targetShipRotation);
 		theCamera.SetPosition(glm::mix(theCamera.GetPosition(), ship.GetPosition() - (ship.Forward() * 4.0) + (ship.Up()), (float)(deltaTime * 2.0)));
 		theCamera.LookAt(ship.GetPosition(), ship.Up());
 		lookBackCamera.SetPosition(ship.GetPosition() + ship.Forward() * 4.0);
 		lookBackCamera.LookAt(ship.GetPosition(), ship.Up());
 
-		for (int i = 0; i < 4000; i++)
+		for (int i = 0; i < COUNT; i++)
 		{
-			monkeys[i].SetRotation(monkeys[i].GetRotation() * glm::fquat(glm::vec3(0, 0, sqrt(time) * 0.00001 * i)));
+			butterflies[i].SetRotation(butterflies[i].GetRotation() * glm::fquat(glm::vec3(0, 0, sqrt(time) * 0.00001 * i)));
 		}
 	}
 

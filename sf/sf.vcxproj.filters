@@ -66,10 +66,7 @@
     <ClCompile Include="ofv\ml.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="user\errt.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="user\TutuRegalo.cpp">
+    <ClCompile Include="user\sfGame.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -839,13 +836,10 @@
     <ClInclude Include="ofv\vl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="user\errt.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="user\TutuRegalo.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="user\solidColorF.shader">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="user\sfGame.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

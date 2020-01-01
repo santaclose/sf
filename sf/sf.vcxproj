@@ -142,8 +142,7 @@
     <ClCompile Include="ofv\vl.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="Texture.cpp" />
-    <ClCompile Include="user\errt.cpp" />
-    <ClCompile Include="user\TutuRegalo.cpp" />
+    <ClCompile Include="user\sfGame.cpp" />
     <ClCompile Include="vendor\glad\src\glad.c" />
     <ClCompile Include="vendor\glm\include\glm\detail\glm.cpp" />
     <ClCompile Include="vendor\stb_image\stb_image.cpp" />
@@ -162,9 +161,8 @@
     <ClInclude Include="ofv\vl.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="Texture.h" />
-    <ClInclude Include="user\errt.h" />
+    <ClInclude Include="user\sfGame.h" />
     <ClInclude Include="user\solidColorF.shader" />
-    <ClInclude Include="user\TutuRegalo.h" />
     <ClInclude Include="vendor\glm\include\glm\common.hpp" />
     <ClInclude Include="vendor\glm\include\glm\detail\compute_common.hpp" />
     <ClInclude Include="vendor\glm\include\glm\detail\compute_vector_relational.hpp" />

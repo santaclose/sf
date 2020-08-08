@@ -19,6 +19,8 @@ namespace User
 	Camera Game::theCamera = Camera(1.7777777777777, 90.0, 0.1, 10000.0);
 	Camera Game::lookBackCamera = Camera(1.7777777777777, 120.0, 0.1, 1000.0);
 
+	Shader shadelessShader;
+	Shader uvShader;
 	Shader pbrShader;
 	Shader colorShader;
 	Shader noiseShader;
@@ -27,6 +29,7 @@ namespace User
 	Texture shipNormalmap;
 	Texture shipRoughness;
 	Texture shipMetallic;
+
 	Texture butterflyTexture;
 	Texture butterflyNormalmap;
 	Texture butterflyRoughness;
@@ -37,6 +40,7 @@ namespace User
 
 	Material colorsMaterial;
 	Material noiseMaterial;
+	Material uvMaterial;
 
 	Model ship;
 	Model butterfly[3];
@@ -44,26 +48,32 @@ namespace User
 
 	void Game::Initialize()
 	{
+		shadelessShader.CreateFromFiles("res/shaders/pbrV.shader", "res/shaders/shadelessF.shader");
 		pbrShader.CreateFromFiles("res/shaders/pbrV.shader", "res/shaders/gpbrF.shader");
 		colorShader.CreateFromFiles("user/randomColorsV.shader", "user/randomColorsF.shader");
+		uvShader.CreateFromFiles("res/shaders/pbrV.shader", "res/shaders/uvF.shader");
 		noiseShader.CreateFromFiles("user/noiseV.shader", "user/noiseF.shader");
 
+		uvMaterial.CreateFromShader(&uvShader);
 		colorsMaterial.CreateFromShader(&colorShader);
 		noiseMaterial.CreateFromShader(&noiseShader);
 
-		shipTexture.CreateFromFile("user/64/wolfen/Wolfen_plate_BaseColor.png", Texture::Type::ColorData);
-		shipNormalmap.CreateFromFile("user/64/wolfen/Wolfen_plate_Normal.png", Texture::Type::NonColorData);
-		shipRoughness.CreateFromFile("user/64/wolfen/Wolfen_plate_Roughness.png", Texture::Type::NonColorData);
-		shipMetallic.CreateFromFile("user/64/wolfen/Wolfen_plate_Metallic.png", Texture::Type::NonColorData);
-		butterflyTexture.CreateFromFile("user/64/butterfly/Butterfly Fighter_pink_BaseColor.png", Texture::Type::ColorData);
-		butterflyNormalmap.CreateFromFile("user/64/butterfly/Butterfly Fighter_pink_Normal.png", Texture::Type::NonColorData);
-		butterflyRoughness.CreateFromFile("user/64/butterfly/Butterfly Fighter_pink_Roughness.png", Texture::Type::NonColorData);
-		butterflyMetallic.CreateFromFile("user/64/butterfly/Butterfly Fighter_pink_Metallic.png", Texture::Type::NonColorData);
+		shipTexture.CreateFromFile("user/64/wolfen/Wolfen_plate_BaseColor.png", Texture::Type::Albedo);
+		shipNormalmap.CreateFromFile("user/64/wolfen/Wolfen_plate_Normal.png", Texture::Type::Normals);
+		shipRoughness.CreateFromFile("user/64/wolfen/Wolfen_plate_Roughness.png", Texture::Type::Roughness);
+		shipMetallic.CreateFromFile("user/64/wolfen/Wolfen_plate_Metallic.png", Texture::Type::Metallic);
+
+		butterflyTexture.CreateFromFile("user/64/butterfly/Butterfly Fighter_pink_BaseColor.png", Texture::Type::Albedo);
+		butterflyNormalmap.CreateFromFile("user/64/butterfly/Butterfly Fighter_pink_Normal.png", Texture::Type::Normals);
+		butterflyRoughness.CreateFromFile("user/64/butterfly/Butterfly Fighter_pink_Roughness.png", Texture::Type::Roughness);
+		butterflyMetallic.CreateFromFile("user/64/butterfly/Butterfly Fighter_pink_Metallic.png", Texture::Type::Metallic);
+
 		shipMaterial.CreateFromShader(&pbrShader);
 		shipMaterial.SetUniform("albedoTexture", &shipTexture, Material::UniformType::_Texture);
 		shipMaterial.SetUniform("normalTexture", &shipNormalmap, Material::UniformType::_Texture);
 		shipMaterial.SetUniform("roughnessTexture", &shipRoughness, Material::UniformType::_Texture);
 		shipMaterial.SetUniform("metalnessTexture", &shipMetallic, Material::UniformType::_Texture);
+
 		butterflyMaterial.CreateFromShader(&pbrShader);
 		butterflyMaterial.SetUniform("albedoTexture", &butterflyTexture, Material::UniformType::_Texture);
 		butterflyMaterial.SetUniform("normalTexture", &butterflyNormalmap, Material::UniformType::_Texture);
@@ -76,7 +86,8 @@ namespace User
 
 		butterfly[0].CreateFromOBJ("user/64/Butterfly Fighter.obj", 1.0, true);
 		butterfly[0].SetMaterial(&butterflyMaterial);
-		butterfly[1].CreateFromOBJ("user/64/Butterfly Fighter.obj", 1.0, true);
+		butterfly[1].CreateFromGLTF("user/icosphere.gltf");
+		//butterfly[1].CreateFromOBJ("user/64/Butterfly Fighter.obj", 1.0, true);
 		butterfly[1].SetMaterial(&colorsMaterial);
 		butterfly[2].CreateFromOBJ("user/64/Butterfly Fighter.obj", 1.0, true);
 		butterfly[2].SetMaterial(&noiseMaterial);
@@ -92,6 +103,11 @@ namespace User
 		}
 	}
 
+	void Game::Terminate()
+	{
+
+	}
+
 	void Game::OnUpdate(float deltaTime, float time)
 	{
 		ship.SetPosition(ship.GetPosition() + ship.Forward() * shipSpeed * deltaTime);
@@ -102,10 +118,10 @@ namespace User
 		lookBackCamera.SetPosition(ship.GetPosition() + ship.Forward() * 4.0);
 		lookBackCamera.LookAt(ship.GetPosition(), ship.Up());
 
-		for (int i = 0; i < COUNT; i++)
+		/*for (int i = 0; i < COUNT; i++)
 		{
 			butterflies[i].SetRotation(butterflies[i].GetRotation() * glm::fquat(glm::vec3(0, 0, sqrt(time) * 0.00001 * i)));
-		}
+		}*/
 	}
 
 	void Game::OnKey(int key, int action)
@@ -133,7 +149,7 @@ namespace User
 		}
 	}
 
-	void Game::OnScroll(double xoffset, double yoffset)
+	void Game::OnMouseScroll(double xoffset, double yoffset)
 	{
 		shipSpeed += yoffset;
 	}

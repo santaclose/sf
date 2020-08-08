@@ -88,6 +88,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>%(SolutionDir)vendor\glad\include;%(SolutionDir)vendor\glm\include;C:\vendor\glfw-3.3.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -119,6 +120,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>%(SolutionDir)vendor\glad\include;%(SolutionDir)vendor\glm\include;C:\vendor\glfw-3.3.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -130,7 +132,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="user\clouds\Cloud.cpp" />
+    <ClCompile Include="user\clouds\clouds.cpp" />
+    <ClCompile Include="ComputeShader.cpp" />
+    <ClCompile Include="Cubemap.cpp" />
     <ClCompile Include="Entity.cpp" />
+    <ClCompile Include="HdrTexture.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="Math.cpp" />
@@ -140,17 +147,24 @@
     <ClCompile Include="Object.cpp" />
     <ClCompile Include="ofv\ml.cpp" />
     <ClCompile Include="ofv\vl.cpp" />
+    <ClCompile Include="Skybox.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="Texture.cpp" />
-    <ClCompile Include="user\sfGame.cpp" />
     <ClCompile Include="vendor\glad\src\glad.c" />
     <ClCompile Include="vendor\glm\include\glm\detail\glm.cpp" />
     <ClCompile Include="vendor\stb_image\stb_image.cpp" />
+    <ClCompile Include="vendor\stb_image\stb_image_write.cpp" />
+    <ClCompile Include="vendor\tiny_gltf\tiny_gltf.cpp" />
     <ClCompile Include="Vertex.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="user\clouds\Cloud.h" />
+    <ClInclude Include="user\clouds\clouds.h" />
+    <ClInclude Include="ComputeShader.h" />
+    <ClInclude Include="Cubemap.h" />
     <ClInclude Include="Entity.h" />
+    <ClInclude Include="HdrTexture.h" />
     <ClInclude Include="Input.inl" />
     <ClInclude Include="Material.h" />
     <ClInclude Include="Math.h" />
@@ -159,9 +173,9 @@
     <ClInclude Include="Object.h" />
     <ClInclude Include="ofv\ml.h" />
     <ClInclude Include="ofv\vl.h" />
+    <ClInclude Include="Skybox.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="Texture.h" />
-    <ClInclude Include="user\sfGame.h" />
     <ClInclude Include="user\solidColorF.shader" />
     <ClInclude Include="vendor\glm\include\glm\common.hpp" />
     <ClInclude Include="vendor\glm\include\glm\detail\compute_common.hpp" />
@@ -405,15 +419,27 @@
     <ClInclude Include="vendor\glm\include\glm\vec4.hpp" />
     <ClInclude Include="vendor\glm\include\glm\vector_relational.hpp" />
     <ClInclude Include="vendor\stb_image\stb_image.h" />
+    <ClInclude Include="vendor\stb_image\stb_image_write.h" />
+    <ClInclude Include="vendor\tiny_gltf\json.hpp" />
+    <ClInclude Include="vendor\tiny_gltf\tiny_gltf.h" />
     <ClInclude Include="Vertex.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ModelLoader.h" />
     <None Include="res\shaders\defaultF.shader" />
     <None Include="res\shaders\defaultV.shader" />
+    <None Include="res\shaders\equirect2cube_cs.shader" />
+    <None Include="res\shaders\equiRectToCubemapF.shader" />
+    <None Include="res\shaders\cubemapV.shader" />
+    <None Include="res\shaders\irradianceConvolutionF.shader" />
     <None Include="res\shaders\pbrF.shader" />
     <None Include="res\shaders\pbrV.shader" />
     <None Include="res\shaders\shadelessF.shader" />
+    <None Include="res\shaders\skyboxF.shader" />
+    <None Include="res\shaders\skyboxV.shader" />
+    <None Include="res\shaders\uvF.shader" />
+    <None Include="user\clouds\fragment.shader" />
+    <None Include="user\clouds\vertex.shader" />
     <None Include="user\noiseF.shader" />
     <None Include="user\noiseV.shader" />
     <None Include="user\randomColorsF.shader" />

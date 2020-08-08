@@ -28,8 +28,10 @@ class Model : public Object
 
 	std::vector<ModelReference*> m_references;
 
+	void CompleteFromVectors();
+
 public:
-	~Model();
+	void CreateFromGLTF(const std::string& filePath);
 
 	void CreateFromOBJ(const std::string& filePath, float size = 1.0, bool faceted = false);
 	void CreateFromCode(void (*generateModelFunc)(), bool smooth = true);

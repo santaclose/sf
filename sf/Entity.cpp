@@ -6,11 +6,6 @@ void Entity::SetPosition(const glm::vec3& newPosition)
 	m_position = newPosition;
 	m_matrixUpdatePending = true;
 }
-void Entity::SetPosition(const glm::vec3&& newPosition)
-{
-	m_position = newPosition;
-	m_matrixUpdatePending = true;
-}
 void Entity::SetPosition(float x, float y, float z)
 {
 	m_position.x = x;
@@ -24,18 +19,8 @@ void Entity::SetRotation(const glm::fquat& newRotation)
 	m_rotation = newRotation;
 	m_matrixUpdatePending = true;
 }
-void Entity::SetRotation(const glm::fquat&& newRotation)
-{
-	m_rotation = newRotation;
-	m_matrixUpdatePending = true;
-}
 
 void Entity::SetRotation(const glm::vec3& newRotation)
-{
-	m_rotation = glm::fquat(newRotation);
-	m_matrixUpdatePending = true;
-}
-void Entity::SetRotation(const glm::vec3&& newRotation)
 {
 	m_rotation = glm::fquat(newRotation);
 	m_matrixUpdatePending = true;

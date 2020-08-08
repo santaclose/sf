@@ -14,3 +14,8 @@ float Math::Random()
 {
 	return static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
 }
+
+int Math::RandomInt(int limit)
+{
+	return rand() % limit;
+}

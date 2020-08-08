@@ -1,7 +1,5 @@
 #pragma once
 
-#define SENSITIVITY 0.007
-
 namespace Input
 {
 	glm::vec2 mousePosDelta;
@@ -30,10 +28,10 @@ namespace Input
 		lastMousePos.y = ypos;
 	}
 
-	void OnScroll(GLFWwindow* window, double xoffset, double yoffset)
+	void OnMouseScroll(GLFWwindow* window, double xoffset, double yoffset)
 	{
 		//-------------------//
-		User::Game::OnScroll(xoffset, yoffset);
+		User::Game::OnMouseScroll(xoffset, yoffset);
 		//-------------------//
 	}
 

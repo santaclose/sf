@@ -13,4 +13,6 @@ struct Vertex
 	Vertex(float posX, float posY, float posZ);
 	Vertex(const glm::vec3& thePosition);
 	Vertex(glm::vec3&& thePosition);
+
+	Vertex() = default;
 };

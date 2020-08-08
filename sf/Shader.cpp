@@ -27,7 +27,7 @@ unsigned int Shader::CompileShader(unsigned int type, const std::string& source)
 	return id;
 }
 
-Shader::Shader() : m_id(-1) {}
+Shader::Shader() : m_gl_id(-1) {}
 
 void Shader::CreateFromFiles(const std::string& vertexShaderPath, const std::string& fragmentShaderPath)
 {
@@ -44,14 +44,14 @@ void Shader::CreateFromFiles(const std::string& vertexShaderPath, const std::str
 	std::string fragmentShaderSource((std::istreambuf_iterator<char>(ifs2)),
 		(std::istreambuf_iterator<char>()));
 
-	m_id = glCreateProgram();
+	m_gl_id = glCreateProgram();
 	unsigned int vs = CompileShader(GL_VERTEX_SHADER, vertexShaderSource);
 	unsigned int fs = CompileShader(GL_FRAGMENT_SHADER, fragmentShaderSource);
 
-	glAttachShader(m_id, vs);
-	glAttachShader(m_id, fs);
-	glLinkProgram(m_id);
-	glValidateProgram(m_id);
+	glAttachShader(m_gl_id, vs);
+	glAttachShader(m_gl_id, fs);
+	glLinkProgram(m_gl_id);
+	glValidateProgram(m_gl_id);
 
 	glDeleteShader(vs);
 	glDeleteShader(fs);
@@ -59,13 +59,13 @@ void Shader::CreateFromFiles(const std::string& vertexShaderPath, const std::str
 
 Shader::~Shader()
 {
-	glDeleteProgram(m_id);
+	glDeleteProgram(m_gl_id);
 }
 
 void Shader::Bind() const
 {
-	glUseProgram(m_id);
-	//std::cout << "Shader " << m_id << " bound\n";
+	glUseProgram(m_gl_id);
+	//std::cout << "Shader " << m_gl_id << " bound\n";
 }
 
 int Shader::GetUniformLocation(const std::string& name)
@@ -73,7 +73,7 @@ int Shader::GetUniformLocation(const std::string& name)
 	if (m_uniformLocationCache.find(name) != m_uniformLocationCache.end())
 		return m_uniformLocationCache[name];
 
-	int location = glGetUniformLocation(m_id, name.c_str());
+	int location = glGetUniformLocation(m_gl_id, name.c_str());
 	if (location == -1)
 		std::cout << "Could not get uniform location for " << name << std::endl;
 

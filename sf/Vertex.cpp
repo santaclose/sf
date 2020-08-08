@@ -23,3 +23,4 @@ Vertex::Vertex(glm::vec3&& thePosition)
 	//color = glm::vec4(1.0, 0.0, 1.0, 1.0);
 	textureCoord = glm::vec2(0, 0);
 }
+

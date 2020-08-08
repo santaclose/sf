@@ -66,7 +66,28 @@
     <ClCompile Include="ofv\ml.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="user\sfGame.cpp">
+    <ClCompile Include="vendor\stb_image\stb_image_write.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\tiny_gltf\tiny_gltf.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Cubemap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HdrTexture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Skybox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ComputeShader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="user\clouds\clouds.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="user\clouds\Cloud.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -839,7 +860,31 @@
     <ClInclude Include="user\solidColorF.shader">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="user\sfGame.h">
+    <ClInclude Include="vendor\tiny_gltf\tiny_gltf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="vendor\stb_image\stb_image_write.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="vendor\tiny_gltf\json.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cubemap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HdrTexture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Skybox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ComputeShader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="user\clouds\clouds.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="user\clouds\Cloud.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -1252,5 +1297,14 @@
     <None Include="res\shaders\pbrF.shader" />
     <None Include="res\shaders\pbrV.shader" />
     <None Include="res\shaders\shadelessF.shader" />
+    <None Include="res\shaders\uvF.shader" />
+    <None Include="res\shaders\equiRectToCubemapF.shader" />
+    <None Include="res\shaders\cubemapV.shader" />
+    <None Include="res\shaders\irradianceConvolutionF.shader" />
+    <None Include="res\shaders\skyboxV.shader" />
+    <None Include="res\shaders\skyboxF.shader" />
+    <None Include="res\shaders\equirect2cube_cs.shader" />
+    <None Include="user\clouds\vertex.shader" />
+    <None Include="user\clouds\fragment.shader" />
   </ItemGroup>
 </Project>

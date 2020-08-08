@@ -1,13 +1,8 @@
 #include "Material.h"
 #include "Texture.h"
+#include "Cubemap.h"
 
 Material* Material::boundMaterial = nullptr;
-
-/*Material::Material(Shader* theShader)
-{
-	m_shader = theShader;
-}
-*/
 
 void Material::CreateFromShader(Shader* theShader)
 {
@@ -23,23 +18,42 @@ void Material::SetUniform(const std::string& name, void* data, UniformType type)
 
 void Material::Bind()
 {
-	if (boundMaterial == this) // no need to bind
-		return;
+	m_shader->Bind();
 
-	if (boundMaterial == nullptr || boundMaterial->m_shader != m_shader)
-		m_shader->Bind();
-
+	int cubemapCounter = 0;
 	int textureCounter = 0;
+
 	for (int i = 0; i < m_uniformData.size(); i++)
 	{
 		switch (m_uniformTypes[i])
 		{
 		case UniformType::_Texture: {
+			if (m_uniformData[i] == nullptr) // clear uniform if not provided
+			{
+				glActiveTexture(GL_TEXTURE0 + textureCounter);
+				glBindTexture(GL_TEXTURE_2D, 0);
+				m_shader->SetUniform1i(m_uniformNames[i], textureCounter);
+				continue;
+			}
 			Texture* currentTexture = (Texture*)m_uniformData[i];
 			currentTexture->Bind(textureCounter);
 			m_shader->SetUniform1i(m_uniformNames[i], textureCounter);
 
 			textureCounter++;
+			break; }
+		case UniformType::_Cubemap: {
+			if (m_uniformData[i] == nullptr) // clear uniform if not provided
+			{
+				glActiveTexture(GL_TEXTURE0 + textureCounter);
+				glBindTexture(GL_TEXTURE_2D, 0);
+				m_shader->SetUniform1i(m_uniformNames[i], textureCounter);
+				continue;
+			}
+			Cubemap* currentCubemap = (Cubemap*)m_uniformData[i];
+			currentCubemap->Bind(cubemapCounter);
+			m_shader->SetUniform1i(m_uniformNames[i], cubemapCounter);
+
+			cubemapCounter++;
 			break; }
 		case UniformType::_Color: {
 			m_shader->SetUniform4fv(m_uniformNames[i], (float*)m_uniformData[i]);

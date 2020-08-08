@@ -1,4 +1,4 @@
-// stores a matrix for model duplicates (no need to store vertices or materials)
+// stores a matrix for model duplicates doesnt contain vertices or materials
 
 #include "ModelReference.h"
 #include "Camera.h"
@@ -15,11 +15,3 @@ void ModelReference::CreateFomModel(Model& theModel)
 	m_originalModel = &theModel;
 	m_originalModel->m_references.push_back(this);
 }
-
-
-/*ModelReference::ModelReference(const Model& theModel)
-{
-	m_originalModel = &theModel;
-	ModelReference* t = this;
-	m_originalModel->m_references.push_back(t);
-}*/

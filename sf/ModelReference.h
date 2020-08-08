@@ -12,6 +12,5 @@ class ModelReference : public Object
 	void SendMatrixToShader();
 
 public:
-	//ModelReference(const Model& theModel);
 	void CreateFomModel(Model& theModel);
 };

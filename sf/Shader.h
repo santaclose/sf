@@ -3,13 +3,15 @@
 #include <string>
 #include <glad/glad.h>
 #include <unordered_map>
+class ComputeShader;
 
 class Shader
 {
+	friend ComputeShader;
 private:
 	std::unordered_map<std::string, int> m_uniformLocationCache;
 public:
-	unsigned int m_id;
+	unsigned int m_gl_id;
 private:
 	static unsigned int CompileShader(unsigned int type, const std::string& source);
 	int GetUniformLocation(const std::string& name);

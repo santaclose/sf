@@ -11,6 +11,7 @@ class Material
 public:
 	enum UniformType {
 		_Texture,
+		_Cubemap,
 		_Color
 	};
 
@@ -21,7 +22,6 @@ private:
 	std::vector<UniformType> m_uniformTypes;
 
 public:
-	//Material(Shader* theShader);
 	void CreateFromShader(Shader* theShader);
 	void SetUniform(const std::string& name, void* data, UniformType type);
 	void Bind();

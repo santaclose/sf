@@ -84,7 +84,7 @@ void Cubemap::CreateFromFiles(const std::string& name, const std::string& extens
 void Cubemap::CreateFomHDR(const HdrTexture& hdrTexture)
 {
     ComputeShader cs;
-    cs.CreateFromFile("res/shaders/equirect2cube_cs.shader");
+    cs.CreateFromFile("assets/shaders/equirect2cube_cs.shader");
 
     glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &m_gl_id);
     glTextureStorage2D(m_gl_id, 1, GL_RGB16F, kEnvMapSize, kEnvMapSize);

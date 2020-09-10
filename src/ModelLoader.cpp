@@ -1,8 +1,10 @@
 #include "ModelLoader.h"
 #include <fstream>
 #include <iostream>
-
 #include <tiny_gltf.h>
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
 struct TempVertex // hold vertices and its duplicates
 {
@@ -435,4 +437,46 @@ void ModelLoader::LoadGLTF(std::vector<Vertex>& vertexVector, std::vector<unsign
 		vertexVector[i].textureCoord = vertex_uv[i];
 	}
 	ComputeTangentSpace(vertexVector, indexVector);
+}
+
+void ModelLoader::LoadAssimp(std::vector<Vertex>& vertexVector, std::vector<unsigned int>& indexVector, const std::string& filePath, float scaleFactor, unsigned int mesh)
+{
+	Assimp::Importer importer;
+	const aiScene* assimpScene = importer.ReadFile(filePath.c_str(),
+		aiProcess_Triangulate |
+		aiProcess_GenNormals |
+		aiProcess_CalcTangentSpace
+	);
+
+	if (!assimpScene || assimpScene->mFlags == AI_SCENE_FLAGS_INCOMPLETE || !assimpScene->mRootNode)
+	{
+		std::cout << "[MODEL LOADER] Assimp error loading file \"" << filePath << "\": " << importer.GetErrorString() << std::endl;
+		return;
+	}
+
+	/*for (unsigned int i = 0; i < assimpScene->mNumMeshes; i++)
+	{*/
+	if (assimpScene->mNumMeshes > 1)
+		std::cout << "[MODEL LOADER] Found " << assimpScene->mNumMeshes << " meshes in file \"" << filePath << "\", loading mesh " << mesh << std::endl;
+
+		aiMesh* currentMesh = assimpScene->mMeshes[mesh];
+		for (unsigned int j = 0; j < currentMesh->mNumVertices; j++)
+		{
+			vertexVector.emplace_back();
+			vertexVector.back().position = *(glm::vec3*) &(currentMesh->mVertices[j]);
+			vertexVector.back().normal = *(glm::vec3*) &(currentMesh->mNormals[j]);
+			vertexVector.back().tangent = *(glm::vec3*) &(currentMesh->mTangents[j]);
+			vertexVector.back().bitangent = *(glm::vec3*) &(currentMesh->mBitangents[j]);
+			vertexVector.back().textureCoord = *(glm::vec2*) &(currentMesh->mTextureCoords[0][j]);
+			vertexVector.back().position *= scaleFactor;
+		}
+
+		for (unsigned int j = 0; j < currentMesh->mNumFaces; j++)
+		{
+			//Get the face
+			aiFace face = currentMesh->mFaces[j];
+			//Add the indices of the face to the vector
+			for (unsigned int k = 0; k < face.mNumIndices; ++k) { indexVector.push_back(face.mIndices[k]); }
+		}
+	//}
 }

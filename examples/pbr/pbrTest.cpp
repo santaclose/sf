@@ -12,8 +12,8 @@
 
 namespace User
 {
-	glm::vec3 targetGimbalRotation = glm::vec3(0.0, 0.0, 0.0);
-	Camera camera = Camera(1.7777777777777, 90.0, 0.1, 10000.0);
+	glm::vec3 targetGimbalRotation = glm::vec3(0.0, glm::radians(180.0f), 0.0);
+	Camera* camera;
 	Entity gimbal;
 	float cameraDistance = 3.0;
 
@@ -42,6 +42,14 @@ namespace User
 
 	void Game::Initialize()
 	{
+
+		CameraSpecs cs;
+		cs.aspectRatio = 16.0f / 9.0f;
+		cs.farClippingPlane = 100.0f;
+		cs.nearClippingPlane = 0.01f;
+		cs.fieldOfView = glm::radians(90.0f);
+		camera = new Camera(cs);
+
 		pbrShader.CreateFromFiles("assets/shaders/pbrV.shader", "assets/shaders/gpbrF.shader");
 
 		sciFiHelmetMaterial.CreateFromShader(&pbrShader);
@@ -72,12 +80,16 @@ namespace User
 
 		models.emplace_back();
 		models.back() = new Model();
-		models.back()->CreateFromGLTF("examples/pbr/gltf/SciFiHelmet/SciFiHelmet.gltf");
+		models.back()->CreateFromFile("examples/pbr/gltf/SciFiHelmet/SciFiHelmet.gltf");
 		models.back()->SetMaterial(&sciFiHelmetMaterial);
 		models.emplace_back();
 		models.back() = new Model();
-		models.back()->CreateFromGLTF("examples/pbr/gltf/DamagedHelmet/DamagedHelmet.gltf");
+		models.back()->CreateFromFile("examples/pbr/gltf/DamagedHelmet/DamagedHelmet.gltf");
 		models.back()->SetMaterial(&damagedHelmetMaterial);
+		models.emplace_back();
+		models.back() = new Model();
+		models.back()->CreateFromFile("examples/pbr/bb.fbx");
+		models.back()->SetMaterial(&sciFiHelmetMaterial);
 
 		for (int i = 0; i < models.size(); i++)
 		{
@@ -92,16 +104,16 @@ namespace User
 		gimbal.LookAt(glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, 1.0, 0.0));
 
 		std::cout << "setting camera position" << std::endl;
-		camera.SetPosition(glm::vec3(0.0, 0.0, cameraDistance));
-		camera.LookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+		camera->SetPosition(glm::vec3(0.0, 0.0, cameraDistance));
+		camera->LookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 	}
 
 #define SPEED 15.0f
 	void Game::OnUpdate(float deltaTime, float time)
 	{
 		gimbal.SetRotation(glm::slerp(gimbal.GetRotation(), glm::fquat(targetGimbalRotation), deltaTime * SPEED));
-		camera.SetPosition(gimbal.GetPosition() + gimbal.Forward() * cameraDistance);
-		camera.LookAt(gimbal.GetPosition(), glm::vec3(0.0, 1.0, 0.0));
+		camera->SetPosition(gimbal.GetPosition() + gimbal.Forward() * cameraDistance);
+		camera->LookAt(gimbal.GetPosition(), glm::vec3(0.0, 1.0, 0.0));
 
 		models[selectedModel]->SetRotation(glm::vec3(0.0, time / 20.0, 0.0));
 	}

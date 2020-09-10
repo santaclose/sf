@@ -18,8 +18,8 @@ double deltaTime = 0.0;
 #include "../user/Game.h"
 #include "Input.inl"
 
-#define WINDOW_WIDTH 1280
-#define WINDOW_HEIGHT 720
+unsigned int windowWidth;
+unsigned int windowHeight;
 
 int main(void)
 {
@@ -32,8 +32,10 @@ int main(void)
 	/* Create a windowed mode window and its OpenGL context */
 	glfwWindowHint(GLFW_SAMPLES, MSAA_COUNT);
 
-	window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "sf", NULL, NULL);
-	//window = glfwCreateWindow(1920, 1080, "sf", glfwGetPrimaryMonitor(), NULL);
+	windowWidth = 1920;
+	windowHeight = 1080;
+	//window = glfwCreateWindow(windowWidth, windowHeight, "sf", NULL, NULL);
+	window = glfwCreateWindow(windowWidth, windowHeight, "sf", glfwGetPrimaryMonitor(), NULL);
 
 	if (!window)
 	{
@@ -77,7 +79,7 @@ int main(void)
 	//-------------------//
 	User::Game::Initialize();
 	//-------------------//
-	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+	glViewport(0, 0, windowWidth, windowHeight);
 
 	/* Loop until the user closes the window */
 	while (!glfwWindowShouldClose(window))
@@ -92,7 +94,7 @@ int main(void)
 		User::Game::OnUpdate(deltaTime, time);
 		//-------------------//
 
-		Camera::ComputeMatrices();
+		Camera::boundCamera->ComputeMatrices();
 
 		time += deltaTime;
 		

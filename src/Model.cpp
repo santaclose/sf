@@ -47,19 +47,15 @@ void Model::CompleteFromVectors()
 	models.push_back(this);
 }
 
-void Model::CreateFromGLTF(const std::string& filePath)
+void Model::CreateFromFile(const std::string& filePath, float size, bool smooth)
 {
-	ModelLoader::LoadGLTF(m_vertexVector, m_indexVector, filePath);
-	CompleteFromVectors();
-}
+	std::string ext = filePath.substr(filePath.find_last_of(".") + 1);
 
-// obj should be treated by other code and here load an engine format instead
-void Model::CreateFromOBJ(const std::string& filePath, float size, bool faceted)
-{
-	if (faceted)
-		ModelLoader::LoadFacetedOBJFile(m_vertexVector, m_indexVector, filePath, size);
+	if (ext == "gltf")
+		ModelLoader::LoadGLTF(m_vertexVector, m_indexVector, filePath);
 	else
-		ModelLoader::LoadOBJFile(m_vertexVector, m_indexVector, filePath, size);
+		ModelLoader::LoadAssimp(m_vertexVector, m_indexVector, filePath);
+
 	CompleteFromVectors();
 }
 
@@ -80,7 +76,7 @@ void Model::Draw()
 	m_material->Bind();
 
 	m_material->m_shader->SetUniformMatrix4fv("cameraMatrix", &(Camera::GetMatrix()[0][0]));
-	m_material->m_shader->SetUniform3fv("camPos", &(Camera::GetPosition()[0]));
+	m_material->m_shader->SetUniform3fv("camPos", &(Camera::boundCamera->GetPosition()[0]));
 
 	SendMatrixToShader();
 	

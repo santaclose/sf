@@ -31,7 +31,7 @@ class Model : public Object
 	void CompleteFromVectors();
 
 public:
-	void CreateFromFile(const std::string& filePath, float size = 1.0f, bool smooth = true);
+	void CreateFromFile(const std::string& filePath, float scaleFactor = 1.0f, bool smooth = true);
 	void CreateFromCode(void (*generateModelFunc)(), bool smooth = true);
 
 	void SetMaterial(Material* theMaterial);

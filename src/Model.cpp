@@ -47,14 +47,12 @@ void Model::CompleteFromVectors()
 	models.push_back(this);
 }
 
-void Model::CreateFromFile(const std::string& filePath, float size, bool smooth)
+void Model::CreateFromFile(const std::string& filePath, float scaleFactor, bool smooth)
 {
 	std::string ext = filePath.substr(filePath.find_last_of(".") + 1);
 
-	if (ext == "gltf")
-		ModelLoader::LoadGltfFile(m_vertexVector, m_indexVector, filePath);
-	else if (ext == "obj")
-		ModelLoader::LoadObjFile(m_vertexVector, m_indexVector, filePath, size, smooth);
+	if (ext == "gltf" || ext == "glb")
+		ModelLoader::LoadGltfFile(m_vertexVector, m_indexVector, filePath, scaleFactor, ext == "glb");
 	else
 		std::cout << "[Model] Only gltf files supported\n";
 

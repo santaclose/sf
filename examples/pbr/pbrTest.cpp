@@ -89,6 +89,10 @@ namespace User
 		models.back() = new Model();
 		models.back()->CreateFromFile("examples/pbr/gltf/DamagedHelmet/DamagedHelmet.gltf");
 		models.back()->SetMaterial(&damagedHelmetMaterial);
+		models.emplace_back();
+		models.back() = new Model();
+		models.back()->CreateFromFile("examples/pbr/gltf/asdf/asdf.glb");
+		models.back()->SetMaterial(&damagedHelmetMaterial);
 
 		for (int i = 0; i < models.size(); i++)
 		{

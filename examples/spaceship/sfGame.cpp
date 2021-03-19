@@ -56,7 +56,7 @@ namespace User
 		colorsMaterial.CreateFromShader(&colorShader);
 		noiseMaterial.CreateFromShader(&noiseShader);
 
-		ship.CreateFromFile("examples/spaceship/ship.obj", 0.3, false);
+		ship.CreateFromFile("examples/spaceship/ship.glb", 0.3, false);
 		ship.SetMaterial(&uvMaterial);
 		targetShipRotation = ship.GetRotation();
 

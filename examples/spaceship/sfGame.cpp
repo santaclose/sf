@@ -6,6 +6,7 @@
 #include "../../src/ModelReference.h"
 #include "../../src/Math.h"
 #include "../../src/Camera.h"
+#include "../../src/Input.h"
 #include "errt.h"
 
 #define SENSITIVITY 0.007
@@ -106,6 +107,23 @@ namespace User
 
 	void Game::OnUpdate(float deltaTime, float time)
 	{
+		if (Input::KeyDown(Input::KeyCode::M))
+			glPolygonMode(GL_FRONT, GL_POINT);
+		else if (Input::KeyDown(Input::KeyCode::N))
+			glPolygonMode(GL_FRONT, GL_LINE);
+		else if (Input::KeyDown(Input::KeyCode::B))
+			glPolygonMode(GL_FRONT, GL_FILL);
+		else if (Input::KeyDown(Input::KeyCode::Space))
+		{
+			if (Camera::boundCamera == theCamera)
+				lookBackCamera->Bind();
+			else
+				theCamera->Bind();
+		}
+		shipSpeed += Input::MouseScrollUp() ? 1.0f : 0.0f;
+		shipSpeed -= Input::MouseScrollDown() ? 1.0f : 0.0f;
+		targetShipRotation *= glm::fquat(glm::vec3(Input::MousePosDeltaY() * SENSITIVITY, 0.0, -Input::MousePosDeltaX() * SENSITIVITY));
+
 		ship.SetPosition(ship.GetPosition() + ship.Forward() * shipSpeed * deltaTime);
 
 		ship.SetRotation(targetShipRotation);

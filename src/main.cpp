@@ -6,6 +6,7 @@
 #include "Camera.h"
 #include "Model.h"
 #include "Skybox.h"
+#include "Input.h"
 
 #define BACKGROUND_COLOR 1.0
 #define MSAA_COUNT 8
@@ -16,7 +17,32 @@ double currentFrameTime = 0.0;
 double deltaTime = 0.0;
 
 #include "../user/Game.h"
-#include "Input.inl"
+//#include "Input.inl"
+
+
+void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
+{
+	Input::UpdateMousePosition(xpos, ypos);
+}
+
+void mouse_button_callback(GLFWwindow*, int button, int action, int mods)
+{
+	Input::UpdateMouseButtons(button, action);
+}
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	Input::UpdateKeyboard(key, action);
+}
+void character_callback(GLFWwindow* window, unsigned int codepoint)
+{
+	Input::UpdateCharacter(codepoint);
+}
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+	Input::UpdateMouseScroll(xoffset, yoffset);
+}
+
 
 unsigned int windowWidth;
 unsigned int windowHeight;
@@ -48,9 +74,11 @@ int main(void)
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	/* INPUT BINDINGS */
-	glfwSetCursorPosCallback(window, Input::OnMouseMoved);
-	glfwSetScrollCallback(window, Input::OnMouseScroll);
-	glfwSetKeyCallback(window, Input::OnKey);
+	glfwSetCursorPosCallback(window, cursor_position_callback);
+	glfwSetMouseButtonCallback(window, mouse_button_callback);
+	glfwSetKeyCallback(window, key_callback);
+	glfwSetCharCallback(window, character_callback);
+	glfwSetScrollCallback(window, scroll_callback);
 
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 	{
@@ -104,6 +132,7 @@ int main(void)
 		/* Swap front and back buffers */
 		glfwSwapBuffers(window);
 
+		Input::FrameEnd();
 		/* Poll for and process events */
 		glfwPollEvents();
 

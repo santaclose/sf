@@ -5,11 +5,9 @@
 
 class ModelLoader
 {
+private:
+	static void LoadFacetedObjFile(std::vector<Vertex>& vertexVector, std::vector<unsigned int>& indexVector, const std::string& filePath, float scaleFactor);
 public:
-	static void LoadOBJFile(std::vector<Vertex>& vertexVector, std::vector<unsigned int>& indexVector, const std::string& filePath, float scaleFactor);
-	static void LoadFacetedOBJFile(std::vector<Vertex>& vertexVector, std::vector<unsigned int>& indexVector, const std::string& filePath, float scaleFactor);
-
-	static void LoadGLTF(std::vector<Vertex>& vertexVector, std::vector<unsigned int>& indexVector, const std::string& filePath);
-
-	static void LoadAssimp(std::vector<Vertex>& vertexVector, std::vector<unsigned int>& indexVector, const std::string& filePath, float scaleFactor = 1.0f, unsigned int mesh = 0);
+	static void LoadObjFile(std::vector<Vertex>& vertexVector, std::vector<unsigned int>& indexVector, const std::string& filePath, float scaleFactor, bool smooth = true);
+	static void LoadGltfFile(std::vector<Vertex>& vertexVector, std::vector<unsigned int>& indexVector, const std::string& filePath);
 };

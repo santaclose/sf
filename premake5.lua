@@ -56,13 +56,7 @@ project "sf"
 		"vendor/glm",
 		"vendor/stb_image",
 		"vendor/sfmg",
-		"vendor/tinygltf",
-		"vendor/assimp/include"
-	}
-
-	libdirs
-	{
-		"vendor/assimp/lib"
+		"vendor/tinygltf"
 	}
 
 	links 
@@ -85,16 +79,8 @@ project "sf"
 		defines "SF_DEBUG"
 		runtime "Debug"
 		symbols "on"
-		links
-		{
-			"assimp-vc140-mtd"
-		}
 
 	filter "configurations:Release"
 		defines "SF_RELEASE"
 		runtime "Release"
 		optimize "on"
-		links
-		{
-			"assimp-vc140-mt"
-		}

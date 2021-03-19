@@ -52,9 +52,11 @@ void Model::CreateFromFile(const std::string& filePath, float size, bool smooth)
 	std::string ext = filePath.substr(filePath.find_last_of(".") + 1);
 
 	if (ext == "gltf")
-		ModelLoader::LoadGLTF(m_vertexVector, m_indexVector, filePath);
+		ModelLoader::LoadGltfFile(m_vertexVector, m_indexVector, filePath);
+	else if (ext == "obj")
+		ModelLoader::LoadObjFile(m_vertexVector, m_indexVector, filePath, size, smooth);
 	else
-		ModelLoader::LoadAssimp(m_vertexVector, m_indexVector, filePath);
+		std::cout << "[Model] Only gltf files supported\n";
 
 	CompleteFromVectors();
 }

@@ -10,7 +10,7 @@
 #define BACKGROUND_COLOR 1.0
 #define MSAA_COUNT 8
 
-float time = 0.0;
+float gameTime = 0.0;
 double lastFrameTime = 0.0;
 double currentFrameTime = 0.0;
 double deltaTime = 0.0;
@@ -91,12 +91,12 @@ int main(void)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		//-------------------//
-		User::Game::OnUpdate(deltaTime, time);
+		User::Game::OnUpdate(deltaTime, gameTime);
 		//-------------------//
 
 		Camera::boundCamera->ComputeMatrices();
 
-		time += deltaTime;
+		gameTime += deltaTime;
 		
 		Model::DrawAll();
 		Skybox::Draw();

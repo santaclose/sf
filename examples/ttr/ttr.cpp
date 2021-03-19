@@ -6,6 +6,7 @@
 #include "../../src/ModelReference.h"
 #include "../../src/Math.h"
 #include "../../src/Camera.h"
+#include "../../src/Input.h"
 #include "errt.h"
 #include <iostream>
 
@@ -34,8 +35,7 @@ namespace User
 	Material whiteMaterial;
 	Material blackMaterial;
 
-	//Camera theCamera = Camera(1.7777777777777, 10, 0.1, 10000.0);
-	Camera theCamera = Camera(1.7777777777777, 5, 0.1, 10000.0);
+	Camera* theCamera;
 
 	float animation1A = 0.36, animation2A = 0.36;
 	float animation1B = 0.62, animation2B = 0.62;
@@ -45,30 +45,36 @@ namespace User
 	Model errt[UNIQUE_COUNT];
 	ModelReference* errts;
 
-
-	float tFreq = 0.2;
-	float tStrength = 4.0;
-	float zFrequency = 0.2;
-	float xFrequency = 0.2;
-	float zWaveStrength = 4.0;
-	float xWaveStrength = 4.0;
+	float tFreq = 0.00559973;
+	float tStrength = 12.4;
+	float zFrequency = 0.00559973;
+	float xFrequency = 0.00559973;
+	float zWaveStrength = 12.4;
+	float xWaveStrength = 12.4;
 	//float zWaveStrength = 10.0;
 	//float xWaveStrength = 10.0;
 
 	float cameraRot = 0.0;
 
-	float tSpeed = 0.1;
-	float speed = 0.1;
+	float tSpeed = 0.1231;
+	float speed = 0.1231;
 	//float speed = 0.2;
-	float posY = 0.0f;
+	float posY = 50.0f;
 	float cameraRadius = 650.0f;
 
 	int selectedVariable = 0;
 
 	void Game::Initialize()
 	{
-		theCamera.SetPosition(-15, 15, 5);
-		theCamera.SetRotation(-0.1, -0.4, 0);
+		CameraSpecs cs;
+		cs.aspectRatio = 1.7777777;
+		cs.fieldOfView = 0.5f;
+		cs.nearClippingPlane = 0.01f;
+		cs.farClippingPlane = 1000.0f;
+		theCamera = new Camera(cs);
+
+		theCamera->SetPosition(-15, 15, 5);
+		theCamera->SetRotation(-0.1, -0.4, 0);
 
 		colorShader.CreateFromFiles("assets/shaders/pbrV.shader", "examples/ttr/solidColorF.shader");
 
@@ -112,7 +118,7 @@ namespace User
 
 	void Game::Terminate()
 	{
-
+		delete theCamera;
 	}
 
 	inline void Animate(Entity& entity, float time, float deltaTime)
@@ -138,6 +144,38 @@ namespace User
 
 	void Game::OnUpdate(float deltaTime, float time)
 	{
+		if (Input::KeyDown(Input::KeyCode::M))
+			glPolygonMode(GL_FRONT, GL_POINT);
+		else if (Input::KeyDown(Input::KeyCode::N))
+			glPolygonMode(GL_FRONT, GL_LINE);
+		else if (Input::KeyDown(Input::KeyCode::B))
+			glPolygonMode(GL_FRONT, GL_FILL);
+		else if (Input::KeyDown(Input::KeyCode::Right))
+			selectedVariable++;
+		else if (Input::KeyDown(Input::KeyCode::Left))
+			selectedVariable--;
+
+		float scrollValue = Input::MouseScrollUp() ? 1.0f : (Input::MouseScrollDown() ? -1.0f : 0.0f);
+		if (scrollValue != 0.0f)
+		{
+			switch (selectedVariable % 3)
+			{
+			case 0:
+				tFreq += scrollValue * 0.0012;
+				std::cout << "new freq: " << tFreq << std::endl;
+				break;
+			case 1:
+				tStrength += scrollValue * 0.7;
+				std::cout << "new strength: " << tStrength << std::endl;
+				break;
+			case 2:
+				tSpeed += scrollValue * 0.0007;
+				std::cout << "new speed: " << tSpeed << std::endl;
+				break;
+
+			}
+		}
+
 		cameraRot = time * 0.01;
 
 		zFrequency = glm::mix(zFrequency, tFreq, deltaTime * LERP_TIME);
@@ -147,11 +185,11 @@ namespace User
 		speed = glm::mix(speed, tSpeed, deltaTime * LERP_TIME);
 
 		glm::vec3 cameraPos(cos(cameraRot) * cameraRadius, posY, sin(cameraRot) * cameraRadius);
-		cameraRadius += deltaTime*10.0;
-		posY += deltaTime;
+		//cameraRadius += deltaTime*10.0;
+		//posY += deltaTime;
 		
-		theCamera.SetPosition(cameraPos);
-		theCamera.LookAt(glm::vec3(0.0,0.0,0.0), glm::vec3(0.0,1.0,0.0));
+		theCamera->SetPosition(cameraPos);
+		theCamera->LookAt(glm::vec3(0.0,0.0,0.0), glm::vec3(0.0,1.0,0.0));
 
 		for (int i = 0; i < UNIQUE_COUNT; i++)
 		{
@@ -162,58 +200,5 @@ namespace User
 				Animate(errts[j + i * COPY_COUNT], time, deltaTime);
 			}
 		}
-	}
-
-	void Game::OnKey(int key, int action)
-	{
-		if (action == GLFW_PRESS)
-		{
-			switch (key)
-			{
-			case GLFW_KEY_M:
-				glPolygonMode(GL_FRONT, GL_POINT);
-				break;
-			case GLFW_KEY_N:
-				glPolygonMode(GL_FRONT, GL_LINE);
-				break;
-			case GLFW_KEY_B:
-				glPolygonMode(GL_FRONT, GL_FILL);
-				break;
-			case GLFW_KEY_RIGHT:
-				selectedVariable++;
-				break;
-			case GLFW_KEY_LEFT:
-				selectedVariable--;
-				break;
-			}
-		}
-	}
-
-	void Game::OnMouseScroll(double xoffset, double yoffset)
-	{
-
-		switch (selectedVariable % 3)
-		{
-		case 0:
-			tFreq += yoffset * 0.0012;
-			std::cout << "new freq: " << tFreq << std::endl;
-			break;
-		case 1:
-			tStrength += yoffset * 0.7;
-			std::cout << "new strength: " << tStrength << std::endl;
-			break;
-		case 2:
-			tSpeed += yoffset * 0.0007;
-			std::cout << "new speed: " << tSpeed << std::endl;
-			break;
-
-		}
-
-		/*xWaveStrength += yoffset * 0.7;
-		zWaveStrength += yoffset * 0.7;*/
-	}
-
-	void Game::OnMouseMove(double xpos, double ypos, const glm::vec2& mousePosDelta)
-	{
 	}
 }

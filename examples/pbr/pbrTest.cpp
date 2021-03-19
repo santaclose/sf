@@ -7,8 +7,13 @@
 #include "../../src/ModelReference.h"
 #include "../../src/Math.h"
 #include "../../src/Skybox.h"
+#include "../../src/Input.h"
 #include <iostream>
 
+#define MOVE_SENSITIVITY 0.003
+#define SCROLL_SENSITIVITY 0.06
+#define SPEED 15.0f
+#define MODEL_OFFSET 50.0
 
 namespace User
 {
@@ -36,13 +41,11 @@ namespace User
 	Cubemap envCubemap;
 	Cubemap irradianceCubemap;
 
-#define MODEL_OFFSET 50.0
 	std::vector<Model*> models;
 	int selectedModel = 0;
 
 	void Game::Initialize()
 	{
-
 		CameraSpecs cs;
 		cs.aspectRatio = 16.0f / 9.0f;
 		cs.farClippingPlane = 100.0f;
@@ -86,10 +89,6 @@ namespace User
 		models.back() = new Model();
 		models.back()->CreateFromFile("examples/pbr/gltf/DamagedHelmet/DamagedHelmet.gltf");
 		models.back()->SetMaterial(&damagedHelmetMaterial);
-		models.emplace_back();
-		models.back() = new Model();
-		models.back()->CreateFromFile("examples/pbr/bb.fbx");
-		models.back()->SetMaterial(&sciFiHelmetMaterial);
 
 		for (int i = 0; i < models.size(); i++)
 		{
@@ -108,60 +107,42 @@ namespace User
 		camera->LookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 	}
 
-#define SPEED 15.0f
 	void Game::OnUpdate(float deltaTime, float time)
 	{
+
+		if (Input::KeyDown(Input::KeyCode::M))
+			glPolygonMode(GL_FRONT, GL_POINT);
+		else if (Input::KeyDown(Input::KeyCode::N))
+			glPolygonMode(GL_FRONT, GL_LINE);
+		else if (Input::KeyDown(Input::KeyCode::B))
+			glPolygonMode(GL_FRONT, GL_FILL);
+		else if (Input::KeyDown(Input::KeyCode::Right))
+		{
+			models[selectedModel]->SetScale(0.0);
+			selectedModel++;
+			selectedModel %= models.size();
+			models[selectedModel]->SetScale(1.0);
+			gimbal.SetPosition(glm::vec3(selectedModel * MODEL_OFFSET, 0.0, 0.0));
+		}
+		else if (Input::KeyDown(Input::KeyCode::Left))
+		{
+			models[selectedModel]->SetScale(0.0);
+			selectedModel--;
+			selectedModel %= models.size();
+			models[selectedModel]->SetScale(1.0);
+			gimbal.SetPosition(glm::vec3(selectedModel * MODEL_OFFSET, 0.0, 0.0));
+		}
+		cameraDistance -= SCROLL_SENSITIVITY * Input::MouseScrollUp() ? 1.0f : 0.0f;
+		cameraDistance += SCROLL_SENSITIVITY * Input::MouseScrollDown() ? 1.0f : 0.0f;
+
+		targetGimbalRotation.y -= Input::MousePosDeltaX() * MOVE_SENSITIVITY;
+		targetGimbalRotation.x += Input::MousePosDeltaY() * MOVE_SENSITIVITY;
+
 		gimbal.SetRotation(glm::slerp(gimbal.GetRotation(), glm::fquat(targetGimbalRotation), deltaTime * SPEED));
 		camera->SetPosition(gimbal.GetPosition() + gimbal.Forward() * cameraDistance);
 		camera->LookAt(gimbal.GetPosition(), glm::vec3(0.0, 1.0, 0.0));
 
 		models[selectedModel]->SetRotation(glm::vec3(0.0, time / 20.0, 0.0));
-	}
-
-	void Game::OnKey(int key, int action)
-	{
-		if (action == GLFW_PRESS)
-		{
-			switch (key)
-			{
-			case GLFW_KEY_M:
-				glPolygonMode(GL_FRONT, GL_POINT);
-				break;
-			case GLFW_KEY_N:
-				glPolygonMode(GL_FRONT, GL_LINE);
-				break;
-			case GLFW_KEY_B:
-				glPolygonMode(GL_FRONT, GL_FILL);
-				break;
-			case GLFW_KEY_RIGHT:
-				models[selectedModel]->SetScale(0.0);
-				selectedModel++;
-				selectedModel %= models.size();
-				models[selectedModel]->SetScale(1.0);
-				gimbal.SetPosition(glm::vec3(selectedModel * MODEL_OFFSET, 0.0, 0.0));
-				break;
-			case GLFW_KEY_LEFT:
-				models[selectedModel]->SetScale(0.0);
-				selectedModel--;
-				selectedModel %= models.size();
-				models[selectedModel]->SetScale(1.0);
-				gimbal.SetPosition(glm::vec3(selectedModel * MODEL_OFFSET, 0.0, 0.0));
-				break;
-			}
-		}
-	}
-
-#define MOVE_SENSITIVITY 0.003
-#define SCROLL_SENSITIVITY 0.06
-	void Game::OnMouseScroll(double xoffset, double yoffset)
-	{
-		cameraDistance -= SCROLL_SENSITIVITY * yoffset;
-	}
-
-	void Game::OnMouseMove(double xpos, double ypos, const glm::vec2& mousePosDelta)
-	{
-		targetGimbalRotation.y -= mousePosDelta.x * MOVE_SENSITIVITY;
-		targetGimbalRotation.x += mousePosDelta.y * MOVE_SENSITIVITY;
 	}
 	void Game::Terminate()
 	{

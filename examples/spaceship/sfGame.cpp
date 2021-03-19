@@ -131,45 +131,5 @@ namespace User
 		theCamera->LookAt(ship.GetPosition(), ship.Up());
 		lookBackCamera->SetPosition(ship.GetPosition() + ship.Forward() * 4.0);
 		lookBackCamera->LookAt(ship.GetPosition(), ship.Up());
-
-		/*for (int i = 0; i < COUNT; i++)
-		{
-			things[i].SetRotation(things[i].GetRotation() * glm::fquat(glm::vec3(0, 0, sqrt(time) * 0.00001 * i)));
-		}*/
-	}
-
-	void Game::OnKey(int key, int action)
-	{
-		if (action == GLFW_PRESS)
-		{
-			switch (key)
-			{
-			case GLFW_KEY_M:
-				glPolygonMode(GL_FRONT, GL_POINT);
-				break;
-			case GLFW_KEY_N:
-				glPolygonMode(GL_FRONT, GL_LINE);
-				break;
-			case GLFW_KEY_B:
-				glPolygonMode(GL_FRONT, GL_FILL);
-				break;
-			case GLFW_KEY_SPACE:
-				if (Camera::boundCamera == theCamera)
-					lookBackCamera->Bind();
-				else
-					theCamera->Bind();
-				break;
-			}
-		}
-	}
-
-	void Game::OnMouseScroll(double xoffset, double yoffset)
-	{
-		shipSpeed += yoffset;
-	}
-
-	void Game::OnMouseMove(double xpos, double ypos, const glm::vec2& mousePosDelta)
-	{
-		targetShipRotation *= glm::fquat(glm::vec3(mousePosDelta[1] * SENSITIVITY, 0.0, -mousePosDelta[0] * SENSITIVITY));
 	}
 }

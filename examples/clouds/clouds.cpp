@@ -8,6 +8,7 @@
 #include "../../src/ModelReference.h"
 #include "../../src/Math.h"
 #include "../../src/Camera.h"
+#include "../../src/Input.h"
 
 #define PI 3.14159265358979323
 #define SENSITIVITY 0.007
@@ -16,9 +17,11 @@
 #define MODEL_COUNT_PER_CLOUD 30
 #define SPAWN_RANGE 400.0
 
+#define MOUSE_SENSITIVITY 1.0
+
 namespace User
 {
-	Camera theCamera = Camera(1.7777777777777, 40.0, 0.1, 1000.0);
+	Camera* theCamera;
 
 	Model sphereInstance;
 	Shader theShader;
@@ -36,13 +39,20 @@ namespace User
 
 	void Game::Initialize()
 	{
+		CameraSpecs cs;
+		cs.aspectRatio = 1.77777777;
+		cs.fieldOfView = glm::radians(40.0f);
+		cs.nearClippingPlane = 0.1f;
+		cs.farClippingPlane = 1000.0f;
+		theCamera = new Camera(cs);
+
 		glPolygonMode(GL_FRONT, GL_POINT);
 		theShader.CreateFromFiles("examples/clouds/vertex.shader", "examples/clouds/fragment.shader");
 
 		theMaterial.CreateFromShader(&theShader);
 		theMaterial.SetUniform("icolor", &materialColor.x, Material::UniformType::_Color);
 
-		sphereInstance.CreateFromGLTF("examples/clouds/icosphere.gltf");
+		sphereInstance.CreateFromFile("examples/clouds/icosphere.gltf");
 		sphereInstance.SetMaterial(&theMaterial);
 		sphereInstance.SetPosition(glm::vec3(0.0, 0.0, 200.0));
 
@@ -52,13 +62,14 @@ namespace User
 			clouds[i].Create(MODEL_COUNT_PER_CLOUD, sphereInstance, glm::vec3(-50.0 + i * 5.0, 0.0, 0.0));
 		}
 
-		theCamera.SetPosition(0.0, 0.0, 100.0);
-		theCamera.LookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+		theCamera->SetPosition(0.0, 0.0, 100.0);
+		theCamera->LookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 	}
 
 	void Game::Terminate()
 	{
 		delete[] spheres;
+		delete theCamera;
 	}
 
 	void Game::OnUpdate(float deltaTime, float time)
@@ -68,56 +79,35 @@ namespace User
 			int index = Math::RandomInt(CLOUD_COUNT);
 			clouds[index].Move(glm::vec3(Math::Random() * 20.0 - 10.0, 0.0, 0.0));
 		}*/
+
+		if (Input::KeyDown(Input::KeyCode::M))
+			glPolygonMode(GL_FRONT, GL_POINT);
+		else if (Input::KeyDown(Input::KeyCode::N))
+			glPolygonMode(GL_FRONT, GL_LINE);
+		else if (Input::KeyDown(Input::KeyCode::B))
+			glPolygonMode(GL_FRONT, GL_FILL);
+		else if (Input::KeyDown(Input::KeyCode::Right))
+		{
+			selectedCloud++;
+			if (selectedCloud == CLOUD_COUNT)
+				selectedCloud = 0;
+			cursor = clouds[selectedCloud].GetPosition();
+		}
+		else if (Input::KeyDown(Input::KeyCode::Left))
+		{
+			selectedCloud--;
+			if (selectedCloud < 0)
+				selectedCloud = CLOUD_COUNT - 1;
+			cursor = clouds[selectedCloud].GetPosition();
+		}
+
+
+		cursor += glm::vec3(Input::MousePosDeltaX() * MOUSE_SENSITIVITY, -Input::MousePosDeltaY() * MOUSE_SENSITIVITY, 0.0);
+		clouds[selectedCloud].Move(cursor);
+
 		for (int i = 0; i < CLOUD_COUNT; i++)
 		{
 			clouds[i].OnUpdate(deltaTime);
 		}
-	}
-
-	void Game::OnKey(int key, int action)
-	{
-		if (action == GLFW_PRESS)
-		{
-			switch (key)
-			{
-			case GLFW_KEY_M:
-				glPolygonMode(GL_FRONT, GL_POINT);
-				break;
-			case GLFW_KEY_N:
-				glPolygonMode(GL_FRONT, GL_LINE);
-				break;
-			case GLFW_KEY_B:
-				glPolygonMode(GL_FRONT, GL_FILL);
-				break;
-			case GLFW_KEY_RIGHT:
-				selectedCloud++;
-				if (selectedCloud == CLOUD_COUNT)
-					selectedCloud = 0;
-				cursor = clouds[selectedCloud].GetPosition();
-				break;
-			case GLFW_KEY_LEFT:
-				selectedCloud--;
-				if (selectedCloud < 0)
-					selectedCloud = CLOUD_COUNT - 1;
-				cursor = clouds[selectedCloud].GetPosition();
-				break;
-			}
-		}
-	}
-
-	void Game::OnMouseScroll(double xoffset, double yoffset)
-	{
-
-	}
-
-	#define MOUSE_SENSITIVITY 1.0
-	void Game::OnMouseMove(double xpos, double ypos, const glm::vec2& mousePosDelta)
-	{
-		cursor += glm::vec3(mousePosDelta.x * MOUSE_SENSITIVITY, -mousePosDelta.y * MOUSE_SENSITIVITY, 0.0);
-		clouds[selectedCloud].Move(cursor);
-		/*windDirection.x = xpos;
-		windDirection.y = -ypos;
-		windDirection = glm::normalize(windDirection);*/
-		//spheres[0].SetPosition(spheres[0].GetPosition() + glm::vec3(MOUSE_SENSITIVITY * mousePosDelta.x, -MOUSE_SENSITIVITY * mousePosDelta.y, 0.0));
 	}
 }

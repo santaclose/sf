@@ -15,6 +15,7 @@ float gameTime = 0.0;
 double lastFrameTime = 0.0;
 double currentFrameTime = 0.0;
 double deltaTime = 0.0;
+bool deltaTimeLock = true;
 
 #include "../user/Game.h"
 //#include "Input.inl"
@@ -114,7 +115,13 @@ int main(void)
 	/* Loop until the user closes the window */
 	while (!glfwWindowShouldClose(window))
 	{
-		currentFrameTime = glfwGetTime();
+		if (deltaTimeLock)
+		{
+			currentFrameTime = lastFrameTime = glfwGetTime();
+			deltaTimeLock = false;
+		}
+		else
+			currentFrameTime = glfwGetTime();
 		deltaTime = currentFrameTime - lastFrameTime;
 
 		/* Render here */
@@ -141,7 +148,9 @@ int main(void)
 		lastFrameTime = currentFrameTime;
 	}
 
+	//-------------------//
 	User::Game::Terminate();
+	//-------------------//
 
 	glfwTerminate();
 	return 0;

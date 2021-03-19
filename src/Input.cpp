@@ -10,6 +10,7 @@ namespace Input {
 
 	float lastMousePos[2] = { 0.0f, 0.0f };
 	float mousePos[2] = { 0.0f, 0.0f };
+	bool mousePosDeltaLock = true;
 
 	float mouseScroll[2] = { 0.0f, 0.0f };
 
@@ -105,8 +106,17 @@ void Input::UpdateCharacter(unsigned int character)
 
 void Input::UpdateMousePosition(double xpos, double ypos)
 {
-	mousePos[0] = xpos;
-	mousePos[1] = ypos;
+	if (mousePosDeltaLock)
+	{
+		mousePos[0] = lastMousePos[0] = xpos;
+		mousePos[1] = lastMousePos[1] = ypos;
+		mousePosDeltaLock = false;
+	}
+	else
+	{
+		mousePos[0] = xpos;
+		mousePos[1] = ypos;
+	}
 }
 
 void Input::UpdateMouseScroll(float xoffset, float yoffset)

@@ -60,6 +60,9 @@ namespace User
 		ship.SetMaterial(&uvMaterial);
 		targetShipRotation = ship.GetRotation();
 
+		theCamera->SetPosition(ship.GetPosition() - (ship.Forward() * 4.0) + (ship.Up()));
+		theCamera->LookAt(ship.GetPosition(), ship.Up());
+
 		for (unsigned int i = 0; i < UNIQUE_COUNT; i++)
 		{
 			User::Models::seed = i;
@@ -96,6 +99,8 @@ namespace User
 				things[i - UNIQUE_COUNT].SetRotation(glm::fquat(glm::vec3(0.0, glm::radians(180.0), glm::radians(Math::Random() * 360.0))));
 			}
 		}
+		//std::cout << theCamera->GetPosition().x << ", " << theCamera->GetPosition().y << ", " << theCamera->GetPosition().z << std::endl;
+		//std::cout << ship.GetPosition().x << ", " << ship.GetPosition().y << ", " << ship.GetPosition().z << std::endl;
 	}
 
 	void Game::Terminate()
@@ -125,10 +130,11 @@ namespace User
 		targetShipRotation *= glm::fquat(glm::vec3(Input::MousePosDeltaY() * SENSITIVITY, 0.0, -Input::MousePosDeltaX() * SENSITIVITY));
 
 		ship.SetPosition(ship.GetPosition() + ship.Forward() * shipSpeed * deltaTime);
-
 		ship.SetRotation(targetShipRotation);
+
 		theCamera->SetPosition(glm::mix(theCamera->GetPosition(), ship.GetPosition() - (ship.Forward() * 4.0) + (ship.Up()), (float)(deltaTime * 2.0)));
 		theCamera->LookAt(ship.GetPosition(), ship.Up());
+
 		lookBackCamera->SetPosition(ship.GetPosition() + ship.Forward() * 4.0);
 		lookBackCamera->LookAt(ship.GetPosition(), ship.Up());
 	}

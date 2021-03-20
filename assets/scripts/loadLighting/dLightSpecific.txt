@@ -1,2 +1,0 @@
-		vec3 Li = normalize(-dLightDir[i]); //-lights[i].direction;
-		vec3 Lradiance = dLightRad[i];

@@ -31,7 +31,7 @@ class Model : public Object
 	void CompleteFromVectors();
 
 public:
-	void CreateFromFile(const std::string& filePath, float scaleFactor = 1.0f, bool smooth = true);
+	void CreateFromGltf(unsigned int gltfID, unsigned int meshIndex);
 	void CreateFromCode(void (*generateModelFunc)(), bool smooth = true);
 
 	void SetMaterial(Material* theMaterial);

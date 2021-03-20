@@ -1,17 +1,23 @@
 #include "Texture.h"
 #include "glad/glad.h"
+#include "GltfController.h"
 #include <string>
 #include <iostream>
 
 #include <stb_image.h>
 
+void Texture::CreateFromGltf(unsigned int gltfID, unsigned int textureIndex)
+{
+	GltfController::Texture(gltfID, textureIndex, m_gl_id, m_width, m_height);
+}
+
 void Texture::CreateFromFile(const std::string& path, Type t)
 {
+	unsigned char* m_localBuffer = nullptr;
+	int m_BPP = 0;
 	m_gl_id = 0;
-	m_localBuffer = nullptr;
 	m_width = 0;
 	m_height = 0;
-	m_BPP = 0;
 
 	stbi_set_flip_vertically_on_load(1);
 

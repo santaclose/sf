@@ -6,15 +6,13 @@ class Texture
 {
 private:
 	unsigned int m_gl_id;
-	unsigned char* m_localBuffer;
-	int m_width, m_height, m_BPP;
+	int m_width, m_height;
 public:
 	enum Type {
 		Albedo = 0, Normals = 1, Roughness = 2, Metallic = 3
-		//ColorData, NonColorData
 	};
 
-	//Texture(const std::string& path, Type t);
+	void CreateFromGltf(unsigned int gltfID, unsigned int textureIndex);
 	void CreateFromFile(const std::string& path, Type t);
 	~Texture();
 

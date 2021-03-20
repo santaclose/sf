@@ -21,8 +21,9 @@ public:
 	~Shader();
 	void CreateFromFiles(const std::string& vertexShaderPath, const std::string& fragmentShaderPath);
 	void Bind() const;
-	void SetUniformMatrix4fv(const std::string& name, const float* pointer);
-	void SetUniform3fv(const std::string& name, const float* pointer);
-	void SetUniform4fv(const std::string& name, const float* pointer);
+	void SetUniformMatrix4fv(const std::string& name, const float* pointer, unsigned int number = 1);
+	void SetUniform1fv(const std::string& name, const float* pointer, unsigned int number = 1);
+	void SetUniform3fv(const std::string& name, const float* pointer, unsigned int number = 1);
+	void SetUniform4fv(const std::string& name, const float* pointer, unsigned int number = 1);
 	void SetUniform1i(const std::string& name, const int value);
 };

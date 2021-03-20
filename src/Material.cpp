@@ -27,7 +27,8 @@ void Material::Bind()
 	{
 		switch (m_uniformTypes[i])
 		{
-		case UniformType::_Texture: {
+		case UniformType::_Texture:
+		{
 			if (m_uniformData[i] == nullptr) // clear uniform if not provided
 			{
 				glActiveTexture(GL_TEXTURE0 + textureCounter);
@@ -40,8 +41,10 @@ void Material::Bind()
 			m_shader->SetUniform1i(m_uniformNames[i], textureCounter);
 
 			textureCounter++;
-			break; }
-		case UniformType::_Cubemap: {
+			break;
+		}
+		case UniformType::_Cubemap:
+		{
 			if (m_uniformData[i] == nullptr) // clear uniform if not provided
 			{
 				glActiveTexture(GL_TEXTURE0 + textureCounter);
@@ -54,10 +57,18 @@ void Material::Bind()
 			m_shader->SetUniform1i(m_uniformNames[i], cubemapCounter);
 
 			cubemapCounter++;
-			break; }
-		case UniformType::_Color: {
+			break;
+		}
+		case UniformType::_Color:
+		{
 			m_shader->SetUniform4fv(m_uniformNames[i], (float*)m_uniformData[i]);
-			break; }
+			break;
+		}
+		case UniformType::_Boolean:
+		{
+			m_shader->SetUniform1i(m_uniformNames[i], (int)m_uniformData[i]);
+			break;
+		}
 		}
 	}
 	boundMaterial = this;

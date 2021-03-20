@@ -1,6 +1,6 @@
 #include "Model.h"
 #include "ModelReference.h"
-#include "ModelLoader.h"
+#include "GltfController.h"
 #include "Camera.h"
 #include "Texture.h"
 #include <ml.h>
@@ -47,15 +47,9 @@ void Model::CompleteFromVectors()
 	models.push_back(this);
 }
 
-void Model::CreateFromFile(const std::string& filePath, float scaleFactor, bool smooth)
+void Model::CreateFromGltf(unsigned int gltfID, unsigned int meshIndex)
 {
-	std::string ext = filePath.substr(filePath.find_last_of(".") + 1);
-
-	if (ext == "gltf" || ext == "glb")
-		ModelLoader::LoadGltfFile(m_vertexVector, m_indexVector, filePath, scaleFactor, ext == "glb");
-	else
-		std::cout << "[Model] Only gltf files supported\n";
-
+	GltfController::Model(gltfID, meshIndex, m_vertexVector, m_indexVector);
 	CompleteFromVectors();
 }
 

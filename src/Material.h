@@ -9,6 +9,7 @@ class Material
 {
 public:
 	enum UniformType {
+		_Boolean,
 		_Texture,
 		_Cubemap,
 		_Color

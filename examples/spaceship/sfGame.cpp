@@ -7,6 +7,7 @@
 #include "../../src/Math.h"
 #include "../../src/Camera.h"
 #include "../../src/Input.h"
+#include "../../src/GltfController.h"
 #include "errt.h"
 
 #define SENSITIVITY 0.007
@@ -56,7 +57,8 @@ namespace User
 		colorsMaterial.CreateFromShader(&colorShader);
 		noiseMaterial.CreateFromShader(&noiseShader);
 
-		ship.CreateFromFile("examples/spaceship/ship.glb", 0.3, false);
+		int gltfid = GltfController::Load("examples/spaceship/ship.glb");
+		ship.CreateFromGltf(gltfid, 0);
 		ship.SetMaterial(&uvMaterial);
 		targetShipRotation = ship.GetRotation();
 

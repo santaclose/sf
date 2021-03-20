@@ -8,6 +8,7 @@
 #include "../../src/Math.h"
 #include "../../src/Skybox.h"
 #include "../../src/Input.h"
+#include "../../src/GltfController.h"
 #include <iostream>
 
 #define MOVE_SENSITIVITY 0.003
@@ -21,6 +22,7 @@ namespace User
 	Camera* camera;
 	Entity gimbal;
 	float cameraDistance = 3.0;
+	bool rotationEnabled = false;
 
 	Shader pbrShader;
 
@@ -37,9 +39,19 @@ namespace User
 	Texture damagedHelmetMetallic;
 	Texture damagedHelmetEmissive;
 
-	HdrTexture envTexture;
-	Cubemap envCubemap;
-	Cubemap irradianceCubemap;
+	Material asdfMaterial;
+	Texture asdfTexture;
+
+	std::vector<glm::vec3> dirLightsDir = { {0.0f, -0.5f, -1.0f} };
+	std::vector<glm::vec3> dirLightsRad = { {1.0f, 0.0f, 1.0f} };
+
+	std::vector<glm::vec3> pLightsPos = { {1.0f, 0.0f, 0.0f}, {-1.0f, 0.0f, 0.0f} };
+	std::vector<glm::vec3> pLightsRad = { {1.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 0.0f} };
+	std::vector<float> pLightsRa = { 1.0f, 1.0f };
+
+	//HdrTexture envTexture;
+	//Cubemap envCubemap;
+	//Cubemap irradianceCubemap;
 
 	std::vector<Model*> models;
 	int selectedModel = 0;
@@ -53,9 +65,20 @@ namespace User
 		cs.fieldOfView = glm::radians(90.0f);
 		camera = new Camera(cs);
 
-		pbrShader.CreateFromFiles("assets/shaders/pbrV.shader", "assets/shaders/gpbrF.shader");
+		pbrShader.CreateFromFiles("assets/shaders/pbrV.shader", "assets/shaders/jpbrF.shader");
+		pbrShader.Bind();
+		pbrShader.SetUniform3fv("dLightDir", &(dirLightsDir[0].x), dirLightsDir.size());
+		pbrShader.SetUniform3fv("dLightRad", &(dirLightsRad[0].x), dirLightsRad.size());
+		pbrShader.SetUniform3fv("pLightPos", &(pLightsPos[0].x), pLightsPos.size());
+		pbrShader.SetUniform3fv("pLightRad", &(pLightsRad[0].x), pLightsRad.size());
+		pbrShader.SetUniform1fv("pLightRa", &(pLightsRa[0]), pLightsRa.size());
 
 		sciFiHelmetMaterial.CreateFromShader(&pbrShader);
+		sciFiHelmetMaterial.SetUniform("useAlbedoTexture", (void*)true, Material::UniformType::_Boolean);
+		sciFiHelmetMaterial.SetUniform("useNormalTexture", (void*)true, Material::UniformType::_Boolean);
+		sciFiHelmetMaterial.SetUniform("useRoughnessTexture", (void*)true, Material::UniformType::_Boolean);
+		sciFiHelmetMaterial.SetUniform("useMetalnessTexture", (void*)true, Material::UniformType::_Boolean);
+		sciFiHelmetMaterial.SetUniform("useEmissiveTexture", (void*)true, Material::UniformType::_Boolean);
 		sciFiHelmetAlbedo.CreateFromFile("examples/pbr/gltf/SciFiHelmet/albedo.png", Texture::Type::Albedo);
 		sciFiHelmetNormalmap.CreateFromFile("examples/pbr/gltf/SciFiHelmet/normals.png", Texture::Type::Normals);
 		sciFiHelmetRoughness.CreateFromFile("examples/pbr/gltf/SciFiHelmet/roughness.png", Texture::Type::Roughness);
@@ -67,6 +90,11 @@ namespace User
 		sciFiHelmetMaterial.SetUniform("emissiveTexture", nullptr, Material::UniformType::_Texture);
 
 		damagedHelmetMaterial.CreateFromShader(&pbrShader);
+		damagedHelmetMaterial.SetUniform("useAlbedoTexture", (void*)true, Material::UniformType::_Boolean);
+		damagedHelmetMaterial.SetUniform("useNormalTexture", (void*)true, Material::UniformType::_Boolean);
+		damagedHelmetMaterial.SetUniform("useRoughnessTexture", (void*)true, Material::UniformType::_Boolean);
+		damagedHelmetMaterial.SetUniform("useMetalnessTexture", (void*)true, Material::UniformType::_Boolean);
+		damagedHelmetMaterial.SetUniform("useEmissiveTexture", (void*)true, Material::UniformType::_Boolean);
 		damagedHelmetAlbedo.CreateFromFile("examples/pbr/gltf/DamagedHelmet/albedo.jpg", Texture::Type::Albedo);
 		damagedHelmetNormalmap.CreateFromFile("examples/pbr/gltf/DamagedHelmet/normals.jpg", Texture::Type::Normals);
 		damagedHelmetRoughness.CreateFromFile("examples/pbr/gltf/DamagedHelmet/roughness.png", Texture::Type::Roughness);
@@ -78,21 +106,43 @@ namespace User
 		damagedHelmetMaterial.SetUniform("metalnessTexture", &damagedHelmetMetallic, Material::UniformType::_Texture);
 		damagedHelmetMaterial.SetUniform("emissiveTexture", &damagedHelmetEmissive, Material::UniformType::_Texture);
 
-		envCubemap.CreateFromFiles("examples/pbr/cubemap/y", ".jpg");
-		Skybox::Generate(&envCubemap);
+		asdfMaterial.CreateFromShader(&pbrShader);
+		asdfMaterial.SetUniform("useAlbedoTexture", (void*)true, Material::UniformType::_Boolean);
+		asdfMaterial.SetUniform("useNormalTexture", (void*)false, Material::UniformType::_Boolean);
+		asdfMaterial.SetUniform("useRoughnessTexture", (void*)false, Material::UniformType::_Boolean);
+		asdfMaterial.SetUniform("useMetalnessTexture", (void*)false, Material::UniformType::_Boolean);
+		asdfMaterial.SetUniform("useEmissiveTexture", (void*)false, Material::UniformType::_Boolean);
+
+		//envCubemap.CreateFromFiles("examples/pbr/cubemap/y", ".jpg");
+		//Skybox::Generate(&envCubemap);
+
+		int gltfid;
 
 		models.emplace_back();
 		models.back() = new Model();
-		models.back()->CreateFromFile("examples/pbr/gltf/SciFiHelmet/SciFiHelmet.gltf");
+		gltfid = GltfController::Load("examples/pbr/gltf/SciFiHelmet/SciFiHelmet.gltf");
+		models.back()->CreateFromGltf(gltfid, 0);
 		models.back()->SetMaterial(&sciFiHelmetMaterial);
+
 		models.emplace_back();
 		models.back() = new Model();
-		models.back()->CreateFromFile("examples/pbr/gltf/DamagedHelmet/DamagedHelmet.gltf");
+		gltfid = GltfController::Load("examples/pbr/gltf/DamagedHelmet/DamagedHelmet.gltf");
+		models.back()->CreateFromGltf(gltfid, 0);
 		models.back()->SetMaterial(&damagedHelmetMaterial);
+
+		gltfid = GltfController::Load("examples/pbr/gltf/asdf/asdf.glb");
+		asdfTexture.CreateFromGltf(gltfid, 0);
+		asdfMaterial.SetUniform("albedoTexture", &asdfTexture, Material::UniformType::_Texture);
+
 		models.emplace_back();
 		models.back() = new Model();
-		models.back()->CreateFromFile("examples/pbr/gltf/asdf/asdf.glb");
-		models.back()->SetMaterial(&damagedHelmetMaterial);
+		models.back()->CreateFromGltf(gltfid, 0);
+		models.back()->SetMaterial(&asdfMaterial);
+
+		models.emplace_back();
+		models.back() = new Model();
+		models.back()->CreateFromGltf(gltfid, 1);
+		models.back()->SetMaterial(&asdfMaterial);
 
 		for (int i = 0; i < models.size(); i++)
 		{
@@ -120,6 +170,8 @@ namespace User
 			glPolygonMode(GL_FRONT, GL_LINE);
 		else if (Input::KeyDown(Input::KeyCode::B))
 			glPolygonMode(GL_FRONT, GL_FILL);
+		else if (Input::KeyDown(Input::KeyCode::Space))
+			rotationEnabled = !rotationEnabled;
 		else if (Input::KeyDown(Input::KeyCode::Right))
 		{
 			models[selectedModel]->SetScale(0.0);
@@ -132,7 +184,7 @@ namespace User
 		{
 			models[selectedModel]->SetScale(0.0);
 			selectedModel--;
-			selectedModel %= models.size();
+			selectedModel = (selectedModel + models.size()) % models.size();
 			models[selectedModel]->SetScale(1.0);
 			gimbal.SetPosition(glm::vec3(selectedModel * MODEL_OFFSET, 0.0, 0.0));
 		}
@@ -146,7 +198,8 @@ namespace User
 		camera->SetPosition(gimbal.GetPosition() + gimbal.Forward() * cameraDistance);
 		camera->LookAt(gimbal.GetPosition(), glm::vec3(0.0, 1.0, 0.0));
 
-		models[selectedModel]->SetRotation(glm::vec3(0.0, time / 20.0, 0.0));
+		if (rotationEnabled)
+			models[selectedModel]->SetRotation(models[selectedModel]->GetRotation() * glm::fquat(glm::vec3(0.0f, 0.07f * deltaTime, 0.0f)));
 	}
 	void Game::Terminate()
 	{

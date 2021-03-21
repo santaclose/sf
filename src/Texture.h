@@ -4,16 +4,19 @@
 
 class Texture
 {
+public:
+	enum Type {
+		Albedo = 0, Normals = 1, Roughness = 2, Metallic = 3, HDR = 4
+	};
+
 private:
 	unsigned int m_gl_id;
 	int m_width, m_height;
-public:
-	enum Type {
-		Albedo = 0, Normals = 1, Roughness = 2, Metallic = 3
-	};
+	Type m_type;
 
+public:
 	void CreateFromGltf(unsigned int gltfID, unsigned int textureIndex);
-	void CreateFromFile(const std::string& path, Type t);
+	void CreateFromFile(const std::string& path, Type type);
 	~Texture();
 
 	void Bind(unsigned int slot = 0) const;

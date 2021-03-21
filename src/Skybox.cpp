@@ -50,25 +50,37 @@ float Skybox::cubeVertices[] = {
 Shader Skybox::shader;
 Cubemap* Skybox::cubemap;
 
-void Skybox::Generate(Cubemap* cubemap)
+void Skybox::SetCubemap(Cubemap* cubemap)
 {
-    glGenVertexArrays(1, &gl_VAO);
-    glGenBuffers(1, &gl_VBO);
+    if (!generated)
+    {
+        glGenVertexArrays(1, &gl_VAO);
+        glGenBuffers(1, &gl_VBO);
 
-    glBindVertexArray(gl_VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, gl_VBO);
-    
-    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), &cubeVertices, GL_STATIC_DRAW);
+        glBindVertexArray(gl_VAO);
+        glBindBuffer(GL_ARRAY_BUFFER, gl_VBO);
 
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), &cubeVertices, GL_STATIC_DRAW);
 
-    glBindVertexArray(0);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
 
-    shader.CreateFromFiles("assets/shaders/skyboxV.shader", "assets/shaders/skyboxF.shader");
-    generated = true;
+        glBindVertexArray(0);
+        generated = true;
+    }
+
+    if (cubemap->IsHDR())
+        shader.CreateFromFiles("assets/shaders/skyboxV.shader", "assets/shaders/skyboxHdrF.shader");
+    else
+        shader.CreateFromFiles("assets/shaders/skyboxV.shader", "assets/shaders/skyboxF.shader");
 
     Skybox::cubemap = cubemap;
+}
+
+void Skybox::SetExposure(float value)
+{
+    shader.Bind();
+    shader.SetUniform1f("exposure", value);
 }
 
 void Skybox::Draw()

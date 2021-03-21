@@ -25,5 +25,6 @@ public:
 	void SetUniform1fv(const std::string& name, const float* pointer, unsigned int number = 1);
 	void SetUniform3fv(const std::string& name, const float* pointer, unsigned int number = 1);
 	void SetUniform4fv(const std::string& name, const float* pointer, unsigned int number = 1);
-	void SetUniform1i(const std::string& name, const int value);
+	void SetUniform1i(const std::string& name, int value);
+	void SetUniform1f(const std::string& name, float value);
 };

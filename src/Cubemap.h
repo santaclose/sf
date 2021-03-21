@@ -10,17 +10,16 @@ class Cubemap
 {
 private:
 	unsigned int m_gl_id;
-
-	static glm::mat4 captureProjection;
-	static glm::mat4 captureViews[];
+	bool m_isHdr;
 
 public:
-	void CreateFromFiles(const std::vector<std::string>& files);
-	void CreateFromFiles(const std::string& name, const std::string& extension);
+	void CreateFromFiles(const std::vector<std::string>& files, bool isHdr = false);
+	void CreateFromFiles(const std::string& name, const std::string& extension, bool isHdr = false);
+	bool IsHDR();
 
-	void CreateFomHDR(const HdrTexture& hdrTexture);
+	//void CreateFomHDR(const HdrTexture& hdrTexture);
+	//void CreateIrradiance(const Cubemap& other);
 
-	void CreateIrradiance(const Cubemap& other);
 	~Cubemap();
 
 	void Bind(unsigned int slot = 0) const;

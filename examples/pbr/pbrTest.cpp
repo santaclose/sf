@@ -50,7 +50,7 @@ namespace User
 	std::vector<float> pLightsRa = { 1.0f, 1.0f };
 
 	//HdrTexture envTexture;
-	//Cubemap envCubemap;
+	Cubemap envCubemap;
 	//Cubemap irradianceCubemap;
 
 	std::vector<Model*> models;
@@ -114,7 +114,10 @@ namespace User
 		asdfMaterial.SetUniform("useEmissiveTexture", (void*)false, Material::UniformType::_Boolean);
 
 		//envCubemap.CreateFromFiles("examples/pbr/cubemap/y", ".jpg");
-		//Skybox::Generate(&envCubemap);
+		//Skybox::SetCubemap(&envCubemap);
+
+		envCubemap.CreateFromFiles("examples/pbr/cubemap/a", ".hdr", true);
+		Skybox::SetCubemap(&envCubemap);
 
 		int gltfid;
 
@@ -163,7 +166,6 @@ namespace User
 
 	void Game::OnUpdate(float deltaTime, float time)
 	{
-
 		if (Input::KeyDown(Input::KeyCode::M))
 			glPolygonMode(GL_FRONT, GL_POINT);
 		else if (Input::KeyDown(Input::KeyCode::N))
@@ -200,6 +202,8 @@ namespace User
 
 		if (rotationEnabled)
 			models[selectedModel]->SetRotation(models[selectedModel]->GetRotation() * glm::fquat(glm::vec3(0.0f, 0.07f * deltaTime, 0.0f)));
+
+		Skybox::SetExposure((glm::sin(time * 0.1f) + 1.0f) * 10.0f);
 	}
 	void Game::Terminate()
 	{

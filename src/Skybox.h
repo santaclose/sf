@@ -13,7 +13,8 @@ class Skybox
 	static Cubemap* cubemap;
 
 public:
-	static void Generate(Cubemap* cubemap);
+	static void SetCubemap(Cubemap* cubemap);
+	static void SetExposure(float value);
 	static void Draw();
 };
 

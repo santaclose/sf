@@ -31,6 +31,9 @@ Shader::Shader() : m_gl_id(-1) {}
 
 void Shader::CreateFromFiles(const std::string& vertexShaderPath, const std::string& fragmentShaderPath)
 {
+	if (m_gl_id != -1)
+		glDeleteProgram(m_gl_id);
+
 	std::ifstream ifs(vertexShaderPath);
 	std::ifstream ifs2(fragmentShaderPath);
 
@@ -97,7 +100,12 @@ void Shader::SetUniform4fv(const std::string& name, const float* pointer, unsign
 {
 	glUniform4fv(GetUniformLocation(name), number, pointer);
 }
-void Shader::SetUniform1i(const std::string& name, const int value)
+void Shader::SetUniform1i(const std::string& name, int value)
 {
 	glUniform1i(GetUniformLocation(name), value);
+}
+
+void Shader::SetUniform1f(const std::string& name, float value)
+{
+	glUniform1f(GetUniformLocation(name), value);
 }

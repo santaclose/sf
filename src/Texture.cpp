@@ -11,7 +11,7 @@ void Texture::CreateFromGltf(unsigned int gltfID, unsigned int textureIndex)
 	GltfController::Texture(gltfID, textureIndex, m_gl_id, m_width, m_height);
 }
 
-void Texture::CreateFromFile(const std::string& path, Type type)
+void Texture::CreateFromFile(const std::string& path, Type type, bool mipmap)
 {
 	m_type = type;
 
@@ -57,17 +57,15 @@ void Texture::CreateFromFile(const std::string& path, Type type)
 	glGenTextures(1, &m_gl_id);
 	glBindTexture(GL_TEXTURE_2D, m_gl_id);
 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mipmap ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	if (m_type == Type::HDR)
 	{
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	}
 	else
 	{
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	}
@@ -85,12 +83,11 @@ void Texture::CreateFromFile(const std::string& path, Type type)
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, m_width, m_height, 0, GL_RED, GL_UNSIGNED_BYTE, standardImgBuffer);
 		break;
 	case Type::HDR:
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, m_width, m_height, 0, GL_RGB, GL_FLOAT, floatImgBuffer);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, m_width, m_height, 0, GL_RGB, GL_FLOAT, floatImgBuffer);
 		break;
 	}
 
-	// mipmapping
-	if (m_type != Type::HDR)
+	if (mipmap)
 		glGenerateMipmap(GL_TEXTURE_2D);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -99,6 +96,12 @@ void Texture::CreateFromFile(const std::string& path, Type type)
 		stbi_image_free(standardImgBuffer);
 	if (floatImgBuffer)
 		stbi_image_free(floatImgBuffer);
+}
+
+void Texture::ComputeMipmap()
+{
+	glBindTexture(GL_TEXTURE_2D, m_gl_id);
+	glGenerateMipmap(GL_TEXTURE_2D);
 }
 
 Texture::~Texture()

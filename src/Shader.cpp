@@ -6,6 +6,22 @@
 
 unsigned int Shader::CompileShader(unsigned int type, const std::string& source)
 {
+	std::string messageType;
+	switch (type)
+	{
+	case GL_VERTEX_SHADER:
+		messageType = "vertex";
+		break;
+	case GL_FRAGMENT_SHADER:
+		messageType = "fragment";
+		break;
+	case GL_COMPUTE_SHADER:
+		messageType = "compute";
+		break;
+	default:
+		messageType = "unknown";
+		break;
+	}
 	unsigned int id = glCreateShader(type);
 	const char* src = source.c_str();
 	glShaderSource(id, 1, &src, nullptr);
@@ -19,7 +35,10 @@ unsigned int Shader::CompileShader(unsigned int type, const std::string& source)
 		glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length);
 		char* message = (char*)alloca(length * sizeof(char));
 		glGetShaderInfoLog(id, length, &length, message);
-		std::cout << "Failed to compile " << (type == GL_VERTEX_SHADER ? "vertex" : "fragment") << " shader" << std::endl;
+		std::cout << "[Shader] Failed to compile " << messageType << " shader" << std::endl;
+		//std::cout << "----------------------------\n";
+		//std::cout << source << std::endl;
+		//std::cout << "----------------------------\n";
 		std::cout << message << std::endl;
 		glDeleteShader(id);
 		return 0;

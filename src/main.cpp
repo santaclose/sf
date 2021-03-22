@@ -7,6 +7,7 @@
 #include "Model.h"
 #include "Skybox.h"
 #include "Input.h"
+#include "Config.h"
 
 #define BACKGROUND_COLOR 1.0
 #define MSAA_COUNT 8
@@ -44,10 +45,6 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 	Input::UpdateMouseScroll(xoffset, yoffset);
 }
 
-
-unsigned int windowWidth;
-unsigned int windowHeight;
-
 int main(void)
 {
 	GLFWwindow* window;
@@ -59,12 +56,7 @@ int main(void)
 	/* Create a windowed mode window and its OpenGL context */
 	glfwWindowHint(GLFW_SAMPLES, MSAA_COUNT);
 
-	//windowWidth = 1920;
-	//windowHeight = 1080;
-	windowWidth = 1280;
-	windowHeight = 720;
-	window = glfwCreateWindow(windowWidth, windowHeight, "sf", NULL, NULL);
-	//window = glfwCreateWindow(windowWidth, windowHeight, "sf", glfwGetPrimaryMonitor(), NULL);
+	window = glfwCreateWindow(Config::windowWidth, Config::windowHeight, Config::name.c_str(), Config::fullscreen ? glfwGetPrimaryMonitor() : NULL, NULL);
 
 	if (!window)
 	{
@@ -110,7 +102,7 @@ int main(void)
 	//-------------------//
 	User::Game::Initialize();
 	//-------------------//
-	glViewport(0, 0, windowWidth, windowHeight);
+	glViewport(0, 0, Config::windowWidth, Config::windowHeight);
 
 	/* Loop until the user closes the window */
 	while (!glfwWindowShouldClose(window))

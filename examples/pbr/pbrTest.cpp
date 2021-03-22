@@ -9,6 +9,7 @@
 #include "../../src/Skybox.h"
 #include "../../src/Input.h"
 #include "../../src/GltfController.h"
+#include "../../src/IblTools.h"
 #include <iostream>
 
 #define MOVE_SENSITIVITY 0.003
@@ -42,14 +43,14 @@ namespace User
 	Material asdfMaterial;
 	Texture asdfTexture;
 
-	std::vector<glm::vec3> dirLightsDir = { {0.0f, -0.5f, -1.0f} };
-	std::vector<glm::vec3> dirLightsRad = { {1.0f, 0.0f, 1.0f} };
+	std::vector<glm::vec3> dirLightsDir = { {0.0f, -0.5f, -1.0f},  {0.0f, -0.5f, 1.0f} };
+	std::vector<glm::vec3> dirLightsRad = { {10.0f, 10.0f, 10.0f}, {2.0f, 2.0f, 2.0f} };
 
-	std::vector<glm::vec3> pLightsPos = { {1.0f, 0.0f, 0.0f}, {-1.0f, 0.0f, 0.0f} };
-	std::vector<glm::vec3> pLightsRad = { {1.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 0.0f} };
-	std::vector<float> pLightsRa = { 1.0f, 1.0f };
+	//std::vector<glm::vec3> pLightsPos = { {1.0f, 0.0f, 0.0f}, {-1.0f, 0.0f, 0.0f} };
+	//std::vector<glm::vec3> pLightsRad = { {1.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 0.0f} };
+	//std::vector<float> pLightsRa = { 1.0f, 1.0f };
 
-	//HdrTexture envTexture;
+	Texture envTexture;
 	Cubemap envCubemap;
 	//Cubemap irradianceCubemap;
 
@@ -69,9 +70,9 @@ namespace User
 		pbrShader.Bind();
 		pbrShader.SetUniform3fv("dLightDir", &(dirLightsDir[0].x), dirLightsDir.size());
 		pbrShader.SetUniform3fv("dLightRad", &(dirLightsRad[0].x), dirLightsRad.size());
-		pbrShader.SetUniform3fv("pLightPos", &(pLightsPos[0].x), pLightsPos.size());
-		pbrShader.SetUniform3fv("pLightRad", &(pLightsRad[0].x), pLightsRad.size());
-		pbrShader.SetUniform1fv("pLightRa", &(pLightsRa[0]), pLightsRa.size());
+		//pbrShader.SetUniform3fv("pLightPos", &(pLightsPos[0].x), pLightsPos.size());
+		//pbrShader.SetUniform3fv("pLightRad", &(pLightsRad[0].x), pLightsRad.size());
+		//pbrShader.SetUniform1fv("pLightRa", &(pLightsRa[0]), pLightsRa.size());
 
 		sciFiHelmetMaterial.CreateFromShader(&pbrShader);
 		sciFiHelmetMaterial.SetUniform("useAlbedoTexture", (void*)true, Material::UniformType::_Boolean);
@@ -116,7 +117,17 @@ namespace User
 		//envCubemap.CreateFromFiles("examples/pbr/cubemap/y", ".jpg");
 		//Skybox::SetCubemap(&envCubemap);
 
-		envCubemap.CreateFromFiles("examples/pbr/cubemap/a", ".hdr", true);
+		//envCubemap.CreateFromFiles("examples/pbr/cubemap/a", ".hdr", true);
+		//irradianceCubemap = IblTools::DiffuseIrradiance(envCubemap);
+		//Skybox::SetCubemap(&irradianceCubemap);
+		
+		envTexture.CreateFromFile("assets/lilienstein_4k.hdr", Texture::Type::HDR, true);
+		//std::cout << envTexture.GetWidth() << std::endl;
+		//std::cout << envTexture.GetHeight() << std::endl;
+		//std::cout << envTexture.GlId() << std::endl;
+
+		envCubemap.Create(512, false, true);
+		IblTools::HdrToCubemaps(envTexture, envCubemap, envCubemap, envCubemap);
 		Skybox::SetCubemap(&envCubemap);
 
 		int gltfid;
@@ -134,8 +145,8 @@ namespace User
 		models.back()->SetMaterial(&damagedHelmetMaterial);
 
 		gltfid = GltfController::Load("examples/pbr/gltf/asdf/asdf.glb");
-		asdfTexture.CreateFromGltf(gltfid, 0);
-		asdfMaterial.SetUniform("albedoTexture", &asdfTexture, Material::UniformType::_Texture);
+		//asdfTexture.CreateFromGltf(gltfid, 0);
+		asdfMaterial.SetUniform("albedoTexture", &envTexture, Material::UniformType::_Texture);
 
 		models.emplace_back();
 		models.back() = new Model();
@@ -176,18 +187,22 @@ namespace User
 			rotationEnabled = !rotationEnabled;
 		else if (Input::KeyDown(Input::KeyCode::Right))
 		{
+			glm::fquat theRot = models[selectedModel]->GetRotation();
 			models[selectedModel]->SetScale(0.0);
 			selectedModel++;
 			selectedModel %= models.size();
 			models[selectedModel]->SetScale(1.0);
+			models[selectedModel]->SetRotation(theRot);
 			gimbal.SetPosition(glm::vec3(selectedModel * MODEL_OFFSET, 0.0, 0.0));
 		}
 		else if (Input::KeyDown(Input::KeyCode::Left))
 		{
+			glm::fquat theRot = models[selectedModel]->GetRotation();
 			models[selectedModel]->SetScale(0.0);
 			selectedModel--;
 			selectedModel = (selectedModel + models.size()) % models.size();
 			models[selectedModel]->SetScale(1.0);
+			models[selectedModel]->SetRotation(theRot);
 			gimbal.SetPosition(glm::vec3(selectedModel * MODEL_OFFSET, 0.0, 0.0));
 		}
 		cameraDistance -= SCROLL_SENSITIVITY * Input::MouseScrollUp() ? 1.0f : 0.0f;
@@ -203,7 +218,7 @@ namespace User
 		if (rotationEnabled)
 			models[selectedModel]->SetRotation(models[selectedModel]->GetRotation() * glm::fquat(glm::vec3(0.0f, 0.07f * deltaTime, 0.0f)));
 
-		Skybox::SetExposure((glm::sin(time * 0.1f) + 1.0f) * 10.0f);
+		//Skybox::SetExposure((glm::sin(time * 0.1f) + 1.0f) * 10.0f);
 	}
 	void Game::Terminate()
 	{

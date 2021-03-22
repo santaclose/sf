@@ -6,28 +6,53 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 
-void Cubemap::CreateFromFiles(const std::vector<std::string>& files, bool isHdr)
+void Cubemap::Create(unsigned int size, bool mipmap, bool isHdr)
+{
+    m_size = size;
+    m_isHdr = isHdr;
+    glGenTextures(1, &m_gl_id);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_gl_id);
+    for (unsigned int i = 0; i < 6; ++i)
+    {
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, isHdr ? GL_RGB32F : GL_RGB, size, size, 0, GL_RGB, isHdr ? GL_FLOAT : GL_UNSIGNED_BYTE, nullptr);
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, mipmap ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    if (mipmap)
+        glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+}
+
+void Cubemap::CreateFromFiles(const std::vector<std::string>& files, bool mipmap)
 {
     stbi_set_flip_vertically_on_load(0);
+    m_isHdr = stbi_is_hdr(files[0].c_str());
 
-    m_isHdr = isHdr;
     glGenTextures(1, &m_gl_id);
     glBindTexture(GL_TEXTURE_CUBE_MAP, m_gl_id);
 
     int width, height, nrChannels;
-    if (!isHdr)
+    if (!m_isHdr)
     {
         for (unsigned int i = 0; i < files.size(); i++)
         {
             unsigned char* data = stbi_load(files[i].c_str(), &width, &height, &nrChannels, 0);
+            m_size = width;
             if (data)
             {
                 glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-                std::cout << "Cubemap texture loaded successfully: " << files[i] << std::endl;
+                std::cout << "[Cubemap] Cubemap texture loaded successfully: " << files[i] << std::endl;
             }
             else
-                std::cout << "Cubemap texture failed to load at path: " << files[i] << std::endl;
-            stbi_image_free(data);
+                std::cout << "[Cubemap] Cubemap texture failed to load at path: " << files[i] << std::endl;
+
+            if (data)
+                stbi_image_free(data);
         }
     }
     else
@@ -35,23 +60,30 @@ void Cubemap::CreateFromFiles(const std::vector<std::string>& files, bool isHdr)
         for (unsigned int i = 0; i < files.size(); i++)
         {
             float* data = stbi_loadf(files[i].c_str(), &width, &height, &nrChannels, 0);
+            m_size = width;
             if (data)
             {
-                glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, data);
-                std::cout << "Cubemap texture loaded successfully: " << files[i] << std::endl;
+                glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB32F, width, height, 0, GL_RGB, GL_FLOAT, data);
+                std::cout << "[Cubemap] Cubemap texture loaded successfully: " << files[i] << std::endl;
             }
             else
-                std::cout << "Cubemap texture failed to load at path: " << files[i] << std::endl;
-            stbi_image_free(data);
+                std::cout << "[Cubemap] Cubemap texture failed to load at path: " << files[i] << std::endl;
+
+            if (data)
+                stbi_image_free(data);
         }
     }
 
-
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, mipmap ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    if (mipmap)
+        glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }
 
 /*
@@ -62,19 +94,20 @@ void Cubemap::CreateFromFiles(const std::vector<std::string>& files, bool isHdr)
     "_4.jpg",
     "_5.jpg"
 */
-void Cubemap::CreateFromFiles(const std::string& name, const std::string& extension, bool isHdr)
+void Cubemap::CreateFromFiles(const std::string& name, const std::string& extension, bool mipmap)
 {
     std::vector<std::string> files;
     files.resize(6);
     for (int i = 0; i < 6; i++)
         files[i] = name + "_" + std::to_string(i) + extension;
 
-    CreateFromFiles(files, isHdr);
+    CreateFromFiles(files, mipmap);
 }
 
-bool Cubemap::IsHDR()
+void Cubemap::ComputeMipmap()
 {
-    return m_isHdr;
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_gl_id);
+    glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 }
 
 Cubemap::~Cubemap()
@@ -84,7 +117,6 @@ Cubemap::~Cubemap()
 
 void Cubemap::Bind(unsigned int slot) const
 {
-    glActiveTexture(GL_TEXTURE0 + slot);
     glBindTexture(GL_TEXTURE_CUBE_MAP, m_gl_id);
 }
 

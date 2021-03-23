@@ -11,8 +11,8 @@
 
 namespace IblTools {
     
-    unsigned int envToCubeFBO, envToCubeRBO;
-    Shader equirectangularToCubemapShader;
+    unsigned int envToCubeFBO, envToCubeRBO, irradianceFBO, irradianceRBO, prefilterFBO, prefilterRBO, brdfLUTFBO, brdfLUTRBO;
+    Shader equirectangularToCubemapShader, irradianceShader, prefilterShader, integrateShader;
 
     glm::mat4 envMapProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
     glm::mat4 envMapView[] =
@@ -27,6 +27,7 @@ namespace IblTools {
 
 
     unsigned int renderCubeVAO = 0, renderCubeVBO;
+    unsigned int renderQuadVAO = 0, renderQuadVBO;
     float cubeVertices[] =
     {
         // back face
@@ -72,6 +73,23 @@ namespace IblTools {
         -1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
         -1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 0.0f  // bottom-left      
     };
+    //float quadVertices[] =
+    //{
+    //  // positions       // texture Coords
+    //    -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+    //    -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+    //     1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+    //     1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+    //};
+    float quadVertices[] =
+    {
+        -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+        1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+        -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+        -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+        1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+        1.0f,  1.0f, 0.0f, 1.0f, 1.0f
+    };
     void renderCube()
     {
         if (renderCubeVAO == 0)
@@ -96,16 +114,41 @@ namespace IblTools {
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glBindVertexArray(0);
     }
+    void renderQuad()
+    {
+        if (renderQuadVAO == 0)
+        {
+            glGenVertexArrays(1, &renderQuadVAO);
+            glGenBuffers(1, &renderQuadVBO);
+
+            glBindBuffer(GL_ARRAY_BUFFER, renderQuadVBO);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
+
+            glBindVertexArray(renderQuadVAO);
+            glEnableVertexAttribArray(0);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+            glEnableVertexAttribArray(1);
+            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+            glBindVertexArray(0);
+        }
+        glBindVertexArray(renderQuadVAO);
+        //glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glBindVertexArray(0);
+    }
 }
 
-void IblTools::HdrToCubemaps(const Texture& hdrTexture, Cubemap& environmentCubemap, Cubemap& diffuseIrradiance, Cubemap& prefiltered)
+void IblTools::HdrToCubemaps(const Texture& hdrTexture, Cubemap& environmentCubemap, Cubemap& irradianceCubemap, Cubemap& prefilterCubemap, Texture& lookupTexture)
 {
     glDepthFunc(GL_LEQUAL);
     glDisable(GL_CULL_FACE);
 
     equirectangularToCubemapShader.CreateFromFiles("assets/shaders/ibl/equirectangularToCubemapV.shader", "assets/shaders/ibl/equirectangularToCubemapF.shader");
+    irradianceShader.CreateFromFiles("assets/shaders/ibl/irradianceV.shader", "assets/shaders/ibl/irradianceF.shader");
+    prefilterShader.CreateFromFiles("assets/shaders/ibl/prefilterV.shader", "assets/shaders/ibl/prefilterF.shader");
+    integrateShader.CreateFromFiles("assets/shaders/ibl/integrateV.shader", "assets/shaders/ibl/integrateF.shader");
 
-    GLenum err;
     // Latlong to Cubemap conversion
     glGenFramebuffers(1, &envToCubeFBO);
     glGenRenderbuffers(1, &envToCubeRBO);
@@ -123,7 +166,6 @@ void IblTools::HdrToCubemaps(const Texture& hdrTexture, Cubemap& environmentCube
 
     glViewport(0, 0, environmentCubemap.GetSize() , environmentCubemap.GetSize());
     glBindFramebuffer(GL_FRAMEBUFFER, envToCubeFBO);
-    glClearColor(1.0f, 0.0f, 1.0f, 1.0f);
 
     for (unsigned int i = 0; i < 6; ++i)
     {
@@ -133,7 +175,7 @@ void IblTools::HdrToCubemaps(const Texture& hdrTexture, Cubemap& environmentCube
 
         renderCube();
 
-        float* debugBuffer = new float[environmentCubemap.GetSize() * environmentCubemap.GetSize() * 3];
+        /*float* debugBuffer = new float[environmentCubemap.GetSize() * environmentCubemap.GetSize() * 3];
 
         glReadPixels(0, 0, environmentCubemap.GetSize(), environmentCubemap.GetSize(), GL_RGB, GL_FLOAT, debugBuffer);
         int asdf = stbi_write_hdr(("debug_" + std::to_string(i) + ".hdr").c_str(), environmentCubemap.GetSize(), environmentCubemap.GetSize(), 3, debugBuffer);
@@ -141,7 +183,7 @@ void IblTools::HdrToCubemaps(const Texture& hdrTexture, Cubemap& environmentCube
         if (!asdf)
         {
             std::cout << "STB WRITE ERROR\n";
-        }
+        }*/
     }
 
     environmentCubemap.ComputeMipmap();
@@ -149,37 +191,46 @@ void IblTools::HdrToCubemaps(const Texture& hdrTexture, Cubemap& environmentCube
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     // Diffuse irradiance capture
-    /*glGenFramebuffers(1, &irradianceFBO);
+    glGenFramebuffers(1, &irradianceFBO);
     glGenRenderbuffers(1, &irradianceRBO);
     glBindFramebuffer(GL_FRAMEBUFFER, irradianceFBO);
     glBindRenderbuffer(GL_RENDERBUFFER, irradianceRBO);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, envMapIrradiance.getTexWidth(), envMapIrradiance.getTexHeight());
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, irradianceCubemap.GetSize(), irradianceCubemap.GetSize());
 
-    irradianceIBLShader.useShader();
+    irradianceShader.Bind();
 
-    glUniformMatrix4fv(glGetUniformLocation(irradianceIBLShader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(envMapProjection));
+    irradianceShader.SetUniformMatrix4fv("projection", glm::value_ptr(envMapProjection));
     glActiveTexture(GL_TEXTURE0);
-    environmentCubemap.useTexture();
+    environmentCubemap.Bind();
 
-    glViewport(0, 0, envMapIrradiance.getTexWidth(), envMapIrradiance.getTexHeight());
+    glViewport(0, 0, irradianceCubemap.GetSize(), irradianceCubemap.GetSize());
     glBindFramebuffer(GL_FRAMEBUFFER, irradianceFBO);
 
     for (unsigned int i = 0; i < 6; ++i)
     {
-        glUniformMatrix4fv(glGetUniformLocation(irradianceIBLShader.Program, "view"), 1, GL_FALSE, glm::value_ptr(envMapView[i]));
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, envMapIrradiance.getTexID(), 0);
+        irradianceShader.SetUniformMatrix4fv("view", glm::value_ptr(envMapView[i]));
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, irradianceCubemap.GlId(), 0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        envCubeRender.drawShape();
+        renderCube();
+
+        /*float* debugBuffer = new float[irradianceCubemap.GetSize() * irradianceCubemap.GetSize() * 3];
+        glReadPixels(0, 0, irradianceCubemap.GetSize(), irradianceCubemap.GetSize(), GL_RGB, GL_FLOAT, debugBuffer);
+        int asdf = stbi_write_hdr(("debug_" + std::to_string(i) + ".hdr").c_str(), irradianceCubemap.GetSize(), irradianceCubemap.GetSize(), 3, debugBuffer);
+        delete[] debugBuffer;
+        if (!asdf)
+        {
+            std::cout << "STB WRITE ERROR\n";
+        }*/
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     // Prefilter cubemap
-    prefilterIBLShader.useShader();
+    prefilterShader.Bind();
 
-    glUniformMatrix4fv(glGetUniformLocation(prefilterIBLShader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(envMapProjection));
-    environmentCubemap.useTexture();
+    prefilterShader.SetUniformMatrix4fv("projection", glm::value_ptr(envMapProjection));
+    environmentCubemap.Bind();
 
     glGenFramebuffers(1, &prefilterFBO);
     glGenRenderbuffers(1, &prefilterRBO);
@@ -189,8 +240,8 @@ void IblTools::HdrToCubemaps(const Texture& hdrTexture, Cubemap& environmentCube
 
     for (unsigned int mip = 0; mip < maxMipLevels; ++mip)
     {
-        unsigned int mipWidth = envMapPrefilter.getTexWidth() * std::pow(0.5, mip);
-        unsigned int mipHeight = envMapPrefilter.getTexHeight() * std::pow(0.5, mip);
+        unsigned int mipWidth = prefilterCubemap.GetSize() * std::pow(0.5, mip);
+        unsigned int mipHeight = prefilterCubemap.GetSize() * std::pow(0.5, mip);
 
         glBindRenderbuffer(GL_RENDERBUFFER, prefilterRBO);
         glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mipWidth, mipHeight);
@@ -199,38 +250,61 @@ void IblTools::HdrToCubemaps(const Texture& hdrTexture, Cubemap& environmentCube
 
         float roughness = (float)mip / (float)(maxMipLevels - 1);
 
-        glUniform1f(glGetUniformLocation(prefilterIBLShader.Program, "roughness"), roughness);
-        glUniform1f(glGetUniformLocation(prefilterIBLShader.Program, "cubeResolutionWidth"), envMapPrefilter.getTexWidth());
-        glUniform1f(glGetUniformLocation(prefilterIBLShader.Program, "cubeResolutionHeight"), envMapPrefilter.getTexHeight());
+        prefilterShader.SetUniform1f("roughness", roughness);
+        prefilterShader.SetUniform1f("cubeResolutionWidth", prefilterCubemap.GetSize());
+        prefilterShader.SetUniform1f("cubeResolutionHeight", prefilterCubemap.GetSize());
 
         for (unsigned int i = 0; i < 6; ++i)
         {
-            glUniformMatrix4fv(glGetUniformLocation(prefilterIBLShader.Program, "view"), 1, GL_FALSE, glm::value_ptr(envMapView[i]));
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, envMapPrefilter.getTexID(), mip);
+            prefilterShader.SetUniformMatrix4fv("view", glm::value_ptr(envMapView[i]));
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, prefilterCubemap.GlId(), mip);
 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            envCubeRender.drawShape();
+            renderCube();
+
+            /*float* debugBuffer = new float[prefilterCubemap.GetSize() * prefilterCubemap.GetSize() * 3];
+            glReadPixels(0, 0, prefilterCubemap.GetSize(), prefilterCubemap.GetSize(), GL_RGB, GL_FLOAT, debugBuffer);
+            int asdf = stbi_write_hdr(("debug_" + std::to_string(i) + ".hdr").c_str(), prefilterCubemap.GetSize(), prefilterCubemap.GetSize(), 3, debugBuffer);
+            delete[] debugBuffer;
+            if (!asdf)
+            {
+                std::cout << "STB WRITE ERROR\n";
+            }*/
         }
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     // BRDF LUT
+    glDisable(GL_DEPTH_TEST);
+    lookupTexture.Bind();
     glGenFramebuffers(1, &brdfLUTFBO);
     glGenRenderbuffers(1, &brdfLUTRBO);
     glBindFramebuffer(GL_FRAMEBUFFER, brdfLUTFBO);
     glBindRenderbuffer(GL_RENDERBUFFER, brdfLUTRBO);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, envMapLUT.getTexWidth(), envMapLUT.getTexHeight());
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, envMapLUT.getTexID(), 0);
 
-    glViewport(0, 0, envMapLUT.getTexWidth(), envMapLUT.getTexHeight());
-    integrateIBLShader.useShader();
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, lookupTexture.GetWidth(), lookupTexture.GetHeight());
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, lookupTexture.GlId(), 0);
+
+    glViewport(0, 0, lookupTexture.GetWidth(), lookupTexture.GetHeight());
+    integrateShader.Bind();
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    quadRender.drawShape();
+    renderQuad();
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);*/
+    /*float* debugBuffer = new float[lookupTexture.GetWidth() * lookupTexture.GetHeight() * 3];
+    glReadPixels(0, 0, lookupTexture.GetWidth(), lookupTexture.GetHeight(), GL_RGB, GL_FLOAT, debugBuffer);
+    int asdf = stbi_write_hdr("debug.hdr", lookupTexture.GetWidth(), lookupTexture.GetHeight(), 3, debugBuffer);
+    delete[] debugBuffer;
+    if (!asdf)
+    {
+        std::cout << "STB WRITE ERROR\n";
+    }*/
+
+    glEnable(GL_DEPTH_TEST);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     glViewport(0, 0, Config::windowWidth, Config::windowHeight);
 

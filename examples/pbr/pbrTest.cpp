@@ -26,6 +26,7 @@ namespace User
 	bool rotationEnabled = false;
 
 	Shader pbrShader;
+	Shader pbrIblShader;
 
 	Material sciFiHelmetMaterial;
 	Texture sciFiHelmetAlbedo;
@@ -52,7 +53,9 @@ namespace User
 
 	Texture envTexture;
 	Cubemap envCubemap;
-	//Cubemap irradianceCubemap;
+	Cubemap irradianceCubemap;
+	Cubemap prefilterCubemap;
+	Texture lookupTexture;
 
 	std::vector<Model*> models;
 	int selectedModel = 0;
@@ -67,6 +70,7 @@ namespace User
 		camera = new Camera(cs);
 
 		pbrShader.CreateFromFiles("assets/shaders/pbrV.shader", "assets/shaders/jpbrF.shader");
+		pbrIblShader.CreateFromFiles("assets/shaders/pbrV.shader", "assets/shaders/pbrIblF.shader");
 		pbrShader.Bind();
 		pbrShader.SetUniform3fv("dLightDir", &(dirLightsDir[0].x), dirLightsDir.size());
 		pbrShader.SetUniform3fv("dLightRad", &(dirLightsRad[0].x), dirLightsRad.size());
@@ -74,12 +78,13 @@ namespace User
 		//pbrShader.SetUniform3fv("pLightRad", &(pLightsRad[0].x), pLightsRad.size());
 		//pbrShader.SetUniform1fv("pLightRa", &(pLightsRa[0]), pLightsRa.size());
 
-		sciFiHelmetMaterial.CreateFromShader(&pbrShader);
+		sciFiHelmetMaterial.CreateFromShader(&pbrIblShader);
 		sciFiHelmetMaterial.SetUniform("useAlbedoTexture", (void*)true, Material::UniformType::_Boolean);
 		sciFiHelmetMaterial.SetUniform("useNormalTexture", (void*)true, Material::UniformType::_Boolean);
 		sciFiHelmetMaterial.SetUniform("useRoughnessTexture", (void*)true, Material::UniformType::_Boolean);
 		sciFiHelmetMaterial.SetUniform("useMetalnessTexture", (void*)true, Material::UniformType::_Boolean);
-		sciFiHelmetMaterial.SetUniform("useEmissiveTexture", (void*)true, Material::UniformType::_Boolean);
+		sciFiHelmetMaterial.SetUniform("useEmissiveTexture", (void*)false, Material::UniformType::_Boolean);
+		sciFiHelmetMaterial.SetUniform("useAoTexture", (void*)false, Material::UniformType::_Boolean);
 		sciFiHelmetAlbedo.CreateFromFile("examples/pbr/gltf/SciFiHelmet/albedo.png", Texture::Type::Albedo);
 		sciFiHelmetNormalmap.CreateFromFile("examples/pbr/gltf/SciFiHelmet/normals.png", Texture::Type::Normals);
 		sciFiHelmetRoughness.CreateFromFile("examples/pbr/gltf/SciFiHelmet/roughness.png", Texture::Type::Roughness);
@@ -88,7 +93,6 @@ namespace User
 		sciFiHelmetMaterial.SetUniform("normalTexture", &sciFiHelmetNormalmap, Material::UniformType::_Texture);
 		sciFiHelmetMaterial.SetUniform("roughnessTexture", &sciFiHelmetRoughness, Material::UniformType::_Texture);
 		sciFiHelmetMaterial.SetUniform("metalnessTexture", &sciFiHelmetMetallic, Material::UniformType::_Texture);
-		sciFiHelmetMaterial.SetUniform("emissiveTexture", nullptr, Material::UniformType::_Texture);
 
 		damagedHelmetMaterial.CreateFromShader(&pbrShader);
 		damagedHelmetMaterial.SetUniform("useAlbedoTexture", (void*)true, Material::UniformType::_Boolean);
@@ -96,6 +100,7 @@ namespace User
 		damagedHelmetMaterial.SetUniform("useRoughnessTexture", (void*)true, Material::UniformType::_Boolean);
 		damagedHelmetMaterial.SetUniform("useMetalnessTexture", (void*)true, Material::UniformType::_Boolean);
 		damagedHelmetMaterial.SetUniform("useEmissiveTexture", (void*)true, Material::UniformType::_Boolean);
+		damagedHelmetMaterial.SetUniform("useAoTexture", (void*)false, Material::UniformType::_Boolean);
 		damagedHelmetAlbedo.CreateFromFile("examples/pbr/gltf/DamagedHelmet/albedo.jpg", Texture::Type::Albedo);
 		damagedHelmetNormalmap.CreateFromFile("examples/pbr/gltf/DamagedHelmet/normals.jpg", Texture::Type::Normals);
 		damagedHelmetRoughness.CreateFromFile("examples/pbr/gltf/DamagedHelmet/roughness.png", Texture::Type::Roughness);
@@ -113,6 +118,7 @@ namespace User
 		asdfMaterial.SetUniform("useRoughnessTexture", (void*)false, Material::UniformType::_Boolean);
 		asdfMaterial.SetUniform("useMetalnessTexture", (void*)false, Material::UniformType::_Boolean);
 		asdfMaterial.SetUniform("useEmissiveTexture", (void*)false, Material::UniformType::_Boolean);
+		asdfMaterial.SetUniform("useAoTexture", (void*)false, Material::UniformType::_Boolean);
 
 		//envCubemap.CreateFromFiles("examples/pbr/cubemap/y", ".jpg");
 		//Skybox::SetCubemap(&envCubemap);
@@ -121,14 +127,25 @@ namespace User
 		//irradianceCubemap = IblTools::DiffuseIrradiance(envCubemap);
 		//Skybox::SetCubemap(&irradianceCubemap);
 		
-		envTexture.CreateFromFile("assets/lilienstein_4k.hdr", Texture::Type::HDR, true);
+		envTexture.CreateFromFile("examples/pbr/lilienstein_4k.hdr", Texture::Type::HDR, true);
 		//std::cout << envTexture.GetWidth() << std::endl;
 		//std::cout << envTexture.GetHeight() << std::endl;
 		//std::cout << envTexture.GlId() << std::endl;
 
-		envCubemap.Create(512, false, true);
-		IblTools::HdrToCubemaps(envTexture, envCubemap, envCubemap, envCubemap);
+		envCubemap.Create(512, true, true);
+		irradianceCubemap.Create(32, false, true);
+		prefilterCubemap.Create(128, true, true);
+		prefilterCubemap.ComputeMipmap();
+		lookupTexture.Create(512, 512, false, true, 2);
+		//lookupTexture.CreateFromFile("ibl_brdf_lut.png", Texture::Normals, false);
+
+		IblTools::HdrToCubemaps(envTexture, envCubemap, irradianceCubemap, prefilterCubemap, lookupTexture);
+
 		Skybox::SetCubemap(&envCubemap);
+
+		sciFiHelmetMaterial.SetUniform("irradianceMap", &irradianceCubemap, Material::UniformType::_Cubemap);
+		sciFiHelmetMaterial.SetUniform("prefilterMap", &prefilterCubemap, Material::UniformType::_Cubemap);
+		sciFiHelmetMaterial.SetUniform("brdfLUT", &lookupTexture, Material::UniformType::_Texture);
 
 		int gltfid;
 
@@ -146,7 +163,7 @@ namespace User
 
 		gltfid = GltfController::Load("examples/pbr/gltf/asdf/asdf.glb");
 		//asdfTexture.CreateFromGltf(gltfid, 0);
-		asdfMaterial.SetUniform("albedoTexture", &envTexture, Material::UniformType::_Texture);
+		asdfMaterial.SetUniform("albedoTexture", &lookupTexture, Material::UniformType::_Texture);
 
 		models.emplace_back();
 		models.back() = new Model();
@@ -205,8 +222,8 @@ namespace User
 			models[selectedModel]->SetRotation(theRot);
 			gimbal.SetPosition(glm::vec3(selectedModel * MODEL_OFFSET, 0.0, 0.0));
 		}
-		cameraDistance -= SCROLL_SENSITIVITY * Input::MouseScrollUp() ? 1.0f : 0.0f;
-		cameraDistance += SCROLL_SENSITIVITY * Input::MouseScrollDown() ? 1.0f : 0.0f;
+		cameraDistance -= SCROLL_SENSITIVITY * (Input::MouseScrollUp() ? 1.0f : 0.0f);
+		cameraDistance += SCROLL_SENSITIVITY * (Input::MouseScrollDown() ? 1.0f : 0.0f);
 
 		targetGimbalRotation.y -= Input::MousePosDeltaX() * MOVE_SENSITIVITY;
 		targetGimbalRotation.x += Input::MousePosDeltaY() * MOVE_SENSITIVITY;

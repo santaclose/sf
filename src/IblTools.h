@@ -5,5 +5,5 @@
 
 namespace IblTools {
 
-	void HdrToCubemaps(const Texture& hdrTexture, Cubemap& environmentCubemap, Cubemap& diffuseIrradiance, Cubemap& prefiltered);
+	void HdrToCubemaps(const Texture& hdrTexture, Cubemap& environmentCubemap, Cubemap& irradianceCubemap, Cubemap& prefilterCubemap, Texture& lookupTexture);
 }

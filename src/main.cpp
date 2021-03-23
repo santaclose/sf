@@ -10,7 +10,6 @@
 #include "Config.h"
 
 #define BACKGROUND_COLOR 1.0
-#define MSAA_COUNT 8
 
 float gameTime = 0.0;
 double lastFrameTime = 0.0;
@@ -54,7 +53,7 @@ int main(void)
 		return -1;
 
 	/* Create a windowed mode window and its OpenGL context */
-	glfwWindowHint(GLFW_SAMPLES, MSAA_COUNT);
+	glfwWindowHint(GLFW_SAMPLES, Config::msaaCount);
 
 	window = glfwCreateWindow(Config::windowWidth, Config::windowHeight, Config::name.c_str(), Config::fullscreen ? glfwGetPrimaryMonitor() : NULL, NULL);
 

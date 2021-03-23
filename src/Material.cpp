@@ -20,7 +20,6 @@ void Material::Bind()
 {
 	m_shader->Bind();
 
-	int cubemapCounter = 0;
 	int textureCounter = 0;
 
 	for (int i = 0; i < m_uniformData.size(); i++)
@@ -48,15 +47,15 @@ void Material::Bind()
 			if (m_uniformData[i] == nullptr) // clear uniform if not provided
 			{
 				glActiveTexture(GL_TEXTURE0 + textureCounter);
-				glBindTexture(GL_TEXTURE_2D, 0);
+				glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 				m_shader->SetUniform1i(m_uniformNames[i], textureCounter);
 				continue;
 			}
 			Cubemap* currentCubemap = (Cubemap*)m_uniformData[i];
-			currentCubemap->Bind(cubemapCounter);
-			m_shader->SetUniform1i(m_uniformNames[i], cubemapCounter);
+			currentCubemap->Bind(textureCounter);
+			m_shader->SetUniform1i(m_uniformNames[i], textureCounter);
 
-			cubemapCounter++;
+			textureCounter++;
 			break;
 		}
 		case UniformType::_Color:

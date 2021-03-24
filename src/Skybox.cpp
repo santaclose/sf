@@ -77,11 +77,18 @@ void Skybox::SetCubemap(Cubemap* cubemap)
     Skybox::cubemap = cubemap;
 }
 
+void Skybox::SetUseExposure(bool value)
+{
+    shader.Bind();
+    shader.SetUniform1i("useExposure", (int)value);
+}
+
 void Skybox::SetExposure(float value)
 {
     shader.Bind();
     shader.SetUniform1f("exposure", value);
 }
+
 
 void Skybox::Draw()
 {

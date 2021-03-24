@@ -184,13 +184,13 @@ void main()
     vec3 ambient = (kD * diffuse + specular) * ao;
 
     vec3 temp = ambient + Lo;
+    temp += emissive;
 
     // HDR tonemapping
     temp = temp / (temp + vec3(1.0));
     // gamma correct
     temp = pow(temp, vec3(1.0 / 2.2));
 
-    //color = vec4(temp, 1.0);
-    color = vec4(brdf, 0.0, 1.0);
+    color = vec4(temp, 1.0);
 }
 

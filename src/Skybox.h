@@ -14,6 +14,7 @@ class Skybox
 
 public:
 	static void SetCubemap(Cubemap* cubemap);
+	static void SetUseExposure(bool value);
 	static void SetExposure(float value);
 	static void Draw();
 };

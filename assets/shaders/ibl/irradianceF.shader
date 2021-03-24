@@ -1,38 +1,38 @@
-#version 400 core
-
-in vec3 cubeCoords;
+#version 330 core
 out vec4 colorOutput;
-
-const float PI = 3.14159265359f;
+in vec3 cubeCoords;
 
 uniform samplerCube envMap;
 
+const float PI = 3.14159265359;
 
 void main()
 {
     vec3 N = normalize(cubeCoords);
-    vec3 irradianceAccumulation = vec3(0.0f);
 
-    vec3 upDir = vec3(0.0f, 1.0f, 0.0f);
-    vec3 rightDir = cross(upDir, N);
-    upDir = cross(N, rightDir);
+    vec3 irradiance = vec3(0.0);
 
-    float sampleOffset = 0.025f;
-    float sampleCount = 0.0f;
+    // tangent space calculation from origin point
+    vec3 up = vec3(0.0, 1.0, 0.0);
+    vec3 right = normalize(cross(up, N));
+    up = cross(N, right);
 
-    for (float anglePhi = 0.0f; anglePhi < 2.0f * PI; anglePhi += sampleOffset)
+    float sampleDelta = 0.025;
+    float nrSamples = 0.0f;
+    for (float phi = 0.0; phi < 2.0 * PI; phi += sampleDelta)
     {
-        for (float angleTheta = 0.0f; angleTheta < 0.5f * PI; angleTheta += sampleOffset)
+        for (float theta = 0.0; theta < 0.5 * PI; theta += sampleDelta)
         {
-            vec3 sampleTangent = vec3(sin(angleTheta) * cos(anglePhi), sin(angleTheta) * sin(anglePhi), cos(angleTheta));
-            vec3 sampleVector = sampleTangent.x * rightDir + sampleTangent.y * upDir + sampleTangent.z * N;
+            // spherical to cartesian (in tangent space)
+            vec3 tangentSample = vec3(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta));
+            // tangent space to world
+            vec3 sampleVec = tangentSample.x * right + tangentSample.y * up + tangentSample.z * N;
 
-            irradianceAccumulation += texture(envMap, sampleVector).rgb * cos(angleTheta) * sin(angleTheta);
-            sampleCount++;
+            irradiance += texture(envMap, sampleVec).rgb * cos(theta) * sin(theta);
+            nrSamples++;
         }
     }
+    irradiance = PI * irradiance * (1.0 / float(nrSamples));
 
-    irradianceAccumulation = irradianceAccumulation * (1.0f / float(sampleCount)) * PI;
-
-    colorOutput = vec4(irradianceAccumulation, 1.0f);
+    colorOutput = vec4(irradiance, 1.0);
 }

@@ -157,11 +157,11 @@ void main()
 
     vec3 ambient = vec3(0.03) * albedo * ao;
     vec3 temp = ambient + Lo;
+    temp += emissive;
 
     temp = temp / (temp + vec3(1.0));
     temp = pow(temp, vec3(1.0 / 2.2));
 
-    temp += emissive;
 
     color = vec4(temp, 1.0);
 }

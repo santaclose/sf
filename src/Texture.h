@@ -1,23 +1,47 @@
 #pragma once
 
+#include "glad/glad.h"
 #include <string>
 
 class Texture
 {
 public:
-	enum Type {
-		None = -1, Albedo = 0, Normals = 1, Roughness = 2, Metallic = 3, HDR = 4
+	enum ContentType {
+		Color, NonColor
+	};
+	enum StorageType {
+		UnsignedByte, Float16, Float32
+	};
+	enum WrapMode {
+		Repeat, ClampToEdge
 	};
 
 private:
 	unsigned int m_gl_id;
-	int m_width, m_height;
-	Type m_type = Type::None;
+	int m_width, m_height, m_channelCount;
+	ContentType m_contentType;
+	StorageType m_storageType;
+	WrapMode m_wrapMode;
+
+	void GetGlEnums(int channelCount, StorageType storageType, ContentType contentType, GLenum& type, int& internalFormat, GLenum& format);
 
 public:
-	void Create(unsigned int width, unsigned int height, bool mipmap = true, bool isHdr = false, int channelCount = 3);
+	void Create(unsigned int width, unsigned int height,
+		int channelCount = 3,
+		ContentType contentType = ContentType::NonColor,
+		StorageType storageType = StorageType::UnsignedByte,
+		WrapMode wrapMode = WrapMode::Repeat,
+		bool mipmap = true);
+
+	void CreateFromFile(const std::string& path,
+		int channelCount = 0,
+		ContentType contentType = ContentType::NonColor,
+		StorageType storageType = StorageType::UnsignedByte,
+		WrapMode wrapMode = WrapMode::Repeat,
+		bool mipmap = true,
+		bool flipVertically = true);
+
 	void CreateFromGltf(unsigned int gltfID, unsigned int textureIndex);
-	void CreateFromFile(const std::string& path, Type type, bool mipmap = true, bool flipVertically = true);
 	void ComputeMipmap();
 	~Texture();
 

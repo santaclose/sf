@@ -56,7 +56,8 @@ project "sf"
 		"vendor/glm",
 		"vendor/stb_image",
 		"vendor/sfmg",
-		"vendor/tinygltf"
+		"vendor/tinygltf",
+		"vendor/gli/gli"
 	}
 
 	links 

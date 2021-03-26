@@ -1,4 +1,4 @@
-#include "IblTools.h"
+#include "IblHelper.h"
 #include "Config.h"
 
 #include <glad/glad.h>
@@ -9,10 +9,10 @@
 #include <stb_image_write.h>
 #include <iostream>
 
-namespace IblTools {
-    
+namespace IblHelper {
+
     unsigned int envToCubeFBO, envToCubeRBO, irradianceFBO, irradianceRBO, prefilterFBO, prefilterRBO, brdfLUTFBO, brdfLUTRBO;
-    Shader equirectangularToCubemapShader, irradianceShader, prefilterShader, integrateShader;
+    Shader equirectangularToCubemapShader, irradianceShader, prefilterShader;
 
     glm::mat4 envMapProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
     glm::mat4 envMapView[] =
@@ -98,11 +98,11 @@ namespace IblTools {
     }
 }
 
-void IblTools::HdrToCubemaps(const Texture& hdrTexture, Cubemap& environmentCubemap, Cubemap& irradianceCubemap, Cubemap& prefilterCubemap, Texture& lookupTexture)
+void IblHelper::HdrToCubemaps(const Texture& hdrTexture, Cubemap& environmentCubemap, Cubemap& irradianceCubemap, Cubemap& prefilterCubemap, Texture& lookupTexture)
 {
-    environmentCubemap.Create(512, true, true);
-    irradianceCubemap.Create(32, false, true);
-    prefilterCubemap.Create(128, true, true);
+    environmentCubemap.Create(512, 3, Cubemap::StorageType::Float16, true);
+    irradianceCubemap.Create(32, 3, Cubemap::StorageType::Float16, false);
+    prefilterCubemap.Create(128, 3, Cubemap::StorageType::Float16, true);
     prefilterCubemap.ComputeMipmap();
     lookupTexture.CreateFromFile("assets/LUT.hdr", 4, Texture::NonColor, Texture::Float16, Texture::ClampToEdge, false, true);
 
@@ -112,7 +112,6 @@ void IblTools::HdrToCubemaps(const Texture& hdrTexture, Cubemap& environmentCube
     equirectangularToCubemapShader.CreateFromFiles("assets/shaders/ibl/equirectangularToCubemapV.shader", "assets/shaders/ibl/equirectangularToCubemapF.shader");
     irradianceShader.CreateFromFiles("assets/shaders/ibl/irradianceV.shader", "assets/shaders/ibl/irradianceF.shader");
     prefilterShader.CreateFromFiles("assets/shaders/ibl/prefilterV.shader", "assets/shaders/ibl/prefilterF.shader");
-    integrateShader.CreateFromFiles("assets/shaders/ibl/integrateV.shader", "assets/shaders/ibl/integrateF.shader");
 
     // equirectangular to cubemap conversion
     glGenFramebuffers(1, &envToCubeFBO);

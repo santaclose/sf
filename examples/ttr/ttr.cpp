@@ -1,5 +1,5 @@
-#include "../../user/Game.h"
 #include <GLFW/glfw3.h>
+#include "../../src/Game.h"
 #include "../../src/Texture.h"
 #include "../../src/Material.h"
 #include "../../src/Model.h"

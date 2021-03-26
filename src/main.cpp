@@ -17,9 +17,7 @@ double currentFrameTime = 0.0;
 double deltaTime = 0.0;
 bool deltaTimeLock = true;
 
-#include "../user/Game.h"
-//#include "Input.inl"
-
+#include "../src/Game.h"
 
 void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 {

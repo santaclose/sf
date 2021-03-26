@@ -3,7 +3,7 @@
 #include "Texture.h"
 #include "Cubemap.h"
 
-namespace IblTools {
+namespace IblHelper {
 
 	void HdrToCubemaps(const Texture& hdrTexture, Cubemap& environmentCubemap, Cubemap& irradianceCubemap, Cubemap& prefilterCubemap, Texture& lookupTexture);
 }

@@ -1,20 +1,98 @@
 #include "Cubemap.h"
 #include "Shader.h"
 #include "ComputeShader.h"
-#include "glad/glad.h"
 #include <stb_image.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 
-void Cubemap::Create(unsigned int size, bool mipmap, bool isHdr)
+void Cubemap::GetGlEnums(int channelCount, StorageType storageType, GLenum& type, int& internalFormat, GLenum& format)
+{
+    switch (storageType)
+    {
+    case StorageType::UnsignedByte:
+        type = GL_UNSIGNED_BYTE;
+        switch (channelCount)
+        {
+        case 1:
+            format = GL_RED;
+            internalFormat = GL_R8;
+            break;
+        case 2:
+            format = GL_RG;
+            internalFormat = GL_RG8;
+            break;
+        case 3:
+            format = GL_RGB;
+            internalFormat = GL_RGB8;
+            break;
+        case 4:
+            format = GL_RGBA;
+            internalFormat = GL_RGBA8;
+            break;
+        }
+        break;
+    case StorageType::Float16:
+        type = GL_FLOAT;
+        switch (channelCount)
+        {
+        case 1:
+            format = GL_RED;
+            internalFormat = GL_R16F;
+            break;
+        case 2:
+            format = GL_RG;
+            internalFormat = GL_RG16F;
+            break;
+        case 3:
+            format = GL_RGB;
+            internalFormat = GL_RGB16F;
+            break;
+        case 4:
+            format = GL_RGBA;
+            internalFormat = GL_RGBA16F;
+            break;
+        }
+        break;
+    case StorageType::Float32:
+        type = GL_FLOAT;
+        switch (channelCount)
+        {
+        case 1:
+            format = GL_RED;
+            internalFormat = GL_R32F;
+            break;
+        case 2:
+            format = GL_RG;
+            internalFormat = GL_RG32F;
+            break;
+        case 3:
+            format = GL_RGB;
+            internalFormat = GL_RGB32F;
+            break;
+        case 4:
+            format = GL_RGBA;
+            internalFormat = GL_RGBA32F;
+            break;
+        }
+        break;
+    }
+}
+
+void Cubemap::Create(unsigned int size, int channelCount, StorageType storageType, bool mipmap)
 {
     m_size = size;
-    m_isHdr = isHdr;
+    m_storageType = storageType;
+
+
+    int internalFormat;
+    GLenum type, format;
+    GetGlEnums(channelCount, m_storageType, type, internalFormat, format);
+
     glGenTextures(1, &m_gl_id);
     glBindTexture(GL_TEXTURE_CUBE_MAP, m_gl_id);
     for (unsigned int i = 0; i < 6; ++i)
     {
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, isHdr ? GL_RGB16F : GL_RGB, size, size, 0, GL_RGB, isHdr ? GL_FLOAT : GL_UNSIGNED_BYTE, nullptr);
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalFormat, size, size, 0, format, type, nullptr);
     }
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, mipmap ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -25,16 +103,20 @@ void Cubemap::Create(unsigned int size, bool mipmap, bool isHdr)
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }
 
-void Cubemap::CreateFromFiles(const std::vector<std::string>& files, bool mipmap)
+void Cubemap::CreateFromFiles(const std::vector<std::string>& files, int channelCount, StorageType storageType, bool mipmap)
 {
+    m_storageType = storageType;
+
     stbi_set_flip_vertically_on_load(0);
-    m_isHdr = stbi_is_hdr(files[0].c_str());
+
+    bool isHdr = storageType == StorageType::Float16 || storageType == StorageType::Float32;
+    isHdr = stbi_is_hdr(files[0].c_str());
 
     glGenTextures(1, &m_gl_id);
     glBindTexture(GL_TEXTURE_CUBE_MAP, m_gl_id);
 
     int width, height, nrChannels;
-    if (!m_isHdr)
+    if (!isHdr)
     {
         for (unsigned int i = 0; i < files.size(); i++)
         {
@@ -91,14 +173,14 @@ void Cubemap::CreateFromFiles(const std::vector<std::string>& files, bool mipmap
     "_4.jpg",
     "_5.jpg"
 */
-void Cubemap::CreateFromFiles(const std::string& name, const std::string& extension, bool mipmap)
+void Cubemap::CreateFromFiles(const std::string& name, const std::string& extension, int channelCount, StorageType storageType, bool mipmap)
 {
     std::vector<std::string> files;
     files.resize(6);
     for (int i = 0; i < 6; i++)
         files[i] = name + "_" + std::to_string(i) + extension;
 
-    CreateFromFiles(files, mipmap);
+    CreateFromFiles(files, channelCount, storageType, mipmap);
 }
 
 void Cubemap::ComputeMipmap()

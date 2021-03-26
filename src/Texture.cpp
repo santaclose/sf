@@ -24,11 +24,11 @@ void Texture::GetGlEnums(int channelCount, StorageType storageType, ContentType 
 			break;
 		case 3:
 			format = GL_RGB;
-			internalFormat = contentType == ContentType::Color ? GL_SRGB8 : GL_RGB8;
+			internalFormat = contentType == ContentType::Color ? GL_SRGB : GL_RGB8;
 			break;
 		case 4:
 			format = GL_RGBA;
-			internalFormat = GL_RGBA8;
+			internalFormat = contentType == ContentType::Color ? GL_SRGB_ALPHA : GL_RGBA8;
 			break;
 		}
 		break;

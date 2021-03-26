@@ -20,14 +20,45 @@ void ComputeShader::CreateFromFile(const std::string& shaderPath)
 	std::string source((std::istreambuf_iterator<char>(ifs)),
 		(std::istreambuf_iterator<char>()));
 
+	const GLchar* srcBufferPtr = source.c_str();
+
+	GLuint shader = glCreateShader(GL_COMPUTE_SHADER);
+	glShaderSource(shader, 1, &srcBufferPtr, nullptr);
+	glCompileShader(shader);
+
+	{
+		GLint status;
+		glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+		if (status != GL_TRUE) {
+			GLsizei infoLogSize;
+			glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLogSize);
+			std::unique_ptr<GLchar[]> infoLog(new GLchar[infoLogSize]);
+			glGetShaderInfoLog(shader, infoLogSize, nullptr, infoLog.get());
+			std::cout << "[Compute shader] Failed to compile compute shader: " + shaderPath + "\n" + infoLog.get() << std::endl;
+		}
+	}
+
 	m_gl_id = glCreateProgram();
-	unsigned int s = Shader::CompileShader(GL_COMPUTE_SHADER, source);
-
-	glAttachShader(m_gl_id, s);
+	glAttachShader(m_gl_id, shader);
 	glLinkProgram(m_gl_id);
-	glValidateProgram(m_gl_id);
+	glDetachShader(m_gl_id, shader);
+	glDeleteShader(shader);
 
-	glDeleteShader(s);
+	{
+		GLint status;
+		glGetProgramiv(m_gl_id, GL_LINK_STATUS, &status);
+		if (status == GL_TRUE) {
+			glValidateProgram(m_gl_id);
+			glGetProgramiv(m_gl_id, GL_VALIDATE_STATUS, &status);
+		}
+		if (status != GL_TRUE) {
+			GLsizei infoLogSize;
+			glGetProgramiv(m_gl_id, GL_INFO_LOG_LENGTH, &infoLogSize);
+			std::unique_ptr<GLchar[]> infoLog(new GLchar[infoLogSize]);
+			glGetProgramInfoLog(m_gl_id, infoLogSize, nullptr, infoLog.get());
+			std::cout << "[Compute shader] Failed to link compute shader: " + shaderPath << "\n" << infoLog.get() << std::endl;
+		}
+	}
 }
 
 void ComputeShader::Bind() const

@@ -1,5 +1,6 @@
-#include "../../user/Game.h"
 #include <GLFW/glfw3.h>
+#include <iostream>
+#include "../../src/Game.h"
 #include "../../src/Texture.h"
 #include "../../src/Cubemap.h"
 #include "../../src/Material.h"
@@ -9,8 +10,7 @@
 #include "../../src/Skybox.h"
 #include "../../src/Input.h"
 #include "../../src/GltfController.h"
-#include "../../src/IblTools.h"
-#include <iostream>
+#include "../../src/IblHelper.h"
 
 #define MOVE_SENSITIVITY 0.003
 #define SCROLL_SENSITIVITY 0.06
@@ -139,7 +139,7 @@ namespace User
 		shoeMaterial.SetUniform("aoTexture", &shoeAo, Material::UniformType::_Texture);
 				
 		envTexture.CreateFromFile("examples/pbr/newport_loft.hdr", 3, Texture::Color, Texture::Float16, Texture::ClampToEdge);
-		IblTools::HdrToCubemaps(envTexture, envCubemap, irradianceCubemap, prefilterCubemap, lookupTexture);
+		IblHelper::HdrToCubemaps(envTexture, envCubemap, irradianceCubemap, prefilterCubemap, lookupTexture);
 
 		Skybox::SetCubemap(&envCubemap);
 

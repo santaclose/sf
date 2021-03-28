@@ -5,6 +5,7 @@
 #include "../../src/Model.h"
 #include "../../src/ModelReference.h"
 #include "../../src/Math.h"
+#include "../../src/Random.h"
 #include "../../src/Camera.h"
 #include "../../src/Input.h"
 #include "errt.h"
@@ -97,20 +98,20 @@ namespace User
 			User::Models::seed = i;
 			errt[i].CreateFromCode(User::Models::GenerateModel, true);
 			errt[i].SetMaterial(rand() % 2 == 1 ? &blackMaterial : &whiteMaterial);
-			float randomAngle = Math::Random() * 3.14159265*2.0;
-			float randomDistance = Math::Random() * 200.0;
+			float randomAngle = Random::Float() * 3.14159265*2.0;
+			float randomDistance = Random::Float() * 200.0;
 
 			errt[i].SetPosition(glm::vec3(cos(randomAngle) * randomDistance, 0.0, sin(randomAngle) * randomDistance));
 
 			for (int j = 0; j < COPY_COUNT; j++)
 			{
 				errts[j + i * COPY_COUNT].CreateFomModel(errt[i]);
-				errts[j + i * COPY_COUNT].SetScale(Math::Random() + 0.1);
+				errts[j + i * COPY_COUNT].SetScale(Random::Float() + 0.1);
 
-				float randomAngle = Math::Random() * 3.14159265*2.0;
-				float randomDistance = Math::Random() * 200.0;
+				float randomAngle = Random::Float() * 3.14159265*2.0;
+				float randomDistance = Random::Float() * 200.0;
 				errts[j + i * COPY_COUNT].SetPosition(glm::vec3(cos(randomAngle) * randomDistance, 0.0, sin(randomAngle) * randomDistance));
-				float randomRotZ = Math::Random() * 3.14159265 * 2.0;
+				float randomRotZ = Random::Float() * 3.14159265 * 2.0;
 				errts[j + i * COPY_COUNT].SetRotation(glm::vec3(0.0, randomRotZ, 0.0));
 			}
 		}

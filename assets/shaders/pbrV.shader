@@ -1,6 +1,6 @@
-#version 430 core
+#version 330 core
 
-layout(location = 0) in vec4 aPosition;
+layout(location = 0) in vec3 aPosition;
 layout(location = 1) in vec3 aNormal;
 layout(location = 2) in vec3 aTangent;
 layout(location = 3) in vec3 aBitangent;
@@ -22,7 +22,7 @@ void main()
 	vec3 N = normalize(vec3(modelMatrix * vec4(aNormal, 0.0)));
 	TBN = mat3(T, B, N);
 
-	worldPos = (modelMatrix * aPosition).rgb;
+	worldPos = (modelMatrix * vec4(aPosition, 1.0)).rgb;
 
-	gl_Position = cameraMatrix * modelMatrix * aPosition;
+	gl_Position = cameraMatrix * modelMatrix * vec4(aPosition, 1.0);
 }

@@ -1,7 +1,4 @@
-#version 430 core
-
-uniform sampler2D albedo;
-uniform sampler2D normalMap;
+#version 330 core
 
 //in vec3 normal;
 in vec2 texCoord;

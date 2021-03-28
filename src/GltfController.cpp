@@ -13,10 +13,14 @@ namespace GltfController
 		for (int i = 0; i < indexVector.size(); i += 3)
 		{
 			// tangent space
-			glm::vec3 edge1 = vertexVector[indexVector[i + 1]].position - vertexVector[indexVector[i]].position;
-			glm::vec3 edge2 = vertexVector[indexVector[i + 2]].position - vertexVector[indexVector[i]].position;
-			glm::vec2 deltaUV1 = vertexVector[indexVector[i + 1]].textureCoord - vertexVector[indexVector[i]].textureCoord;
-			glm::vec2 deltaUV2 = vertexVector[indexVector[i + 2]].textureCoord - vertexVector[indexVector[i]].textureCoord;
+			unsigned int ci = indexVector[i + 0];
+			unsigned int ni = indexVector[i + 1];
+			unsigned int nni = indexVector[i + 2];
+
+			glm::vec3 edge1 = vertexVector[ni].position - vertexVector[ci].position;
+			glm::vec3 edge2 = vertexVector[nni].position - vertexVector[ci].position;
+			glm::vec2 deltaUV1 = vertexVector[ni].textureCoord - vertexVector[ci].textureCoord;
+			glm::vec2 deltaUV2 = vertexVector[nni].textureCoord - vertexVector[ci].textureCoord;
 
 			float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
 
@@ -32,13 +36,13 @@ namespace GltfController
 			b.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
 			b = glm::normalize(b);
 
-			vertexVector[indexVector[i]].tangent += t;
-			vertexVector[indexVector[i + 1]].tangent += t;
-			vertexVector[indexVector[i + 2]].tangent += t;
+			vertexVector[ci].tangent += t;
+			vertexVector[ni].tangent += t;
+			vertexVector[nni].tangent += t;
 
-			vertexVector[indexVector[i]].bitangent += b;
-			vertexVector[indexVector[i + 1]].bitangent += b;
-			vertexVector[indexVector[i + 2]].bitangent += b;
+			vertexVector[ci].bitangent += b;
+			vertexVector[ni].bitangent += b;
+			vertexVector[nni].bitangent += b;
 		}
 	}
 }
@@ -192,10 +196,17 @@ void GltfController::Model(int id, int meshIndex, std::vector<Vertex>& vertexVec
 	for (int i = 0; i < vertex_positions.size(); i++)
 	{
 		//std::cout << vertex_uv[i].x << ", " << vertex_uv[i].y << ", " << vertex_uv[i].z << std::endl;
-		vertexVector[i].position = vertex_positions[i];
-		vertexVector[i].normal = vertex_normals[i];
-		vertexVector[i].textureCoord = vertex_uv[i];
+		if (vertex_positions.size() > 0)
+			vertexVector[i].position = vertex_positions[i];
+		if (vertex_normals.size() > 0)
+			vertexVector[i].normal = vertex_normals[i];
+		if (vertex_uv.size() > 0)
+		{
+			vertexVector[i].textureCoord.x = vertex_uv[i].x;
+			vertexVector[i].textureCoord.y = vertex_uv[i].y;
+		}
 	}
+
 	ComputeTangentSpace(vertexVector, indexVector);
 }
 

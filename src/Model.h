@@ -31,9 +31,11 @@ class Model : public Object
 	void CompleteFromVectors();
 
 public:
+	void ReloadVertexData();
 	void CreateFromGltf(unsigned int gltfID, unsigned int meshIndex);
 	void CreateFromCode(void (*generateModelFunc)(), bool smooth = true);
 
+	void BakeAoToVertices(int rayCount);
 	void SetMaterial(Material* theMaterial);
 
 	void Draw();

@@ -8,8 +8,9 @@
 #include "Skybox.h"
 #include "Input.h"
 #include "Config.h"
+#include "Game.h"
 
-#define BACKGROUND_COLOR 1.0
+#define BACKGROUND_COLOR 0.1
 
 float gameTime = 0.0;
 double lastFrameTime = 0.0;
@@ -17,7 +18,6 @@ double currentFrameTime = 0.0;
 double deltaTime = 0.0;
 bool deltaTimeLock = true;
 
-#include "../src/Game.h"
 
 void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 {
@@ -94,7 +94,7 @@ int main(void)
 
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
-	glClearColor(BACKGROUND_COLOR, BACKGROUND_COLOR, BACKGROUND_COLOR, 0.0);
+	glClearColor(Config::clearColor[0], Config::clearColor[1], Config::clearColor[2], 0.0);
 
 	//-------------------//
 	User::Game::Initialize();

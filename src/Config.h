@@ -9,4 +9,5 @@ namespace Config
 	extern unsigned int windowHeight;
 	extern int msaaCount;
 	extern bool fullscreen;
+	extern float clearColor[3];
 };

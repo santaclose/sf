@@ -5,6 +5,7 @@
 #include "../../src/Model.h"
 #include "../../src/ModelReference.h"
 #include "../../src/Math.h"
+#include "../../src/Random.h"
 #include "../../src/Camera.h"
 #include "../../src/Input.h"
 #include "../../src/GltfController.h"
@@ -89,16 +90,16 @@ namespace User
 		{
 			if (i < UNIQUE_COUNT)
 			{
-				uniqueThings[i].SetScale(Math::Random() * (COUNT + UNIQUE_COUNT - i) / 100.0 + 1.0);
-				uniqueThings[i].SetPosition(glm::vec3((Math::Random() - 0.5) * SPAWN_RANGE, (Math::Random() - 0.5) * SPAWN_RANGE, (float)(i * -2)));
-				uniqueThings[i].SetRotation(glm::fquat(glm::vec3(0.0, glm::radians(180.0), glm::radians(Math::Random() * 360.0))));
+				uniqueThings[i].SetScale(Random::Float() * (COUNT + UNIQUE_COUNT - i) / 100.0 + 1.0);
+				uniqueThings[i].SetPosition(glm::vec3((Random::Float() - 0.5) * SPAWN_RANGE, (Random::Float() - 0.5) * SPAWN_RANGE, (float)(i * -2)));
+				uniqueThings[i].SetRotation(glm::fquat(glm::vec3(0.0, glm::radians(180.0), glm::radians(Random::Float() * 360.0))));
 			}
 			else
 			{
 				things[i - UNIQUE_COUNT].CreateFomModel(uniqueThings[rand() % UNIQUE_COUNT]);
-				things[i - UNIQUE_COUNT].SetScale(Math::Random() * (COUNT + UNIQUE_COUNT - i) / 100.0 + 1.0);
-				things[i - UNIQUE_COUNT].SetPosition(glm::vec3((Math::Random() - 0.5) * SPAWN_RANGE, (Math::Random() - 0.5) * SPAWN_RANGE, (float)(i * -2)));
-				things[i - UNIQUE_COUNT].SetRotation(glm::fquat(glm::vec3(0.0, glm::radians(180.0), glm::radians(Math::Random() * 360.0))));
+				things[i - UNIQUE_COUNT].SetScale(Random::Float() * (COUNT + UNIQUE_COUNT - i) / 100.0 + 1.0);
+				things[i - UNIQUE_COUNT].SetPosition(glm::vec3((Random::Float() - 0.5) * SPAWN_RANGE, (Random::Float() - 0.5) * SPAWN_RANGE, (float)(i * -2)));
+				things[i - UNIQUE_COUNT].SetRotation(glm::fquat(glm::vec3(0.0, glm::radians(180.0), glm::radians(Random::Float() * 360.0))));
 			}
 		}
 		//std::cout << theCamera->GetPosition().x << ", " << theCamera->GetPosition().y << ", " << theCamera->GetPosition().z << std::endl;

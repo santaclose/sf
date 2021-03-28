@@ -25,8 +25,7 @@ namespace User
 	float cameraDistance = 3.0;
 	bool rotationEnabled = false;
 
-	//Shader pbrShader;
-	Shader pbrIblShader;
+	Shader pbrShader;
 
 	Material sciFiHelmetMaterial;
 	Texture sciFiHelmetAlbedo;
@@ -76,8 +75,7 @@ namespace User
 		cs.fieldOfView = glm::radians(90.0f);
 		camera = new Camera(cs);
 
-		//pbrShader.CreateFromFiles("assets/shaders/pbrV.shader", "assets/shaders/jpbrF.shader");
-		pbrIblShader.CreateFromFiles("assets/shaders/pbrV.shader", "assets/shaders/pbrIblF.shader");
+		pbrShader.CreateFromFiles("assets/shaders/pbrV.shader", "assets/shaders/pbrF.shader");
 
 		//pbrShader.Bind();
 		//pbrShader.SetUniform3fv("dLightDir", &(dirLightsDir[0].x), dirLightsDir.size());
@@ -86,7 +84,7 @@ namespace User
 		//pbrShader.SetUniform3fv("pLightRad", &(pLightsRad[0].x), pLightsRad.size());
 		//pbrShader.SetUniform1fv("pLightRa", &(pLightsRa[0]), pLightsRa.size());
 
-		sciFiHelmetMaterial.CreateFromShader(&pbrIblShader);
+		sciFiHelmetMaterial.CreateFromShader(&pbrShader);
 		sciFiHelmetMaterial.SetUniform("useAlbedoTexture", (void*)true, Material::UniformType::_Boolean);
 		sciFiHelmetMaterial.SetUniform("useNormalTexture", (void*)true, Material::UniformType::_Boolean);
 		sciFiHelmetMaterial.SetUniform("useRoughnessTexture", (void*)true, Material::UniformType::_Boolean);
@@ -102,7 +100,7 @@ namespace User
 		sciFiHelmetMaterial.SetUniform("roughnessTexture", &sciFiHelmetRoughness, Material::UniformType::_Texture);
 		sciFiHelmetMaterial.SetUniform("metalnessTexture", &sciFiHelmetMetallic, Material::UniformType::_Texture);
 
-		damagedHelmetMaterial.CreateFromShader(&pbrIblShader);
+		damagedHelmetMaterial.CreateFromShader(&pbrShader);
 		damagedHelmetMaterial.SetUniform("useAlbedoTexture", (void*)true, Material::UniformType::_Boolean);
 		damagedHelmetMaterial.SetUniform("useNormalTexture", (void*)true, Material::UniformType::_Boolean);
 		damagedHelmetMaterial.SetUniform("useRoughnessTexture", (void*)true, Material::UniformType::_Boolean);
@@ -120,7 +118,7 @@ namespace User
 		damagedHelmetMaterial.SetUniform("metalnessTexture", &damagedHelmetMetallic, Material::UniformType::_Texture);
 		damagedHelmetMaterial.SetUniform("emissiveTexture", &damagedHelmetEmissive, Material::UniformType::_Texture);
 
-		shoeMaterial.CreateFromShader(&pbrIblShader);
+		shoeMaterial.CreateFromShader(&pbrShader);
 		shoeMaterial.SetUniform("useAlbedoTexture", (void*)true, Material::UniformType::_Boolean);
 		shoeMaterial.SetUniform("useNormalTexture", (void*)true, Material::UniformType::_Boolean);
 		shoeMaterial.SetUniform("useRoughnessTexture", (void*)true, Material::UniformType::_Boolean);
@@ -232,8 +230,6 @@ namespace User
 
 		if (rotationEnabled)
 			models[selectedModel]->SetRotation(models[selectedModel]->GetRotation() * glm::fquat(glm::vec3(0.0f, 0.07f * deltaTime, 0.0f)));
-
-		//Skybox::SetExposure((glm::sin(time * 0.1f) + 1.0f) * 10.0f);
 	}
 	void Game::Terminate()
 	{

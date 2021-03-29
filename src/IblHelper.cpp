@@ -106,7 +106,7 @@ void IblHelper::HdrToCubemaps(const Texture& hdrTexture, Cubemap& environmentCub
     prefilterCubemap.ComputeMipmap();
     lookupTexture.CreateFromFile("assets/LUT.hdr", 4, Texture::NonColor, Texture::Float16, Texture::ClampToEdge, false, true);
 
-    glDepthFunc(GL_LEQUAL);
+    glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
 
     equirectangularToCubemapShader.CreateFromFiles("assets/shaders/ibl/equirectangularToCubemapV.shader", "assets/shaders/ibl/equirectangularToCubemapF.shader");
@@ -154,7 +154,6 @@ void IblHelper::HdrToCubemaps(const Texture& hdrTexture, Cubemap& environmentCub
     irradianceShader.Bind();
 
     irradianceShader.SetUniformMatrix4fv("projection", glm::value_ptr(envMapProjection));
-    glActiveTexture(GL_TEXTURE0);
     environmentCubemap.Bind();
 
     glViewport(0, 0, irradianceCubemap.GetSize(), irradianceCubemap.GetSize());
@@ -215,5 +214,5 @@ void IblHelper::HdrToCubemaps(const Texture& hdrTexture, Cubemap& environmentCub
     glViewport(0, 0, Config::windowWidth, Config::windowHeight);
 
     glEnable(GL_CULL_FACE);
-    glDepthFunc(GL_LESS);
+    glEnable(GL_DEPTH_TEST);
 }

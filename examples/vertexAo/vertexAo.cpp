@@ -3,10 +3,14 @@
 #include "../../src/Game.h"
 #include "../../src/Material.h"
 #include "../../src/Model.h"
+#include "../../src/ModelReference.h"
 #include "../../src/Math.h"
+#include "../../src/Random.h"
 #include "../../src/Input.h"
 #include "../../src/Camera.h"
 #include "../../src/GltfController.h"
+#include "../../src/ObjController.h"
+#include "../../src/ModelProcessor.h"
 
 #define MOVE_SENSITIVITY 0.003
 #define SCROLL_SENSITIVITY 0.06
@@ -27,34 +31,65 @@ namespace User
 	std::vector<Model*> models;
 	int selectedModel = 0;
 
-	void Game::Initialize()
+	void Game::Initialize(int argc, char** argv)
 	{
+		int rayCount;
+		bool onlyUpwards;
+		if (argc > 1)
+			rayCount = std::stoi(argv[1]);
+		else
+		{
+			rayCount = 15;
+		}
+		if (argc > 2)
+			onlyUpwards = std::stoi(argv[2]);
+		else
+			onlyUpwards = false;
+
 		CameraSpecs cs;
 		cs.aspectRatio = 16.0f / 9.0f;
 		cs.farClippingPlane = 100.0f;
 		cs.nearClippingPlane = 0.01f;
-		cs.fieldOfView = glm::radians(90.0f);
+		cs.fieldOfView = glm::radians(75.0f);
 		camera = new Camera(cs);
 
 		shader.CreateFromFiles("assets/shaders/defaultV.shader", "assets/shaders/vertexAoF.shader");
 		material.CreateFromShader(&shader);
 
-		int gltfid;
-		models.emplace_back();
-		models.back() = new Model();
-		gltfid = GltfController::Load("examples/vertexAo/untitled.glb");
-		models.back()->CreateFromGltf(gltfid, 0);
-		models.back()->BakeAoToVertices(30);
-		models.back()->ReloadVertexData();
-		models.back()->SetMaterial(&material);
+		int gltfid, objid;
+
+		//models.emplace_back();
+		//models.back() = new Model();
+		//objid = ObjController::Load("examples/vertexAo/nemotree.obj");
+		//models.back()->CreateFromObj(objid, 0);
+		//ModelProcessor::BakeAo(*models.back(), 30, true);
+		//models.back()->ReloadVertexData();
+		//models.back()->SetMaterial(&material);
+
+		//models.emplace_back();
+		//models.back() = new Model();
+		//objid = ObjController::Load("examples/vertexAo/ct.obj");
+		//models.back()->CreateFromObj(objid, 0);
+		//ModelProcessor::BakeAo(*models.back(), 30, true);
+		//models.back()->ReloadVertexData();
+		//models.back()->SetMaterial(&material);
 
 		models.emplace_back();
 		models.back() = new Model();
-		gltfid = GltfController::Load("examples/vertexAo/untitled2.glb");
-		models.back()->CreateFromGltf(gltfid, 0);
-		models.back()->BakeAoToVertices(30);
+		objid = ObjController::Load("examples/vertexAo/seashell.obj");
+		models.back()->CreateFromObj(objid, 0);
+		ModelProcessor::BakeAo(*models.back(), 50, false, true, 0.001, 5.0f);
+		//ModelProcessor::BakeAo(*models.back());
 		models.back()->ReloadVertexData();
 		models.back()->SetMaterial(&material);
+
+		//models.emplace_back();
+		//models.back() = new Model();
+		//objid = ObjController::Load("examples/vertexAo/seashell.obj");
+		//models.back()->CreateFromObj(objid, 0);
+		//ModelProcessor::BakeAo(*models.back(), 30, true);
+		//models.back()->ReloadVertexData();
+		//models.back()->SetMaterial(&material);
 
 		for (int i = 0; i < models.size(); i++)
 		{

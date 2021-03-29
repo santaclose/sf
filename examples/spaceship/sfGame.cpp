@@ -37,7 +37,7 @@ namespace User
 	Model uniqueThings[UNIQUE_COUNT];
 	ModelReference* things;
 
-	void Game::Initialize()
+	void Game::Initialize(int argc, char** argv)
 	{
 		CameraSpecs specs;
 		specs.perspective = true;

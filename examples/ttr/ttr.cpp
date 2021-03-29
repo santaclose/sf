@@ -65,7 +65,7 @@ namespace User
 
 	int selectedVariable = 0;
 
-	void Game::Initialize()
+	void Game::Initialize(int argc, char** argv)
 	{
 		CameraSpecs cs;
 		cs.aspectRatio = 1.7777777;

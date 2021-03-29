@@ -6,10 +6,12 @@
 #include "../../src/Material.h"
 #include "../../src/Model.h"
 #include "../../src/ModelReference.h"
+#include "../../src/ModelProcessor.h"
 #include "../../src/Math.h"
 #include "../../src/Skybox.h"
 #include "../../src/Input.h"
 #include "../../src/GltfController.h"
+#include "../../src/ObjController.h"
 #include "../../src/IblHelper.h"
 
 #define MOVE_SENSITIVITY 0.003
@@ -47,15 +49,12 @@ namespace User
 	Texture shoeRoughness;
 	Texture shoeMetallic;
 
-	Material asdfMaterial;
-	Texture asdfTexture;
-
 	std::vector<glm::vec3> dirLightsDir = { {0.0f, -0.5f, -1.0f},  {0.0f, -0.5f, 1.0f} };
 	std::vector<glm::vec3> dirLightsRad = { {10.0f, 10.0f, 10.0f}, {2.0f, 2.0f, 2.0f} };
 
-	//std::vector<glm::vec3> pLightsPos = { {1.0f, 0.0f, 0.0f}, {-1.0f, 0.0f, 0.0f} };
-	//std::vector<glm::vec3> pLightsRad = { {1.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 0.0f} };
-	//std::vector<float> pLightsRa = { 1.0f, 1.0f };
+	std::vector<glm::vec3> pLightsPos = { {1.0f, 0.0f, 0.0f}, {-1.0f, 0.0f, 0.0f} };
+	std::vector<glm::vec3> pLightsRad = { {1.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 0.0f} };
+	std::vector<float> pLightsRa = { 1.0f, 1.0f };
 
 	Texture envTexture;
 	Cubemap envCubemap;
@@ -66,13 +65,13 @@ namespace User
 	std::vector<Model*> models;
 	int selectedModel = 0;
 
-	void Game::Initialize()
+	void Game::Initialize(int argc, char** argv)
 	{
 		CameraSpecs cs;
 		cs.aspectRatio = 16.0f / 9.0f;
 		cs.farClippingPlane = 100.0f;
 		cs.nearClippingPlane = 0.01f;
-		cs.fieldOfView = glm::radians(90.0f);
+		cs.fieldOfView = glm::radians(75.0f);
 		camera = new Camera(cs);
 
 		pbrShader.CreateFromFiles("assets/shaders/pbrV.shader", "assets/shaders/pbrF.shader");
@@ -151,24 +150,30 @@ namespace User
 		shoeMaterial.SetUniform("prefilterMap", &prefilterCubemap, Material::UniformType::_Cubemap);
 		shoeMaterial.SetUniform("brdfLUT", &lookupTexture, Material::UniformType::_Texture);
 
-		int gltfid;
+		int gltfid, objid;
 
 		models.emplace_back();
 		models.back() = new Model();
 		gltfid = GltfController::Load("examples/pbr/gltf/SciFiHelmet/SciFiHelmet.gltf");
 		models.back()->CreateFromGltf(gltfid, 0);
+		ModelProcessor::ComputeTangentSpace(*models.back());
+		models.back()->ReloadVertexData();
 		models.back()->SetMaterial(&sciFiHelmetMaterial);
 
 		models.emplace_back();
 		models.back() = new Model();
 		gltfid = GltfController::Load("examples/pbr/gltf/DamagedHelmet/DamagedHelmet.gltf");
 		models.back()->CreateFromGltf(gltfid, 0);
+		ModelProcessor::ComputeTangentSpace(*models.back());
+		models.back()->ReloadVertexData();
 		models.back()->SetMaterial(&damagedHelmetMaterial);
 
 		models.emplace_back();
 		models.back() = new Model();
 		gltfid = GltfController::Load("examples/pbr/gltf/MaterialsVariantsShoe/MaterialsVariantsShoe.gltf");
 		models.back()->CreateFromGltf(gltfid, 0);
+		ModelProcessor::ComputeTangentSpace(*models.back());
+		models.back()->ReloadVertexData();
 		models.back()->SetMaterial(&shoeMaterial);
 
 		for (int i = 0; i < models.size(); i++)

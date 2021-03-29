@@ -1,6 +1,6 @@
 #include "../../src/Config.h"
 
-std::string Config::name = "ttr";
+std::string Config::name = "pbr";
 unsigned int Config::windowWidth = 1280;
 unsigned int Config::windowHeight = 720;
 int Config::msaaCount = 8;

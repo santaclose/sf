@@ -42,7 +42,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 	Input::UpdateMouseScroll(xoffset, yoffset);
 }
 
-int main(void)
+int main(int argc, char** argv)
 {
 	GLFWwindow* window;
 
@@ -97,7 +97,7 @@ int main(void)
 	glClearColor(Config::clearColor[0], Config::clearColor[1], Config::clearColor[2], 0.0);
 
 	//-------------------//
-	User::Game::Initialize();
+	User::Game::Initialize(argc, argv);
 	//-------------------//
 	glViewport(0, 0, Config::windowWidth, Config::windowHeight);
 

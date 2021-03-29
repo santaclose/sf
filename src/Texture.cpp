@@ -160,7 +160,7 @@ void Texture::CreateFromFile(const std::string& path, int channelCount, ContentT
 
 void Texture::CreateFromGltf(unsigned int gltfID, unsigned int textureIndex)
 {
-	GltfController::Texture(gltfID, textureIndex, m_gl_id, m_width, m_height);
+	GltfController::GetTexture(gltfID, textureIndex, m_gl_id, m_width, m_height);
 }
 
 void Texture::ComputeMipmap()

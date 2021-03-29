@@ -5,10 +5,12 @@ layout(location = 1) in vec3 aNormal;
 layout(location = 2) in vec3 aTangent;
 layout(location = 3) in vec3 aBitangent;
 layout(location = 4) in vec2 aTextureCoord;
+layout(location = 5) in vec2 aExtraData;
 
 //out vec3 normal;
 out vec2 texCoord;
 out mat3 TBN;
+out vec2 extraData;
 
 uniform mat4 cameraMatrix;
 uniform mat4 modelMatrix;
@@ -16,6 +18,7 @@ uniform mat4 modelMatrix;
 void main()
 {
 	texCoord = aTextureCoord;
+	extraData = aExtraData;
 
 	vec3 T = normalize(vec3(modelMatrix * vec4(aTangent, 0.0)));
 	vec3 B = normalize(vec3(modelMatrix * vec4(aBitangent, 0.0)));

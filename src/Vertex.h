@@ -9,6 +9,7 @@ struct Vertex
 	glm::vec3 tangent;
 	glm::vec3 bitangent;
 	glm::vec2 textureCoord;
+	glm::vec2 extraData;
 
 	Vertex(float posX, float posY, float posZ);
 	Vertex(const glm::vec3& thePosition);

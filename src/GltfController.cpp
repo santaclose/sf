@@ -1,50 +1,15 @@
 #include "GltfController.h"
+
 #include <fstream>
 #include <iostream>
 #include <tiny_gltf.h>
 #include <glad/glad.h>
 
-namespace GltfController
-{
+#include "ModelProcessor.h"
+
+namespace GltfController {
+
 	std::vector<tinygltf::Model> models;
-
-	void ComputeTangentSpace(std::vector<Vertex>& vertexVector, std::vector<unsigned int>& indexVector)
-	{
-		for (int i = 0; i < indexVector.size(); i += 3)
-		{
-			// tangent space
-			unsigned int ci = indexVector[i + 0];
-			unsigned int ni = indexVector[i + 1];
-			unsigned int nni = indexVector[i + 2];
-
-			glm::vec3 edge1 = vertexVector[ni].position - vertexVector[ci].position;
-			glm::vec3 edge2 = vertexVector[nni].position - vertexVector[ci].position;
-			glm::vec2 deltaUV1 = vertexVector[ni].textureCoord - vertexVector[ci].textureCoord;
-			glm::vec2 deltaUV2 = vertexVector[nni].textureCoord - vertexVector[ci].textureCoord;
-
-			float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
-
-			glm::vec3 t, b;
-
-			t.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
-			t.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
-			t.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
-			t = glm::normalize(t);
-
-			b.x = f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
-			b.y = f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
-			b.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
-			b = glm::normalize(b);
-
-			vertexVector[ci].tangent += t;
-			vertexVector[ni].tangent += t;
-			vertexVector[nni].tangent += t;
-
-			vertexVector[ci].bitangent += b;
-			vertexVector[ni].bitangent += b;
-			vertexVector[nni].bitangent += b;
-		}
-	}
 }
 
 int GltfController::Load(const std::string& filePath)
@@ -85,7 +50,7 @@ void GltfController::Destroy(int id)
 {
 }
 
-void GltfController::Model(int id, int meshIndex, std::vector<Vertex>& vertexVector, std::vector<unsigned int>& indexVector)
+void GltfController::GetModel(int id, int meshIndex, std::vector<Vertex>& vertexVector, std::vector<unsigned int>& indexVector)
 {
 	assert(id > -1 && id < models.size());
 	assert(meshIndex > -1 && meshIndex < models[id].meshes.size());
@@ -206,11 +171,9 @@ void GltfController::Model(int id, int meshIndex, std::vector<Vertex>& vertexVec
 			vertexVector[i].textureCoord.y = vertex_uv[i].y;
 		}
 	}
-
-	ComputeTangentSpace(vertexVector, indexVector);
 }
 
-void GltfController::Texture(int id, int textureIndex, unsigned int& glId, int& width, int& height)
+void GltfController::GetTexture(int id, int textureIndex, unsigned int& glId, int& width, int& height)
 {
 	assert(id > -1 && id < models.size());
 	assert(textureIndex > -1 && textureIndex < models[id].textures.size());

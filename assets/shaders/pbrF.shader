@@ -111,30 +111,12 @@ vec3 computeLightContribution(vec3 L, vec3 radiance)
 
 void main()
 {
-    if (useAlbedoTexture)
-        albedo = texture(albedoTexture, texCoord).rgb;
-    else
-        albedo = vec3(1.0);
-    if (useNormalTexture)
-        normalPixel = texture(normalTexture, texCoord).rgb;
-    else
-        normalPixel = vec3(0.5, 0.5, 1.0);
-    if (useEmissiveTexture)
-        emissive = texture(emissiveTexture, texCoord).rgb;
-    else
-        emissive = vec3(0.0);
-    if (useMetalnessTexture)
-        metalness = texture(metalnessTexture, texCoord).r;
-    else
-        metalness = 0.0;
-    if (useRoughnessTexture)
-        roughness = texture(roughnessTexture, texCoord).r;
-    else
-        roughness = 0.4;
-    if (useAoTexture)
-        ao = texture(aoTexture, texCoord).r;
-    else
-        ao = 1.0;
+    albedo = useAlbedoTexture ? texture(albedoTexture, texCoord).rgb : vec3(1.0);
+    normalPixel = useNormalTexture ? texture(normalTexture, texCoord).rgb : vec3(0.5, 0.5, 1.0);
+    emissive = useEmissiveTexture ? texture(emissiveTexture, texCoord).rgb : vec3(0.0);
+    metalness = useMetalnessTexture ? texture(metalnessTexture, texCoord).r : 0.0;
+    roughness = useRoughnessTexture ? texture(roughnessTexture, texCoord).r : 0.4;
+    ao = useAoTexture ? texture(aoTexture, texCoord).r : 1.0;
 
     // Get current fragment's normal and transform to world space.
     N = 2.0 * normalPixel - 1.0;

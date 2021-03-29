@@ -9,10 +9,12 @@
 #include "Material.h"
 
 class ModelReference;
+class ModelProcessor;
 
 class Model : public Object
 {
 	friend ModelReference;
+	friend ModelProcessor;
 
 	static std::vector<Model*> models;
 
@@ -33,11 +35,10 @@ class Model : public Object
 public:
 	void ReloadVertexData();
 	void CreateFromGltf(unsigned int gltfID, unsigned int meshIndex);
+	void CreateFromObj(unsigned int objID, unsigned int meshIndex);
 	void CreateFromCode(void (*generateModelFunc)(), bool smooth = true);
 
-	void BakeAoToVertices(int rayCount);
 	void SetMaterial(Material* theMaterial);
-
 	void Draw();
 	static void DrawAll();
 };

@@ -2,7 +2,7 @@
 #include <unordered_map>
 #include <iostream>
 
-namespace Input {
+namespace sf::Input {
 
 	bool mouseButtonsReleasing[3] = { false, false, false };
 	bool mouseButtonsPressing[3] = { false, false, false };
@@ -31,7 +31,7 @@ namespace Input {
 	void* currentlyHandling = nullptr;
 }
 
-void Input::UpdateMouseButtons(int button, int action)
+void sf::Input::UpdateMouseButtons(int button, int action)
 {
 	if (button < 0 || button > 2)
 		return;
@@ -41,7 +41,7 @@ void Input::UpdateMouseButtons(int button, int action)
 	mouseButtons[button] = action;
 }
 
-void Input::FrameEnd()
+void sf::Input::FrameEnd()
 {
 	mouseButtonsReleasing[0] =
 		mouseButtonsPressing[0] =
@@ -67,17 +67,17 @@ void Input::FrameEnd()
 	cursorCollisionDetected = false;
 }
 
-float Input::MousePosDeltaX()
+float sf::Input::MousePosDeltaX()
 {
 	return mousePos[0] - lastMousePos[0];
 }
 
-float Input::MousePosDeltaY()
+float sf::Input::MousePosDeltaY()
 {
 	return mousePos[1] - lastMousePos[1];
 }
 
-void Input::UpdateKeyboard(int key, int action)
+void sf::Input::UpdateKeyboard(int key, int action)
 {
 	if (keyStates.find(key) == keyStates.end())
 		keyStates[key] = KeyState();
@@ -98,13 +98,13 @@ void Input::UpdateKeyboard(int key, int action)
 	}
 }
 
-void Input::UpdateCharacter(unsigned int character)
+void sf::Input::UpdateCharacter(unsigned int character)
 {
 	Input::character = character;
 	Input::charInput = true;
 }
 
-void Input::UpdateMousePosition(double xpos, double ypos)
+void sf::Input::UpdateMousePosition(double xpos, double ypos)
 {
 	if (mousePosDeltaLock)
 	{
@@ -119,66 +119,66 @@ void Input::UpdateMousePosition(double xpos, double ypos)
 	}
 }
 
-void Input::UpdateMouseScroll(float xoffset, float yoffset)
+void sf::Input::UpdateMouseScroll(float xoffset, float yoffset)
 {
 	mouseScroll[0] = xoffset;
 	mouseScroll[1] = yoffset;
 }
 
-bool Input::MouseButtonDown(int buttonID)
+bool sf::Input::MouseButtonDown(int buttonID)
 {
 	return mouseButtonsPressing[buttonID];
 }
 
-bool Input::MouseButtonUp(int buttonID)
+bool sf::Input::MouseButtonUp(int buttonID)
 {
 	return mouseButtonsReleasing[buttonID];
 }
 
-bool Input::MouseButton(int buttonID)
+bool sf::Input::MouseButton(int buttonID)
 {
 	return mouseButtons[buttonID];
 }
 
-bool Input::MouseScrollUp()
+bool sf::Input::MouseScrollUp()
 {
 	return mouseScroll[1] == 1.0f;
 }
 
-bool Input::MouseScrollDown()
+bool sf::Input::MouseScrollDown()
 {
 	return mouseScroll[1] == -1.0f;
 }
 
-bool Input::KeyDown(int key)
+bool sf::Input::KeyDown(int key)
 {
 	if (keyStates.find(key) == keyStates.end())
 		return false;
 	return keyStates[key].pressing;
 }
 
-bool Input::KeyUp(int key)
+bool sf::Input::KeyUp(int key)
 {
 	if (keyStates.find(key) == keyStates.end())
 		return false;
 	return keyStates[key].releasing;
 }
 
-bool Input::Key(int key)
+bool sf::Input::Key(int key)
 {
 	if (keyStates.find(key) == keyStates.end())
 		return false;
 	return keyStates[key].isDown;
 }
 
-bool Input::KeyRepeat(int key)
+bool sf::Input::KeyRepeat(int key)
 {
 	if (keyStates.find(key) == keyStates.end())
 		return false;
 	return keyStates[key].repeating;
 }
 
-bool Input::CharacterInput(unsigned int& character)
+bool sf::Input::CharacterInput(unsigned int& character)
 {
 	character = Input::character;
 	return charInput;

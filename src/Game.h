@@ -1,7 +1,7 @@
 #pragma once
 #include <glm/glm.hpp>
 
-namespace User
+namespace sf
 {
 	class Game
 	{

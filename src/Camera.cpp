@@ -1,10 +1,10 @@
 #include "Camera.h"
-//#define PI 3.14159265358979323846264338
-//#define DEG2RAD 2.0 * PI / 180.0
 
-Camera* Camera::boundCamera = nullptr;
+namespace sf {
+	Camera* Camera::boundCamera = nullptr;
+}
 
-void Camera::ComputeMatrices()
+void sf::Camera::ComputeMatrices()
 {
 	if (m_specs.perspective)
 	{
@@ -40,7 +40,7 @@ void Camera::ComputeMatrices()
 	m_cameraMatrix = m_projectionMatrix * m_viewMatrix;
 }
 
-Camera::Camera(const CameraSpecs& specs)
+sf::Camera::Camera(const CameraSpecs& specs)
 {
 	if (boundCamera == nullptr)
 		boundCamera = this;
@@ -53,22 +53,22 @@ Camera::Camera(const CameraSpecs& specs)
 	//m_cameraMatrix = m_viewMatrix = m_projectionMatrix = glm::mat4(1.0f);
 }
 
-void Camera::Bind()
+void sf::Camera::Bind()
 {
 	boundCamera = this;
 }
 
-const glm::mat4& Camera::GetMatrix()
+const glm::mat4& sf::Camera::GetMatrix()
 {
 	return boundCamera->m_cameraMatrix;
 }
 
-const glm::mat4& Camera::GetViewMatrix()
+const glm::mat4& sf::Camera::GetViewMatrix()
 {
 	return boundCamera->m_viewMatrix;
 }
 
-const glm::mat4& Camera::GetProjectionMatrix()
+const glm::mat4& sf::Camera::GetProjectionMatrix()
 {
 	return boundCamera->m_projectionMatrix;
 }

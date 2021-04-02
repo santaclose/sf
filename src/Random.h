@@ -2,7 +2,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
-namespace Random
+namespace sf::Random
 {
 	void SetSeed(unsigned int seed);
 	float Float();

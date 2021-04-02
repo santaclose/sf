@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace Config
+namespace sf::Config
 {
 	extern std::string name;
 	extern unsigned int windowWidth;

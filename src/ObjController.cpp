@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <glm/glm.hpp>
 
-namespace ObjController {
+namespace sf::ObjController {
 
 	struct ObjVertex {
 
@@ -73,7 +73,7 @@ namespace ObjController {
 	//}
 }
 
-int ObjController::Load(const std::string& filePath)
+int sf::ObjController::Load(const std::string& filePath)
 {
 	std::ifstream infile(filePath);
 	if (infile.fail())
@@ -133,11 +133,11 @@ int ObjController::Load(const std::string& filePath)
 	return models.size() - 1;
 }
 
-void ObjController::Destroy(int id)
+void sf::ObjController::Destroy(int id)
 {
 }
 
-void ObjController::GetModel(int id, int meshIndex, std::vector<Vertex>& vertexVector, std::vector<unsigned int>& indexVector)
+void sf::ObjController::GetModel(int id, int meshIndex, std::vector<Vertex>& vertexVector, std::vector<unsigned int>& indexVector)
 {
 	// triangulate
 	std::vector<ObjVertex> triangulatedVtxSequence;

@@ -1,10 +1,10 @@
 #include "Skybox.h"
 
-bool Skybox::generated = false;
-unsigned int Skybox::gl_VAO;
-unsigned int Skybox::gl_VBO;
+bool sf::Skybox::generated = false;
+unsigned int sf::Skybox::gl_VAO;
+unsigned int sf::Skybox::gl_VBO;
 
-float Skybox::cubeVertices[] = {   
+float sf::Skybox::cubeVertices[] = {   
     -1.0f,  1.0f, -1.0f,
     -1.0f, -1.0f, -1.0f,
      1.0f, -1.0f, -1.0f,
@@ -47,10 +47,10 @@ float Skybox::cubeVertices[] = {
     -1.0f, -1.0f,  1.0f,
      1.0f, -1.0f,  1.0f
 };
-Shader Skybox::shader;
-Cubemap* Skybox::cubemap;
+sf::Shader sf::Skybox::shader;
+sf::Cubemap* sf::Skybox::cubemap;
 
-void Skybox::SetCubemap(Cubemap* cubemap)
+void sf::Skybox::SetCubemap(Cubemap* cubemap)
 {
     if (!generated)
     {
@@ -74,23 +74,23 @@ void Skybox::SetCubemap(Cubemap* cubemap)
     else
         shader.CreateFromFiles("assets/shaders/skyboxV.shader", "assets/shaders/skyboxF.shader");
 
-    Skybox::cubemap = cubemap;
+    sf::Skybox::cubemap = cubemap;
 }
 
-void Skybox::SetUseExposure(bool value)
+void sf::Skybox::SetUseExposure(bool value)
 {
     shader.Bind();
     shader.SetUniform1i("useExposure", (int)value);
 }
 
-void Skybox::SetExposure(float value)
+void sf::Skybox::SetExposure(float value)
 {
     shader.Bind();
     shader.SetUniform1f("exposure", value);
 }
 
 
-void Skybox::Draw()
+void sf::Skybox::Draw()
 {
     if (!generated)
         return;

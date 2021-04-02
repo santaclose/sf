@@ -18,7 +18,7 @@ namespace sfmg
 			vl::vec normal;
 		};
 
-		void Initialize(bool smooth, std::vector<Vertex>* theVertices, std::vector<unsigned int>* theIndexList);
+		void Initialize(bool smooth, std::vector<sf::Vertex>* theVertices, std::vector<unsigned int>* theIndexList);
 
 		//void generateFace(faceS& theFace);
 		//inline ::ofv::vl::vec calcNormal(faceS& theFace);

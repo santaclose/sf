@@ -19,7 +19,7 @@
 #define SPEED 15.0f
 #define MODEL_OFFSET 50.0
 
-namespace User
+namespace sf
 {
 	glm::vec3 targetGimbalRotation = glm::vec3(0.0, glm::radians(180.0f), 0.0);
 	Camera* camera;

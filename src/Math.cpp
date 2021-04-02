@@ -2,18 +2,21 @@
 
 #define EPSILON 0.001f
 
-glm::vec3 operator/(const glm::vec3& v, const float& f)
+glm::vec3 sf::operator/(const glm::vec3& v, const float& f)
 {
 	return glm::vec3(v.x / f, v.y / f, v.z / f);
 }
-glm::vec3 operator*(const glm::vec3& v, const float& f)
+glm::vec3 sf::operator*(const glm::vec3& v, const float& f)
 {
 	return glm::vec3(v.x * f, v.y * f, v.z * f);
 }
 
-float Math::Pi = 3.14159265358979323846264;
+namespace sf {
 
-bool Math::RayTriIntersect(const glm::vec3& origin, const glm::vec3& dir, const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2, float* out_t)
+	const float Math::Pi = 3.14159265358979323846264;
+}
+
+bool sf::Math::RayTriIntersect(const glm::vec3& origin, const glm::vec3& dir, const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2, float* out_t)
 {
 	glm::vec3 normal = glm::cross(v1 - v0, v2 - v0);
 	float q = glm::dot(normal, dir);

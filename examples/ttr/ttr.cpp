@@ -24,7 +24,7 @@
 
 #define LERP_TIME 0.05
 
-namespace User
+namespace sf
 {
 	Shader pbrShader;
 	Shader noiseShader;

@@ -5,34 +5,36 @@
 #include "Shader.h"
 #include "Entity.h"
 
-struct CameraSpecs
-{
-	bool perspective = true;
-	float orthographicScale = 5.0;
-	float aspectRatio = 1.77777777778;
-	float fieldOfView = 90.0;
-	float nearClippingPlane = 0.1;
-	float farClippingPlane = 1000.0;
-};
+namespace sf {
 
-class Camera : public Entity
-{
-private:
-	glm::mat4 m_projectionMatrix;
-	glm::mat4 m_viewMatrix;
-	glm::mat4 m_cameraMatrix;
+	struct CameraSpecs
+	{
+		bool perspective = true;
+		float orthographicScale = 5.0;
+		float aspectRatio = 1.77777777778;
+		float fieldOfView = 90.0;
+		float nearClippingPlane = 0.1;
+		float farClippingPlane = 1000.0;
+	};
 
-	CameraSpecs m_specs;
+	class Camera : public Entity
+	{
+	private:
+		glm::mat4 m_projectionMatrix;
+		glm::mat4 m_viewMatrix;
+		glm::mat4 m_cameraMatrix;
 
-public:
-	void ComputeMatrices();
-	static const glm::mat4& GetMatrix();
-	static const glm::mat4& GetViewMatrix();
-	static const glm::mat4& GetProjectionMatrix();
+		CameraSpecs m_specs;
 
-	Camera(const CameraSpecs& specs);
-	void Bind();
+	public:
+		void ComputeMatrices();
+		static const glm::mat4& GetMatrix();
+		static const glm::mat4& GetViewMatrix();
+		static const glm::mat4& GetProjectionMatrix();
 
-	static Camera* boundCamera;
-};
+		Camera(const CameraSpecs& specs);
+		void Bind();
 
+		static Camera* boundCamera;
+	};
+}

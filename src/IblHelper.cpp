@@ -9,7 +9,7 @@
 #include <stb_image_write.h>
 #include <iostream>
 
-namespace IblHelper {
+namespace sf::IblHelper {
 
     unsigned int envToCubeFBO, envToCubeRBO, irradianceFBO, irradianceRBO, prefilterFBO, prefilterRBO, brdfLUTFBO, brdfLUTRBO;
     Shader equirectangularToCubemapShader, irradianceShader, prefilterShader;
@@ -98,7 +98,7 @@ namespace IblHelper {
     }
 }
 
-void IblHelper::HdrToCubemaps(const Texture& hdrTexture, Cubemap& environmentCubemap, Cubemap& irradianceCubemap, Cubemap& prefilterCubemap, Texture& lookupTexture)
+void sf::IblHelper::HdrToCubemaps(const Texture& hdrTexture, Cubemap& environmentCubemap, Cubemap& irradianceCubemap, Cubemap& prefilterCubemap, Texture& lookupTexture)
 {
     environmentCubemap.Create(512, 3, Cubemap::StorageType::Float16, true);
     irradianceCubemap.Create(32, 3, Cubemap::StorageType::Float16, false);

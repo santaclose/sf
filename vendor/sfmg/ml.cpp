@@ -4,6 +4,7 @@ namespace sfmg
 {
 	namespace ml
 	{
+		using namespace sf;
 		using namespace vl;
 
 		bool calculateVertexNormals = true;

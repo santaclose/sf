@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Input {
+namespace sf::Input {
 
 	extern bool mouseButtons[3];
 	extern float mousePos[2];

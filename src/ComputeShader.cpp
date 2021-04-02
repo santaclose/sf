@@ -3,14 +3,14 @@
 #include <fstream>
 #include <iostream>
 
-ComputeShader::ComputeShader() : m_gl_id(-1) {}
+sf::ComputeShader::ComputeShader() : m_gl_id(-1) {}
 
-ComputeShader::~ComputeShader()
+sf::ComputeShader::~ComputeShader()
 {
 	glDeleteProgram(m_gl_id);
 }
 
-void ComputeShader::CreateFromFile(const std::string& shaderPath)
+void sf::ComputeShader::CreateFromFile(const std::string& shaderPath)
 {
 	std::ifstream ifs(shaderPath);
 	
@@ -61,7 +61,7 @@ void ComputeShader::CreateFromFile(const std::string& shaderPath)
 	}
 }
 
-void ComputeShader::Bind() const
+void sf::ComputeShader::Bind() const
 {
 	glUseProgram(m_gl_id);
 }

@@ -17,14 +17,14 @@
 #define COUNT 4000
 #define SPAWN_RANGE 700.0
 
-namespace User
+namespace sf
 {
 	float shipSpeed = 5.0;
 	glm::fquat targetShipRotation = glm::fquat(1.0, 0.0, 0.0, 0.0);
 	Camera* theCamera;
 	Camera* lookBackCamera;
 
-	Shader shadelessShader;
+	Shader unlitShader;
 	Shader uvShader;
 	Shader colorShader;
 	Shader noiseShader;
@@ -32,6 +32,7 @@ namespace User
 	Material colorsMaterial;
 	Material noiseMaterial;
 	Material uvMaterial;
+	Material unlitMaterial;
 
 	Model ship;
 	Model uniqueThings[UNIQUE_COUNT];
@@ -49,13 +50,14 @@ namespace User
 		specs.fieldOfView = glm::radians(120.0f);
 		lookBackCamera = new Camera(specs);
 
-		shadelessShader.CreateFromFiles("assets/shaders/pbrV.shader", "assets/shaders/shadelessF.shader");
+		unlitShader.CreateFromFiles("assets/shaders/pbrV.shader", "assets/shaders/unlitF.shader");
 		colorShader.CreateFromFiles("examples/spaceship/randomColorsV.shader", "examples/spaceship/randomColorsF.shader");
-		uvShader.CreateFromFiles("assets/shaders/pbrV.shader", "assets/shaders/uvF.shader");
+		uvShader.CreateFromFiles("assets/shaders/defaultV.shader", "assets/shaders/uvF.shader");
 		noiseShader.CreateFromFiles("examples/spaceship/noiseV.shader", "examples/spaceship/noiseF.shader");
 
-		uvMaterial.CreateFromShader(&uvShader);
+		unlitMaterial.CreateFromShader(&unlitShader);
 		colorsMaterial.CreateFromShader(&colorShader);
+		uvMaterial.CreateFromShader(&uvShader);
 		noiseMaterial.CreateFromShader(&noiseShader);
 
 		int gltfid = GltfController::Load("examples/spaceship/ship.glb");
@@ -68,13 +70,13 @@ namespace User
 
 		for (unsigned int i = 0; i < UNIQUE_COUNT; i++)
 		{
-			User::Models::seed = i;
-			uniqueThings[i].CreateFromCode(User::Models::GenerateModel);
+			Models::seed = i;
+			uniqueThings[i].CreateFromCode(Models::GenerateModel);
 
 			switch (i % 3)
 			{
 			case 0:
-				uniqueThings[i].SetMaterial(&uvMaterial);
+				uniqueThings[i].SetMaterial(&unlitMaterial);
 				break;
 			case 1:
 				uniqueThings[i].SetMaterial(&colorsMaterial);

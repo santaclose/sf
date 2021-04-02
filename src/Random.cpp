@@ -1,26 +1,26 @@
 #include "Random.h"
 #include "Math.h"
 
-void Random::SetSeed(unsigned int seed)
+void sf::Random::SetSeed(unsigned int seed)
 {
 	srand(seed);
 }
 
-float Random::Float()
+float sf::Random::Float()
 {
 	return static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
 }
 
-int Random::Int(int limit)
+int sf::Random::Int(int limit)
 {
 	return rand() % limit;
 }
 
-glm::vec3 Random::UnitVec3()
+glm::vec3 sf::Random::UnitVec3()
 {
 	glm::vec3 rayDir;
-	float phi = Random::Float() * Math::Pi * 2.0f;
-	float costheta = Random::Float() * 2.0f - 1.0f;
+	float phi = sf::Random::Float() * Math::Pi * 2.0f;
+	float costheta = sf::Random::Float() * 2.0f - 1.0f;
 	float theta = glm::acos(costheta);
 	rayDir.x = glm::sin(theta) * glm::cos(phi);
 	rayDir.y = glm::sin(theta) * glm::sin(phi);
@@ -28,7 +28,7 @@ glm::vec3 Random::UnitVec3()
 	return rayDir;
 }
 
-glm::fquat Random::Rotation()
+glm::fquat sf::Random::Rotation()
 {
 	glm::fquat rot;
 	float u = Float();

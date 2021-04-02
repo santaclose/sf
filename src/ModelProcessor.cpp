@@ -5,7 +5,7 @@
 #include "Random.h"
 #include "Math.h"
 
-void ModelProcessor::ComputeNormals(Model& model, bool normalize)
+void sf::ModelProcessor::ComputeNormals(Model& model, bool normalize)
 {
 	for (Vertex& v : model.m_vertexVector)
 		v.normal = { 0.0f,0.0f,0.0f };
@@ -28,7 +28,7 @@ void ModelProcessor::ComputeNormals(Model& model, bool normalize)
 	}
 }
 
-void ModelProcessor::ComputeTangentSpace(Model& model)
+void sf::ModelProcessor::ComputeTangentSpace(Model& model)
 {
 	for (int i = 0; i < model.m_indexVector.size(); i += 3)
 	{
@@ -65,7 +65,7 @@ void ModelProcessor::ComputeTangentSpace(Model& model)
 	}
 }
 
-void ModelProcessor::BakeAo(Model& model, int rayCount, bool onlyCastRaysUpwards, bool intersectFromBothSides, float rayOriginOffset, float rayDistance)
+void sf::ModelProcessor::BakeAo(Model& model, int rayCount, bool onlyCastRaysUpwards, bool intersectFromBothSides, float rayOriginOffset, float rayDistance)
 {
 	#pragma omp parallel for
 	for (int q = 0; q < model.m_vertexVector.size(); q++)

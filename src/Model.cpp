@@ -10,15 +10,18 @@
 #include <ml.h>
 #include <iostream>
 
-std::vector<Model*> Model::models;
+namespace sf {
 
-void Model::SendMatrixToShader()
+	std::vector<Model*> sf::Model::models;
+}
+
+void sf::Model::SendMatrixToShader()
 {
 	if (m_matrixUpdatePending)
 		UpdateTransformMatrix();
 	m_material->m_shader->SetUniformMatrix4fv("modelMatrix", &m_transformMatrix[0][0]);
 }
-void Model::CompleteFromVectors()
+void sf::Model::CompleteFromVectors()
 {
 	glGenVertexArrays(1, &m_gl_vao);
 	glGenBuffers(1, &m_gl_vertexBuffer);
@@ -51,7 +54,7 @@ void Model::CompleteFromVectors()
 
 	models.push_back(this);
 }
-void Model::ReloadVertexData()
+void sf::Model::ReloadVertexData()
 {
 	glBindBuffer(GL_ARRAY_BUFFER, m_gl_vertexBuffer);
 	glBufferData(GL_ARRAY_BUFFER, m_vertexVector.size() * sizeof(Vertex), &m_vertexVector[0], GL_STATIC_DRAW);
@@ -60,28 +63,28 @@ void Model::ReloadVertexData()
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indexVector.size() * sizeof(unsigned int), &m_indexVector[0], GL_STATIC_DRAW);
 }
 
-void Model::CreateFromGltf(unsigned int gltfID, unsigned int meshIndex)
+void sf::Model::CreateFromGltf(unsigned int gltfID, unsigned int meshIndex)
 {
 	GltfController::GetModel(gltfID, meshIndex, m_vertexVector, m_indexVector);
 	CompleteFromVectors();
 }
-void Model::CreateFromObj(unsigned int objID, unsigned int meshIndex)
+void sf::Model::CreateFromObj(unsigned int objID, unsigned int meshIndex)
 {
 	ObjController::GetModel(objID, meshIndex, m_vertexVector, m_indexVector);
 	CompleteFromVectors();
 }
-void Model::CreateFromCode(void (*generateModelFunc)(), bool smooth)
+void sf::Model::CreateFromCode(void (*generateModelFunc)(), bool smooth)
 {
 	sfmg::ml::Initialize(smooth, &m_vertexVector, &m_indexVector);
 	generateModelFunc();
 	CompleteFromVectors();
 }
 
-void Model::SetMaterial(Material* theMaterial)
+void sf::Model::SetMaterial(Material* theMaterial)
 {
 	m_material = theMaterial;
 }
-void Model::Draw()
+void sf::Model::Draw()
 {
 	m_material->Bind();
 
@@ -101,7 +104,7 @@ void Model::Draw()
 	}
 	glBindVertexArray(0);
 }
-void Model::DrawAll()
+void sf::Model::DrawAll()
 {
 	for (Model* m : models)
 	{

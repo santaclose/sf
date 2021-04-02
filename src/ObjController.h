@@ -3,7 +3,7 @@
 #include <string>
 #include "Vertex.h"
 
-namespace ObjController
+namespace sf::ObjController
 {
 	int Load(const std::string& filePath);
 	void Destroy(int id);

@@ -5,7 +5,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 
-void Cubemap::GetGlEnums(int channelCount, StorageType storageType, GLenum& type, int& internalFormat, GLenum& format)
+void sf::Cubemap::GetGlEnums(int channelCount, StorageType storageType, GLenum& type, int& internalFormat, GLenum& format)
 {
     switch (storageType)
     {
@@ -78,7 +78,7 @@ void Cubemap::GetGlEnums(int channelCount, StorageType storageType, GLenum& type
     }
 }
 
-void Cubemap::Create(unsigned int size, int channelCount, StorageType storageType, bool mipmap)
+void sf::Cubemap::Create(unsigned int size, int channelCount, StorageType storageType, bool mipmap)
 {
     m_size = size;
     m_storageType = storageType;
@@ -103,7 +103,7 @@ void Cubemap::Create(unsigned int size, int channelCount, StorageType storageTyp
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }
 
-void Cubemap::CreateFromFiles(const std::vector<std::string>& files, int channelCount, StorageType storageType, bool mipmap)
+void sf::Cubemap::CreateFromFiles(const std::vector<std::string>& files, int channelCount, StorageType storageType, bool mipmap)
 {
     m_storageType = storageType;
 
@@ -173,7 +173,7 @@ void Cubemap::CreateFromFiles(const std::vector<std::string>& files, int channel
     "_4.jpg",
     "_5.jpg"
 */
-void Cubemap::CreateFromFiles(const std::string& name, const std::string& extension, int channelCount, StorageType storageType, bool mipmap)
+void sf::Cubemap::CreateFromFiles(const std::string& name, const std::string& extension, int channelCount, StorageType storageType, bool mipmap)
 {
     std::vector<std::string> files;
     files.resize(6);
@@ -183,24 +183,24 @@ void Cubemap::CreateFromFiles(const std::string& name, const std::string& extens
     CreateFromFiles(files, channelCount, storageType, mipmap);
 }
 
-void Cubemap::ComputeMipmap()
+void sf::Cubemap::ComputeMipmap()
 {
     glBindTexture(GL_TEXTURE_CUBE_MAP, m_gl_id);
     glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 }
 
-Cubemap::~Cubemap()
+sf::Cubemap::~Cubemap()
 {
     glDeleteTextures(1, &m_gl_id);
 }
 
-void Cubemap::Bind(unsigned int slot) const
+void sf::Cubemap::Bind(unsigned int slot) const
 {
     glActiveTexture(GL_TEXTURE0 + slot);
     glBindTexture(GL_TEXTURE_CUBE_MAP, m_gl_id);
 }
 
-void Cubemap::Unbind() const
+void sf::Cubemap::Unbind() const
 {
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }

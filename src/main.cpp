@@ -18,28 +18,27 @@ double currentFrameTime = 0.0;
 double deltaTime = 0.0;
 bool deltaTimeLock = true;
 
-
 void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 {
-	Input::UpdateMousePosition(xpos, ypos);
+	sf::Input::UpdateMousePosition(xpos, ypos);
 }
 
 void mouse_button_callback(GLFWwindow*, int button, int action, int mods)
 {
-	Input::UpdateMouseButtons(button, action);
+	sf::Input::UpdateMouseButtons(button, action);
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-	Input::UpdateKeyboard(key, action);
+	sf::Input::UpdateKeyboard(key, action);
 }
 void character_callback(GLFWwindow* window, unsigned int codepoint)
 {
-	Input::UpdateCharacter(codepoint);
+	sf::Input::UpdateCharacter(codepoint);
 }
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-	Input::UpdateMouseScroll(xoffset, yoffset);
+	sf::Input::UpdateMouseScroll(xoffset, yoffset);
 }
 
 int main(int argc, char** argv)
@@ -51,9 +50,9 @@ int main(int argc, char** argv)
 		return -1;
 
 	/* Create a windowed mode window and its OpenGL context */
-	glfwWindowHint(GLFW_SAMPLES, Config::msaaCount);
+	glfwWindowHint(GLFW_SAMPLES, sf::Config::msaaCount);
 
-	window = glfwCreateWindow(Config::windowWidth, Config::windowHeight, Config::name.c_str(), Config::fullscreen ? glfwGetPrimaryMonitor() : NULL, NULL);
+	window = glfwCreateWindow(sf::Config::windowWidth, sf::Config::windowHeight, sf::Config::name.c_str(), sf::Config::fullscreen ? glfwGetPrimaryMonitor() : NULL, NULL);
 
 	if (!window)
 	{
@@ -81,25 +80,25 @@ int main(int argc, char** argv)
 	// Get GPU info and supported OpenGL version
 	std::cout << "Renderer: " << glGetString(GL_RENDERER) << std::endl;
 	std::cout << "OpenGL version supported " << glGetString(GL_VERSION) << std::endl;
-	
+
 	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_BLEND);
 
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
-	
+
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
-	glClearColor(Config::clearColor[0], Config::clearColor[1], Config::clearColor[2], 0.0);
+	glClearColor(sf::Config::clearColor[0], sf::Config::clearColor[1], sf::Config::clearColor[2], 0.0);
 
 	//-------------------//
-	User::Game::Initialize(argc, argv);
+	sf::Game::Initialize(argc, argv);
 	//-------------------//
-	glViewport(0, 0, Config::windowWidth, Config::windowHeight);
+	glViewport(0, 0, sf::Config::windowWidth, sf::Config::windowHeight);
 
 	/* Loop until the user closes the window */
 	while (!glfwWindowShouldClose(window))
@@ -117,20 +116,20 @@ int main(int argc, char** argv)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		//-------------------//
-		User::Game::OnUpdate(deltaTime, gameTime);
+		sf::Game::OnUpdate(deltaTime, gameTime);
 		//-------------------//
 
-		Camera::boundCamera->ComputeMatrices();
+		sf::Camera::boundCamera->ComputeMatrices();
 
 		gameTime += deltaTime;
-		
-		Model::DrawAll();
-		Skybox::Draw();
+
+		sf::Model::DrawAll();
+		sf::Skybox::Draw();
 
 		/* Swap front and back buffers */
 		glfwSwapBuffers(window);
 
-		Input::FrameEnd();
+		sf::Input::FrameEnd();
 		/* Poll for and process events */
 		glfwPollEvents();
 
@@ -138,7 +137,7 @@ int main(int argc, char** argv)
 	}
 
 	//-------------------//
-	User::Game::Terminate();
+	sf::Game::Terminate();
 	//-------------------//
 
 	glfwTerminate();

@@ -2,21 +2,24 @@
 #include "Texture.h"
 #include "Cubemap.h"
 
-Material* Material::boundMaterial = nullptr;
+namespace sf {
 
-void Material::CreateFromShader(Shader* theShader)
+	Material* Material::boundMaterial = nullptr;
+}
+
+void sf::Material::CreateFromShader(Shader* theShader)
 {
 	m_shader = theShader;
 }
 
-void Material::SetUniform(const std::string& name, void* data, UniformType type)
+void sf::Material::SetUniform(const std::string& name, void* data, UniformType type)
 {
 	m_uniformNames.push_back(name);
 	m_uniformData.push_back(data);
 	m_uniformTypes.push_back(type);
 }
 
-void Material::Bind()
+void sf::Material::Bind()
 {
 	m_shader->Bind();
 

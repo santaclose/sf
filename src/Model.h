@@ -8,38 +8,40 @@
 #include "Object.h"
 #include "Material.h"
 
-class ModelReference;
-class ModelProcessor;
+namespace sf {
 
-class Model : public Object
-{
-	friend ModelReference;
-	friend ModelProcessor;
+	class ModelReference;
+	class ModelProcessor;
 
-	static std::vector<Model*> models;
+	class Model : public Object
+	{
+		friend ModelReference;
+		friend ModelProcessor;
 
-	void SendMatrixToShader();
+		static std::vector<Model*> models;
 
-	unsigned int m_gl_vertexBuffer;
-	unsigned int m_gl_indexBuffer;
-	unsigned int m_gl_vao;
-	std::vector<Vertex> m_vertexVector;
-	std::vector<unsigned int> m_indexVector;
+		void SendMatrixToShader();
 
-	Material* m_material;
+		unsigned int m_gl_vertexBuffer;
+		unsigned int m_gl_indexBuffer;
+		unsigned int m_gl_vao;
+		std::vector<Vertex> m_vertexVector;
+		std::vector<unsigned int> m_indexVector;
 
-	std::vector<ModelReference*> m_references;
+		Material* m_material;
 
-	void CompleteFromVectors();
+		std::vector<ModelReference*> m_references;
 
-public:
-	void ReloadVertexData();
-	void CreateFromGltf(unsigned int gltfID, unsigned int meshIndex);
-	void CreateFromObj(unsigned int objID, unsigned int meshIndex);
-	void CreateFromCode(void (*generateModelFunc)(), bool smooth = true);
+		void CompleteFromVectors();
 
-	void SetMaterial(Material* theMaterial);
-	void Draw();
-	static void DrawAll();
-};
+	public:
+		void ReloadVertexData();
+		void CreateFromGltf(unsigned int gltfID, unsigned int meshIndex);
+		void CreateFromObj(unsigned int objID, unsigned int meshIndex);
+		void CreateFromCode(void (*generateModelFunc)(), bool smooth = true);
 
+		void SetMaterial(Material* theMaterial);
+		void Draw();
+		static void DrawAll();
+	};
+}

@@ -4,7 +4,7 @@
 #include <string>
 #include <fstream>
 
-unsigned int Shader::CompileShader(unsigned int type, const std::string& source)
+unsigned int sf::Shader::CompileShader(unsigned int type, const std::string& source)
 {
 	std::string messageType;
 	switch (type)
@@ -46,9 +46,9 @@ unsigned int Shader::CompileShader(unsigned int type, const std::string& source)
 	return id;
 }
 
-Shader::Shader() : m_gl_id(-1) {}
+sf::Shader::Shader() : m_gl_id(-1) {}
 
-void Shader::CreateFromFiles(const std::string& vertexShaderPath, const std::string& fragmentShaderPath)
+void sf::Shader::CreateFromFiles(const std::string& vertexShaderPath, const std::string& fragmentShaderPath)
 {
 	if (m_gl_id != -1)
 		glDeleteProgram(m_gl_id);
@@ -79,18 +79,18 @@ void Shader::CreateFromFiles(const std::string& vertexShaderPath, const std::str
 	glDeleteShader(fs);
 }
 
-Shader::~Shader()
+sf::Shader::~Shader()
 {
 	glDeleteProgram(m_gl_id);
 }
 
-void Shader::Bind() const
+void sf::Shader::Bind() const
 {
 	glUseProgram(m_gl_id);
 	//std::cout << "Shader " << m_gl_id << " bound\n";
 }
 
-int Shader::GetUniformLocation(const std::string& name)
+int sf::Shader::GetUniformLocation(const std::string& name)
 {
 	if (m_uniformLocationCache.find(name) != m_uniformLocationCache.end())
 		return m_uniformLocationCache[name];
@@ -103,28 +103,28 @@ int Shader::GetUniformLocation(const std::string& name)
 	return location;
 }
 
-void Shader::SetUniformMatrix4fv(const std::string& name, const float* pointer, unsigned int number)
+void sf::Shader::SetUniformMatrix4fv(const std::string& name, const float* pointer, unsigned int number)
 {
 	glUniformMatrix4fv(GetUniformLocation(name), number, GL_FALSE, pointer);
 }
-void Shader::SetUniform1fv(const std::string& name, const float* pointer, unsigned int number)
+void sf::Shader::SetUniform1fv(const std::string& name, const float* pointer, unsigned int number)
 {
 	glUniform1fv(GetUniformLocation(name), number, pointer);
 }
-void Shader::SetUniform3fv(const std::string& name, const float* pointer, unsigned int number)
+void sf::Shader::SetUniform3fv(const std::string& name, const float* pointer, unsigned int number)
 {
 	glUniform3fv(GetUniformLocation(name), number, pointer);
 }
-void Shader::SetUniform4fv(const std::string& name, const float* pointer, unsigned int number)
+void sf::Shader::SetUniform4fv(const std::string& name, const float* pointer, unsigned int number)
 {
 	glUniform4fv(GetUniformLocation(name), number, pointer);
 }
-void Shader::SetUniform1i(const std::string& name, int value)
+void sf::Shader::SetUniform1i(const std::string& name, int value)
 {
 	glUniform1i(GetUniformLocation(name), value);
 }
 
-void Shader::SetUniform1f(const std::string& name, float value)
+void sf::Shader::SetUniform1f(const std::string& name, float value)
 {
 	glUniform1f(GetUniformLocation(name), value);
 }

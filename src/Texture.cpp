@@ -5,8 +5,7 @@
 
 #include <stb_image.h>
 
-
-void Texture::GetGlEnums(int channelCount, StorageType storageType, ContentType contentType, GLenum& type, int& internalFormat, GLenum& format)
+void sf::Texture::GetGlEnums(int channelCount, StorageType storageType, ContentType contentType, GLenum& type, int& internalFormat, GLenum& format)
 {
 	switch (storageType)
 	{
@@ -79,7 +78,7 @@ void Texture::GetGlEnums(int channelCount, StorageType storageType, ContentType 
 	}
 }
 
-void Texture::Create(unsigned int width, unsigned int height, int channelCount,	ContentType contentType, StorageType storageType, WrapMode wrapMode, bool mipmap)
+void sf::Texture::Create(unsigned int width, unsigned int height, int channelCount,	ContentType contentType, StorageType storageType, WrapMode wrapMode, bool mipmap)
 {
 	m_width = width;
 	m_height = height;
@@ -105,7 +104,7 @@ void Texture::Create(unsigned int width, unsigned int height, int channelCount,	
 
 }
 
-void Texture::CreateFromFile(const std::string& path, int channelCount, ContentType contentType, StorageType storageType, WrapMode wrapMode, bool mipmap, bool flipVertically)
+void sf::Texture::CreateFromFile(const std::string& path, int channelCount, ContentType contentType, StorageType storageType, WrapMode wrapMode, bool mipmap, bool flipVertically)
 {
 	m_contentType = contentType;
 	m_storageType = storageType;
@@ -158,29 +157,29 @@ void Texture::CreateFromFile(const std::string& path, int channelCount, ContentT
 		stbi_image_free(floatImgBuffer);
 }
 
-void Texture::CreateFromGltf(unsigned int gltfID, unsigned int textureIndex)
+void sf::Texture::CreateFromGltf(unsigned int gltfID, unsigned int textureIndex)
 {
 	GltfController::GetTexture(gltfID, textureIndex, m_gl_id, m_width, m_height);
 }
 
-void Texture::ComputeMipmap()
+void sf::Texture::ComputeMipmap()
 {
 	glBindTexture(GL_TEXTURE_2D, m_gl_id);
 	glGenerateMipmap(GL_TEXTURE_2D);
 }
 
-Texture::~Texture()
+sf::Texture::~Texture()
 {
 	glDeleteTextures(1, &m_gl_id);
 }
 
-void Texture::Bind(unsigned int slot) const
+void sf::Texture::Bind(unsigned int slot) const
 {
 	glActiveTexture(GL_TEXTURE0 + slot);
 	glBindTexture(GL_TEXTURE_2D, m_gl_id);
 }
 
-void Texture::Unbind() const
+void sf::Texture::Unbind() const
 {
 	glBindTexture(GL_TEXTURE_2D, 0);
 }

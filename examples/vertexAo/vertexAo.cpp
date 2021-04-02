@@ -17,7 +17,7 @@
 #define SPEED 15.0f
 #define MODEL_OFFSET 50.0
 
-namespace User
+namespace sf
 {
 	glm::vec3 targetGimbalRotation = glm::vec3(0.0, glm::radians(180.0f), 0.0);
 	Camera* camera;
@@ -76,9 +76,9 @@ namespace User
 
 		models.emplace_back();
 		models.back() = new Model();
-		objid = ObjController::Load("examples/vertexAo/seashell.obj");
+		objid = ObjController::Load("examples/vertexAo/shoe.obj");
 		models.back()->CreateFromObj(objid, 0);
-		ModelProcessor::BakeAo(*models.back(), 50, false, true, 0.001, 5.0f);
+		ModelProcessor::BakeAo(*models.back(), 10, false, true, 0.001, 5.0f);
 		//ModelProcessor::BakeAo(*models.back());
 		models.back()->ReloadVertexData();
 		models.back()->SetMaterial(&material);

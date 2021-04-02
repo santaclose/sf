@@ -1,10 +1,7 @@
 #pragma once
 
-namespace User
+namespace sf::Models
 {
-	namespace Models
-	{
-		extern int seed;
-		void GenerateModel();
-	}
+	extern int seed;
+	void GenerateModel();
 }

@@ -50,27 +50,6 @@ namespace sf::ObjController {
 	std::regex faceVertexRegex("^(\\d+)\/(\\d*)\/(\\d*)$");
 
 	std::vector<ObjModel> models;
-
-
-	//struct TempVertex // hold vertices and its duplicates
-	//{
-	//	int vtxID;
-	//	int coordID;
-	//};
-	//struct TempFace
-	//{
-	//	std::vector<TempVertex> verts;
-	//};
-
-	//bool haveToDuplicateVertex(const TempVertex& a, const std::vector<TempVertex>& vector)
-	//{
-	//	for (int i = 0; i < vector.size(); i++)
-	//	{
-	//		if (vector[i].vtxID == a.vtxID && vector[i].coordID != a.coordID)
-	//			return true;
-	//	}
-	//	return false;
-	//}
 }
 
 int sf::ObjController::Load(const std::string& filePath)
@@ -148,11 +127,6 @@ void sf::ObjController::GetModel(int id, int meshIndex, std::vector<Vertex>& ver
 			triangulatedVtxSequence.push_back(f.vertices[0]);
 			triangulatedVtxSequence.push_back(f.vertices[i - 1]);
 			triangulatedVtxSequence.push_back(f.vertices[i]);
-			
-			//std::cout << f.vertices[0] << std::endl;
-			//std::cout << f.vertices[i - 1] << std::endl;
-			//std::cout << f.vertices[i] << std::endl;
-			//std::cout << "---" << std::endl;
 		}
 	}
 
@@ -160,7 +134,7 @@ void sf::ObjController::GetModel(int id, int meshIndex, std::vector<Vertex>& ver
 	std::unordered_map<ObjVertex, unsigned int, ObjVertexHash> uniqueVertices;
 	for (const ObjVertex& v : triangulatedVtxSequence)
 	{
-		//if (uniqueVertices.find(v) == uniqueVertices.end()) // not found
+		if (uniqueVertices.find(v) == uniqueVertices.end()) // not found
 		{
 			vertexVector.emplace_back();
 			vertexVector.back().position = models[id].positions[v.posID];

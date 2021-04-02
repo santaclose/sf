@@ -1,12 +1,14 @@
 #pragma once
+
 #include <vector>
 #include <string>
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
-#include "Vertex.h"
-#include "Object.h"
-#include "Material.h"
+
+#include <Vertex.h>
+#include <Object.h>
+#include <Material.h>
 
 namespace sf {
 

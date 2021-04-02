@@ -1,9 +1,10 @@
 #include "Texture.h"
-#include "GltfController.h"
+
 #include <string>
 #include <iostream>
-
 #include <stb_image.h>
+
+#include <GltfController.h>
 
 void sf::Texture::GetGlEnums(int channelCount, StorageType storageType, ContentType contentType, GLenum& type, int& internalFormat, GLenum& format)
 {

@@ -1,9 +1,11 @@
 #include "Cubemap.h"
-#include "Shader.h"
-#include "ComputeShader.h"
+
 #include <stb_image.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
+
+#include <Shader.h>
+#include <ComputeShader.h>
 
 void sf::Cubemap::GetGlEnums(int channelCount, StorageType storageType, GLenum& type, int& internalFormat, GLenum& format)
 {

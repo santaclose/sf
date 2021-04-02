@@ -1,4 +1,4 @@
-#include "../../src/Config.h"
+#include <Config.h>
 
 std::string sf::Config::name = "sf";
 unsigned int sf::Config::windowWidth = 1280;

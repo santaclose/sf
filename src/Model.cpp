@@ -1,14 +1,14 @@
 #include "Model.h"
-#include "ModelReference.h"
-#include "GltfController.h"
-#include "ObjController.h"
-#include "Camera.h"
-#include "Texture.h"
-#include "Random.h"
-#include "Math.h"
 
 #include <ml.h>
 #include <iostream>
+
+#include <ModelReference.h>
+#include <GltfController.h>
+#include <ObjController.h>
+#include <Camera.h>
+#include <Texture.h>
+#include <Random.h>
 
 namespace sf {
 

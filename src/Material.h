@@ -2,8 +2,9 @@
 
 #include <vector>
 #include <string>
-#include "Shader.h"
-#include "Texture.h"
+
+#include <Shader.h>
+#include <Texture.h>
 
 namespace sf {
 

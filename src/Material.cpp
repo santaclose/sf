@@ -1,6 +1,7 @@
 #include "Material.h"
-#include "Texture.h"
-#include "Cubemap.h"
+
+#include <Texture.h>
+#include <Cubemap.h>
 
 namespace sf {
 

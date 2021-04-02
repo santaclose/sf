@@ -1,7 +1,9 @@
 #pragma once
+
 #include <vector>
 #include <string>
-#include "Vertex.h"
+
+#include <Vertex.h>
 
 namespace sf::GltfController {
 

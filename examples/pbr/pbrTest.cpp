@@ -1,18 +1,19 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
-#include "../../src/Game.h"
-#include "../../src/Texture.h"
-#include "../../src/Cubemap.h"
-#include "../../src/Material.h"
-#include "../../src/Model.h"
-#include "../../src/ModelReference.h"
-#include "../../src/ModelProcessor.h"
-#include "../../src/Math.h"
-#include "../../src/Skybox.h"
-#include "../../src/Input.h"
-#include "../../src/GltfController.h"
-#include "../../src/ObjController.h"
-#include "../../src/IblHelper.h"
+
+#include <Game.h>
+#include <Texture.h>
+#include <Cubemap.h>
+#include <Material.h>
+#include <Model.h>
+#include <ModelReference.h>
+#include <ModelProcessor.h>
+#include <Math.hpp>
+#include <Skybox.h>
+#include <Input.h>
+#include <GltfController.h>
+#include <ObjController.h>
+#include <IblHelper.h>
 
 #define MOVE_SENSITIVITY 0.003
 #define SCROLL_SENSITIVITY 0.06

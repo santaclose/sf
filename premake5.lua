@@ -19,7 +19,7 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 group "Dependencies"
 	include "vendor/GLFW"
 	include "vendor/Glad"
-	--include "vendor/tinygltf"
+
 group ""
 
 project "sf"
@@ -51,6 +51,7 @@ project "sf"
 
 	includedirs
 	{
+		"src",
 		"vendor/GLFW/include",
 		"vendor/Glad/include",
 		"vendor/glm",
@@ -80,8 +81,10 @@ project "sf"
 		defines "SF_DEBUG"
 		runtime "Debug"
 		symbols "on"
+		buildoptions { "/openmp" }
 
 	filter "configurations:Release"
 		defines "SF_RELEASE"
 		runtime "Release"
 		optimize "on"
+		buildoptions { "/openmp" }

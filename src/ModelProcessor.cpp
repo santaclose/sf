@@ -2,8 +2,8 @@
 
 #include <iostream>
 
-#include "Random.h"
-#include "Math.h"
+#include <Random.h>
+#include <Math.hpp>
 
 void sf::ModelProcessor::ComputeNormals(Model& model, bool normalize)
 {

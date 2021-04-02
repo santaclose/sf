@@ -1,4 +1,5 @@
 #include "Entity.h"
+
 #include <iostream>
 
 void sf::Entity::SetPosition(const glm::vec3& newPosition)

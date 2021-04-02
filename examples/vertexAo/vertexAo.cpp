@@ -1,16 +1,17 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
-#include "../../src/Game.h"
-#include "../../src/Material.h"
-#include "../../src/Model.h"
-#include "../../src/ModelReference.h"
-#include "../../src/Math.h"
-#include "../../src/Random.h"
-#include "../../src/Input.h"
-#include "../../src/Camera.h"
-#include "../../src/GltfController.h"
-#include "../../src/ObjController.h"
-#include "../../src/ModelProcessor.h"
+
+#include <Game.h>
+#include <Material.h>
+#include <Model.h>
+#include <ModelReference.h>
+#include <Math.hpp>
+#include <Random.h>
+#include <Input.h>
+#include <Camera.h>
+#include <GltfController.h>
+#include <ObjController.h>
+#include <ModelProcessor.h>
 
 #define MOVE_SENSITIVITY 0.003
 #define SCROLL_SENSITIVITY 0.06

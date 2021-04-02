@@ -3,7 +3,6 @@
 #include <math.h>
 #include <vector>
 
-
 #define RADIUS 0.05
 namespace sf::Models
 {

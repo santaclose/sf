@@ -1,4 +1,4 @@
-#include "Math.h"
+#include "Math.hpp"
 
 #define EPSILON 0.001f
 

@@ -1,5 +1,6 @@
 #pragma once
-#include "Entity.h"
+
+#include <Entity.h>
 
 namespace sf {
 

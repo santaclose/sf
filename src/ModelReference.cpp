@@ -1,7 +1,6 @@
-// stores a matrix for model duplicates doesnt contain vertices or materials
-
 #include "ModelReference.h"
-#include "Camera.h"
+
+#include <Camera.h>
 
 void sf::ModelReference::SendMatrixToShader()
 {

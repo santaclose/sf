@@ -5,7 +5,7 @@
 #include <tiny_gltf.h>
 #include <glad/glad.h>
 
-#include "ModelProcessor.h"
+#include <ModelProcessor.h>
 
 namespace sf::GltfController {
 

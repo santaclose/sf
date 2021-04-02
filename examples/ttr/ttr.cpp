@@ -1,15 +1,17 @@
 #include <GLFW/glfw3.h>
-#include "../../src/Game.h"
-#include "../../src/Texture.h"
-#include "../../src/Material.h"
-#include "../../src/Model.h"
-#include "../../src/ModelReference.h"
-#include "../../src/Math.h"
-#include "../../src/Random.h"
-#include "../../src/Camera.h"
-#include "../../src/Input.h"
-#include "errt.h"
 #include <iostream>
+
+#include <Game.h>
+#include <Texture.h>
+#include <Material.h>
+#include <Model.h>
+#include <ModelReference.h>
+#include <Math.hpp>
+#include <Random.h>
+#include <Camera.h>
+#include <Input.h>
+
+#include "errt.h"
 
 #define SENSITIVITY 0.007
 

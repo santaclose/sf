@@ -1,7 +1,8 @@
 #pragma once
-#include "Shader.h"
-#include "Cubemap.h"
-#include "Camera.h"
+
+#include <Shader.h>
+#include <Cubemap.h>
+#include <Camera.h>
 
 namespace sf {
 

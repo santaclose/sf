@@ -3,12 +3,13 @@
 #include <glm/glm.hpp>
 #include <iostream>
 #include <vector>
-#include "Camera.h"
-#include "Model.h"
-#include "Skybox.h"
-#include "Input.h"
-#include "Config.h"
-#include "Game.h"
+
+#include <Camera.h>
+#include <Model.h>
+#include <Skybox.h>
+#include <Input.h>
+#include <Config.h>
+#include <Game.h>
 
 #define BACKGROUND_COLOR 0.1
 

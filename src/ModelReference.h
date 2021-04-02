@@ -1,11 +1,12 @@
 #pragma once
-#include "Object.h"
-#include "Material.h"
-#include "Model.h"
+
+#include <Object.h>
+#include <Material.h>
+#include <Model.h>
 
 namespace sf {
 
-	// a model reference only shares vertex and index buffers
+	// a model reference only stores transform data
 	class ModelReference : public Object
 	{
 		friend Model;

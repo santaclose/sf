@@ -1,7 +1,9 @@
 #include "ComputeShader.h"
-#include "Shader.h"
+
 #include <fstream>
 #include <iostream>
+
+#include <Shader.h>
 
 sf::ComputeShader::ComputeShader() : m_gl_id(-1) {}
 

@@ -1,5 +1,6 @@
 #include "Random.h"
-#include "Math.h"
+
+#include <Math.hpp>
 
 void sf::Random::SetSeed(unsigned int seed)
 {

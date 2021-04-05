@@ -65,67 +65,99 @@ void sf::ModelProcessor::ComputeTangentSpace(Model& model)
 	}
 }
 
-void sf::ModelProcessor::BakeAo(Model& model, int rayCount, bool onlyCastRaysUpwards, bool intersectFromBothSides, float rayOriginOffset, float rayDistance)
+void sf::ModelProcessor::BakeAoToVertices(Model& model,
+	int rayCount, bool onlyCastRaysUpwards,
+	const VoxelModel* voxelized,
+	float rayOriginOffset,
+	float rayDistance, float falloff,
+	float denoiseWeight, int denoisePasses)
 {
-	#pragma omp parallel for
-	for (int q = 0; q < model.m_vertexVector.size(); q++)
-	{
-		float brightness = 1.0f;
-		Vertex& v = model.m_vertexVector[q];
 
-		for (int i = 0; i < rayCount; i++)
+	if (voxelized != nullptr)
+	{
+		#pragma omp parallel for
+		for (int q = 0; q < model.m_vertexVector.size(); q++)
 		{
-			glm::vec3 rayDir = Random::UnitVec3();
-			if (onlyCastRaysUpwards && rayDir.y < 0.0f)
-				rayDir.y = -rayDir.y;
+			float brightness = 1.0f;
+			Vertex& v = model.m_vertexVector[q];
 
-			bool didHit = false;
-			float distance;
-			for (int j = 0; j < model.m_indexVector.size() && !didHit; j += 3) // for each face, intersect
+			for (int i = 0; i < rayCount; i++)
 			{
-				if (model.m_indexVector[j + 0] == q || model.m_indexVector[j + 1] == q || model.m_indexVector[j + 2] == q)
-					continue; // current vertex belongs to this face
+				glm::vec3 rayDir = Random::UnitVec3();
+				if (onlyCastRaysUpwards && rayDir.y < 0.0f)
+					rayDir.y = -rayDir.y;
 
-				if (!intersectFromBothSides)
+				float distance;
+				bool didHit = voxelized->CastRay(v.position + (rayDir * rayOriginOffset), rayDir, true, &distance);
+				if (didHit)
 				{
-					glm::vec3 faceNormal = glm::normalize(glm::cross(
-						model.m_vertexVector[model.m_indexVector[j + 1]].position - model.m_vertexVector[model.m_indexVector[j + 0]].position,
-						model.m_vertexVector[model.m_indexVector[j + 2]].position - model.m_vertexVector[model.m_indexVector[j + 0]].position));
-					if (glm::dot(rayDir, faceNormal) < 0)
-						continue;
+					if (distance > rayDistance)
+						distance = rayDistance;
+
+					float normalizedDistance = distance / rayDistance;
+					float occlusion = 1.0f - glm::pow(normalizedDistance, falloff);
+
+					brightness -= occlusion / (float)rayCount;
 				}
-
-				didHit = Math::RayTriIntersect(v.position + (rayDir * rayOriginOffset), rayDir,
-					model.m_vertexVector[model.m_indexVector[j + 0]].position,
-					model.m_vertexVector[model.m_indexVector[j + 1]].position,
-					model.m_vertexVector[model.m_indexVector[j + 2]].position, &distance);
 			}
-			if (didHit)
-			{
-				if (distance > rayDistance)
-					distance = rayDistance;
-
-				float normalizedDistance = distance / rayDistance;
-				float falloff = 6.0f;
-				float occlusion = 1.0f - glm::pow(normalizedDistance, falloff);
-				brightness -= occlusion / (float)rayCount;
-			}
+			v.extraData.x = brightness;
 		}
-		v.extraData.x = brightness;
 	}
-
-	float denoiseWeight = 0.3;
-	for (int i = 0; i < model.m_indexVector.size(); i += 3)
+	else
 	{
-		float average =
-			(model.m_vertexVector[model.m_indexVector[i + 0]].extraData.x +
-				model.m_vertexVector[model.m_indexVector[i + 1]].extraData.x +
-				model.m_vertexVector[model.m_indexVector[i + 2]].extraData.x) / 3.0f;
+		#pragma omp parallel for
+		for (int q = 0; q < model.m_vertexVector.size(); q++)
+		{
+			float brightness = 1.0f;
+			Vertex& v = model.m_vertexVector[q];
 
-		model.m_vertexVector[model.m_indexVector[i + 0]].extraData.x = glm::mix(model.m_vertexVector[model.m_indexVector[i + 0]].extraData.x, average, denoiseWeight);
-		model.m_vertexVector[model.m_indexVector[i + 1]].extraData.x = glm::mix(model.m_vertexVector[model.m_indexVector[i + 1]].extraData.x, average, denoiseWeight);
-		model.m_vertexVector[model.m_indexVector[i + 2]].extraData.x = glm::mix(model.m_vertexVector[model.m_indexVector[i + 2]].extraData.x, average, denoiseWeight);
+			for (int i = 0; i < rayCount; i++)
+			{
+				glm::vec3 rayDir = Random::UnitVec3();
+				if (onlyCastRaysUpwards && rayDir.y < 0.0f)
+					rayDir.y = -rayDir.y;
+
+				bool didHit = false;
+				float distance;
+				for (int j = 0; j < model.m_indexVector.size() && !didHit; j += 3) // for each face, intersect
+				{
+					if (model.m_indexVector[j + 0] == q || model.m_indexVector[j + 1] == q || model.m_indexVector[j + 2] == q)
+						continue; // current vertex belongs to this face
+
+					didHit = Math::RayTriIntersect(v.position + (rayDir * rayOriginOffset), rayDir,
+						model.m_vertexVector[model.m_indexVector[j + 0]].position,
+						model.m_vertexVector[model.m_indexVector[j + 1]].position,
+						model.m_vertexVector[model.m_indexVector[j + 2]].position, &distance);
+				}
+				if (didHit)
+				{
+					if (distance > rayDistance)
+						distance = rayDistance;
+
+					float normalizedDistance = distance / rayDistance;
+					float occlusion = 1.0f - glm::pow(normalizedDistance, falloff);
+
+					brightness -= occlusion / (float)rayCount;
+				}
+			}
+			v.extraData.x = brightness;
+		}
 	}
 
-	std::cout << "[Model] Finished baking AO to vertices\n";
+	for (int pass = 0; pass < denoisePasses; pass++)
+	{
+		for (int i = 0; i < model.m_indexVector.size(); i += 3)
+		{
+			float average =
+				(model.m_vertexVector[model.m_indexVector[i + 0]].extraData.x +
+					model.m_vertexVector[model.m_indexVector[i + 1]].extraData.x +
+					model.m_vertexVector[model.m_indexVector[i + 2]].extraData.x) / 3.0f;
+
+			model.m_vertexVector[model.m_indexVector[i + 0]].extraData.x = glm::mix(model.m_vertexVector[model.m_indexVector[i + 0]].extraData.x, average, denoiseWeight);
+			model.m_vertexVector[model.m_indexVector[i + 1]].extraData.x = glm::mix(model.m_vertexVector[model.m_indexVector[i + 1]].extraData.x, average, denoiseWeight);
+			model.m_vertexVector[model.m_indexVector[i + 2]].extraData.x = glm::mix(model.m_vertexVector[model.m_indexVector[i + 2]].extraData.x, average, denoiseWeight);
+		}
+	}
+
+	std::cout << "[ModelProcessor] Finished baking AO to vertices\n";
 }

@@ -1,4 +1,4 @@
-#include "GltfController.h"
+#include "GltfImporter.h"
 
 #include <fstream>
 #include <iostream>
@@ -7,12 +7,12 @@
 
 #include <ModelProcessor.h>
 
-namespace sf::GltfController {
+namespace sf::GltfImporter {
 
 	std::vector<tinygltf::Model> models;
 }
 
-int sf::GltfController::Load(const std::string& filePath)
+int sf::GltfImporter::Load(const std::string& filePath)
 {
 	models.emplace_back();
 	tinygltf::TinyGLTF loader;
@@ -46,11 +46,11 @@ int sf::GltfController::Load(const std::string& filePath)
 	return models.size() - 1;
 }
 
-void sf::GltfController::Destroy(int id)
+void sf::GltfImporter::Destroy(int id)
 {
 }
 
-void sf::GltfController::GetModel(int id, int meshIndex, std::vector<Vertex>& vertexVector, std::vector<unsigned int>& indexVector)
+void sf::GltfImporter::GetModel(int id, int meshIndex, std::vector<Vertex>& vertexVector, std::vector<unsigned int>& indexVector)
 {
 	assert(id > -1 && id < models.size());
 	assert(meshIndex > -1 && meshIndex < models[id].meshes.size());
@@ -173,7 +173,7 @@ void sf::GltfController::GetModel(int id, int meshIndex, std::vector<Vertex>& ve
 	}
 }
 
-void sf::GltfController::GetTexture(int id, int textureIndex, unsigned int& glId, int& width, int& height)
+void sf::GltfImporter::GetTexture(int id, int textureIndex, unsigned int& glId, int& width, int& height)
 {
 	assert(id > -1 && id < models.size());
 	assert(textureIndex > -1 && textureIndex < models[id].textures.size());

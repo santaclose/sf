@@ -11,9 +11,9 @@
 #include <Math.hpp>
 #include <Skybox.h>
 #include <Input.h>
-#include <GltfController.h>
-#include <ObjController.h>
 #include <IblHelper.h>
+#include <Importer/GltfImporter.h>
+#include <Importer/ObjImporter.h>
 
 #define MOVE_SENSITIVITY 0.003
 #define SCROLL_SENSITIVITY 0.06
@@ -155,7 +155,7 @@ namespace sf
 
 		models.emplace_back();
 		models.back() = new Model();
-		gltfid = GltfController::Load("examples/pbr/gltf/SciFiHelmet/SciFiHelmet.gltf");
+		gltfid = GltfImporter::Load("examples/pbr/gltf/SciFiHelmet/SciFiHelmet.gltf");
 		models.back()->CreateFromGltf(gltfid, 0);
 		ModelProcessor::ComputeTangentSpace(*models.back());
 		models.back()->ReloadVertexData();
@@ -163,7 +163,7 @@ namespace sf
 
 		models.emplace_back();
 		models.back() = new Model();
-		gltfid = GltfController::Load("examples/pbr/gltf/DamagedHelmet/DamagedHelmet.gltf");
+		gltfid = GltfImporter::Load("examples/pbr/gltf/DamagedHelmet/DamagedHelmet.gltf");
 		models.back()->CreateFromGltf(gltfid, 0);
 		ModelProcessor::ComputeTangentSpace(*models.back());
 		models.back()->ReloadVertexData();
@@ -171,7 +171,7 @@ namespace sf
 
 		models.emplace_back();
 		models.back() = new Model();
-		gltfid = GltfController::Load("examples/pbr/gltf/MaterialsVariantsShoe/MaterialsVariantsShoe.gltf");
+		gltfid = GltfImporter::Load("examples/pbr/gltf/MaterialsVariantsShoe/MaterialsVariantsShoe.gltf");
 		models.back()->CreateFromGltf(gltfid, 0);
 		ModelProcessor::ComputeTangentSpace(*models.back());
 		models.back()->ReloadVertexData();
@@ -227,8 +227,8 @@ namespace sf
 		cameraDistance -= SCROLL_SENSITIVITY * (Input::MouseScrollUp() ? 1.0f : 0.0f);
 		cameraDistance += SCROLL_SENSITIVITY * (Input::MouseScrollDown() ? 1.0f : 0.0f);
 
-		targetGimbalRotation.y -= Input::MousePosDeltaX() * MOVE_SENSITIVITY;
-		targetGimbalRotation.x += Input::MousePosDeltaY() * MOVE_SENSITIVITY;
+		targetGimbalRotation.y -= Input::MousePosDeltaX() * MOVE_SENSITIVITY * (Input::MouseButton(0) ? 1.0f : 0.0f);
+		targetGimbalRotation.x += Input::MousePosDeltaY() * MOVE_SENSITIVITY * (Input::MouseButton(0) ? 1.0f : 0.0f);
 
 		gimbal.SetRotation(glm::slerp(gimbal.GetRotation(), glm::fquat(targetGimbalRotation), deltaTime * SPEED));
 		camera->SetPosition(gimbal.GetPosition() + gimbal.Forward() * cameraDistance);

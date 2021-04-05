@@ -4,11 +4,12 @@
 #include <iostream>
 
 #include <ModelReference.h>
-#include <GltfController.h>
-#include <ObjController.h>
 #include <Camera.h>
 #include <Texture.h>
 #include <Random.h>
+#include <Importer/GltfImporter.h>
+#include <Importer/ObjImporter.h>
+#include <VoxelModel.h>
 
 namespace sf {
 
@@ -65,12 +66,12 @@ void sf::Model::ReloadVertexData()
 
 void sf::Model::CreateFromGltf(unsigned int gltfID, unsigned int meshIndex)
 {
-	GltfController::GetModel(gltfID, meshIndex, m_vertexVector, m_indexVector);
+	GltfImporter::GetModel(gltfID, meshIndex, m_vertexVector, m_indexVector);
 	CompleteFromVectors();
 }
 void sf::Model::CreateFromObj(unsigned int objID, unsigned int meshIndex)
 {
-	ObjController::GetModel(objID, meshIndex, m_vertexVector, m_indexVector);
+	ObjImporter::GetModel(objID, meshIndex, m_vertexVector, m_indexVector);
 	CompleteFromVectors();
 }
 void sf::Model::CreateFromCode(void (*generateModelFunc)(), bool smooth)
@@ -78,6 +79,48 @@ void sf::Model::CreateFromCode(void (*generateModelFunc)(), bool smooth)
 	sfmg::ml::Initialize(smooth, &m_vertexVector, &m_indexVector);
 	generateModelFunc();
 	CompleteFromVectors();
+}
+
+void sf::Model::CreateFromVoxelModel(const VoxelModel& voxelModel)
+{
+	int unitcubeid = ObjImporter::Load("assets/unitcube.obj");
+	this->CreateFromObj(unitcubeid);
+
+	for (auto& v : m_vertexVector)
+		v.position *= voxelModel.m_voxelSize;
+
+	std::vector<Vertex> cubeV = m_vertexVector;
+	std::vector<unsigned int> cubeI = m_indexVector;
+
+	m_vertexVector.clear();
+	m_indexVector.clear();
+
+	for (int i = 0; i < voxelModel.m_mat.size(); i++)
+	{
+		for (int j = 0; j < voxelModel.m_mat[i].size(); j++)
+		{
+			for (int k = 0; k < voxelModel.m_mat[i][j].size(); k++)
+			{
+				if (voxelModel.m_mat[i][j][k])
+				{
+					for (const Vertex& v : cubeV)
+					{
+						m_vertexVector.emplace_back(v);
+						m_vertexVector.back().position += voxelModel.m_minPos;
+						m_vertexVector.back().position += glm::vec3(
+							i * voxelModel.m_voxelSize + voxelModel.m_voxelSize / 2.0f,
+							j * voxelModel.m_voxelSize + voxelModel.m_voxelSize / 2.0f,
+							k * voxelModel.m_voxelSize + voxelModel.m_voxelSize / 2.0f);
+					}
+					unsigned int indexOffset = m_vertexVector.size();
+					for (unsigned int index : cubeI)
+						m_indexVector.push_back(index + indexOffset);
+				}
+			}
+		}
+	}
+
+	ReloadVertexData();
 }
 
 void sf::Model::SetMaterial(Material* theMaterial)

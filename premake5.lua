@@ -34,8 +34,10 @@ project "sf"
 	files
 	{
 		"src/**.h",
+		"src/**.hpp",
 		"src/**.cpp",
 		"user/**.h",
+		"user/**.hpp",
 		"user/**.cpp",
 		"vendor/stb_image/**.h",
 		"vendor/stb_image/**.cpp",

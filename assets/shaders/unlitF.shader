@@ -5,7 +5,7 @@ in vec3 worldPos;
 in vec2 texCoord;
 in mat3 TBN;
 
-uniform vec3 u_Color = vec3(0.15, 0.15, 0.15);
+uniform vec3 u_Color = vec3(0.0, 0.0, 0.0);
 
 void main()
 {

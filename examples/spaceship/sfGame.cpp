@@ -5,11 +5,12 @@
 #include <Material.h>
 #include <Model.h>
 #include <ModelReference.h>
+#include <ModelProcessor.h>
 #include <Math.hpp>
 #include <Random.h>
 #include <Camera.h>
 #include <Input.h>
-#include <GltfController.h>
+#include <Importer/GltfImporter.h>
 
 #include "errt.h"
 
@@ -26,7 +27,7 @@ namespace sf
 	Camera* theCamera;
 	Camera* lookBackCamera;
 
-	Shader unlitShader;
+	Shader aoShader;
 	Shader uvShader;
 	Shader colorShader;
 	Shader noiseShader;
@@ -34,7 +35,7 @@ namespace sf
 	Material colorsMaterial;
 	Material noiseMaterial;
 	Material uvMaterial;
-	Material unlitMaterial;
+	Material aoMaterial;
 
 	Model ship;
 	Model uniqueThings[UNIQUE_COUNT];
@@ -52,17 +53,17 @@ namespace sf
 		specs.fieldOfView = glm::radians(120.0f);
 		lookBackCamera = new Camera(specs);
 
-		unlitShader.CreateFromFiles("assets/shaders/pbrV.shader", "assets/shaders/unlitF.shader");
+		aoShader.CreateFromFiles("assets/shaders/defaultV.shader", "assets/shaders/vertexAoF.shader");
 		colorShader.CreateFromFiles("examples/spaceship/randomColorsV.shader", "examples/spaceship/randomColorsF.shader");
 		uvShader.CreateFromFiles("assets/shaders/defaultV.shader", "assets/shaders/uvF.shader");
 		noiseShader.CreateFromFiles("examples/spaceship/noiseV.shader", "examples/spaceship/noiseF.shader");
 
-		unlitMaterial.CreateFromShader(&unlitShader);
+		aoMaterial.CreateFromShader(&aoShader);
 		colorsMaterial.CreateFromShader(&colorShader);
 		uvMaterial.CreateFromShader(&uvShader);
 		noiseMaterial.CreateFromShader(&noiseShader);
 
-		int gltfid = GltfController::Load("examples/spaceship/ship.glb");
+		int gltfid = GltfImporter::Load("examples/spaceship/ship.glb");
 		ship.CreateFromGltf(gltfid, 0);
 		ship.SetMaterial(&uvMaterial);
 		targetShipRotation = ship.GetRotation();
@@ -78,7 +79,9 @@ namespace sf
 			switch (i % 3)
 			{
 			case 0:
-				uniqueThings[i].SetMaterial(&unlitMaterial);
+				ModelProcessor::BakeAoToVertices(uniqueThings[i], 60);
+				uniqueThings[i].ReloadVertexData();
+				uniqueThings[i].SetMaterial(&aoMaterial);
 				break;
 			case 1:
 				uniqueThings[i].SetMaterial(&colorsMaterial);

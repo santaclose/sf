@@ -5,7 +5,7 @@
 
 #include <Vertex.h>
 
-namespace sf::ObjController
+namespace sf::ObjImporter
 {
 	int Load(const std::string& filePath);
 	void Destroy(int id);

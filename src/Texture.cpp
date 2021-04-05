@@ -4,7 +4,7 @@
 #include <iostream>
 #include <stb_image.h>
 
-#include <GltfController.h>
+#include <Importer/GltfImporter.h>
 
 void sf::Texture::GetGlEnums(int channelCount, StorageType storageType, ContentType contentType, GLenum& type, int& internalFormat, GLenum& format)
 {
@@ -160,7 +160,7 @@ void sf::Texture::CreateFromFile(const std::string& path, int channelCount, Cont
 
 void sf::Texture::CreateFromGltf(unsigned int gltfID, unsigned int textureIndex)
 {
-	GltfController::GetTexture(gltfID, textureIndex, m_gl_id, m_width, m_height);
+	GltfImporter::GetTexture(gltfID, textureIndex, m_gl_id, m_width, m_height);
 }
 
 void sf::Texture::ComputeMipmap()

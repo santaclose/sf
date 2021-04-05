@@ -1,4 +1,4 @@
-#include "ObjController.h"
+#include "ObjImporter.h"
 
 #include <regex>
 #include <fstream>
@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <glm/glm.hpp>
 
-namespace sf::ObjController {
+namespace sf::ObjImporter {
 
 	struct ObjVertex {
 
@@ -52,7 +52,7 @@ namespace sf::ObjController {
 	std::vector<ObjModel> models;
 }
 
-int sf::ObjController::Load(const std::string& filePath)
+int sf::ObjImporter::Load(const std::string& filePath)
 {
 	std::ifstream infile(filePath);
 	if (infile.fail())
@@ -112,11 +112,11 @@ int sf::ObjController::Load(const std::string& filePath)
 	return models.size() - 1;
 }
 
-void sf::ObjController::Destroy(int id)
+void sf::ObjImporter::Destroy(int id)
 {
 }
 
-void sf::ObjController::GetModel(int id, int meshIndex, std::vector<Vertex>& vertexVector, std::vector<unsigned int>& indexVector)
+void sf::ObjImporter::GetModel(int id, int meshIndex, std::vector<Vertex>& vertexVector, std::vector<unsigned int>& indexVector)
 {
 	// triangulate
 	std::vector<ObjVertex> triangulatedVtxSequence;

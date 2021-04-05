@@ -5,7 +5,7 @@
 
 #include <Vertex.h>
 
-namespace sf::GltfController {
+namespace sf::GltfImporter {
 
 	int Load(const std::string& filePath);
 	void Destroy(int id);

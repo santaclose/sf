@@ -14,11 +14,13 @@ namespace sf {
 
 	class ModelReference;
 	class ModelProcessor;
+	class VoxelModel;
 
 	class Model : public Object
 	{
 		friend ModelReference;
 		friend ModelProcessor;
+		friend VoxelModel;
 
 		static std::vector<Model*> models;
 
@@ -38,9 +40,10 @@ namespace sf {
 
 	public:
 		void ReloadVertexData();
-		void CreateFromGltf(unsigned int gltfID, unsigned int meshIndex);
-		void CreateFromObj(unsigned int objID, unsigned int meshIndex);
+		void CreateFromGltf(unsigned int gltfID, unsigned int meshIndex = 0);
+		void CreateFromObj(unsigned int objID, unsigned int meshIndex = 0);
 		void CreateFromCode(void (*generateModelFunc)(), bool smooth = true);
+		void CreateFromVoxelModel(const VoxelModel& voxelModel);
 
 		void SetMaterial(Material* theMaterial);
 		void Draw();

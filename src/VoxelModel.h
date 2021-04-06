@@ -19,6 +19,7 @@ namespace sf {
 	public:
 		void CreateFromModel(const Model& model, float voxelSize);
 		bool CastRay(const glm::vec3& origin, const glm::vec3& direction, bool avoidEarlyCollision = false, float* out_t = nullptr) const;
+		void DrawRay(const glm::vec3& origin, const glm::vec3 direction, bool avoidEarlyCollision = false);
 
 		inline glm::vec3 GetAABBMin() const
 		{

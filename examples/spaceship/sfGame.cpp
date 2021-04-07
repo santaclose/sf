@@ -48,7 +48,6 @@ namespace sf
 		specs.farClippingPlane = 1000.0f;
 		specs.nearClippingPlane = 0.1f;
 		specs.fieldOfView = glm::radians(90.0f);
-		specs.aspectRatio = 16.0f / 9.0f;
 		theCamera = new Camera(specs);
 		specs.fieldOfView = glm::radians(120.0f);
 		lookBackCamera = new Camera(specs);

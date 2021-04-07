@@ -17,6 +17,7 @@ namespace sf {
 		std::vector<std::vector<std::vector<bool>>> m_mat;
 
 	public:
+		void Create(const glm::vec3& minPos, const glm::vec3& size, float voxelSize);
 		void CreateFromModel(const Model& model, float voxelSize);
 		bool CastRay(const glm::vec3& origin, const glm::vec3& direction, bool avoidEarlyCollision = false, float* out_t = nullptr) const;
 		void DrawRay(const glm::vec3& origin, const glm::vec3 direction, bool avoidEarlyCollision = false);

@@ -69,7 +69,6 @@ namespace sf
 	void Game::Initialize(int argc, char** argv)
 	{
 		CameraSpecs cs;
-		cs.aspectRatio = 16.0f / 9.0f;
 		cs.farClippingPlane = 100.0f;
 		cs.nearClippingPlane = 0.01f;
 		cs.fieldOfView = glm::radians(75.0f);
@@ -229,6 +228,7 @@ namespace sf
 
 		targetGimbalRotation.y -= Input::MousePosDeltaX() * MOVE_SENSITIVITY * (Input::MouseButton(0) ? 1.0f : 0.0f);
 		targetGimbalRotation.x += Input::MousePosDeltaY() * MOVE_SENSITIVITY * (Input::MouseButton(0) ? 1.0f : 0.0f);
+		targetGimbalRotation.x = glm::clamp(targetGimbalRotation.x, -Math::Pi * 0.499f, Math::Pi * 0.499f);
 
 		gimbal.SetRotation(glm::slerp(gimbal.GetRotation(), glm::fquat(targetGimbalRotation), deltaTime * SPEED));
 		camera->SetPosition(gimbal.GetPosition() + gimbal.Forward() * cameraDistance);

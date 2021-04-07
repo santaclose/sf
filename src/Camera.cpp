@@ -1,8 +1,7 @@
 #include "Camera.h"
 
-namespace sf {
-	Camera* Camera::boundCamera = nullptr;
-}
+sf::Camera* sf::Camera::boundCamera = nullptr;
+float sf::Camera::aspectRatio;
 
 void sf::Camera::ComputeMatrices()
 {
@@ -10,16 +9,16 @@ void sf::Camera::ComputeMatrices()
 	{
 		m_projectionMatrix = glm::perspective(
 			m_specs.fieldOfView,
-			m_specs.aspectRatio,
+			aspectRatio,
 			m_specs.nearClippingPlane,
 			m_specs.farClippingPlane);
 	}
 	else
 	{
-		if (m_specs.aspectRatio >= 1.0)
+		if (aspectRatio >= 1.0)
 			m_projectionMatrix = glm::ortho(
-				-m_specs.aspectRatio / 2.0f * m_specs.orthographicScale,
-				m_specs.aspectRatio / 2.0f * m_specs.orthographicScale,
+				-aspectRatio / 2.0f * m_specs.orthographicScale,
+				aspectRatio / 2.0f * m_specs.orthographicScale,
 				-0.5f * m_specs.orthographicScale,
 				0.5f * m_specs.orthographicScale,
 				m_specs.nearClippingPlane,
@@ -28,8 +27,8 @@ void sf::Camera::ComputeMatrices()
 			m_projectionMatrix = glm::ortho(
 				-0.5f * m_specs.orthographicScale,
 				0.5f * m_specs.orthographicScale,
-				-1.0f / m_specs.aspectRatio / 2.0f * m_specs.orthographicScale,
-				1.0f / m_specs.aspectRatio / 2.0f * m_specs.orthographicScale,
+				-1.0f / aspectRatio / 2.0f * m_specs.orthographicScale,
+				1.0f / aspectRatio / 2.0f * m_specs.orthographicScale,
 				m_specs.nearClippingPlane,
 				m_specs.farClippingPlane);
 	}

@@ -6,6 +6,27 @@
 
 #define RASTERIZE_MAX_DISTANCE 0.7
 
+void sf::VoxelModel::Create(const glm::vec3& minPos, const glm::vec3& size, float voxelSize)
+{
+	m_voxelSize = voxelSize;
+	m_minPos = minPos;
+
+	glm::uvec3 voxelCount = {
+		(unsigned int)glm::ceil(size.x / m_voxelSize),
+		(unsigned int)glm::ceil(size.y / m_voxelSize),
+		(unsigned int)glm::ceil(size.z / m_voxelSize)
+	};
+
+	// allocate matrix
+	m_mat.resize(voxelCount.x);
+	for (auto& vector : m_mat)
+	{
+		vector.resize(voxelCount.y);
+		for (auto& subvector : vector)
+			subvector.resize(voxelCount.z);
+	}
+}
+
 void sf::VoxelModel::CreateFromModel(const Model& model, float voxelSize)
 {
 	assert(model.m_vertexVector.size() > 0);

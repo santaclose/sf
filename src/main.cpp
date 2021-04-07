@@ -23,12 +23,10 @@ void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 {
 	sf::Input::UpdateMousePosition(xpos, ypos);
 }
-
 void mouse_button_callback(GLFWwindow*, int button, int action, int mods)
 {
 	sf::Input::UpdateMouseButtons(button, action);
 }
-
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	sf::Input::UpdateKeyboard(key, action);
@@ -40,6 +38,13 @@ void character_callback(GLFWwindow* window, unsigned int codepoint)
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
 	sf::Input::UpdateMouseScroll(xoffset, yoffset);
+}
+void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+	glViewport(0, 0, width, height);
+	sf::Config::windowWidth = width;
+	sf::Config::windowHeight = height;
+	sf::Camera::aspectRatio = (float)width / (float)height;
 }
 
 int main(int argc, char** argv)
@@ -72,6 +77,8 @@ int main(int argc, char** argv)
 	glfwSetCharCallback(window, character_callback);
 	glfwSetScrollCallback(window, scroll_callback);
 
+	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 	{
 		std::cout << "Failed to initialize OpenGL context (GLAD)" << std::endl;
@@ -100,6 +107,7 @@ int main(int argc, char** argv)
 	sf::Game::Initialize(argc, argv);
 	//-------------------//
 	glViewport(0, 0, sf::Config::windowWidth, sf::Config::windowHeight);
+	sf::Camera::aspectRatio = (float)sf::Config::windowWidth / (float)sf::Config::windowHeight;
 
 	/* Loop until the user closes the window */
 	while (!glfwWindowShouldClose(window))

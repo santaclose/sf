@@ -53,7 +53,6 @@ namespace sf
 			onlyUpwards = false;
 
 		CameraSpecs cs;
-		cs.aspectRatio = 16.0f / 9.0f;
 		cs.farClippingPlane = 100.0f;
 		cs.nearClippingPlane = 0.01f;
 		cs.fieldOfView = glm::radians(75.0f);
@@ -74,29 +73,47 @@ namespace sf
 		objid = ObjImporter::Load("examples/vertexAo/table.obj");
 		models.back()->CreateFromObj(objid, 0);
 		voxelized->CreateFromModel(*models.back(), 0.005f);
-		ModelProcessor::BakeAoToVertices(*models.back(), 200, true, voxelized);
+		ModelProcessor::BakeAoToVertices(*models.back(), 1000, true, voxelized);
 		models.back()->ReloadVertexData();
 		models.back()->SetMaterial(&material);
 		delete voxelized;
-
+		models.emplace_back();
+		models.back() = new Model();
+		voxelized = new VoxelModel();
+		objid = ObjImporter::Load("examples/vertexAo/ag.obj");
+		models.back()->CreateFromObj(objid, 0);
+		voxelized->CreateFromModel(*models.back(), 0.005f);
+		ModelProcessor::BakeAoToVertices(*models.back(), 1000, true, voxelized);
+		models.back()->ReloadVertexData();
+		models.back()->SetMaterial(&material);
+		delete voxelized;
 		models.emplace_back();
 		models.back() = new Model();
 		voxelized = new VoxelModel();
 		objid = ObjImporter::Load("examples/vertexAo/shoe.obj");
 		models.back()->CreateFromObj(objid, 0);
-		voxelized->CreateFromModel(*models.back(), 0.001f);
-		ModelProcessor::BakeAoToVertices(*models.back(), 200, true, voxelized);
+		voxelized->CreateFromModel(*models.back(), 0.005f);
+		ModelProcessor::BakeAoToVertices(*models.back(), 1000, true, voxelized);
 		models.back()->ReloadVertexData();
 		models.back()->SetMaterial(&material);
 		delete voxelized;
-
 		models.emplace_back();
 		models.back() = new Model();
 		voxelized = new VoxelModel();
 		objid = ObjImporter::Load("examples/vertexAo/seashell.obj");
 		models.back()->CreateFromObj(objid, 0);
 		voxelized->CreateFromModel(*models.back(), 0.005f);
-		ModelProcessor::BakeAoToVertices(*models.back(), 200, true, voxelized);
+		ModelProcessor::BakeAoToVertices(*models.back(), 1000, true, voxelized);
+		models.back()->ReloadVertexData();
+		models.back()->SetMaterial(&material);
+		delete voxelized;
+		models.emplace_back();
+		models.back() = new Model();
+		voxelized = new VoxelModel();
+		objid = ObjImporter::Load("examples/vertexAo/nemotree.obj");
+		models.back()->CreateFromObj(objid, 0);
+		voxelized->CreateFromModel(*models.back(), 0.005f);
+		ModelProcessor::BakeAoToVertices(*models.back(), 400, true, voxelized);
 		models.back()->ReloadVertexData();
 		models.back()->SetMaterial(&material);
 		delete voxelized;
@@ -153,6 +170,7 @@ namespace sf
 
 		targetGimbalRotation.y -= Input::MousePosDeltaX() * MOVE_SENSITIVITY * (Input::MouseButton(0) ? 1.0f : 0.0f);
 		targetGimbalRotation.x += Input::MousePosDeltaY() * MOVE_SENSITIVITY * (Input::MouseButton(0) ? 1.0f : 0.0f);
+		targetGimbalRotation.x = glm::clamp(targetGimbalRotation.x, -Math::Pi * 0.499f, Math::Pi * 0.499f);
 
 		gimbal.SetRotation(glm::slerp(gimbal.GetRotation(), glm::fquat(targetGimbalRotation), deltaTime * SPEED));
 		camera->SetPosition(gimbal.GetPosition() + gimbal.Forward() * cameraDistance);

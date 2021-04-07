@@ -70,7 +70,6 @@ namespace sf
 	void Game::Initialize(int argc, char** argv)
 	{
 		CameraSpecs cs;
-		cs.aspectRatio = 1.7777777;
 		cs.fieldOfView = 0.5f;
 		cs.nearClippingPlane = 0.01f;
 		cs.farClippingPlane = 1000.0f;

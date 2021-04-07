@@ -13,7 +13,6 @@ namespace sf {
 	{
 		bool perspective = true;
 		float orthographicScale = 5.0;
-		float aspectRatio = 1.77777777778;
 		float fieldOfView = 90.0;
 		float nearClippingPlane = 0.1;
 		float farClippingPlane = 1000.0;
@@ -38,5 +37,6 @@ namespace sf {
 		void Bind();
 
 		static Camera* boundCamera;
+		static float aspectRatio;
 	};
 }

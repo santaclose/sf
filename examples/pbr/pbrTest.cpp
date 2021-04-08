@@ -50,6 +50,8 @@ namespace sf
 	Texture shoeRoughness;
 	Texture shoeMetallic;
 
+	Material defaultMaterial;
+
 	std::vector<glm::vec3> dirLightsDir = { {0.0f, -0.5f, -1.0f},  {0.0f, -0.5f, 1.0f} };
 	std::vector<glm::vec3> dirLightsRad = { {10.0f, 10.0f, 10.0f}, {2.0f, 2.0f, 2.0f} };
 
@@ -82,6 +84,14 @@ namespace sf
 		//pbrShader.SetUniform3fv("pLightPos", &(pLightsPos[0].x), pLightsPos.size());
 		//pbrShader.SetUniform3fv("pLightRad", &(pLightsRad[0].x), pLightsRad.size());
 		//pbrShader.SetUniform1fv("pLightRa", &(pLightsRa[0]), pLightsRa.size());
+
+		defaultMaterial.CreateFromShader(&pbrShader);
+		defaultMaterial.SetUniform("useAlbedoTexture", (void*)false, Material::UniformType::_Boolean);
+		defaultMaterial.SetUniform("useNormalTexture", (void*)false, Material::UniformType::_Boolean);
+		defaultMaterial.SetUniform("useRoughnessTexture", (void*)false, Material::UniformType::_Boolean);
+		defaultMaterial.SetUniform("useMetalnessTexture", (void*)false, Material::UniformType::_Boolean);
+		defaultMaterial.SetUniform("useEmissiveTexture", (void*)false, Material::UniformType::_Boolean);
+		defaultMaterial.SetUniform("useAoTexture", (void*)false, Material::UniformType::_Boolean);
 
 		sciFiHelmetMaterial.CreateFromShader(&pbrShader);
 		sciFiHelmetMaterial.SetUniform("useAlbedoTexture", (void*)true, Material::UniformType::_Boolean);
@@ -140,6 +150,9 @@ namespace sf
 
 		Skybox::SetCubemap(&envCubemap);
 
+		defaultMaterial.SetUniform("irradianceMap", &irradianceCubemap, Material::UniformType::_Cubemap);
+		defaultMaterial.SetUniform("prefilterMap", &prefilterCubemap, Material::UniformType::_Cubemap);
+		defaultMaterial.SetUniform("brdfLUT", &lookupTexture, Material::UniformType::_Texture);
 		sciFiHelmetMaterial.SetUniform("irradianceMap", &irradianceCubemap, Material::UniformType::_Cubemap);
 		sciFiHelmetMaterial.SetUniform("prefilterMap", &prefilterCubemap, Material::UniformType::_Cubemap);
 		sciFiHelmetMaterial.SetUniform("brdfLUT", &lookupTexture, Material::UniformType::_Texture);

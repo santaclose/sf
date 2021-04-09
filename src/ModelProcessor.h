@@ -6,6 +6,8 @@
 namespace sf {
 
 	class ModelProcessor {
+		static float ComputeOcclusion(const std::vector<std::pair<bool, float>>& rayResults, float maxDistance, float falloff);
+
 	public:
 		static void ComputeNormals(Model& model, bool normalize = false);
 		static void ComputeTangentSpace(Model& model);

@@ -3,10 +3,7 @@
 #include <Texture.h>
 #include <Cubemap.h>
 
-namespace sf {
-
-	Material* Material::boundMaterial = nullptr;
-}
+sf::Material* sf::Material::boundMaterial = nullptr;
 
 void sf::Material::CreateFromShader(Shader* theShader)
 {

@@ -65,6 +65,41 @@ void sf::ModelProcessor::ComputeTangentSpace(Model& model)
 	}
 }
 
+float sf::ModelProcessor::ComputeOcclusion(const std::vector<std::pair<bool, float>>& rayResults, float maxDistance, float falloff)
+{
+	float brightness = 1.0f;
+	int hit_count = 0;
+	for (const auto& r : rayResults)
+	{
+		//if (r.first)
+		//{
+		//	if (hit_count > rayResults.size() / 2)
+		//	{
+		//		//brightness -= 1.0f / (float)rayResults.size();
+		//		float normalizedDistance = r.second / maxDistance;
+		//		//float occlusion = 1.0 - glm::sqrt(normalizedDistance);
+		//		float occlusion = 1.0f - glm::pow(normalizedDistance, falloff);
+		//		//float occlusion = 1.0 - normalizedDistance;
+		//		brightness -= occlusion / (float)rayResults.size();
+		//	}
+		//	++hit_count;
+		//}
+
+
+		if (r.first) // did hit
+		{
+			//brightness -= 1.0f / (float)rayResults.size();
+			float normalizedDistance = r.second / maxDistance;
+			//float occlusion = 1.0 - glm::sqrt(normalizedDistance);
+			float occlusion = 1.0f - glm::pow(normalizedDistance, falloff);
+			brightness -= occlusion / (float)rayResults.size();
+		}
+	}
+
+	brightness = glm::min(1.0f, brightness * glm::sqrt(2.0f));
+	return brightness;
+}
+
 void sf::ModelProcessor::BakeAoToVertices(Model& model,
 	int rayCount, bool onlyCastRaysUpwards,
 	const VoxelModel* voxelized,
@@ -78,9 +113,9 @@ void sf::ModelProcessor::BakeAoToVertices(Model& model,
 		#pragma omp parallel for
 		for (int q = 0; q < model.m_vertexVector.size(); q++)
 		{
-			float brightness = 1.0f;
 			Vertex& v = model.m_vertexVector[q];
 
+			std::vector<std::pair<bool, float>> rayResults;
 			for (int i = 0; i < rayCount; i++)
 			{
 				glm::vec3 rayDir = Random::UnitVec3();
@@ -89,18 +124,11 @@ void sf::ModelProcessor::BakeAoToVertices(Model& model,
 
 				float distance;
 				bool didHit = voxelized->CastRay(v.position + (rayDir * rayOriginOffset), rayDir, true, &distance);
-				if (didHit)
-				{
-					if (distance > rayDistance)
-						distance = rayDistance;
-
-					float normalizedDistance = distance / rayDistance;
-					float occlusion = 1.0f - glm::pow(normalizedDistance, falloff);
-
-					brightness -= occlusion / (float)rayCount;
-				}
+				if (distance > rayDistance)
+					distance = rayDistance;
+				rayResults.push_back({ didHit, distance });
 			}
-			v.extraData.x = brightness;
+			v.extraData.x = ComputeOcclusion(rayResults, rayDistance, falloff);
 		}
 	}
 	else
@@ -108,9 +136,9 @@ void sf::ModelProcessor::BakeAoToVertices(Model& model,
 		#pragma omp parallel for
 		for (int q = 0; q < model.m_vertexVector.size(); q++)
 		{
-			float brightness = 1.0f;
 			Vertex& v = model.m_vertexVector[q];
 
+			std::vector<std::pair<bool, float>> rayResults;
 			for (int i = 0; i < rayCount; i++)
 			{
 				glm::vec3 rayDir = Random::UnitVec3();
@@ -129,18 +157,11 @@ void sf::ModelProcessor::BakeAoToVertices(Model& model,
 						model.m_vertexVector[model.m_indexVector[j + 1]].position,
 						model.m_vertexVector[model.m_indexVector[j + 2]].position, &distance);
 				}
-				if (didHit)
-				{
-					if (distance > rayDistance)
-						distance = rayDistance;
-
-					float normalizedDistance = distance / rayDistance;
-					float occlusion = 1.0f - glm::pow(normalizedDistance, falloff);
-
-					brightness -= occlusion / (float)rayCount;
-				}
+				if (distance > rayDistance)
+					distance = rayDistance;
+				rayResults.push_back({ didHit, distance });
 			}
-			v.extraData.x = brightness;
+			v.extraData.x = ComputeOcclusion(rayResults, rayDistance, falloff);
 		}
 	}
 

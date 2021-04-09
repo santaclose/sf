@@ -50,6 +50,7 @@ void sf::GltfImporter::Destroy(int id)
 {
 }
 
+// https://github.com/SaschaWillems/Vulkan/blob/master/examples/gltfloading/gltfloading.cpp
 void sf::GltfImporter::GetModel(int id, int meshIndex, std::vector<Vertex>& vertexVector, std::vector<unsigned int>& indexVector)
 {
 	assert(id > -1 && id < models.size());

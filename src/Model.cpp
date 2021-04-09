@@ -11,10 +11,7 @@
 #include <Importer/ObjImporter.h>
 #include <VoxelModel.h>
 
-namespace sf {
-
-	std::vector<Model*> sf::Model::models;
-}
+std::vector<sf::Model*> sf::Model::models;
 
 void sf::Model::SendMatrixToShader()
 {

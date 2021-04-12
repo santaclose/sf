@@ -10,3 +10,6 @@
 [submodule "vendor/gli"]
 	path = vendor/gli
 	url = https://github.com/g-truc/gli.git
+[submodule "vendor/aobaker"]
+	path = vendor/aobaker
+	url = git@github.com:santaclose/aobaker.git

@@ -23,9 +23,10 @@ namespace sf {
 		std::vector<std::string> m_uniformNames;
 		std::vector<void*> m_uniformData;
 		std::vector<UniformType> m_uniformTypes;
+		bool m_isDoubleSided;
 
 	public:
-		void CreateFromShader(Shader* theShader);
+		void CreateFromShader(Shader* theShader, bool isDoubleSided = false);
 		void SetUniform(const std::string& name, void* data, UniformType type);
 		void Bind();
 

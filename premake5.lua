@@ -43,7 +43,8 @@ project "sf"
 		"vendor/stb_image/**.cpp",
 		"vendor/glm/glm/**.hpp",
 		"vendor/glm/glm/**.inl",
-		"vendor/sfmg/*.cpp"
+		"vendor/sfmg/*.cpp",
+		"vendor/aobaker/*.cpp"
 	}
 
 	defines
@@ -60,7 +61,8 @@ project "sf"
 		"vendor/stb_image",
 		"vendor/sfmg",
 		"vendor/tinygltf",
-		"vendor/gli/gli"
+		"vendor/gli/gli",
+		"vendor/aobaker"
 	}
 
 	links 

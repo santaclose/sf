@@ -5,9 +5,10 @@
 
 sf::Material* sf::Material::boundMaterial = nullptr;
 
-void sf::Material::CreateFromShader(Shader* theShader)
+void sf::Material::CreateFromShader(Shader* theShader, bool isDoubleSided)
 {
 	m_shader = theShader;
+	m_isDoubleSided = isDoubleSided;
 }
 
 void sf::Material::SetUniform(const std::string& name, void* data, UniformType type)
@@ -19,6 +20,11 @@ void sf::Material::SetUniform(const std::string& name, void* data, UniformType t
 
 void sf::Material::Bind()
 {
+	if (m_isDoubleSided)
+		glDisable(GL_CULL_FACE);
+	else
+		glEnable(GL_CULL_FACE);
+
 	m_shader->Bind();
 
 	int textureCounter = 0;

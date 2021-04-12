@@ -39,19 +39,6 @@ namespace sf
 
 	void Game::Initialize(int argc, char** argv)
 	{
-		int rayCount;
-		bool onlyUpwards;
-		if (argc > 1)
-			rayCount = std::stoi(argv[1]);
-		else
-		{
-			rayCount = 15;
-		}
-		if (argc > 2)
-			onlyUpwards = std::stoi(argv[2]);
-		else
-			onlyUpwards = false;
-
 		CameraSpecs cs;
 		cs.farClippingPlane = 100.0f;
 		cs.nearClippingPlane = 0.01f;
@@ -59,64 +46,48 @@ namespace sf
 		camera = new Camera(cs);
 
 		shader.CreateFromFiles("assets/shaders/defaultV.shader", "assets/shaders/vertexAoF.shader");
-		material.CreateFromShader(&shader);
+		material.CreateFromShader(&shader, true);
 
 		uvShader.CreateFromFiles("assets/shaders/defaultV.shader", "assets/shaders/uvF.shader");
 		uvMaterial.CreateFromShader(&uvShader);
 
 		int gltfid, objid;
-		VoxelModel* voxelized;
 
 		models.emplace_back();
 		models.back() = new Model();
-		voxelized = new VoxelModel();
 		objid = ObjImporter::Load("examples/vertexAo/table.obj");
 		models.back()->CreateFromObj(objid, 0);
-		voxelized->CreateFromModel(*models.back(), 0.005f);
-		ModelProcessor::BakeAoToVertices(*models.back(), 1000, true, voxelized);
+		ModelProcessor::BakeAoToVertices(*models.back());
 		models.back()->ReloadVertexData();
 		models.back()->SetMaterial(&material);
-		delete voxelized;
 		models.emplace_back();
 		models.back() = new Model();
-		voxelized = new VoxelModel();
 		objid = ObjImporter::Load("examples/vertexAo/ag.obj");
 		models.back()->CreateFromObj(objid, 0);
-		voxelized->CreateFromModel(*models.back(), 0.005f);
-		ModelProcessor::BakeAoToVertices(*models.back(), 1000, true, voxelized);
+		ModelProcessor::BakeAoToVertices(*models.back());
 		models.back()->ReloadVertexData();
 		models.back()->SetMaterial(&material);
-		delete voxelized;
 		models.emplace_back();
 		models.back() = new Model();
-		voxelized = new VoxelModel();
 		objid = ObjImporter::Load("examples/vertexAo/shoe.obj");
 		models.back()->CreateFromObj(objid, 0);
-		voxelized->CreateFromModel(*models.back(), 0.005f);
-		ModelProcessor::BakeAoToVertices(*models.back(), 1000, true, voxelized);
+		ModelProcessor::BakeAoToVertices(*models.back());
 		models.back()->ReloadVertexData();
 		models.back()->SetMaterial(&material);
-		delete voxelized;
 		models.emplace_back();
 		models.back() = new Model();
-		voxelized = new VoxelModel();
 		objid = ObjImporter::Load("examples/vertexAo/seashell.obj");
 		models.back()->CreateFromObj(objid, 0);
-		voxelized->CreateFromModel(*models.back(), 0.005f);
-		ModelProcessor::BakeAoToVertices(*models.back(), 1000, true, voxelized);
+		ModelProcessor::BakeAoToVertices(*models.back());
 		models.back()->ReloadVertexData();
 		models.back()->SetMaterial(&material);
-		delete voxelized;
 		models.emplace_back();
 		models.back() = new Model();
-		voxelized = new VoxelModel();
-		objid = ObjImporter::Load("examples/vertexAo/nemotree.obj");
+		objid = ObjImporter::Load("examples/vertexAo/chestnut.obj");
 		models.back()->CreateFromObj(objid, 0);
-		voxelized->CreateFromModel(*models.back(), 0.005f);
-		ModelProcessor::BakeAoToVertices(*models.back(), 400, true, voxelized);
+		ModelProcessor::BakeAoToVertices(*models.back());
 		models.back()->ReloadVertexData();
 		models.back()->SetMaterial(&material);
-		delete voxelized;
 
 		for (int i = 0; i < models.size(); i++)
 		{

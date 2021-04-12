@@ -4,6 +4,7 @@
 
 #include <Random.h>
 #include <Math.hpp>
+#include <aobaker.h>
 
 void sf::ModelProcessor::ComputeNormals(Model& model, bool normalize)
 {
@@ -65,120 +66,9 @@ void sf::ModelProcessor::ComputeTangentSpace(Model& model)
 	}
 }
 
-float sf::ModelProcessor::ComputeOcclusion(const std::vector<std::pair<bool, float>>& rayResults, float maxDistance, float falloff)
+void sf::ModelProcessor::BakeAoToVertices(Model& model)
 {
-	float brightness = 1.0f;
-	int hit_count = 0;
-	for (const auto& r : rayResults)
-	{
-		//if (r.first)
-		//{
-		//	if (hit_count > rayResults.size() / 2)
-		//	{
-		//		//brightness -= 1.0f / (float)rayResults.size();
-		//		float normalizedDistance = r.second / maxDistance;
-		//		//float occlusion = 1.0 - glm::sqrt(normalizedDistance);
-		//		float occlusion = 1.0f - glm::pow(normalizedDistance, falloff);
-		//		//float occlusion = 1.0 - normalizedDistance;
-		//		brightness -= occlusion / (float)rayResults.size();
-		//	}
-		//	++hit_count;
-		//}
-
-
-		if (r.first) // did hit
-		{
-			//brightness -= 1.0f / (float)rayResults.size();
-			float normalizedDistance = r.second / maxDistance;
-			//float occlusion = 1.0 - glm::sqrt(normalizedDistance);
-			float occlusion = 1.0f - glm::pow(normalizedDistance, falloff);
-			brightness -= occlusion / (float)rayResults.size();
-		}
-	}
-
-	brightness = glm::min(1.0f, brightness * glm::sqrt(2.0f));
-	return brightness;
-}
-
-void sf::ModelProcessor::BakeAoToVertices(Model& model,
-	int rayCount, bool onlyCastRaysUpwards,
-	const VoxelModel* voxelized,
-	float rayOriginOffset,
-	float rayDistance, float falloff,
-	float denoiseWeight, int denoisePasses)
-{
-
-	if (voxelized != nullptr)
-	{
-		#pragma omp parallel for
-		for (int q = 0; q < model.m_vertexVector.size(); q++)
-		{
-			Vertex& v = model.m_vertexVector[q];
-
-			std::vector<std::pair<bool, float>> rayResults;
-			for (int i = 0; i < rayCount; i++)
-			{
-				glm::vec3 rayDir = Random::UnitVec3();
-				if (onlyCastRaysUpwards && rayDir.y < 0.0f)
-					rayDir.y = -rayDir.y;
-
-				float distance;
-				bool didHit = voxelized->CastRay(v.position + (rayDir * rayOriginOffset), rayDir, true, &distance);
-				if (distance > rayDistance)
-					distance = rayDistance;
-				rayResults.push_back({ didHit, distance });
-			}
-			v.extraData.x = ComputeOcclusion(rayResults, rayDistance, falloff);
-		}
-	}
-	else
-	{
-		#pragma omp parallel for
-		for (int q = 0; q < model.m_vertexVector.size(); q++)
-		{
-			Vertex& v = model.m_vertexVector[q];
-
-			std::vector<std::pair<bool, float>> rayResults;
-			for (int i = 0; i < rayCount; i++)
-			{
-				glm::vec3 rayDir = Random::UnitVec3();
-				if (onlyCastRaysUpwards && rayDir.y < 0.0f)
-					rayDir.y = -rayDir.y;
-
-				bool didHit = false;
-				float distance;
-				for (int j = 0; j < model.m_indexVector.size() && !didHit; j += 3) // for each face, intersect
-				{
-					if (model.m_indexVector[j + 0] == q || model.m_indexVector[j + 1] == q || model.m_indexVector[j + 2] == q)
-						continue; // current vertex belongs to this face
-
-					didHit = Math::RayTriIntersect(v.position + (rayDir * rayOriginOffset), rayDir,
-						model.m_vertexVector[model.m_indexVector[j + 0]].position,
-						model.m_vertexVector[model.m_indexVector[j + 1]].position,
-						model.m_vertexVector[model.m_indexVector[j + 2]].position, &distance);
-				}
-				if (distance > rayDistance)
-					distance = rayDistance;
-				rayResults.push_back({ didHit, distance });
-			}
-			v.extraData.x = ComputeOcclusion(rayResults, rayDistance, falloff);
-		}
-	}
-
-	for (int pass = 0; pass < denoisePasses; pass++)
-	{
-		for (int i = 0; i < model.m_indexVector.size(); i += 3)
-		{
-			float average =
-				(model.m_vertexVector[model.m_indexVector[i + 0]].extraData.x +
-					model.m_vertexVector[model.m_indexVector[i + 1]].extraData.x +
-					model.m_vertexVector[model.m_indexVector[i + 2]].extraData.x) / 3.0f;
-
-			model.m_vertexVector[model.m_indexVector[i + 0]].extraData.x = glm::mix(model.m_vertexVector[model.m_indexVector[i + 0]].extraData.x, average, denoiseWeight);
-			model.m_vertexVector[model.m_indexVector[i + 1]].extraData.x = glm::mix(model.m_vertexVector[model.m_indexVector[i + 1]].extraData.x, average, denoiseWeight);
-			model.m_vertexVector[model.m_indexVector[i + 2]].extraData.x = glm::mix(model.m_vertexVector[model.m_indexVector[i + 2]].extraData.x, average, denoiseWeight);
-		}
-	}
-
-	std::cout << "[ModelProcessor] Finished baking AO to vertices\n";
+	aobaker::config conf;
+	aobaker::BakeAoToVertices(&model.m_vertexVector[0].position.x, &model.m_vertexVector[0].extraData.x, model.m_vertexVector.size(), sizeof(Vertex), sizeof(Vertex),
+		&model.m_indexVector[0], model.m_indexVector.size(), conf);
 }

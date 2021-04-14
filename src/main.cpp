@@ -131,8 +131,8 @@ int main(int argc, char** argv)
 
 		gameTime += deltaTime;
 
-		sf::Model::DrawAll();
 		sf::Skybox::Draw();
+		sf::Model::DrawAll();
 
 		/* Swap front and back buffers */
 		glfwSwapBuffers(window);

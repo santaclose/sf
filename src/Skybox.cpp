@@ -95,7 +95,7 @@ void sf::Skybox::Draw()
     if (!generated)
         return;
 
-    glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
+    glDisable(GL_DEPTH_TEST);
 
     shader.Bind();
 
@@ -107,5 +107,5 @@ void sf::Skybox::Draw()
     glDrawArrays(GL_TRIANGLES, 0, 36);
     glBindVertexArray(0);
 
-    glDepthFunc(GL_LESS);  // change depth function so depth test passes when values are equal to depth buffer's content
+    glEnable(GL_DEPTH_TEST);
 }

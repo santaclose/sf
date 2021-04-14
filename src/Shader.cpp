@@ -57,9 +57,9 @@ void sf::Shader::CreateFromFiles(const std::string& vertexShaderPath, const std:
 	std::ifstream ifs2(fragmentShaderPath);
 
 	if (ifs.fail())
-		std::cout << "Could not read vertex shader file: " << vertexShaderPath << std::endl;
+		std::cout << "[Shader] Could not read vertex shader file: " << vertexShaderPath << std::endl;
 	if (ifs2.fail())
-		std::cout << "Could not read fragment shader file: " << fragmentShaderPath << std::endl;
+		std::cout << "[Shader] Could not read fragment shader file: " << fragmentShaderPath << std::endl;
 
 	std::string vertexShaderSource((std::istreambuf_iterator<char>(ifs)),
 		(std::istreambuf_iterator<char>()));

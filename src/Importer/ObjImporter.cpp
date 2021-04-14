@@ -40,7 +40,7 @@ namespace sf::ObjImporter {
 		std::vector<glm::vec3> positions;
 		std::vector<glm::vec3> normals;
 		std::vector<glm::vec2> texCoords;
-		std::vector<ObjFace> faces;
+		std::vector<std::vector<ObjFace>> meshes;
 	};
 
 	std::regex vertexRegex("^v\\s+(-?\\d*\\.\\d*)\\s+(-?\\d*\\.\\d*)\\s+(-?\\d*\\.\\d*)\\s*$");
@@ -56,13 +56,19 @@ int sf::ObjImporter::Load(const std::string& filePath)
 {
 	std::ifstream infile(filePath);
 	if (infile.fail())
-		std::cout << "[ObjLoader] Could not read file: " << filePath << "\n";
+		std::cout << "[ObjImporter] Could not read file: " << filePath << "\n";
 
 	models.emplace_back();
+	models.back().meshes.emplace_back();
 	std::string line;
 	while (std::getline(infile, line))
 	{
-		if (line.find("v ") == 0)
+		if (line.find("o ") == 0)
+		{
+			if (models.back().meshes.back().size() > 0)
+				models.back().meshes.emplace_back();
+		}
+		else if (line.find("v ") == 0)
 		{
 			std::smatch m;
 			std::regex_match(line, m, vertexRegex);
@@ -84,7 +90,7 @@ int sf::ObjImporter::Load(const std::string& filePath)
 		}
 		else if (line.find("f ") == 0)
 		{
-			models.back().faces.emplace_back();
+			models.back().meshes.back().emplace_back();
 			std::sregex_iterator iter(line.begin(), line.end(), faceRegex);
 			std::sregex_iterator end;
 
@@ -102,7 +108,7 @@ int sf::ObjImporter::Load(const std::string& filePath)
 					nVtx.coordsID = std::stoi(coords) - 1;
 				if (coords.length() > 0)
 					nVtx.normalID = std::stoi(normal) - 1;
-				models.back().faces.back().vertices.push_back(nVtx);
+				models.back().meshes.back().back().vertices.push_back(nVtx);
 
 				iter++;
 			}
@@ -120,7 +126,7 @@ void sf::ObjImporter::GetModel(int id, int meshIndex, std::vector<Vertex>& verte
 {
 	// triangulate
 	std::vector<ObjVertex> triangulatedVtxSequence;
-	for (ObjFace& f : models[id].faces)
+	for (const ObjFace& f : models[id].meshes[meshIndex])
 	{
 		for (int i = 2; i < f.vertices.size(); i++)
 		{

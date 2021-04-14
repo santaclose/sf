@@ -25,7 +25,7 @@ int sf::GltfImporter::Load(const std::string& filePath)
 	bool isBinary = ext == "glb";
 	if (ext != "gltf" && !isBinary)
 	{
-		std::cout << "[GltfController] Invalid file\n";
+		std::cout << "[GltfImporter] Invalid file\n";
 		return -1;
 	}
 
@@ -35,13 +35,13 @@ int sf::GltfImporter::Load(const std::string& filePath)
 		ret = loader.LoadASCIIFromFile(&(models[models.size() - 1]), &err, &warn, filePath);
 
 	if (!warn.empty())
-		printf("[GltfController] Warn: %s\n", warn.c_str());
+		printf("[GltfImporter] Warn: %s\n", warn.c_str());
 
 	if (!err.empty())
-		printf("[GltfController] Err: %s\n", err.c_str());
+		printf("[GltfImporter] Err: %s\n", err.c_str());
 
 	if (!ret)
-		printf("[GltfController] Failed to parse glTF\n");
+		printf("[GltfImporter] Failed to parse glTF\n");
 
 	return models.size() - 1;
 }

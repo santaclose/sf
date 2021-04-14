@@ -34,7 +34,7 @@ void sf::Entity::SetRotation(float x, float y, float z)
 
 void sf::Entity::LookAt(const glm::vec3& target, const glm::vec3& up)
 {
-	m_rotation = /*glm::conjugate(*/glm::quatLookAt(glm::normalize(target - m_position), up)/*)*/;
+	m_rotation = glm::quatLookAt(glm::normalize(target - m_position), up);
 	m_matrixUpdatePending = true;
 }
 

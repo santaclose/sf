@@ -1,9 +1,9 @@
-#include "Model.h"
+#include "Mesh.h"
 
 #include <ml.h>
 #include <iostream>
 
-#include <ModelReference.h>
+#include <MeshReference.h>
 #include <Camera.h>
 #include <Texture.h>
 #include <Random.h>
@@ -11,15 +11,15 @@
 #include <Importer/ObjImporter.h>
 #include <VoxelModel.h>
 
-std::vector<sf::Model*> sf::Model::models;
+std::vector<sf::Mesh*> sf::Mesh::models;
 
-void sf::Model::SendMatrixToShader()
+void sf::Mesh::SendMatrixToShader(Material& material)
 {
 	if (m_matrixUpdatePending)
 		UpdateTransformMatrix();
-	m_material->m_shader->SetUniformMatrix4fv("modelMatrix", &m_transformMatrix[0][0]);
+	material.m_shader->SetUniformMatrix4fv("modelMatrix", &m_transformMatrix[0][0]);
 }
-void sf::Model::CompleteFromVectors()
+void sf::Mesh::CompleteFromVectors()
 {
 	glGenVertexArrays(1, &m_gl_vao);
 	glGenBuffers(1, &m_gl_vertexBuffer);
@@ -52,7 +52,7 @@ void sf::Model::CompleteFromVectors()
 
 	models.push_back(this);
 }
-void sf::Model::ReloadVertexData()
+void sf::Mesh::ReloadVertexData()
 {
 	glBindBuffer(GL_ARRAY_BUFFER, m_gl_vertexBuffer);
 	glBufferData(GL_ARRAY_BUFFER, m_vertexVector.size() * sizeof(Vertex), &m_vertexVector[0], GL_STATIC_DRAW);
@@ -61,24 +61,25 @@ void sf::Model::ReloadVertexData()
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indexVector.size() * sizeof(unsigned int), &m_indexVector[0], GL_STATIC_DRAW);
 }
 
-void sf::Model::CreateFromGltf(unsigned int gltfID, unsigned int meshIndex)
+void sf::Mesh::CreateFromGltf(unsigned int gltfID)
 {
-	GltfImporter::GetModel(gltfID, meshIndex, m_vertexVector, m_indexVector);
+	GltfImporter::GetMesh(gltfID, m_vertexVector, m_indexVector, m_pieces);
 	CompleteFromVectors();
 }
-void sf::Model::CreateFromObj(unsigned int objID, unsigned int meshIndex)
+void sf::Mesh::CreateFromObj(unsigned int objID)
 {
-	ObjImporter::GetModel(objID, meshIndex, m_vertexVector, m_indexVector);
+	ObjImporter::GetMesh(objID, m_vertexVector, m_indexVector, m_pieces);
 	CompleteFromVectors();
 }
-void sf::Model::CreateFromCode(void (*generateModelFunc)(), bool smooth)
+void sf::Mesh::CreateFromCode(void (*generateModelFunc)(), bool smooth)
 {
 	sfmg::ml::Initialize(smooth, &m_vertexVector, &m_indexVector);
 	generateModelFunc();
 	CompleteFromVectors();
+	m_pieces.emplace_back(0);
 }
 
-void sf::Model::CreateFromVoxelModel(const VoxelModel& voxelModel)
+void sf::Mesh::CreateFromVoxelModel(const VoxelModel& voxelModel)
 {
 	int unitcubeid = ObjImporter::Load("assets/unitcube.obj");
 	this->CreateFromObj(unitcubeid);
@@ -120,33 +121,68 @@ void sf::Model::CreateFromVoxelModel(const VoxelModel& voxelModel)
 	ReloadVertexData();
 }
 
-void sf::Model::SetMaterial(Material* theMaterial)
+void sf::Mesh::SetMaterial(Material* theMaterial, int piece)
 {
-	m_material = theMaterial;
+	assert(m_pieces.size() > piece && piece > -1);
+	m_pieces[piece].material = theMaterial;
 }
-void sf::Model::Draw()
+void sf::Mesh::Draw()
 {
-	m_material->Bind();
-
-	m_material->m_shader->SetUniformMatrix4fv("cameraMatrix", &(Camera::GetMatrix()[0][0]));
-	m_material->m_shader->SetUniform3fv("camPos", &(Camera::boundCamera->GetPosition()[0]));
-
-	SendMatrixToShader();
-	
-	//std::cout << "model being drawn\n";
-	glBindVertexArray(m_gl_vao);
-	glDrawElements(GL_TRIANGLES, m_indexVector.size(), GL_UNSIGNED_INT, nullptr);
-	for (ModelReference* m : m_references)
+	for (unsigned int i = 0; i < m_pieces.size(); i++)
 	{
-		// replace model matrix and draw again
-		m->SendMatrixToShader();
-		glDrawElements(GL_TRIANGLES, m_indexVector.size(), GL_UNSIGNED_INT, nullptr);
+		const MeshPiece& mp = m_pieces[i];
+		mp.material->Bind();
+
+		mp.material->m_shader->SetUniformMatrix4fv("cameraMatrix", &(Camera::GetMatrix()[0][0]));
+		mp.material->m_shader->SetUniform3fv("camPos", &(Camera::boundCamera->GetPosition()[0]));
+
+		SendMatrixToShader(*mp.material);
+		
+		unsigned int end, start;
+		start = m_pieces[i].indexStart;
+		end = m_pieces.size() > i + 1 ? m_pieces[i + 1].indexStart : m_indexVector.size();
+
+		glBindVertexArray(m_gl_vao);
+
+		glDrawElements(GL_TRIANGLES, end - start , GL_UNSIGNED_INT, (void*)(start * sizeof(unsigned int)));
+		 
+		for (MeshReference* m : m_references)
+		{
+			// replace model matrix and draw again
+			m->SendMatrixToShader(*mp.material);
+			glDrawElements(GL_TRIANGLES, end - start, GL_UNSIGNED_INT, (void*)(start * sizeof(unsigned int)));
+		}
 	}
-	glBindVertexArray(0);
+
+	//m_material->Bind();
+
+	//m_material->m_shader->SetUniformMatrix4fv("cameraMatrix", &(Camera::GetMatrix()[0][0]));
+	//m_material->m_shader->SetUniform3fv("camPos", &(Camera::boundCamera->GetPosition()[0]));
+
+	//SendMatrixToShader();
+	//
+	//unsigned int pieceToRender = 0;
+	//unsigned int end, start;
+	//start = m_pieces[pieceToRender].indexStart;
+	//end = m_pieces.size() > pieceToRender + 1 ? m_pieces[pieceToRender + 1].indexStart : m_indexVector.size();
+
+	//glBindVertexArray(m_gl_vao);
+
+	//glDrawElements(GL_TRIANGLES, end - start , GL_UNSIGNED_INT, (void*)(start * sizeof(unsigned int)));
+	// 
+	//for (MeshReference* m : m_references)
+	//{
+	//	// replace model matrix and draw again
+	//	m->SendMatrixToShader();
+	//	glDrawElements(GL_TRIANGLES, end - start, GL_UNSIGNED_INT, (void*)(start * sizeof(unsigned int)));
+	//}
+	
+
+	//glBindVertexArray(0);
 }
-void sf::Model::DrawAll()
+void sf::Mesh::DrawAll()
 {
-	for (Model* m : models)
+	for (Mesh* m : models)
 	{
 		m->Draw();
 	}

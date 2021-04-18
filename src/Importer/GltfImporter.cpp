@@ -5,7 +5,7 @@
 #include <tiny_gltf.h>
 #include <glad/glad.h>
 
-#include <ModelProcessor.h>
+#include <MeshProcessor.h>
 
 namespace sf::GltfImporter {
 
@@ -51,10 +51,9 @@ void sf::GltfImporter::Destroy(int id)
 }
 
 // https://github.com/SaschaWillems/Vulkan/blob/master/examples/gltfloading/gltfloading.cpp
-void sf::GltfImporter::GetModel(int id, int meshIndex, std::vector<Vertex>& vertexVector, std::vector<unsigned int>& indexVector)
+void sf::GltfImporter::GetMesh(int id, std::vector<Vertex>& vertexVector, std::vector<unsigned int>& indexVector, std::vector<MeshPiece>& pieces)
 {
 	assert(id > -1 && id < models.size());
-	assert(meshIndex > -1 && meshIndex < models[id].meshes.size());
 
 	tinygltf::Model& model = models[id];
 
@@ -62,91 +61,97 @@ void sf::GltfImporter::GetModel(int id, int meshIndex, std::vector<Vertex>& vert
 	std::vector<glm::vec3> vertex_normals;
 	std::vector<glm::vec2> vertex_uv;
 
-	for (auto& prim : model.meshes[meshIndex].primitives)
+	for (const tinygltf::Mesh& mesh : model.meshes)
 	{
-		uint32_t vertexStart = static_cast<uint32_t>(vertexVector.size());
-		uint32_t indexCount = 0;
-
-		// Vertices
+		for (auto& prim : mesh.primitives)
 		{
-			const float* positionBuffer = nullptr;
-			const float* normalsBuffer = nullptr;
-			const float* texCoordsBuffer = nullptr;
-			size_t vertexCount = 0;
+			uint32_t vertexStart = static_cast<uint32_t>(vertexVector.size());
+			uint32_t indexCount = 0;
 
-			if (prim.attributes.find("POSITION") != prim.attributes.end())
+			// Vertices
 			{
-				const tinygltf::Accessor& accessor = model.accessors[prim.attributes.find("POSITION")->second];
-				const tinygltf::BufferView& view = model.bufferViews[accessor.bufferView];
-				positionBuffer = reinterpret_cast<const float*>(&(model.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
-				vertexCount = accessor.count;
-			}
-			if (prim.attributes.find("NORMAL") != prim.attributes.end())
-			{
-				const tinygltf::Accessor& accessor = model.accessors[prim.attributes.find("NORMAL")->second];
-				const tinygltf::BufferView& view = model.bufferViews[accessor.bufferView];
-				normalsBuffer = reinterpret_cast<const float*>(&(model.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
-			}
-			if (prim.attributes.find("TEXCOORD_0") != prim.attributes.end())
-			{
-				const tinygltf::Accessor& accessor = model.accessors[prim.attributes.find("TEXCOORD_0")->second];
-				const tinygltf::BufferView& view = model.bufferViews[accessor.bufferView];
-				texCoordsBuffer = reinterpret_cast<const float*>(&(model.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
-			}
+				const float* positionBuffer = nullptr;
+				const float* normalsBuffer = nullptr;
+				const float* texCoordsBuffer = nullptr;
+				size_t vertexCount = 0;
 
-			// Create Vertices
-			for (int i = 0; i < vertexCount; i++)
-			{
-				Vertex v;
-				v.position = { positionBuffer[i * 3 + 0], positionBuffer[i * 3 + 1], positionBuffer[i * 3 + 2] };
-				if (normalsBuffer)
-					v.normal = glm::normalize(glm::vec3(normalsBuffer[i * 3 + 0], normalsBuffer[i * 3 + 1], normalsBuffer[i * 3 + 2]));
-				if (texCoordsBuffer)
-					v.textureCoord = { texCoordsBuffer[i * 2 + 0], 1.0 - texCoordsBuffer[i * 2 + 1] };
-				vertexVector.push_back(v);
-			}
-		}
-		// Indices
-		{
-			const tinygltf::Accessor& accessor = model.accessors[prim.indices];
-			const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
-			const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
+				if (prim.attributes.find("POSITION") != prim.attributes.end())
+				{
+					const tinygltf::Accessor& accessor = model.accessors[prim.attributes.find("POSITION")->second];
+					const tinygltf::BufferView& view = model.bufferViews[accessor.bufferView];
+					positionBuffer = reinterpret_cast<const float*>(&(model.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
+					vertexCount = accessor.count;
+				}
+				if (prim.attributes.find("NORMAL") != prim.attributes.end())
+				{
+					const tinygltf::Accessor& accessor = model.accessors[prim.attributes.find("NORMAL")->second];
+					const tinygltf::BufferView& view = model.bufferViews[accessor.bufferView];
+					normalsBuffer = reinterpret_cast<const float*>(&(model.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
+				}
+				if (prim.attributes.find("TEXCOORD_0") != prim.attributes.end())
+				{
+					const tinygltf::Accessor& accessor = model.accessors[prim.attributes.find("TEXCOORD_0")->second];
+					const tinygltf::BufferView& view = model.bufferViews[accessor.bufferView];
+					texCoordsBuffer = reinterpret_cast<const float*>(&(model.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
+				}
 
-			indexCount += static_cast<uint32_t>(accessor.count);
+				// Create Vertices
+				for (int i = 0; i < vertexCount; i++)
+				{
+					Vertex v;
+					v.position = { positionBuffer[i * 3 + 0], positionBuffer[i * 3 + 1], positionBuffer[i * 3 + 2] };
+					if (normalsBuffer)
+						v.normal = glm::normalize(glm::vec3(normalsBuffer[i * 3 + 0], normalsBuffer[i * 3 + 1], normalsBuffer[i * 3 + 2]));
+					if (texCoordsBuffer)
+						v.textureCoord = { texCoordsBuffer[i * 2 + 0], 1.0 - texCoordsBuffer[i * 2 + 1] };
+					vertexVector.push_back(v);
+				}
+			}
+			// Indices
+			{
+				const tinygltf::Accessor& accessor = model.accessors[prim.indices];
+				const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
+				const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
 
-			// glTF supports different component types of indices
-			switch (accessor.componentType)
-			{
-			case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT:
-			{
-				uint32_t* buf = new uint32_t[accessor.count];
-				memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint32_t));
-				for (size_t index = 0; index < accessor.count; index++)
-					indexVector.push_back(buf[index] + vertexStart);
-				delete[] buf;
-				break;
-			}
-			case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT:
-			{
-				uint16_t* buf = new uint16_t[accessor.count];
-				memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint16_t));
-				for (size_t index = 0; index < accessor.count; index++)
-					indexVector.push_back(buf[index] + vertexStart);
-				delete[] buf;
-				break;
-			}
-			case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE:
-			{
-				uint8_t* buf = new uint8_t[accessor.count];
-				memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint8_t));
-				for (size_t index = 0; index < accessor.count; index++)
-					indexVector.push_back(buf[index] + vertexStart);
-				delete[] buf;
-				break;
-			}
-			default:
-				std::cerr << "[GltfImporter] Index component type " << accessor.componentType << " not supported!" << std::endl;
-				return;
+				indexCount += static_cast<uint32_t>(accessor.count);
+
+				// glTF supports different component types of indices
+				switch (accessor.componentType)
+				{
+				case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT:
+				{
+					uint32_t* buf = new uint32_t[accessor.count];
+					memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint32_t));
+					pieces.emplace_back(indexVector.size());
+					for (size_t index = 0; index < accessor.count; index++)
+						indexVector.push_back(buf[index] + vertexStart);
+					delete[] buf;
+					break;
+				}
+				case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT:
+				{
+					uint16_t* buf = new uint16_t[accessor.count];
+					memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint16_t));
+					pieces.emplace_back(indexVector.size());
+					for (size_t index = 0; index < accessor.count; index++)
+						indexVector.push_back(buf[index] + vertexStart);
+					delete[] buf;
+					break;
+				}
+				case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE:
+				{
+					uint8_t* buf = new uint8_t[accessor.count];
+					memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint8_t));
+					pieces.emplace_back(indexVector.size());
+					for (size_t index = 0; index < accessor.count; index++)
+						indexVector.push_back(buf[index] + vertexStart);
+					delete[] buf;
+					break;
+				}
+				default:
+					std::cerr << "[GltfImporter] Index component type " << accessor.componentType << " not supported!" << std::endl;
+					return;
+				}
 			}
 		}
 	}

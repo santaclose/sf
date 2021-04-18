@@ -5,9 +5,9 @@
 #include <Texture.h>
 #include <Cubemap.h>
 #include <Material.h>
-#include <Model.h>
-#include <ModelReference.h>
-#include <ModelProcessor.h>
+#include <Mesh.h>
+#include <MeshReference.h>
+#include <MeshProcessor.h>
 #include <Math.hpp>
 #include <Skybox.h>
 #include <Input.h>
@@ -65,7 +65,7 @@ namespace sf
 	Cubemap prefilterCubemap;
 	Texture lookupTexture;
 
-	std::vector<Model*> models;
+	std::vector<Mesh*> models;
 	int selectedModel = 0;
 
 	void Game::Initialize(int argc, char** argv)
@@ -166,28 +166,28 @@ namespace sf
 		int gltfid, objid;
 
 		models.emplace_back();
-		models.back() = new Model();
+		models.back() = new Mesh();
 		gltfid = GltfImporter::Load("examples/pbr/gltf/SciFiHelmet/SciFiHelmet.gltf");
-		models.back()->CreateFromGltf(gltfid, 0);
-		ModelProcessor::ComputeTangentSpace(*models.back());
+		models.back()->CreateFromGltf(gltfid);
+		MeshProcessor::ComputeTangentSpace(*models.back());
 		models.back()->ReloadVertexData();
-		models.back()->SetMaterial(&sciFiHelmetMaterial);
+		models.back()->SetMaterial(&sciFiHelmetMaterial, 0);
 
 		models.emplace_back();
-		models.back() = new Model();
+		models.back() = new Mesh();
 		gltfid = GltfImporter::Load("examples/pbr/gltf/DamagedHelmet/DamagedHelmet.gltf");
-		models.back()->CreateFromGltf(gltfid, 0);
-		ModelProcessor::ComputeTangentSpace(*models.back());
+		models.back()->CreateFromGltf(gltfid);
+		MeshProcessor::ComputeTangentSpace(*models.back());
 		models.back()->ReloadVertexData();
-		models.back()->SetMaterial(&damagedHelmetMaterial);
+		models.back()->SetMaterial(&damagedHelmetMaterial, 0);
 
 		models.emplace_back();
-		models.back() = new Model();
+		models.back() = new Mesh();
 		gltfid = GltfImporter::Load("examples/pbr/gltf/MaterialsVariantsShoe/MaterialsVariantsShoe.gltf");
-		models.back()->CreateFromGltf(gltfid, 0);
-		ModelProcessor::ComputeTangentSpace(*models.back());
+		models.back()->CreateFromGltf(gltfid);
+		MeshProcessor::ComputeTangentSpace(*models.back());
 		models.back()->ReloadVertexData();
-		models.back()->SetMaterial(&shoeMaterial);
+		models.back()->SetMaterial(&shoeMaterial, 0);
 
 		for (int i = 0; i < models.size(); i++)
 		{
@@ -252,7 +252,7 @@ namespace sf
 	}
 	void Game::Terminate()
 	{
-		for (Model* m : models)
+		for (Mesh* m : models)
 			delete m;
 	}
 }

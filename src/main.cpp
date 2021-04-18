@@ -5,11 +5,12 @@
 #include <vector>
 
 #include <Camera.h>
-#include <Model.h>
+#include <Mesh.h>
 #include <Skybox.h>
 #include <Input.h>
 #include <Config.h>
 #include <Game.h>
+#include <Defaults.h>
 
 #define BACKGROUND_COLOR 0.1
 
@@ -102,6 +103,7 @@ int main(int argc, char** argv)
 
 	glClearColor(sf::Config::clearColor[0], sf::Config::clearColor[1], sf::Config::clearColor[2], 0.0);
 
+	sf::Defaults::Initialize();
 	//-------------------//
 	sf::Game::Initialize(argc, argv);
 	//-------------------//
@@ -132,7 +134,7 @@ int main(int argc, char** argv)
 		gameTime += deltaTime;
 
 		sf::Skybox::Draw();
-		sf::Model::DrawAll();
+		sf::Mesh::DrawAll();
 
 		/* Swap front and back buffers */
 		glfwSwapBuffers(window);

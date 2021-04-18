@@ -9,22 +9,23 @@
 #include <Vertex.h>
 #include <Object.h>
 #include <Material.h>
+#include <MeshPiece.h>
 
 namespace sf {
 
-	class ModelReference;
-	class ModelProcessor;
+	class MeshReference;
+	class MeshProcessor;
 	class VoxelModel;
 
-	class Model : public Object
+	class Mesh : public Object
 	{
-		friend ModelReference;
-		friend ModelProcessor;
+		friend MeshReference;
+		friend MeshProcessor;
 		friend VoxelModel;
 
-		static std::vector<Model*> models;
+		static std::vector<Mesh*> models;
 
-		void SendMatrixToShader();
+		void SendMatrixToShader(Material& material);
 
 		unsigned int m_gl_vertexBuffer;
 		unsigned int m_gl_indexBuffer;
@@ -32,20 +33,20 @@ namespace sf {
 		std::vector<Vertex> m_vertexVector;
 		std::vector<unsigned int> m_indexVector;
 
-		Material* m_material;
+		std::vector<MeshPiece> m_pieces;
 
-		std::vector<ModelReference*> m_references;
+		std::vector<MeshReference*> m_references;
 
 		void CompleteFromVectors();
 
 	public:
 		void ReloadVertexData();
-		void CreateFromGltf(unsigned int gltfID, unsigned int meshIndex = 0);
-		void CreateFromObj(unsigned int objID, unsigned int meshIndex = 0);
+		void CreateFromGltf(unsigned int gltfID);
+		void CreateFromObj(unsigned int objID);
 		void CreateFromCode(void (*generateModelFunc)(), bool smooth = true);
 		void CreateFromVoxelModel(const VoxelModel& voxelModel);
 
-		void SetMaterial(Material* theMaterial);
+		void SetMaterial(Material* theMaterial, int piece);
 		void Draw();
 		static void DrawAll();
 	};

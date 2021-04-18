@@ -6,4 +6,12 @@
 **.vcxproj
 **.vcxproj.filters
 **.vcxproj.user
-vendor/assimp/
+
+**.obj
+**.gltf
+**.bin
+**.glb
+**.png
+**.jpg
+**.hdr
+**.mtl

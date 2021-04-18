@@ -3,13 +3,13 @@
 
 #include <Game.h>
 #include <Material.h>
-#include <Model.h>
-#include <ModelReference.h>
+#include <Mesh.h>
+#include <MeshReference.h>
 #include <Math.hpp>
 #include <Random.h>
 #include <Input.h>
 #include <Camera.h>
-#include <ModelProcessor.h>
+#include <MeshProcessor.h>
 #include <Importer/GltfImporter.h>
 #include <Importer/ObjImporter.h>
 
@@ -34,7 +34,7 @@ namespace sf
 	Shader uvShader;
 	Material uvMaterial;
 
-	std::vector<Model*> models;
+	std::vector<Mesh*> models;
 	int selectedModel = 0;
 
 	void Game::Initialize(int argc, char** argv)
@@ -54,40 +54,41 @@ namespace sf
 		int gltfid, objid;
 
 		models.emplace_back();
-		models.back() = new Model();
+		models.back() = new Mesh();
 		objid = ObjImporter::Load("examples/vertexAo/table.obj");
-		models.back()->CreateFromObj(objid, 0);
-		ModelProcessor::BakeAoToVertices(*models.back());
+		models.back()->CreateFromObj(objid);
+		MeshProcessor::BakeAoToVertices(*models.back());
 		models.back()->ReloadVertexData();
-		models.back()->SetMaterial(&material);
+		models.back()->SetMaterial(&material, 0);
 		models.emplace_back();
-		models.back() = new Model();
+		models.back() = new Mesh();
 		objid = ObjImporter::Load("examples/vertexAo/ag.obj");
-		models.back()->CreateFromObj(objid, 0);
-		ModelProcessor::BakeAoToVertices(*models.back());
+		models.back()->CreateFromObj(objid);
+		MeshProcessor::BakeAoToVertices(*models.back());
 		models.back()->ReloadVertexData();
-		models.back()->SetMaterial(&material);
+		models.back()->SetMaterial(&material, 0);
 		models.emplace_back();
-		models.back() = new Model();
+		models.back() = new Mesh();
 		objid = ObjImporter::Load("examples/vertexAo/shoe.obj");
-		models.back()->CreateFromObj(objid, 0);
-		ModelProcessor::BakeAoToVertices(*models.back());
+		models.back()->CreateFromObj(objid);
+		MeshProcessor::BakeAoToVertices(*models.back());
 		models.back()->ReloadVertexData();
-		models.back()->SetMaterial(&material);
+		models.back()->SetMaterial(&material, 0);
 		models.emplace_back();
-		models.back() = new Model();
+		models.back() = new Mesh();
 		objid = ObjImporter::Load("examples/vertexAo/seashell.obj");
-		models.back()->CreateFromObj(objid, 0);
-		ModelProcessor::BakeAoToVertices(*models.back());
+		models.back()->CreateFromObj(objid);
+		MeshProcessor::BakeAoToVertices(*models.back());
 		models.back()->ReloadVertexData();
-		models.back()->SetMaterial(&material);
+		models.back()->SetMaterial(&material, 0);
 		models.emplace_back();
-		models.back() = new Model();
+		models.back() = new Mesh();
 		objid = ObjImporter::Load("examples/vertexAo/chestnut.obj");
-		models.back()->CreateFromObj(objid, 0);
-		ModelProcessor::BakeAoToVertices(*models.back());
+		models.back()->CreateFromObj(objid);
+		MeshProcessor::BakeAoToVertices(*models.back());
 		models.back()->ReloadVertexData();
-		models.back()->SetMaterial(&material);
+		models.back()->SetMaterial(&material, 0);
+		models.back()->SetMaterial(&material, 1);
 
 		for (int i = 0; i < models.size(); i++)
 		{
@@ -152,7 +153,7 @@ namespace sf
 	}
 	void Game::Terminate()
 	{
-		for (Model* m : models)
+		for (Mesh* m : models)
 			delete m;
 	}
 }

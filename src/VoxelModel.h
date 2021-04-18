@@ -4,13 +4,13 @@
 #include <vector>
 
 #include <Entity.h>
-#include <Model.h>
+#include <Mesh.h>
 
 namespace sf {
 
 	class VoxelModel : public Entity
 	{
-		friend Model;
+		friend Mesh;
 
 		glm::vec3 m_minPos;
 		float m_voxelSize;
@@ -18,7 +18,7 @@ namespace sf {
 
 	public:
 		void Create(const glm::vec3& minPos, const glm::vec3& size, float voxelSize);
-		void CreateFromModel(const Model& model, float voxelSize);
+		void CreateFromMesh(const Mesh& model, float voxelSize);
 		bool CastRay(const glm::vec3& origin, const glm::vec3& direction, bool avoidEarlyCollision = false, float* out_t = nullptr) const;
 		void DrawRay(const glm::vec3& origin, const glm::vec3 direction, bool avoidEarlyCollision = false);
 

@@ -27,24 +27,24 @@ void sf::VoxelModel::Create(const glm::vec3& minPos, const glm::vec3& size, floa
 	}
 }
 
-void sf::VoxelModel::CreateFromModel(const Model& model, float voxelSize)
+void sf::VoxelModel::CreateFromMesh(const Mesh& mesh, float voxelSize)
 {
-	assert(model.m_vertexVector.size() > 0);
+	assert(mesh.m_vertexVector.size() > 0);
 
 	m_voxelSize = voxelSize;
-	m_position = model.m_position;
+	m_position = mesh.m_position;
 
-	glm::vec3 minP = model.m_vertexVector[0].position;
+	glm::vec3 minP = mesh.m_vertexVector[0].position;
 	glm::vec3 maxP = minP;
 
-	for (int i = 1; i < model.m_vertexVector.size(); i++)
+	for (int i = 1; i < mesh.m_vertexVector.size(); i++)
 	{
-		minP.x = glm::min(minP.x, model.m_vertexVector[i].position.x);
-		minP.y = glm::min(minP.y, model.m_vertexVector[i].position.y);
-		minP.z = glm::min(minP.z, model.m_vertexVector[i].position.z);
-		maxP.x = glm::max(maxP.x, model.m_vertexVector[i].position.x);
-		maxP.y = glm::max(maxP.y, model.m_vertexVector[i].position.y);
-		maxP.z = glm::max(maxP.z, model.m_vertexVector[i].position.z);
+		minP.x = glm::min(minP.x, mesh.m_vertexVector[i].position.x);
+		minP.y = glm::min(minP.y, mesh.m_vertexVector[i].position.y);
+		minP.z = glm::min(minP.z, mesh.m_vertexVector[i].position.z);
+		maxP.x = glm::max(maxP.x, mesh.m_vertexVector[i].position.x);
+		maxP.y = glm::max(maxP.y, mesh.m_vertexVector[i].position.y);
+		maxP.z = glm::max(maxP.z, mesh.m_vertexVector[i].position.z);
 	}
 
 	m_minPos = minP;
@@ -65,25 +65,25 @@ void sf::VoxelModel::CreateFromModel(const Model& model, float voxelSize)
 	}
 
 	// rasterize
-	for (int indexI = 0; indexI < model.m_indexVector.size(); indexI += 3)
+	for (int indexI = 0; indexI < mesh.m_indexVector.size(); indexI += 3)
 	{
-		unsigned int indexA = model.m_indexVector[indexI + 0];
-		unsigned int indexB = model.m_indexVector[indexI + 1];
-		unsigned int indexC = model.m_indexVector[indexI + 2];
+		unsigned int indexA = mesh.m_indexVector[indexI + 0];
+		unsigned int indexB = mesh.m_indexVector[indexI + 1];
+		unsigned int indexC = mesh.m_indexVector[indexI + 2];
 
 		glm::vec3 triNormal = glm::cross(
-			model.m_vertexVector[indexB].position - model.m_vertexVector[indexA].position,
-			model.m_vertexVector[indexC].position - model.m_vertexVector[indexA].position);
+			mesh.m_vertexVector[indexB].position - mesh.m_vertexVector[indexA].position,
+			mesh.m_vertexVector[indexC].position - mesh.m_vertexVector[indexA].position);
 
 		glm::vec3 trianglebbmin = {
-			glm::min(glm::min(model.m_vertexVector[indexA].position.x, model.m_vertexVector[indexB].position.x), model.m_vertexVector[indexC].position.x),
-			glm::min(glm::min(model.m_vertexVector[indexA].position.y, model.m_vertexVector[indexB].position.y), model.m_vertexVector[indexC].position.y),
-			glm::min(glm::min(model.m_vertexVector[indexA].position.z, model.m_vertexVector[indexB].position.z), model.m_vertexVector[indexC].position.z)
+			glm::min(glm::min(mesh.m_vertexVector[indexA].position.x, mesh.m_vertexVector[indexB].position.x), mesh.m_vertexVector[indexC].position.x),
+			glm::min(glm::min(mesh.m_vertexVector[indexA].position.y, mesh.m_vertexVector[indexB].position.y), mesh.m_vertexVector[indexC].position.y),
+			glm::min(glm::min(mesh.m_vertexVector[indexA].position.z, mesh.m_vertexVector[indexB].position.z), mesh.m_vertexVector[indexC].position.z)
 		};
 		glm::vec3 trianglebbmax = {
-			glm::max(glm::max(model.m_vertexVector[indexA].position.x, model.m_vertexVector[indexB].position.x), model.m_vertexVector[indexC].position.x),
-			glm::max(glm::max(model.m_vertexVector[indexA].position.y, model.m_vertexVector[indexB].position.y), model.m_vertexVector[indexC].position.y),
-			glm::max(glm::max(model.m_vertexVector[indexA].position.z, model.m_vertexVector[indexB].position.z), model.m_vertexVector[indexC].position.z)
+			glm::max(glm::max(mesh.m_vertexVector[indexA].position.x, mesh.m_vertexVector[indexB].position.x), mesh.m_vertexVector[indexC].position.x),
+			glm::max(glm::max(mesh.m_vertexVector[indexA].position.y, mesh.m_vertexVector[indexB].position.y), mesh.m_vertexVector[indexC].position.y),
+			glm::max(glm::max(mesh.m_vertexVector[indexA].position.z, mesh.m_vertexVector[indexB].position.z), mesh.m_vertexVector[indexC].position.z)
 		};
 		glm::uvec3 minVoxelCoords = {
 			glm::clamp((int)((trianglebbmin.x - m_minPos.x) / m_voxelSize), 0, (int)(m_mat.size() - 1)),
@@ -116,9 +116,9 @@ void sf::VoxelModel::CreateFromModel(const Model& model, float voxelSize)
 			for (int j = minVoxelCoords.y; j <= maxVoxelCoords.y; j++)
 			{
 				glm::vec2 voxelCenter = glm::vec2(m_minPos.x, m_minPos.y) + glm::vec2(i * m_voxelSize + m_voxelSize / 2.0f, j * m_voxelSize + m_voxelSize / 2.0f);
-				glm::vec2 tri0 = glm::vec2(model.m_vertexVector[indexA].position.x, model.m_vertexVector[indexA].position.y);
-				glm::vec2 tri1 = glm::vec2(model.m_vertexVector[indexB].position.x, model.m_vertexVector[indexB].position.y);
-				glm::vec2 tri2 = glm::vec2(model.m_vertexVector[indexC].position.x, model.m_vertexVector[indexC].position.y);
+				glm::vec2 tri0 = glm::vec2(mesh.m_vertexVector[indexA].position.x, mesh.m_vertexVector[indexA].position.y);
+				glm::vec2 tri1 = glm::vec2(mesh.m_vertexVector[indexB].position.x, mesh.m_vertexVector[indexB].position.y);
+				glm::vec2 tri2 = glm::vec2(mesh.m_vertexVector[indexC].position.x, mesh.m_vertexVector[indexC].position.y);
 				xyMat[i - minVoxelCoords.x][j - minVoxelCoords.y] = Math::TriPointDistance2D(voxelCenter, tri0, tri1, tri2) < m_voxelSize * RASTERIZE_MAX_DISTANCE;
 			}
 		}
@@ -128,9 +128,9 @@ void sf::VoxelModel::CreateFromModel(const Model& model, float voxelSize)
 			for (int j = minVoxelCoords.z; j <= maxVoxelCoords.z; j++)
 			{
 				glm::vec2 voxelCenter = glm::vec2(m_minPos.x, m_minPos.z) + glm::vec2(i * m_voxelSize + m_voxelSize / 2.0f, j * m_voxelSize + m_voxelSize / 2.0f);
-				glm::vec2 tri0 = glm::vec2(model.m_vertexVector[indexA].position.x, model.m_vertexVector[indexA].position.z);
-				glm::vec2 tri1 = glm::vec2(model.m_vertexVector[indexB].position.x, model.m_vertexVector[indexB].position.z);
-				glm::vec2 tri2 = glm::vec2(model.m_vertexVector[indexC].position.x, model.m_vertexVector[indexC].position.z);
+				glm::vec2 tri0 = glm::vec2(mesh.m_vertexVector[indexA].position.x, mesh.m_vertexVector[indexA].position.z);
+				glm::vec2 tri1 = glm::vec2(mesh.m_vertexVector[indexB].position.x, mesh.m_vertexVector[indexB].position.z);
+				glm::vec2 tri2 = glm::vec2(mesh.m_vertexVector[indexC].position.x, mesh.m_vertexVector[indexC].position.z);
 				xzMat[i - minVoxelCoords.x][j - minVoxelCoords.z] = Math::TriPointDistance2D(voxelCenter, tri0, tri1, tri2) < m_voxelSize * RASTERIZE_MAX_DISTANCE;
 			}
 		}
@@ -140,9 +140,9 @@ void sf::VoxelModel::CreateFromModel(const Model& model, float voxelSize)
 			for (int j = minVoxelCoords.y; j <= maxVoxelCoords.y; j++)
 			{
 				glm::vec2 voxelCenter = glm::vec2(m_minPos.z, m_minPos.y) + glm::vec2(i * m_voxelSize + m_voxelSize / 2.0f, j * m_voxelSize + m_voxelSize / 2.0f);
-				glm::vec2 tri0 = glm::vec2(model.m_vertexVector[indexA].position.z, model.m_vertexVector[indexA].position.y);
-				glm::vec2 tri1 = glm::vec2(model.m_vertexVector[indexB].position.z, model.m_vertexVector[indexB].position.y);
-				glm::vec2 tri2 = glm::vec2(model.m_vertexVector[indexC].position.z, model.m_vertexVector[indexC].position.y);
+				glm::vec2 tri0 = glm::vec2(mesh.m_vertexVector[indexA].position.z, mesh.m_vertexVector[indexA].position.y);
+				glm::vec2 tri1 = glm::vec2(mesh.m_vertexVector[indexB].position.z, mesh.m_vertexVector[indexB].position.y);
+				glm::vec2 tri2 = glm::vec2(mesh.m_vertexVector[indexC].position.z, mesh.m_vertexVector[indexC].position.y);
 				zyMat[i - minVoxelCoords.z][j - minVoxelCoords.y] = Math::TriPointDistance2D(voxelCenter, tri0, tri1, tri2) < m_voxelSize * RASTERIZE_MAX_DISTANCE;
 			}
 		}
@@ -161,7 +161,7 @@ void sf::VoxelModel::CreateFromModel(const Model& model, float voxelSize)
 						xyMat[i - minVoxelCoords.x][j - minVoxelCoords.y] &&
 						xzMat[i - minVoxelCoords.x][k - minVoxelCoords.z] &&
 						zyMat[k - minVoxelCoords.z][j - minVoxelCoords.y] &&
-						glm::abs(Math::PlanePointDistance(triNormal, model.m_vertexVector[indexA].position, voxelCenter)) < m_voxelSize * RASTERIZE_MAX_DISTANCE;
+						glm::abs(Math::PlanePointDistance(triNormal, mesh.m_vertexVector[indexA].position, voxelCenter)) < m_voxelSize * RASTERIZE_MAX_DISTANCE;
 
 					m_mat[i][j][k] = m_mat[i][j][k] || voxelValueForCurrentTri;
 				}

@@ -3,9 +3,9 @@
 #include <Game.h>
 #include <Texture.h>
 #include <Material.h>
-#include <Model.h>
-#include <ModelReference.h>
-#include <ModelProcessor.h>
+#include <Mesh.h>
+#include <MeshReference.h>
+#include <MeshProcessor.h>
 #include <Math.hpp>
 #include <Random.h>
 #include <Camera.h>
@@ -37,9 +37,9 @@ namespace sf
 	Material uvMaterial;
 	Material aoMaterial;
 
-	Model ship;
-	Model uniqueThings[UNIQUE_COUNT];
-	ModelReference* things;
+	Mesh ship;
+	Mesh uniqueThings[UNIQUE_COUNT];
+	MeshReference* things;
 
 	void Game::Initialize(int argc, char** argv)
 	{
@@ -63,8 +63,8 @@ namespace sf
 		noiseMaterial.CreateFromShader(&noiseShader);
 
 		int gltfid = GltfImporter::Load("examples/spaceship/ship.glb");
-		ship.CreateFromGltf(gltfid, 0);
-		ship.SetMaterial(&uvMaterial);
+		ship.CreateFromGltf(gltfid);
+		ship.SetMaterial(&uvMaterial, 0);
 		targetShipRotation = ship.GetRotation();
 
 		theCamera->SetPosition(ship.GetPosition() - (ship.Forward() * 4.0) + (ship.Up()));
@@ -78,20 +78,20 @@ namespace sf
 			switch (i % 3)
 			{
 			case 0:
-				ModelProcessor::BakeAoToVertices(uniqueThings[i], 60);
+				MeshProcessor::BakeAoToVertices(uniqueThings[i]);
 				uniqueThings[i].ReloadVertexData();
-				uniqueThings[i].SetMaterial(&aoMaterial);
+				uniqueThings[i].SetMaterial(&aoMaterial, 0);
 				break;
 			case 1:
-				uniqueThings[i].SetMaterial(&colorsMaterial);
+				uniqueThings[i].SetMaterial(&colorsMaterial, 0);
 				break;
 			case 2:
-				uniqueThings[i].SetMaterial(&noiseMaterial);
+				uniqueThings[i].SetMaterial(&noiseMaterial, 0);
 				break;
 			}
 		}
 
-		things = new ModelReference[COUNT];
+		things = new MeshReference[COUNT];
 		for (int i = 0; i < COUNT + UNIQUE_COUNT; i++)
 		{
 			if (i < UNIQUE_COUNT)
@@ -102,7 +102,7 @@ namespace sf
 			}
 			else
 			{
-				things[i - UNIQUE_COUNT].CreateFomModel(uniqueThings[rand() % UNIQUE_COUNT]);
+				things[i - UNIQUE_COUNT].CreateFomMesh(uniqueThings[rand() % UNIQUE_COUNT]);
 				things[i - UNIQUE_COUNT].SetScale(Random::Float() * (COUNT + UNIQUE_COUNT - i) / 100.0 + 1.0);
 				things[i - UNIQUE_COUNT].SetPosition(glm::vec3((Random::Float() - 0.5) * SPAWN_RANGE, (Random::Float() - 0.5) * SPAWN_RANGE, (float)(i * -2)));
 				things[i - UNIQUE_COUNT].SetRotation(glm::fquat(glm::vec3(0.0, glm::radians(180.0), glm::radians(Random::Float() * 360.0))));

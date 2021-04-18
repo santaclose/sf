@@ -4,8 +4,8 @@
 #include <Game.h>
 #include <Texture.h>
 #include <Material.h>
-#include <Model.h>
-#include <ModelReference.h>
+#include <Mesh.h>
+#include <MeshReference.h>
 #include <Math.hpp>
 #include <Random.h>
 #include <Camera.h>
@@ -45,8 +45,8 @@ namespace sf
 	float animation1C = 2.22, animation2C = 2.22;
 	float animation1D = 3.96, animation2D = 3.96;
 
-	Model errt[UNIQUE_COUNT];
-	ModelReference* errts;
+	Mesh errt[UNIQUE_COUNT];
+	MeshReference* errts;
 
 	float tFreq = 0.00559973;
 	float tStrength = 12.4;
@@ -92,13 +92,13 @@ namespace sf
 		whiteMaterial.SetUniform("theColor", &theColor, Material::UniformType::_Color);
 
 
-		errts = new ModelReference[COPY_COUNT * UNIQUE_COUNT];
+		errts = new MeshReference[COPY_COUNT * UNIQUE_COUNT];
 
 		for (int i = 0; i < UNIQUE_COUNT; i++)
 		{
 			User::Models::seed = i;
 			errt[i].CreateFromCode(User::Models::GenerateModel, true);
-			errt[i].SetMaterial(rand() % 2 == 1 ? &blackMaterial : &whiteMaterial);
+			errt[i].SetMaterial(rand() % 2 == 1 ? &blackMaterial : &whiteMaterial, 0);
 			float randomAngle = Random::Float() * 3.14159265*2.0;
 			float randomDistance = Random::Float() * 200.0;
 
@@ -106,7 +106,7 @@ namespace sf
 
 			for (int j = 0; j < COPY_COUNT; j++)
 			{
-				errts[j + i * COPY_COUNT].CreateFomModel(errt[i]);
+				errts[j + i * COPY_COUNT].CreateFomMesh(errt[i]);
 				errts[j + i * COPY_COUNT].SetScale(Random::Float() + 0.1);
 
 				float randomAngle = Random::Float() * 3.14159265*2.0;

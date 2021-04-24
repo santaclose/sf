@@ -62,7 +62,8 @@ project "sf"
 		"vendor/sfmg",
 		"vendor/tinygltf",
 		"vendor/gli/gli",
-		"vendor/aobaker"
+		"vendor/aobaker",
+		"vendor/entt"
 	}
 
 	links 

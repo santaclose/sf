@@ -125,7 +125,7 @@ void sf::ObjImporter::Destroy(int id)
 {
 }
 
-void sf::ObjImporter::GetMesh(int id, std::vector<Vertex>& vertexVector, std::vector<unsigned int>& indexVector, std::vector<MeshPiece>& pieces)
+void sf::ObjImporter::GetMesh(int id, Mesh& mesh)
 {
 	assert(id > -1 && id < meshes.size());
 
@@ -135,7 +135,7 @@ void sf::ObjImporter::GetMesh(int id, std::vector<Vertex>& vertexVector, std::ve
 	for (int fi = 0; fi < meshes[id].faces.size(); fi++)
 	{
 		if (meshes[id].pieces.find(fi) != meshes[id].pieces.end())
-			pieces.push_back(triangulatedVtxSequence.size());
+			mesh.pieces.push_back(triangulatedVtxSequence.size());
 
 		const ObjFace& f = meshes[id].faces[fi];
 		for (int i = 2; i < f.vertices.size(); i++)
@@ -154,14 +154,14 @@ void sf::ObjImporter::GetMesh(int id, std::vector<Vertex>& vertexVector, std::ve
 		const ObjVertex& v = triangulatedVtxSequence[vi];
 		if (uniqueVertices.find(v) == uniqueVertices.end()) // not found
 		{
-			vertexVector.emplace_back();
-			vertexVector.back().position = meshes[id].positions[v.posID];
+			mesh.vertexVector.emplace_back();
+			mesh.vertexVector.back().position = meshes[id].positions[v.posID];
 			if (meshes[id].normals.size() > 0)
-				vertexVector.back().normal = meshes[id].normals[v.normalID];
+				mesh.vertexVector.back().normal = meshes[id].normals[v.normalID];
 			if (meshes[id].texCoords.size() > 0)
-				vertexVector.back().textureCoord = meshes[id].texCoords[v.coordsID];
-			uniqueVertices.insert({ v, vertexVector.size() - 1 });
+				mesh.vertexVector.back().textureCoord = meshes[id].texCoords[v.coordsID];
+			uniqueVertices.insert({ v, mesh.vertexVector.size() - 1 });
 		}
-		indexVector.push_back(uniqueVertices[v]);
+		mesh.indexVector.push_back(uniqueVertices[v]);
 	}
 }

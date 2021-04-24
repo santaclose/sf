@@ -1,5 +1,7 @@
 #include "Skybox.h"
 
+#include <Components/Camera.h>
+
 bool sf::Skybox::generated = false;
 unsigned int sf::Skybox::gl_VAO;
 unsigned int sf::Skybox::gl_VBO;
@@ -90,7 +92,7 @@ void sf::Skybox::SetExposure(float value)
 }
 
 
-void sf::Skybox::Draw()
+void sf::Skybox::Draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix)
 {
     if (!generated)
         return;
@@ -99,9 +101,9 @@ void sf::Skybox::Draw()
 
     shader.Bind();
 
-    glm::mat4 viewMatrix = glm::mat4(glm::mat3(Camera::GetViewMatrix()));
-    shader.SetUniformMatrix4fv("view", &(viewMatrix[0][0]));
-    shader.SetUniformMatrix4fv("projection", &(Camera::GetProjectionMatrix()[0][0]));
+    glm::mat4 fixedViewMat = glm::mat4(glm::mat3(viewMatrix));
+    shader.SetUniformMatrix4fv("view", &(fixedViewMat[0][0]));
+    shader.SetUniformMatrix4fv("projection", &(projectionMatrix[0][0]));
     glBindVertexArray(gl_VAO);
     cubemap->Bind();
     glDrawArrays(GL_TRIANGLES, 0, 36);

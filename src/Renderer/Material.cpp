@@ -1,9 +1,7 @@
 #include "Material.h"
 
-#include <Texture.h>
-#include <Cubemap.h>
-
-sf::Material* sf::Material::boundMaterial = nullptr;
+#include <Renderer/Texture.h>
+#include <Renderer/Cubemap.h>
 
 void sf::Material::CreateFromShader(Shader* theShader, bool isDoubleSided)
 {
@@ -77,5 +75,4 @@ void sf::Material::Bind()
 		}
 		}
 	}
-	boundMaterial = this;
 }

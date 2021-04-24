@@ -97,7 +97,7 @@ int sf::Shader::GetUniformLocation(const std::string& name)
 
 	int location = glGetUniformLocation(m_gl_id, name.c_str());
 	if (location == -1)
-		std::cout << "Could not get uniform location for " << name << std::endl;
+		std::cout << "[Shader] Could not get uniform location for " << name << std::endl;
 
 	m_uniformLocationCache[name] = location;
 	return location;

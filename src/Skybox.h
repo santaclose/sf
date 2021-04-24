@@ -1,8 +1,7 @@
 #pragma once
 
-#include <Shader.h>
-#include <Cubemap.h>
-#include <Camera.h>
+#include <Renderer/Shader.h>
+#include <Renderer/Cubemap.h>
 
 namespace sf {
 
@@ -19,6 +18,6 @@ namespace sf {
 		static void SetCubemap(Cubemap* cubemap);
 		static void SetUseExposure(bool value);
 		static void SetExposure(float value);
-		static void Draw();
+		static void Draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix);
 	};
 }

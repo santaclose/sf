@@ -1,7 +1,6 @@
 #pragma once
 
-#include <Mesh.h>
-#include <VoxelModel.h>
+#include <Components/Mesh.h>
 
 namespace sf {
 

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Shader.h>
-#include <Material.h>
+#include <Renderer/Shader.h>
+#include <Renderer/Material.h>
 
 namespace sf::Defaults {
 

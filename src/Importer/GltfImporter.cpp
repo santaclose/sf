@@ -51,7 +51,7 @@ void sf::GltfImporter::Destroy(int id)
 }
 
 // https://github.com/SaschaWillems/Vulkan/blob/master/examples/gltfloading/gltfloading.cpp
-void sf::GltfImporter::GetMesh(int id, std::vector<Vertex>& vertexVector, std::vector<unsigned int>& indexVector, std::vector<MeshPiece>& pieces)
+void sf::GltfImporter::GetMesh(int id, Mesh& mesh)
 {
 	assert(id > -1 && id < models.size());
 
@@ -61,11 +61,11 @@ void sf::GltfImporter::GetMesh(int id, std::vector<Vertex>& vertexVector, std::v
 	std::vector<glm::vec3> vertex_normals;
 	std::vector<glm::vec2> vertex_uv;
 
-	for (const tinygltf::Mesh& mesh : model.meshes)
+	for (const tinygltf::Mesh& gltfMesh : model.meshes)
 	{
-		for (auto& prim : mesh.primitives)
+		for (auto& prim : gltfMesh.primitives)
 		{
-			uint32_t vertexStart = static_cast<uint32_t>(vertexVector.size());
+			uint32_t vertexStart = static_cast<uint32_t>(mesh.vertexVector.size());
 			uint32_t indexCount = 0;
 
 			// Vertices
@@ -104,7 +104,7 @@ void sf::GltfImporter::GetMesh(int id, std::vector<Vertex>& vertexVector, std::v
 						v.normal = glm::normalize(glm::vec3(normalsBuffer[i * 3 + 0], normalsBuffer[i * 3 + 1], normalsBuffer[i * 3 + 2]));
 					if (texCoordsBuffer)
 						v.textureCoord = { texCoordsBuffer[i * 2 + 0], 1.0 - texCoordsBuffer[i * 2 + 1] };
-					vertexVector.push_back(v);
+					mesh.vertexVector.push_back(v);
 				}
 			}
 			// Indices
@@ -122,9 +122,9 @@ void sf::GltfImporter::GetMesh(int id, std::vector<Vertex>& vertexVector, std::v
 				{
 					uint32_t* buf = new uint32_t[accessor.count];
 					memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint32_t));
-					pieces.emplace_back(indexVector.size());
+					mesh.pieces.emplace_back(mesh.indexVector.size());
 					for (size_t index = 0; index < accessor.count; index++)
-						indexVector.push_back(buf[index] + vertexStart);
+						mesh.indexVector.push_back(buf[index] + vertexStart);
 					delete[] buf;
 					break;
 				}
@@ -132,9 +132,9 @@ void sf::GltfImporter::GetMesh(int id, std::vector<Vertex>& vertexVector, std::v
 				{
 					uint16_t* buf = new uint16_t[accessor.count];
 					memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint16_t));
-					pieces.emplace_back(indexVector.size());
+					mesh.pieces.emplace_back(mesh.indexVector.size());
 					for (size_t index = 0; index < accessor.count; index++)
-						indexVector.push_back(buf[index] + vertexStart);
+						mesh.indexVector.push_back(buf[index] + vertexStart);
 					delete[] buf;
 					break;
 				}
@@ -142,9 +142,9 @@ void sf::GltfImporter::GetMesh(int id, std::vector<Vertex>& vertexVector, std::v
 				{
 					uint8_t* buf = new uint8_t[accessor.count];
 					memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint8_t));
-					pieces.emplace_back(indexVector.size());
+					mesh.pieces.emplace_back(mesh.indexVector.size());
 					for (size_t index = 0; index < accessor.count; index++)
-						indexVector.push_back(buf[index] + vertexStart);
+						mesh.indexVector.push_back(buf[index] + vertexStart);
 					delete[] buf;
 					break;
 				}

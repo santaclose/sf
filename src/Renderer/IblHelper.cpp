@@ -8,7 +8,7 @@
 #include <iostream>
 
 #include <Config.h>
-#include <Shader.h>
+#include <Renderer/Shader.h>
 
 namespace sf::IblHelper {
 

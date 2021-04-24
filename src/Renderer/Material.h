@@ -3,8 +3,8 @@
 #include <vector>
 #include <string>
 
-#include <Shader.h>
-#include <Texture.h>
+#include <Renderer/Shader.h>
+#include <Renderer/Texture.h>
 
 namespace sf {
 
@@ -29,7 +29,5 @@ namespace sf {
 		void CreateFromShader(Shader* theShader, bool isDoubleSided = false);
 		void SetUniform(const std::string& name, void* data, UniformType type);
 		void Bind();
-
-		static Material* boundMaterial;
 	};
 }

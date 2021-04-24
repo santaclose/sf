@@ -11,6 +11,8 @@ namespace sf {
 
 		extern const float Pi;
 
+		int Mod(int a, int b);
+
 		bool RayTriIntersect(
 			const glm::vec3& origin,
 			const glm::vec3& dir,

@@ -1,16 +1,22 @@
-#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <iostream>
 #include <vector>
 
-#include <Camera.h>
-#include <Mesh.h>
 #include <Skybox.h>
 #include <Input.h>
 #include <Config.h>
 #include <Game.h>
 #include <Defaults.h>
+#include <Renderer/Renderer.h>
+
+#include <Scene/Scene.h>
+#include <Scene/Entity.h>
+
+#include <Components/Base.h>
+#include <Components/Camera.h>
+#include <Components/Transform.h>
+#include <Components/Mesh.h>
 
 #define BACKGROUND_COLOR 0.1
 
@@ -42,10 +48,9 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 }
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-	glViewport(0, 0, width, height);
 	sf::Config::windowWidth = width;
 	sf::Config::windowHeight = height;
-	sf::Camera::aspectRatio = (float)width / (float)height;
+	sf::Renderer::OnResize();
 }
 
 int main(int argc, char** argv)
@@ -69,7 +74,7 @@ int main(int argc, char** argv)
 
 	/* Make the window's context current */
 	glfwMakeContextCurrent(window);
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
 	/* INPUT BINDINGS */
 	glfwSetCursorPosCallback(window, cursor_position_callback);
@@ -80,35 +85,12 @@ int main(int argc, char** argv)
 
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-	{
-		std::cout << "Failed to initialize OpenGL context (GLAD)" << std::endl;
-		return -1;
-	}
-
-	// Get GPU info and supported OpenGL version
-	std::cout << "Renderer: " << glGetString(GL_RENDERER) << std::endl;
-	std::cout << "OpenGL version supported " << glGetString(GL_VERSION) << std::endl;
-
-	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_BLEND);
-
-	glCullFace(GL_BACK);
-
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
-
-	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
-
-	glClearColor(sf::Config::clearColor[0], sf::Config::clearColor[1], sf::Config::clearColor[2], 0.0);
-
+	if (!sf::Renderer::Initialize(glfwGetProcAddress))
+		std::cout << "Failed to initialize renderer\n";
 	sf::Defaults::Initialize();
 	//-------------------//
 	sf::Game::Initialize(argc, argv);
 	//-------------------//
-	glViewport(0, 0, sf::Config::windowWidth, sf::Config::windowHeight);
-	sf::Camera::aspectRatio = (float)sf::Config::windowWidth / (float)sf::Config::windowHeight;
 
 	/* Loop until the user closes the window */
 	while (!glfwWindowShouldClose(window))
@@ -122,19 +104,23 @@ int main(int argc, char** argv)
 			currentFrameTime = glfwGetTime();
 		deltaTime = currentFrameTime - lastFrameTime;
 
-		/* Render here */
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 		//-------------------//
 		sf::Game::OnUpdate(deltaTime, gameTime);
 		//-------------------//
 
-		sf::Camera::boundCamera->ComputeMatrices();
-
 		gameTime += deltaTime;
 
-		sf::Skybox::Draw();
-		sf::Mesh::DrawAll();
+		/* Draw scene */
+		sf::Renderer::ClearBuffers();
+		sf::Renderer::ComputeCameraMatrices();
+		sf::Renderer::DrawSkybox();
+		auto view = sf::Scene::activeScene->GetRegistry().view<sf::Base, sf::Mesh, sf::Transform>();
+		for (auto entity : view)
+		{
+			auto [base, mesh, transform] = view.get<sf::Base, sf::Mesh, sf::Transform>(entity);
+			if (base.isEntityEnabled)
+				sf::Renderer::DrawMesh(mesh, transform);
+		}
 
 		/* Swap front and back buffers */
 		glfwSwapBuffers(window);

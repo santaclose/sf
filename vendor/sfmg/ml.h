@@ -6,7 +6,7 @@
 #include <vector>
 #include <map>
 #include <vl.h>
-#include "../../src/Vertex.h"
+#include "../../src/Renderer/Vertex.h"
 
 namespace sfmg
 {

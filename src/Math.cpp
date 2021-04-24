@@ -13,6 +13,14 @@ glm::vec3 sf::operator*(const glm::vec3& v, const float& f)
 
 const float sf::Math::Pi = 3.14159265358979323846264;
 
+int sf::Math::Mod(int a, int b)
+{
+	int ret = a % b;
+	if (ret < 0)
+		ret += b;
+	return ret;
+}
+
 bool sf::Math::RayTriIntersect(const glm::vec3& origin, const glm::vec3& dir, const glm::vec3& t0, const glm::vec3& t1, const glm::vec3& t2, float* out_t)
 {
 	glm::vec3 normal = glm::cross(t1 - t0, t2 - t0);

@@ -8,8 +8,11 @@ out vec4 color;
 in vec3 worldPos;
 in vec2 texCoord;
 in mat3 TBN;
+in vec2 extraData;
 
 uniform vec3 camPos;
+
+uniform bool useVertexAo = false;
 
 uniform bool useAlbedoTexture = false;
 uniform bool useNormalTexture = false;
@@ -117,6 +120,7 @@ void main()
     metalness = useMetalnessTexture ? texture(metalnessTexture, texCoord).r : 0.0;
     roughness = useRoughnessTexture ? texture(roughnessTexture, texCoord).r : 0.4;
     ao = useAoTexture ? texture(aoTexture, texCoord).r : 1.0;
+    ao = useVertexAo ? min(extraData.x, ao) : ao;
 
     // Get current fragment's normal and transform to world space.
     N = 2.0 * normalPixel - 1.0;

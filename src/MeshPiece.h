@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Material.h>
+#include <Renderer/Material.h>
 #include <Defaults.h>
 
 namespace sf {

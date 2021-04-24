@@ -1,10 +1,10 @@
-#version 330 core
+#version 450 core
+
+out vec4 color;
 
 in vec2 texCoord;
 in mat3 TBN;
 in vec2 extraData;
-
-out vec4 color;
 
 void main()
 {

@@ -36,9 +36,6 @@ unsigned int sf::Shader::CompileShader(unsigned int type, const std::string& sou
 		char* message = (char*)alloca(length * sizeof(char));
 		glGetShaderInfoLog(id, length, &length, message);
 		std::cout << "[Shader] Failed to compile " << messageType << " shader" << std::endl;
-		//std::cout << "----------------------------\n";
-		//std::cout << source << std::endl;
-		//std::cout << "----------------------------\n";
 		std::cout << message << std::endl;
 		glDeleteShader(id);
 		return 0;
@@ -92,15 +89,29 @@ void sf::Shader::Bind() const
 
 int sf::Shader::GetUniformLocation(const std::string& name)
 {
-	if (m_uniformLocationCache.find(name) != m_uniformLocationCache.end())
-		return m_uniformLocationCache[name];
+	if (m_uniformCache.find(name) != m_uniformCache.end() && m_uniformCache[name].location != -1)
+		return m_uniformCache[name].location;
 
 	int location = glGetUniformLocation(m_gl_id, name.c_str());
 	if (location == -1)
 		std::cout << "[Shader] Could not get uniform location for " << name << std::endl;
 
-	m_uniformLocationCache[name] = location;
+	m_uniformCache[name].location = location;
 	return location;
+}
+
+void sf::Shader::AssignTextureNumberToUniform(const std::string& name)
+{
+	if (m_uniformCache[name].textureIndex == -1)
+	{
+		m_uniformCache[name].textureIndex = m_textureIndexCounter;
+		m_textureIndexCounter++;
+	}
+}
+
+int sf::Shader::GetTextureIndex(const std::string& name)
+{
+	return m_uniformCache[name].textureIndex;
 }
 
 void sf::Shader::SetUniformMatrix4fv(const std::string& name, const float* pointer, unsigned int number)

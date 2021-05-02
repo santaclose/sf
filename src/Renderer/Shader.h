@@ -7,17 +7,27 @@
 namespace sf {
 
 	class ComputeShader;
+	class Material;
+
+	struct ShaderUniformData {
+		int location = -1;
+		int textureIndex = -1;
+	};
 
 	class Shader
 	{
 		friend ComputeShader;
+		friend Material;
 	private:
-		std::unordered_map<std::string, int> m_uniformLocationCache;
+		std::unordered_map<std::string, ShaderUniformData> m_uniformCache;
+		int m_textureIndexCounter = 0;
 	public:
 		unsigned int m_gl_id;
 	private:
 		static unsigned int CompileShader(unsigned int type, const std::string& source);
 		int GetUniformLocation(const std::string& name);
+		void AssignTextureNumberToUniform(const std::string& name);
+		int GetTextureIndex(const std::string& name);
 	public:
 		//Shader(const std::string& vertexShaderPath, const std::string& fragmentShaderPath);
 		Shader();

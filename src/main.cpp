@@ -61,8 +61,10 @@ int main(int argc, char** argv)
 	if (!glfwInit())
 		return -1;
 
-	/* Create a windowed mode window and its OpenGL context */
 	glfwWindowHint(GLFW_SAMPLES, sf::Config::msaaCount);
+#ifdef SF_DEBUG
+	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
+#endif
 
 	window = glfwCreateWindow(sf::Config::windowWidth, sf::Config::windowHeight, sf::Config::name.c_str(), sf::Config::fullscreen ? glfwGetPrimaryMonitor() : NULL, NULL);
 

@@ -157,11 +157,9 @@ namespace sf
 		shoeMaterial.SetUniform("roughnessTexture", &shoeRoughness, Material::UniformType::_Texture);
 		shoeMaterial.SetUniform("metalnessTexture", &shoeMetallic, Material::UniformType::_Texture);
 		shoeMaterial.SetUniform("aoTexture", &shoeAo, Material::UniformType::_Texture);
-				
+
 		envTexture.CreateFromFile("examples/pbr/newport_loft.hdr", 3, Texture::Color, Texture::Float16, Texture::ClampToEdge);
 		IblHelper::HdrToCubemaps(envTexture, envCubemap, irradianceCubemap, prefilterCubemap, lookupTexture);
-
-		Skybox::SetCubemap(&envCubemap);
 
 		defaultMaterial.SetUniform("irradianceMap", &irradianceCubemap, Material::UniformType::_Cubemap);
 		defaultMaterial.SetUniform("prefilterMap", &prefilterCubemap, Material::UniformType::_Cubemap);
@@ -175,6 +173,8 @@ namespace sf
 		shoeMaterial.SetUniform("irradianceMap", &irradianceCubemap, Material::UniformType::_Cubemap);
 		shoeMaterial.SetUniform("prefilterMap", &prefilterCubemap, Material::UniformType::_Cubemap);
 		shoeMaterial.SetUniform("brdfLUT", &lookupTexture, Material::UniformType::_Texture);
+		
+		Skybox::SetCubemap(&envCubemap);
 
 		int gltfid, objid;
 

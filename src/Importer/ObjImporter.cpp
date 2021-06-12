@@ -1,6 +1,5 @@
 #include "ObjImporter.h"
 
-#include <regex>
 #include <fstream>
 #include <iostream>
 #include <unordered_map>
@@ -45,11 +44,46 @@ namespace sf::ObjImporter {
 		std::unordered_set<unsigned int> pieces;
 	};
 
-	std::regex vertexRegex("^v\\s+(-?\\d*\\.\\d*)\\s+(-?\\d*\\.\\d*)\\s+(-?\\d*\\.\\d*)\\s*$");
-	std::regex normalsRegex("^vn\\s+(-?\\d*\\.\\d*)\\s+(-?\\d*\\.\\d*)\\s+(-?\\d*\\.\\d*)\\s*$");
-	std::regex texCoordsRegex("^vt\\s+(-?\\d*\\.\\d*)\\s+(-?\\d*\\.\\d*)\\s*$");
-	std::regex faceRegex("\\d+\\/\\d*\\/\\d*");
-	std::regex faceVertexRegex("^(\\d+)\/(\\d*)\/(\\d*)$");
+	void parseVec3(const std::string& line, glm::vec3& target, int start = 0)
+	{
+		int q, p;
+		for (q = start; line[q] == ' ' || line[q] == '\t'; q++);
+		for (p = q; line[p] != ' ' && line[p] != '\t'; p++);
+		target.x = std::stof(line.substr(q, p - q));
+		for (q = p; line[q] == ' ' || line[q] == '\t'; q++);
+		for (p = q; line[p] != ' ' && line[p] != '\t'; p++);
+		target.y = std::stof(line.substr(q, p - q));
+		for (q = p; line[q] == ' ' || line[q] == '\t'; q++);
+		for (p = q; p < line.length() && line[p] != ' ' && line[p] != '\t'; p++);
+		target.z = std::stof(line.substr(q, p - q));
+	}
+	void parseVec2(const std::string& line, glm::vec2& target, int start = 0)
+	{
+		int q, p;
+		for (q = start; line[q] == ' ' || line[q] == '\t'; q++);
+		for (p = q; line[p] != ' ' && line[p] != '\t'; p++);
+		target.x = std::stof(line.substr(q, p - q));
+		for (q = p; line[q] == ' ' || line[q] == '\t'; q++);
+		for (p = q; p < line.length() && line[p] != ' ' && line[p] != '\t'; p++);
+		target.y = std::stof(line.substr(q, p - q));
+	}
+	void parseFace(const std::string& line, std::vector<glm::ivec3>& target, int start = 0)
+	{
+		int q = start, p = start;
+		while (p < line.length())
+		{
+			for (q = p + 1; line[q] == ' ' || line[q] == '\t'; q++);
+			for (p = q; line[p] != '/'; p++);
+			int a = p - q == 0 ? -1 : std::stoi(line.substr(q, p - q));
+			q = p + 1;
+			for (p = q; line[p] != '/'; p++);
+			int b = p - q == 0 ? -1 : std::stoi(line.substr(q, p - q));
+			q = p + 1;
+			for (p = q; p < line.length() && line[p] != ' ' && line[p] != '\t'; p++);
+			int c = p - q == 0 ? -1 : std::stoi(line.substr(q, p - q));
+			target.push_back({ a, b, c });
+		}
+	}
 
 	std::vector<ObjMesh> meshes;
 }
@@ -73,47 +107,35 @@ int sf::ObjImporter::Load(const std::string& filePath)
 			if (meshes.back().pieces.size() == 0)
 				meshes.back().pieces.insert(meshes.back().faces.size());
 
-			std::smatch m;
-			std::regex_match(line, m, vertexRegex);
-			meshes.back().positions.push_back({ std::stof(m[1].str()) , std::stof(m[2].str()) , std::stof(m[3].str()) });
+			meshes.back().positions.emplace_back();
+			parseVec3(line, meshes.back().positions.back(), 1);
 		}
 		else if (line.find("vn ") == 0)
 		{
-			std::smatch m;
-			std::regex_match(line, m, normalsRegex);
-			meshes.back().normals.push_back({ std::stof(m[1].str()) , std::stof(m[2].str()) , std::stof(m[3].str()) });
+			meshes.back().normals.emplace_back();
+			parseVec3(line, meshes.back().normals.back(), 2);
+
 			glm::normalize(meshes.back().normals.back());
 		}
 		else if (line.find("vt ") == 0)
 		{
-			glm::vec2 newUV;
-			std::smatch m;
-			std::regex_match(line, m, texCoordsRegex);
-			meshes.back().texCoords.push_back({ std::stof(m[1].str()) , std::stof(m[2].str()) });
+			meshes.back().texCoords.emplace_back();
+			parseVec2(line, meshes.back().texCoords.back(), 2);
 		}
 		else if (line.find("f ") == 0)
 		{
 			meshes.back().faces.emplace_back();
-			std::sregex_iterator iter(line.begin(), line.end(), faceRegex);
-			std::sregex_iterator end;
 
-			while (iter != end)
+			std::vector<glm::ivec3> parseTarget;
+			parseFace(line, parseTarget, 1);
+			ObjVertex nVtx;
+			for (const glm::ivec3& v : parseTarget)
 			{
-				std::smatch m;
-				std::string vertexInfo = (*iter)[0].str();
-				std::regex_match(vertexInfo, m, faceVertexRegex);
-
 				ObjVertex nVtx;
-				nVtx.posID = std::stoi(m[1].str()) - 1;
-				std::string coords = m[2].str();
-				std::string normal = m[3].str();
-				if (coords.length() > 0)
-					nVtx.coordsID = std::stoi(coords) - 1;
-				if (coords.length() > 0)
-					nVtx.normalID = std::stoi(normal) - 1;
+				if (v.x > -1) nVtx.posID = v.x - 1;
+				if (v.y > -1) nVtx.coordsID = v.y - 1;
+				if (v.z > -1) nVtx.normalID = v.z - 1;
 				meshes.back().faces.back().vertices.push_back(nVtx);
-
-				iter++;
 			}
 		}
 	}

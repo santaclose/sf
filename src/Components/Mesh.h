@@ -6,9 +6,14 @@
 #include <Renderer/Vertex.h>
 #include <Renderer/Material.h>
 
-#include <MeshPiece.h>
-
 namespace sf {
+
+	struct MeshPiece
+	{
+		unsigned int indexStart;
+		Material* material = nullptr;
+		MeshPiece::MeshPiece(unsigned int indexStart);
+	};
 
 	struct Mesh
 	{		

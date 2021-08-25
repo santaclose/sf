@@ -4,7 +4,7 @@
 
 namespace sf {
 
-	struct Camera// : public Component
+	struct Camera
 	{
 		static int counter;
 

@@ -116,12 +116,19 @@ int main(int argc, char** argv)
 		sf::Renderer::ClearBuffers();
 		sf::Renderer::ComputeCameraMatrices();
 		sf::Renderer::DrawSkybox();
-		auto view = sf::Scene::activeScene->GetRegistry().view<sf::Base, sf::Mesh, sf::Transform>();
-		for (auto entity : view)
+		auto meshRenderView = sf::Scene::activeScene->GetRegistry().view<sf::Base, sf::Mesh, sf::Transform>();
+		for (auto entity : meshRenderView)
 		{
-			auto [base, mesh, transform] = view.get<sf::Base, sf::Mesh, sf::Transform>(entity);
+			auto [base, mesh, transform] = meshRenderView.get<sf::Base, sf::Mesh, sf::Transform>(entity);
 			if (base.isEntityEnabled)
 				sf::Renderer::DrawMesh(mesh, transform);
+		}
+		auto voxelBoxRenderView = sf::Scene::activeScene->GetRegistry().view<sf::Base, sf::VoxelBox, sf::Transform>();
+		for (auto entity : voxelBoxRenderView)
+		{
+			auto [base, voxelBox, transform] = voxelBoxRenderView.get<sf::Base, sf::VoxelBox, sf::Transform>(entity);
+			if (base.isEntityEnabled)
+				sf::Renderer::DrawVoxelBox(voxelBox, transform);
 		}
 
 		/* Swap front and back buffers */

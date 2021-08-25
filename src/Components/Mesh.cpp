@@ -2,6 +2,13 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <Defaults.h>
+
+sf::MeshPiece::MeshPiece(unsigned int indexStart)
+{
+	this->indexStart = indexStart;
+	this->material = &Defaults::material;
+}
 
 int sf::Mesh::counter = 0;
 
@@ -9,7 +16,7 @@ sf::Mesh::Mesh()
 {
 	id = counter;
 	counter++;
-};
+}
 
 void sf::Mesh::SetMaterial(Material* theMaterial)
 {

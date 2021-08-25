@@ -11,6 +11,7 @@
 #include <Components/Camera.h>
 #include <Skybox.h>
 #include <Renderer/Vertex.h>
+#include <Defaults.h>
 
 namespace sf::Renderer {
 
@@ -252,6 +253,48 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 
 		glBindVertexArray(meshData[mesh.id].gl_vao);
 		glDrawElements(GL_TRIANGLES, drawEnd - drawStart, GL_UNSIGNED_INT, (void*)(drawStart * sizeof(unsigned int)));
+	}
+}
+
+void sf::Renderer::DrawVoxelBox(VoxelBox& voxelBox, Transform& transform)
+{
+	assert(activeCameraEntity);
+
+	if (transform.matrixUpdatePending)
+		transform.UpdateTransformMatrix();
+
+	if (meshData.find(Defaults::cubeMesh.id) == meshData.end()) // create mesh data if not there
+		CreateMeshData(Defaults::cubeMesh);
+
+	if (Defaults::cubeMesh.vertexReloadPending)
+		ReloadVertexData(Defaults::cubeMesh);
+
+	// draw instanced box
+	Transform& cameraTransform = activeCameraEntity.GetComponent<Transform>();
+
+	const MeshPiece& mp = Defaults::cubeMesh.pieces[0];
+	mp.material->Bind();
+
+	mp.material->m_shader->SetUniformMatrix4fv("cameraMatrix", &(cameraMatrix[0][0]));
+	mp.material->m_shader->SetUniform3fv("camPos", &(cameraTransform.GetPosition().x));
+
+	Transform cursor = transform;
+	cursor.SetPosition(cursor.GetPosition() + (glm::vec3(0.5, 0.5, 0.5) * cursor.scale));
+	for (int i = 0; i < voxelBox.mat.size(); i++)
+	{
+		for (int j = 0; j < voxelBox.mat[0].size(); j++)
+		{
+			for (int k = 0; k < voxelBox.mat[0].size(); k++)
+			{
+				if (voxelBox.mat[i][j][k])
+				{
+					cursor.SetPosition(transform.GetPosition() + glm::vec3(i * cursor.scale, j * cursor.scale, k * cursor.scale));
+					mp.material->m_shader->SetUniformMatrix4fv("modelMatrix", &(cursor.GetMatrix()[0][0]));
+					glBindVertexArray(meshData[Defaults::cubeMesh.id].gl_vao);
+					glDrawElements(GL_TRIANGLES, Defaults::cubeMesh.indexVector.size(), GL_UNSIGNED_INT, (void*)0);
+				}
+			}
+		}
 	}
 }
 

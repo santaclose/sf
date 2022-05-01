@@ -40,6 +40,8 @@ namespace sf
 	bool rotationEnabled = false;
 
 	Shader pbrShader;
+	Shader testShader;
+	Material testMaterial;
 
 	Material sciFiHelmetMaterial;
 	Texture sciFiHelmetAlbedo;
@@ -54,12 +56,12 @@ namespace sf
 	Texture damagedHelmetMetallic;
 	Texture damagedHelmetEmissive;
 
-	Material shoeMaterial;
-	Texture shoeAo;
-	Texture shoeAlbedo;
-	Texture shoeNormalmap;
-	Texture shoeRoughness;
-	Texture shoeMetallic;
+	//Material shoeMaterial;
+	//Texture shoeAo;
+	//Texture shoeAlbedo;
+	//Texture shoeNormalmap;
+	//Texture shoeRoughness;
+	//Texture shoeMetallic;
 
 	Material defaultMaterial;
 
@@ -90,6 +92,8 @@ namespace sf
 		cameraObject.AddComponent<Transform>();
 
 		pbrShader.CreateFromFiles("assets/shaders/pbrV.shader", "assets/shaders/pbrF.shader");
+		testShader.CreateFromFiles("assets/shaders/defaultV.shader", "assets/shaders/uvF.shader");
+		testMaterial.CreateFromShader(&testShader);
 
 		//pbrShader.Bind();
 		//pbrShader.SetUniform3fv("dLightDir", &(dirLightsDir[0].x), dirLightsDir.size());
@@ -140,25 +144,25 @@ namespace sf
 		damagedHelmetMaterial.SetUniform("metalnessTexture", &damagedHelmetMetallic, Material::UniformType::_Texture);
 		damagedHelmetMaterial.SetUniform("emissiveTexture", &damagedHelmetEmissive, Material::UniformType::_Texture);
 
-		shoeMaterial.CreateFromShader(&pbrShader);
-		shoeMaterial.SetUniform("useAlbedoTexture", (void*)true, Material::UniformType::_Boolean);
-		shoeMaterial.SetUniform("useNormalTexture", (void*)true, Material::UniformType::_Boolean);
-		shoeMaterial.SetUniform("useRoughnessTexture", (void*)true, Material::UniformType::_Boolean);
-		shoeMaterial.SetUniform("useMetalnessTexture", (void*)true, Material::UniformType::_Boolean);
-		shoeMaterial.SetUniform("useEmissiveTexture", (void*)false, Material::UniformType::_Boolean);
-		shoeMaterial.SetUniform("useAoTexture", (void*)true, Material::UniformType::_Boolean);
-		shoeAlbedo.CreateFromFile("examples/pbr/gltf/MaterialsVariantsShoe/diffuseMidnight.jpg", 3, Texture::Color, Texture::UnsignedByte);
-		shoeNormalmap.CreateFromFile("examples/pbr/gltf/MaterialsVariantsShoe/normal.jpg", 3, Texture::NonColor, Texture::UnsignedByte);
-		shoeRoughness.CreateFromFile("examples/pbr/gltf/MaterialsVariantsShoe/roughness.png", 1, Texture::NonColor, Texture::UnsignedByte);
-		shoeMetallic.CreateFromFile("examples/pbr/gltf/MaterialsVariantsShoe/metalness.png", 1, Texture::NonColor, Texture::UnsignedByte);
-		shoeAo.CreateFromFile("examples/pbr/gltf/MaterialsVariantsShoe/ao.png", 1, Texture::NonColor, Texture::UnsignedByte);
-		shoeMaterial.SetUniform("albedoTexture", &shoeAlbedo, Material::UniformType::_Texture);
-		shoeMaterial.SetUniform("normalTexture", &shoeNormalmap, Material::UniformType::_Texture);
-		shoeMaterial.SetUniform("roughnessTexture", &shoeRoughness, Material::UniformType::_Texture);
-		shoeMaterial.SetUniform("metalnessTexture", &shoeMetallic, Material::UniformType::_Texture);
-		shoeMaterial.SetUniform("aoTexture", &shoeAo, Material::UniformType::_Texture);
+		//shoeMaterial.CreateFromShader(&pbrShader);
+		//shoeMaterial.SetUniform("useAlbedoTexture", (void*)true, Material::UniformType::_Boolean);
+		//shoeMaterial.SetUniform("useNormalTexture", (void*)true, Material::UniformType::_Boolean);
+		//shoeMaterial.SetUniform("useRoughnessTexture", (void*)true, Material::UniformType::_Boolean);
+		//shoeMaterial.SetUniform("useMetalnessTexture", (void*)true, Material::UniformType::_Boolean);
+		//shoeMaterial.SetUniform("useEmissiveTexture", (void*)false, Material::UniformType::_Boolean);
+		//shoeMaterial.SetUniform("useAoTexture", (void*)true, Material::UniformType::_Boolean);
+		//shoeAlbedo.CreateFromFile("examples/pbr/gltf/MaterialsVariantsShoe/diffuseMidnight.jpg", 3, Texture::Color, Texture::UnsignedByte);
+		//shoeNormalmap.CreateFromFile("examples/pbr/gltf/MaterialsVariantsShoe/normal.jpg", 3, Texture::NonColor, Texture::UnsignedByte);
+		//shoeRoughness.CreateFromFile("examples/pbr/gltf/MaterialsVariantsShoe/roughness.png", 1, Texture::NonColor, Texture::UnsignedByte);
+		//shoeMetallic.CreateFromFile("examples/pbr/gltf/MaterialsVariantsShoe/metalness.png", 1, Texture::NonColor, Texture::UnsignedByte);
+		//shoeAo.CreateFromFile("examples/pbr/gltf/MaterialsVariantsShoe/ao.png", 1, Texture::NonColor, Texture::UnsignedByte);
+		//shoeMaterial.SetUniform("albedoTexture", &shoeAlbedo, Material::UniformType::_Texture);
+		//shoeMaterial.SetUniform("normalTexture", &shoeNormalmap, Material::UniformType::_Texture);
+		//shoeMaterial.SetUniform("roughnessTexture", &shoeRoughness, Material::UniformType::_Texture);
+		//shoeMaterial.SetUniform("metalnessTexture", &shoeMetallic, Material::UniformType::_Texture);
+		//shoeMaterial.SetUniform("aoTexture", &shoeAo, Material::UniformType::_Texture);
 
-		envTexture.CreateFromFile("examples/pbr/newport_loft.hdr", 3, Texture::Color, Texture::Float16, Texture::ClampToEdge);
+		envTexture.CreateFromFile("examples/pbr/hdr.hdr", 3, Texture::Color, Texture::Float16, Texture::ClampToEdge);
 		IblHelper::HdrToCubemaps(envTexture, envCubemap, irradianceCubemap, prefilterCubemap, lookupTexture);
 
 		defaultMaterial.SetUniform("irradianceMap", &irradianceCubemap, Material::UniformType::_Cubemap);
@@ -170,48 +174,59 @@ namespace sf
 		damagedHelmetMaterial.SetUniform("irradianceMap", &irradianceCubemap, Material::UniformType::_Cubemap);
 		damagedHelmetMaterial.SetUniform("prefilterMap", &prefilterCubemap, Material::UniformType::_Cubemap);
 		damagedHelmetMaterial.SetUniform("brdfLUT", &lookupTexture, Material::UniformType::_Texture);
-		shoeMaterial.SetUniform("irradianceMap", &irradianceCubemap, Material::UniformType::_Cubemap);
-		shoeMaterial.SetUniform("prefilterMap", &prefilterCubemap, Material::UniformType::_Cubemap);
-		shoeMaterial.SetUniform("brdfLUT", &lookupTexture, Material::UniformType::_Texture);
+		//shoeMaterial.SetUniform("irradianceMap", &irradianceCubemap, Material::UniformType::_Cubemap);
+		//shoeMaterial.SetUniform("prefilterMap", &prefilterCubemap, Material::UniformType::_Cubemap);
+		//shoeMaterial.SetUniform("brdfLUT", &lookupTexture, Material::UniformType::_Texture);
 		
 		Skybox::SetCubemap(&envCubemap);
 
 		int gltfid, objid;
 
+		//{
+		//	meshObjects.push_back(scene.CreateEntity());
+		//	meshObjects.back().AddComponent<Transform>();
+		//	Mesh& objectMesh = meshObjects.back().AddComponent<Mesh>();
+		//	gltfid = GltfImporter::Load("examples/pbr/gltf/SciFiHelmet/SciFiHelmet.gltf");
+		//	GltfImporter::GetMesh(gltfid, objectMesh);
+		//	MeshProcessor::ComputeTangentSpace(objectMesh);
+		//	objectMesh.vertexReloadPending = true;
+		//	objectMesh.SetMaterial(&sciFiHelmetMaterial);
+		//	meshObjects.back().SetEnabled(true);
+		//}
+
+		//{
+		//	meshObjects.push_back(scene.CreateEntity());
+		//	meshObjects.back().AddComponent<Transform>();
+		//	Mesh& objectMesh = meshObjects.back().AddComponent<Mesh>();
+		//	gltfid = GltfImporter::Load("examples/pbr/gltf/DamagedHelmet/DamagedHelmet.gltf");
+		//	GltfImporter::GetMesh(gltfid, objectMesh);
+		//	MeshProcessor::ComputeTangentSpace(objectMesh);
+		//	objectMesh.vertexReloadPending = true;
+		//	objectMesh.SetMaterial(&damagedHelmetMaterial);
+		//	meshObjects.back().SetEnabled(false);
+		//}
+
+		//{
+		//	meshObjects.push_back(scene.CreateEntity());
+		//	meshObjects.back().AddComponent<Transform>();
+		//	Mesh& objectMesh = meshObjects.back().AddComponent<Mesh>();
+		//	gltfid = GltfImporter::Load("examples/pbr/gltf/MaterialsVariantsShoe/MaterialsVariantsShoe.gltf");
+		//	GltfImporter::GetMesh(gltfid, objectMesh);
+		//	MeshProcessor::ComputeTangentSpace(objectMesh);
+		//	objectMesh.vertexReloadPending = true;
+		//	objectMesh.SetMaterial(&shoeMaterial);
+		//	meshObjects.back().SetEnabled(false);
+		//}
 		{
 			meshObjects.push_back(scene.CreateEntity());
 			meshObjects.back().AddComponent<Transform>();
 			Mesh& objectMesh = meshObjects.back().AddComponent<Mesh>();
-			gltfid = GltfImporter::Load("examples/pbr/gltf/SciFiHelmet/SciFiHelmet.gltf");
+			gltfid = GltfImporter::Load("examples/pbr/gltf/test.glb");
 			GltfImporter::GetMesh(gltfid, objectMesh);
 			MeshProcessor::ComputeTangentSpace(objectMesh);
 			objectMesh.vertexReloadPending = true;
-			objectMesh.SetMaterial(&sciFiHelmetMaterial);
+			objectMesh.SetMaterial(&testMaterial);
 			meshObjects.back().SetEnabled(true);
-		}
-
-		{
-			meshObjects.push_back(scene.CreateEntity());
-			meshObjects.back().AddComponent<Transform>();
-			Mesh& objectMesh = meshObjects.back().AddComponent<Mesh>();
-			gltfid = GltfImporter::Load("examples/pbr/gltf/DamagedHelmet/DamagedHelmet.gltf");
-			GltfImporter::GetMesh(gltfid, objectMesh);
-			MeshProcessor::ComputeTangentSpace(objectMesh);
-			objectMesh.vertexReloadPending = true;
-			objectMesh.SetMaterial(&damagedHelmetMaterial);
-			meshObjects.back().SetEnabled(false);
-		}
-
-		{
-			meshObjects.push_back(scene.CreateEntity());
-			meshObjects.back().AddComponent<Transform>();
-			Mesh& objectMesh = meshObjects.back().AddComponent<Mesh>();
-			gltfid = GltfImporter::Load("examples/pbr/gltf/MaterialsVariantsShoe/MaterialsVariantsShoe.gltf");
-			GltfImporter::GetMesh(gltfid, objectMesh);
-			MeshProcessor::ComputeTangentSpace(objectMesh);
-			objectMesh.vertexReloadPending = true;
-			objectMesh.SetMaterial(&shoeMaterial);
-			meshObjects.back().SetEnabled(false);
 		}
 
 		gimbal.GetComponent<Transform>().SetPosition(glm::vec3(0.0, 0.0, 0.0));

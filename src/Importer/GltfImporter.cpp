@@ -73,6 +73,8 @@ void sf::GltfImporter::GetMesh(int id, Mesh& mesh)
 				const float* positionBuffer = nullptr;
 				const float* normalsBuffer = nullptr;
 				const float* texCoordsBuffer = nullptr;
+				const float* boneWeightsBuffer = nullptr;
+				const uint8_t* boneIndicesBuffer = nullptr;
 				size_t vertexCount = 0;
 
 				if (prim.attributes.find("POSITION") != prim.attributes.end())
@@ -94,6 +96,18 @@ void sf::GltfImporter::GetMesh(int id, Mesh& mesh)
 					const tinygltf::BufferView& view = model.bufferViews[accessor.bufferView];
 					texCoordsBuffer = reinterpret_cast<const float*>(&(model.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
 				}
+				if (prim.attributes.find("WEIGHTS_0") != prim.attributes.end())
+				{
+					const tinygltf::Accessor& accessor = model.accessors[prim.attributes.find("WEIGHTS_0")->second];
+					const tinygltf::BufferView& view = model.bufferViews[accessor.bufferView];
+					boneWeightsBuffer = reinterpret_cast<const float*>(&(model.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
+				}
+				if (prim.attributes.find("JOINTS_0") != prim.attributes.end())
+				{
+					const tinygltf::Accessor& accessor = model.accessors[prim.attributes.find("JOINTS_0")->second];
+					const tinygltf::BufferView& view = model.bufferViews[accessor.bufferView];
+					boneIndicesBuffer = reinterpret_cast<const uint8_t*>(&(model.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
+				}
 
 				// Create Vertices
 				for (int i = 0; i < vertexCount; i++)
@@ -104,6 +118,10 @@ void sf::GltfImporter::GetMesh(int id, Mesh& mesh)
 						v.normal = glm::normalize(glm::vec3(normalsBuffer[i * 3 + 0], normalsBuffer[i * 3 + 1], normalsBuffer[i * 3 + 2]));
 					if (texCoordsBuffer)
 						v.textureCoord = { texCoordsBuffer[i * 2 + 0], 1.0 - texCoordsBuffer[i * 2 + 1] };
+					if (boneWeightsBuffer)
+						v.boneWeights = { boneWeightsBuffer[i * 4 + 0], boneWeightsBuffer[i * 4 + 1], boneWeightsBuffer[i * 4 + 2], boneWeightsBuffer[i * 4 + 3] };
+					if (boneWeightsBuffer)
+						v.boneIndices = { boneIndicesBuffer[i * 4 + 0], boneIndicesBuffer[i * 4 + 1], boneIndicesBuffer[i * 4 + 2], boneIndicesBuffer[i * 4 + 3] };
 					mesh.vertexVector.push_back(v);
 				}
 			}

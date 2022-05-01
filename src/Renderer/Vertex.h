@@ -13,6 +13,9 @@ namespace sf {
 		glm::vec2 textureCoord;
 		glm::vec2 extraData;
 
+		glm::uvec4 boneIndices;
+		glm::vec4 boneWeights;
+
 		Vertex(float posX, float posY, float posZ);
 		Vertex(const glm::vec3& thePosition);
 		Vertex(glm::vec3&& thePosition);

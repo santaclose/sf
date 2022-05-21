@@ -213,8 +213,8 @@ void sf::Renderer::ComputeCameraMatrices()
 				cameraComponent.farClippingPlane);
 	}
 
-	cameraView = (glm::mat4)glm::conjugate(transformComponent.GetRotation());
-	cameraView = glm::translate(cameraView, -transformComponent.GetPosition());
+	cameraView = (glm::mat4)glm::conjugate(transformComponent.rotation);
+	cameraView = glm::translate(cameraView, -transformComponent.position);
 
 	cameraMatrix = cameraProjection * cameraView;
 }
@@ -231,9 +231,6 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 
 	assert(activeCameraEntity);
 
-	if (transform.matrixUpdatePending)
-		transform.UpdateTransformMatrix();
-
 	if (meshData.find(mesh.id) == meshData.end()) // create mesh data if not there
 		CreateMeshData(mesh);
 
@@ -247,8 +244,8 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 		mp.material->Bind();
 
 		mp.material->m_shader->SetUniformMatrix4fv("cameraMatrix", &(cameraMatrix[0][0]));
-		mp.material->m_shader->SetUniform3fv("camPos", &(cameraTransform.GetPosition().x));
-		mp.material->m_shader->SetUniformMatrix4fv("modelMatrix", &(transform.GetMatrix()[0][0]));
+		mp.material->m_shader->SetUniform3fv("camPos", &(cameraTransform.position.x));
+		mp.material->m_shader->SetUniformMatrix4fv("modelMatrix", &(transform.ComputeMatrix()[0][0]));
 
 		unsigned int drawEnd, drawStart;
 		drawStart = mesh.pieces[i].indexStart;
@@ -263,9 +260,6 @@ void sf::Renderer::DrawVoxelBox(VoxelBox& voxelBox, Transform& transform)
 {
 	assert(activeCameraEntity);
 
-	if (transform.matrixUpdatePending)
-		transform.UpdateTransformMatrix();
-
 	if (meshData.find(Defaults::cubeMesh.id) == meshData.end()) // create mesh data if not there
 		CreateMeshData(Defaults::cubeMesh);
 
@@ -279,7 +273,7 @@ void sf::Renderer::DrawVoxelBox(VoxelBox& voxelBox, Transform& transform)
 	mp.material->Bind();
 
 	mp.material->m_shader->SetUniformMatrix4fv("cameraMatrix", &(cameraMatrix[0][0]));
-	mp.material->m_shader->SetUniform3fv("camPos", &(cameraTransform.GetPosition().x));
+	mp.material->m_shader->SetUniform3fv("camPos", &(cameraTransform.position.x));
 
 	Transform voxelSpaceCursor;
 	voxelSpaceCursor.scale = voxelBox.voxelSize;

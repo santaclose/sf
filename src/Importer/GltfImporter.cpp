@@ -122,7 +122,7 @@ void sf::GltfImporter::GetMesh(int id, Mesh& mesh)
 				{
 					uint32_t* buf = new uint32_t[accessor.count];
 					memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint32_t));
-					mesh.pieces.emplace_back(mesh.indexVector.size());
+					mesh.pieces.push_back(mesh.indexVector.size());
 					for (size_t index = 0; index < accessor.count; index++)
 						mesh.indexVector.push_back(buf[index] + vertexStart);
 					delete[] buf;
@@ -132,7 +132,7 @@ void sf::GltfImporter::GetMesh(int id, Mesh& mesh)
 				{
 					uint16_t* buf = new uint16_t[accessor.count];
 					memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint16_t));
-					mesh.pieces.emplace_back(mesh.indexVector.size());
+					mesh.pieces.push_back(mesh.indexVector.size());
 					for (size_t index = 0; index < accessor.count; index++)
 						mesh.indexVector.push_back(buf[index] + vertexStart);
 					delete[] buf;
@@ -142,7 +142,7 @@ void sf::GltfImporter::GetMesh(int id, Mesh& mesh)
 				{
 					uint8_t* buf = new uint8_t[accessor.count];
 					memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint8_t));
-					mesh.pieces.emplace_back(mesh.indexVector.size());
+					mesh.pieces.push_back(mesh.indexVector.size());
 					for (size_t index = 0; index < accessor.count; index++)
 						mesh.indexVector.push_back(buf[index] + vertexStart);
 					delete[] buf;

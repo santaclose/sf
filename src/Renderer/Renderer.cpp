@@ -27,25 +27,38 @@ namespace sf::Renderer {
 		unsigned int gl_vertexBuffer;
 		unsigned int gl_indexBuffer;
 		unsigned int gl_vao;
+
+		std::vector<Material*> materials;
 	};
 
-	std::unordered_map<int, MeshData> meshData;
+	std::unordered_map<void*, MeshData> meshData;
+
+	void TransferVertexData(const Mesh& mesh)
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, meshData[(void*)&mesh].gl_vertexBuffer);
+		glBufferData(GL_ARRAY_BUFFER, mesh.vertexVector.size() * sizeof(Vertex), &mesh.vertexVector[0], GL_STATIC_DRAW);
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshData[(void*)&mesh].gl_indexBuffer);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indexVector.size() * sizeof(unsigned int), &mesh.indexVector[0], GL_STATIC_DRAW);
+	}
 
 	void CreateMeshData(const Mesh& mesh)
 	{
-		meshData[mesh.id] = MeshData();
+		meshData[(void*)&mesh] = MeshData();
+		for (int i = 0; i < mesh.pieces.size(); i++)
+			meshData[(void*)&mesh].materials.push_back(&Defaults::material);
 
-		glGenVertexArrays(1, &meshData[mesh.id].gl_vao);
-		glGenBuffers(1, &meshData[mesh.id].gl_vertexBuffer);
-		glGenBuffers(1, &meshData[mesh.id].gl_indexBuffer);
+		glGenVertexArrays(1, &meshData[(void*)&mesh].gl_vao);
+		glGenBuffers(1, &meshData[(void*)&mesh].gl_vertexBuffer);
+		glGenBuffers(1, &meshData[(void*)&mesh].gl_indexBuffer);
 
-		glBindVertexArray(meshData[mesh.id].gl_vao);
-		glBindBuffer(GL_ARRAY_BUFFER, meshData[mesh.id].gl_vertexBuffer);
+		glBindVertexArray(meshData[(void*)&mesh].gl_vao);
+		glBindBuffer(GL_ARRAY_BUFFER, meshData[(void*)&mesh].gl_vertexBuffer);
 
 		// update vertices
 		glBufferData(GL_ARRAY_BUFFER, mesh.vertexVector.size() * sizeof(Vertex), &mesh.vertexVector[0], GL_STATIC_DRAW);
 
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshData[mesh.id].gl_indexBuffer);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshData[(void*)&mesh].gl_indexBuffer);
 		// update indices to draw
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indexVector.size() * sizeof(unsigned int), &mesh.indexVector[0], GL_STATIC_DRAW);
 
@@ -63,16 +76,8 @@ namespace sf::Renderer {
 		glVertexAttribPointer(5, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 14));
 
 		glBindVertexArray(0);
-	}
 
-	void ReloadVertexData(Mesh& mesh)
-	{
-		glBindBuffer(GL_ARRAY_BUFFER, meshData[mesh.id].gl_vertexBuffer);
-		glBufferData(GL_ARRAY_BUFFER, mesh.vertexVector.size() * sizeof(Vertex), &mesh.vertexVector[0], GL_STATIC_DRAW);
-
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshData[mesh.id].gl_indexBuffer);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indexVector.size() * sizeof(unsigned int), &mesh.indexVector[0], GL_STATIC_DRAW);
-		mesh.vertexReloadPending = false;
+		TransferVertexData(mesh);
 	}
 
 #ifdef SF_DEBUG
@@ -231,27 +236,25 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 
 	assert(activeCameraEntity);
 
-	if (meshData.find(mesh.id) == meshData.end()) // create mesh data if not there
+	if (meshData.find((void*)&mesh) == meshData.end()) // create mesh data if not there
 		CreateMeshData(mesh);
-
-	if (mesh.vertexReloadPending)
-		ReloadVertexData(mesh);
 
 	Transform& cameraTransform = activeCameraEntity.GetComponent<Transform>();
 	for (unsigned int i = 0; i < mesh.pieces.size(); i++)
 	{
-		const MeshPiece& mp = mesh.pieces[i];
-		mp.material->Bind();
+		Material* materialToUse = meshData[(void*)&mesh].materials[i];
 
-		mp.material->m_shader->SetUniformMatrix4fv("cameraMatrix", &(cameraMatrix[0][0]));
-		mp.material->m_shader->SetUniform3fv("camPos", &(cameraTransform.position.x));
-		mp.material->m_shader->SetUniformMatrix4fv("modelMatrix", &(transform.ComputeMatrix()[0][0]));
+		materialToUse->Bind();
+
+		materialToUse->m_shader->SetUniformMatrix4fv("cameraMatrix", &(cameraMatrix[0][0]));
+		materialToUse->m_shader->SetUniform3fv("camPos", &(cameraTransform.position.x));
+		materialToUse->m_shader->SetUniformMatrix4fv("modelMatrix", &(transform.ComputeMatrix()[0][0]));
 
 		unsigned int drawEnd, drawStart;
-		drawStart = mesh.pieces[i].indexStart;
-		drawEnd = mesh.pieces.size() > i + 1 ? mesh.pieces[i + 1].indexStart : mesh.indexVector.size();
+		drawStart = mesh.pieces[i];
+		drawEnd = mesh.pieces.size() > i + 1 ? mesh.pieces[i + 1] : mesh.indexVector.size();
 
-		glBindVertexArray(meshData[mesh.id].gl_vao);
+		glBindVertexArray(meshData[(void*)&mesh].gl_vao);
 		glDrawElements(GL_TRIANGLES, drawEnd - drawStart, GL_UNSIGNED_INT, (void*)(drawStart * sizeof(unsigned int)));
 	}
 }
@@ -260,20 +263,17 @@ void sf::Renderer::DrawVoxelBox(VoxelBox& voxelBox, Transform& transform)
 {
 	assert(activeCameraEntity);
 
-	if (meshData.find(Defaults::cubeMesh.id) == meshData.end()) // create mesh data if not there
+	if (meshData.find((void*)&Defaults::cubeMesh) == meshData.end()) // create mesh data if not there
 		CreateMeshData(Defaults::cubeMesh);
-
-	if (Defaults::cubeMesh.vertexReloadPending)
-		ReloadVertexData(Defaults::cubeMesh);
 
 	// draw instanced box
 	Transform& cameraTransform = activeCameraEntity.GetComponent<Transform>();
 
-	const MeshPiece& mp = Defaults::cubeMesh.pieces[0];
-	mp.material->Bind();
+	Material* materialToUse = meshData[(void*)&Defaults::cubeMesh].materials[0];
+	materialToUse->Bind();
 
-	mp.material->m_shader->SetUniformMatrix4fv("cameraMatrix", &(cameraMatrix[0][0]));
-	mp.material->m_shader->SetUniform3fv("camPos", &(cameraTransform.position.x));
+	materialToUse->m_shader->SetUniformMatrix4fv("cameraMatrix", &(cameraMatrix[0][0]));
+	materialToUse->m_shader->SetUniform3fv("camPos", &(cameraTransform.position.x));
 
 	Transform voxelSpaceCursor;
 	voxelSpaceCursor.scale = voxelBox.voxelSize;
@@ -293,8 +293,8 @@ void sf::Renderer::DrawVoxelBox(VoxelBox& voxelBox, Transform& transform)
 
 					glm::mat4 shaderMatrix = transform.ComputeMatrix() * voxelSpaceCursor.ComputeMatrix();
 
-					mp.material->m_shader->SetUniformMatrix4fv("modelMatrix", &(shaderMatrix[0][0]));
-					glBindVertexArray(meshData[Defaults::cubeMesh.id].gl_vao);
+					materialToUse->m_shader->SetUniformMatrix4fv("modelMatrix", &(shaderMatrix[0][0]));
+					glBindVertexArray(meshData[(void*)&Defaults::cubeMesh].gl_vao);
 					glDrawElements(GL_TRIANGLES, Defaults::cubeMesh.indexVector.size(), GL_UNSIGNED_INT, (void*)0);
 				}
 			}

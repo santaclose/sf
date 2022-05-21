@@ -30,6 +30,7 @@ namespace sf {
 		const glm::fquat& GetRotation() const;
 		float GetScale() const;
 		const glm::mat4& GetMatrix() const;
+		glm::mat4 ComputeMatrix() const;
 
 		glm::vec3 Forward() const;
 		glm::vec3 Right() const;

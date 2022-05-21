@@ -226,6 +226,9 @@ void sf::Renderer::DrawSkybox()
 
 void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 {
+	if (mesh.vertexVector.size() == 0)
+		return;
+
 	assert(activeCameraEntity);
 
 	if (transform.matrixUpdatePending)
@@ -278,18 +281,25 @@ void sf::Renderer::DrawVoxelBox(VoxelBox& voxelBox, Transform& transform)
 	mp.material->m_shader->SetUniformMatrix4fv("cameraMatrix", &(cameraMatrix[0][0]));
 	mp.material->m_shader->SetUniform3fv("camPos", &(cameraTransform.GetPosition().x));
 
-	Transform cursor = transform;
-	cursor.SetPosition(cursor.GetPosition() + (glm::vec3(0.5, 0.5, 0.5) * cursor.scale));
+	Transform voxelSpaceCursor;
+	voxelSpaceCursor.scale = voxelBox.voxelSize;
+
 	for (int i = 0; i < voxelBox.mat.size(); i++)
 	{
 		for (int j = 0; j < voxelBox.mat[0].size(); j++)
 		{
-			for (int k = 0; k < voxelBox.mat[0].size(); k++)
+			for (int k = 0; k < voxelBox.mat[0][0].size(); k++)
 			{
 				if (voxelBox.mat[i][j][k])
 				{
-					cursor.SetPosition(transform.GetPosition() + glm::vec3(i * cursor.scale, j * cursor.scale, k * cursor.scale));
-					mp.material->m_shader->SetUniformMatrix4fv("modelMatrix", &(cursor.GetMatrix()[0][0]));
+					voxelSpaceCursor.position = voxelBox.offset;
+					voxelSpaceCursor.position.x += voxelBox.voxelSize * ((float)i + 0.5f);
+					voxelSpaceCursor.position.y += voxelBox.voxelSize * ((float)j + 0.5f);
+					voxelSpaceCursor.position.z += voxelBox.voxelSize * ((float)k + 0.5f);
+
+					glm::mat4 shaderMatrix = transform.ComputeMatrix() * voxelSpaceCursor.ComputeMatrix();
+
+					mp.material->m_shader->SetUniformMatrix4fv("modelMatrix", &(shaderMatrix[0][0]));
 					glBindVertexArray(meshData[Defaults::cubeMesh.id].gl_vao);
 					glDrawElements(GL_TRIANGLES, Defaults::cubeMesh.indexVector.size(), GL_UNSIGNED_INT, (void*)0);
 				}

@@ -75,6 +75,15 @@ const glm::mat4& sf::Transform::GetMatrix() const
 	return matrix;
 }
 
+glm::mat4 sf::Transform::ComputeMatrix() const
+{
+	glm::mat4 outputMatrix = glm::translate(glm::mat4(1.0), position);
+	glm::mat4 rotationMatrix = (glm::mat4)rotation;
+	outputMatrix *= rotationMatrix;
+	outputMatrix = glm::scale(outputMatrix, glm::vec3(scale, scale, scale));
+	return outputMatrix;
+}
+
 glm::vec3 sf::Transform::Forward() const
 {
 	return rotation * glm::vec3(0, 0, -1);

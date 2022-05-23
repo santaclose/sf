@@ -9,12 +9,13 @@
 
 namespace sf::GltfImporter {
 
-	std::vector<tinygltf::Model> models;
+	std::vector<tinygltf::Model*> models;
 }
 
 int sf::GltfImporter::Load(const std::string& filePath)
 {
-	models.emplace_back();
+	tinygltf::Model* newModel = new tinygltf::Model();
+
 	tinygltf::TinyGLTF loader;
 	std::string err;
 	std::string warn;
@@ -30,9 +31,9 @@ int sf::GltfImporter::Load(const std::string& filePath)
 	}
 
 	if (isBinary)
-		ret = loader.LoadBinaryFromFile(&(models[models.size() - 1]), &err, &warn, filePath);
+		ret = loader.LoadBinaryFromFile(newModel, &err, &warn, filePath);
 	else
-		ret = loader.LoadASCIIFromFile(&(models[models.size() - 1]), &err, &warn, filePath);
+		ret = loader.LoadASCIIFromFile(newModel, &err, &warn, filePath);
 
 	if (!warn.empty())
 		printf("[GltfImporter] Warn: %s\n", warn.c_str());
@@ -43,19 +44,24 @@ int sf::GltfImporter::Load(const std::string& filePath)
 	if (!ret)
 		printf("[GltfImporter] Failed to parse glTF\n");
 
+
+	models.push_back(newModel);
 	return models.size() - 1;
 }
 
 void sf::GltfImporter::Destroy(int id)
 {
+	delete models[id];
+	models[id] = nullptr;
 }
 
 // https://github.com/SaschaWillems/Vulkan/blob/master/examples/gltfloading/gltfloading.cpp
-void sf::GltfImporter::GetMesh(int id, Mesh& mesh)
+void sf::GltfImporter::GenerateMeshData(int id, MeshData& meshData)
 {
 	assert(id > -1 && id < models.size());
+	assert(models[id] != nullptr);
 
-	tinygltf::Model& model = models[id];
+	tinygltf::Model& model = *(models[id]);
 
 	std::vector<glm::vec3> vertex_positions;
 	std::vector<glm::vec3> vertex_normals;
@@ -65,7 +71,7 @@ void sf::GltfImporter::GetMesh(int id, Mesh& mesh)
 	{
 		for (auto& prim : gltfMesh.primitives)
 		{
-			uint32_t vertexStart = static_cast<uint32_t>(mesh.vertexVector.size());
+			uint32_t vertexStart = static_cast<uint32_t>(meshData.vertexVector.size());
 			uint32_t indexCount = 0;
 
 			// Vertices
@@ -104,7 +110,7 @@ void sf::GltfImporter::GetMesh(int id, Mesh& mesh)
 						v.normal = glm::normalize(glm::vec3(normalsBuffer[i * 3 + 0], normalsBuffer[i * 3 + 1], normalsBuffer[i * 3 + 2]));
 					if (texCoordsBuffer)
 						v.textureCoord = { texCoordsBuffer[i * 2 + 0], 1.0 - texCoordsBuffer[i * 2 + 1] };
-					mesh.vertexVector.push_back(v);
+					meshData.vertexVector.push_back(v);
 				}
 			}
 			// Indices
@@ -122,9 +128,9 @@ void sf::GltfImporter::GetMesh(int id, Mesh& mesh)
 				{
 					uint32_t* buf = new uint32_t[accessor.count];
 					memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint32_t));
-					mesh.pieces.push_back(mesh.indexVector.size());
+					meshData.pieces.push_back(meshData.indexVector.size());
 					for (size_t index = 0; index < accessor.count; index++)
-						mesh.indexVector.push_back(buf[index] + vertexStart);
+						meshData.indexVector.push_back(buf[index] + vertexStart);
 					delete[] buf;
 					break;
 				}
@@ -132,9 +138,9 @@ void sf::GltfImporter::GetMesh(int id, Mesh& mesh)
 				{
 					uint16_t* buf = new uint16_t[accessor.count];
 					memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint16_t));
-					mesh.pieces.push_back(mesh.indexVector.size());
+					meshData.pieces.push_back(meshData.indexVector.size());
 					for (size_t index = 0; index < accessor.count; index++)
-						mesh.indexVector.push_back(buf[index] + vertexStart);
+						meshData.indexVector.push_back(buf[index] + vertexStart);
 					delete[] buf;
 					break;
 				}
@@ -142,9 +148,9 @@ void sf::GltfImporter::GetMesh(int id, Mesh& mesh)
 				{
 					uint8_t* buf = new uint8_t[accessor.count];
 					memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint8_t));
-					mesh.pieces.push_back(mesh.indexVector.size());
+					meshData.pieces.push_back(meshData.indexVector.size());
 					for (size_t index = 0; index < accessor.count; index++)
-						mesh.indexVector.push_back(buf[index] + vertexStart);
+						meshData.indexVector.push_back(buf[index] + vertexStart);
 					delete[] buf;
 					break;
 				}
@@ -160,11 +166,12 @@ void sf::GltfImporter::GetMesh(int id, Mesh& mesh)
 void sf::GltfImporter::GetTexture(int id, int textureIndex, unsigned int& glId, int& width, int& height)
 {
 	assert(id > -1 && id < models.size());
-	assert(textureIndex > -1 && textureIndex < models[id].textures.size());
+	assert(models[id] != nullptr);
+	assert(textureIndex > -1 && textureIndex < models[id]->textures.size());
 
 	glGenTextures(1, &glId);
 
-	tinygltf::Image& image = models[id].images[models[id].textures[textureIndex].source];
+	tinygltf::Image& image = models[id]->images[models[id]->textures[textureIndex].source];
 
 	glBindTexture(GL_TEXTURE_2D, glId);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);

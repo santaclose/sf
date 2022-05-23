@@ -3,7 +3,7 @@
 
 sf::Shader sf::Defaults::shader;
 sf::Material sf::Defaults::material;
-sf::Mesh sf::Defaults::cubeMesh;
+sf::MeshData sf::Defaults::cubeMeshData;
 
 void sf::Defaults::Initialize()
 {
@@ -11,5 +11,5 @@ void sf::Defaults::Initialize()
 	material.CreateFromShader(&shader, true);
 	
 	int cubeObjId = ObjImporter::Load("assets/unitCube.obj");
-	ObjImporter::GetMesh(cubeObjId, cubeMesh);
+	ObjImporter::GenerateMeshData(cubeObjId, cubeMeshData);
 }

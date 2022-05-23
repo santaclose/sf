@@ -1,14 +1,15 @@
 #pragma once
 
-#include <Components/Mesh.h>
+#include <MeshData.h>
+#include <string>
 
 namespace sf {
 
 	class MeshProcessor {
 	public:
-		static void ComputeNormals(Mesh& model, bool normalize = false);
-		static void ComputeTangentSpace(Mesh& model);
+		static void ComputeNormals(MeshData& model, bool normalize = false);
+		static void ComputeTangentSpace(MeshData& model);
 
-		static void BakeAoToVertices(Mesh& model);
+		static void BakeAoToVertices(MeshData& model);
 	};
 }

@@ -1,12 +1,13 @@
 #include "MeshProcessor.h"
 
 #include <iostream>
+#include <fstream>
 
 #include <Random.h>
 #include <Math.hpp>
 #include <aobaker.h>
 
-void sf::MeshProcessor::ComputeNormals(Mesh& mesh, bool normalize)
+void sf::MeshProcessor::ComputeNormals(MeshData& mesh, bool normalize)
 {
 	for (Vertex& v : mesh.vertexVector)
 		v.normal = { 0.0f,0.0f,0.0f };
@@ -29,7 +30,7 @@ void sf::MeshProcessor::ComputeNormals(Mesh& mesh, bool normalize)
 	}
 }
 
-void sf::MeshProcessor::ComputeTangentSpace(Mesh& mesh)
+void sf::MeshProcessor::ComputeTangentSpace(MeshData& mesh)
 {
 	for (int i = 0; i < mesh.indexVector.size(); i += 3)
 	{
@@ -66,7 +67,7 @@ void sf::MeshProcessor::ComputeTangentSpace(Mesh& mesh)
 	}
 }
 
-void sf::MeshProcessor::BakeAoToVertices(Mesh& mesh)
+void sf::MeshProcessor::BakeAoToVertices(MeshData& mesh)
 {
 	aobaker::config conf;
 	aobaker::BakeAoToVertices(&mesh.vertexVector[0].position.x, &mesh.vertexVector[0].extraData.x, mesh.vertexVector.size(), sizeof(Vertex), sizeof(Vertex),

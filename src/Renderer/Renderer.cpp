@@ -22,45 +22,48 @@ namespace sf::Renderer {
 	glm::mat4 cameraProjection;
 	glm::mat4 cameraMatrix;
 
-	struct MeshData {
+	struct MeshGpuData {
 
 		unsigned int gl_vertexBuffer;
 		unsigned int gl_indexBuffer;
 		unsigned int gl_vao;
-
-		std::vector<Material*> materials;
 	};
 
-	std::unordered_map<int, MeshData> meshData;
+	std::unordered_map<const sf::MeshData*, MeshGpuData> meshGpuData;
+	std::unordered_map<int, std::vector<Material*>> meshMaterials;
 
-	void TransferVertexData(int id, const sf::MeshData& mesh)
+	void CreateMeshMaterialSlots(int id, const sf::MeshData* mesh)
 	{
-		glBindBuffer(GL_ARRAY_BUFFER, meshData[id].gl_vertexBuffer);
-		glBufferData(GL_ARRAY_BUFFER, mesh.vertexVector.size() * sizeof(Vertex), &mesh.vertexVector[0], GL_STATIC_DRAW);
-
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshData[id].gl_indexBuffer);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indexVector.size() * sizeof(unsigned int), &mesh.indexVector[0], GL_STATIC_DRAW);
+		for (int i = 0; i < mesh->pieces.size(); i++)
+			meshMaterials[id].push_back(&Defaults::material);
 	}
 
-	void CreateMeshData(int id, const sf::MeshData& mesh)
+	void TransferVertexData(const sf::MeshData* mesh)
 	{
-		meshData[id] = MeshData();
-		for (int i = 0; i < mesh.pieces.size(); i++)
-			meshData[id].materials.push_back(&Defaults::material);
+		glBindBuffer(GL_ARRAY_BUFFER, meshGpuData[mesh].gl_vertexBuffer);
+		glBufferData(GL_ARRAY_BUFFER, mesh->vertexVector.size() * sizeof(Vertex), &mesh->vertexVector[0], GL_STATIC_DRAW);
 
-		glGenVertexArrays(1, &meshData[id].gl_vao);
-		glGenBuffers(1, &meshData[id].gl_vertexBuffer);
-		glGenBuffers(1, &meshData[id].gl_indexBuffer);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshGpuData[mesh].gl_indexBuffer);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->indexVector.size() * sizeof(unsigned int), &mesh->indexVector[0], GL_STATIC_DRAW);
+	}
 
-		glBindVertexArray(meshData[id].gl_vao);
-		glBindBuffer(GL_ARRAY_BUFFER, meshData[id].gl_vertexBuffer);
+	void CreateMeshGpuData(const sf::MeshData* mesh)
+	{
+
+		meshGpuData[mesh] = MeshGpuData();
+		glGenVertexArrays(1, &meshGpuData[mesh].gl_vao);
+		glGenBuffers(1, &meshGpuData[mesh].gl_vertexBuffer);
+		glGenBuffers(1, &meshGpuData[mesh].gl_indexBuffer);
+
+		glBindVertexArray(meshGpuData[mesh].gl_vao);
+		glBindBuffer(GL_ARRAY_BUFFER, meshGpuData[mesh].gl_vertexBuffer);
 
 		// update vertices
-		glBufferData(GL_ARRAY_BUFFER, mesh.vertexVector.size() * sizeof(Vertex), &mesh.vertexVector[0], GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, mesh->vertexVector.size() * sizeof(Vertex), &mesh->vertexVector[0], GL_STATIC_DRAW);
 
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshData[id].gl_indexBuffer);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshGpuData[mesh].gl_indexBuffer);
 		// update indices to draw
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indexVector.size() * sizeof(unsigned int), &mesh.indexVector[0], GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->indexVector.size() * sizeof(unsigned int), &mesh->indexVector[0], GL_STATIC_DRAW);
 
 		glEnableVertexAttribArray(0); // position
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
@@ -77,7 +80,7 @@ namespace sf::Renderer {
 
 		glBindVertexArray(0);
 
-		TransferVertexData(id, mesh);
+		TransferVertexData(mesh);
 	}
 
 #ifdef SF_DEBUG
@@ -226,11 +229,13 @@ void sf::Renderer::ComputeCameraMatrices()
 
 void sf::Renderer::SetMeshMaterial(Mesh mesh, Material* material, int piece)
 {
-	if (meshData.find(mesh.id) == meshData.end()) // create mesh data if not there
-		CreateMeshData(mesh.id, *(mesh.meshData));
+	if (meshGpuData.find(mesh.meshData) == meshGpuData.end()) // create mesh data if not there
+		CreateMeshGpuData(mesh.meshData);
+	if (meshMaterials.find(mesh.id) == meshMaterials.end())
+		CreateMeshMaterialSlots(mesh.id, mesh.meshData);
 
-	assert(piece < meshData[mesh.id].materials.size());
-	meshData[mesh.id].materials[piece] = material;
+	assert(piece < meshMaterials[mesh.id].size());
+	meshMaterials[mesh.id][piece] = material;
 }
 
 void sf::Renderer::DrawSkybox()
@@ -245,13 +250,15 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 
 	assert(activeCameraEntity);
 
-	if (meshData.find(mesh.id) == meshData.end()) // create mesh data if not there
-		CreateMeshData(mesh.id, *(mesh.meshData));
+	if (meshGpuData.find(mesh.meshData) == meshGpuData.end()) // create mesh data if not there
+		CreateMeshGpuData(mesh.meshData);
+	if (meshMaterials.find(mesh.id) == meshMaterials.end())
+		CreateMeshMaterialSlots(mesh.id, mesh.meshData);
 
 	Transform& cameraTransform = activeCameraEntity.GetComponent<Transform>();
 	for (unsigned int i = 0; i < mesh.meshData->pieces.size(); i++)
 	{
-		Material* materialToUse = meshData[mesh.id].materials[i];
+		Material* materialToUse = meshMaterials[mesh.id][i];
 
 		materialToUse->Bind();
 
@@ -263,7 +270,7 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 		drawStart = mesh.meshData->pieces[i];
 		drawEnd = mesh.meshData->pieces.size() > i + 1 ? mesh.meshData->pieces[i + 1] : mesh.meshData->indexVector.size();
 
-		glBindVertexArray(meshData[mesh.id].gl_vao);
+		glBindVertexArray(meshGpuData[mesh.meshData].gl_vao);
 		glDrawElements(GL_TRIANGLES, drawEnd - drawStart, GL_UNSIGNED_INT, (void*)(drawStart * sizeof(unsigned int)));
 	}
 }
@@ -273,13 +280,13 @@ void sf::Renderer::DrawVoxelBox(VoxelBox& voxelBox, Transform& transform)
 	const VoxelBoxData* voxelBoxData = voxelBox.voxelBoxData;
 	assert(activeCameraEntity);
 
-	if (meshData.find(-1) == meshData.end()) // create mesh data if not there
-		CreateMeshData(-1, Defaults::cubeMeshData);
+	if (meshGpuData.find(&Defaults::cubeMeshData) == meshGpuData.end()) // create mesh data if not there
+		CreateMeshGpuData(&Defaults::cubeMeshData);
 
 	// draw instanced box
 	Transform& cameraTransform = activeCameraEntity.GetComponent<Transform>();
 
-	Material* materialToUse = meshData[-1].materials[0];
+	Material* materialToUse = &Defaults::material;
 	materialToUse->Bind();
 
 	materialToUse->m_shader->SetUniformMatrix4fv("cameraMatrix", &(cameraMatrix[0][0]));
@@ -304,7 +311,7 @@ void sf::Renderer::DrawVoxelBox(VoxelBox& voxelBox, Transform& transform)
 					glm::mat4 shaderMatrix = transform.ComputeMatrix() * voxelSpaceCursor.ComputeMatrix();
 
 					materialToUse->m_shader->SetUniformMatrix4fv("modelMatrix", &(shaderMatrix[0][0]));
-					glBindVertexArray(meshData[-1].gl_vao);
+					glBindVertexArray(meshGpuData[&Defaults::cubeMeshData].gl_vao);
 					glDrawElements(GL_TRIANGLES, Defaults::cubeMeshData.indexVector.size(), GL_UNSIGNED_INT, (void*)0);
 				}
 			}
@@ -314,7 +321,7 @@ void sf::Renderer::DrawVoxelBox(VoxelBox& voxelBox, Transform& transform)
 
 void sf::Renderer::Terminate()
 {
-	for (auto& pair : meshData)
+	for (auto& pair : meshGpuData)
 	{
 		glDeleteVertexArrays(1, &(pair.second.gl_vao));
 		glDeleteBuffers(1, &(pair.second.gl_indexBuffer));

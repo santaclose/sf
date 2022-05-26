@@ -47,6 +47,9 @@ sf::Shader::Shader() : m_gl_id(-1) {}
 
 void sf::Shader::CreateFromFiles(const std::string& vertexShaderPath, const std::string& fragmentShaderPath)
 {
+	m_vertFileName = vertexShaderPath;
+	m_fragFileName = fragmentShaderPath;
+
 	if (m_gl_id != -1)
 		glDeleteProgram(m_gl_id);
 
@@ -94,7 +97,7 @@ int sf::Shader::GetUniformLocation(const std::string& name)
 
 	int location = glGetUniformLocation(m_gl_id, name.c_str());
 	if (location == -1)
-		std::cout << "[Shader] Could not get uniform location for " << name << std::endl;
+		std::cout << "[Shader] Could not get uniform location for " << name << " in shader " << m_vertFileName << "-" << m_fragFileName << std::endl;
 
 	m_uniformCache[name].location = location;
 	return location;

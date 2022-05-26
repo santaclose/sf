@@ -19,6 +19,8 @@ namespace sf {
 		friend ComputeShader;
 		friend Material;
 	private:
+		std::string m_vertFileName;
+		std::string m_fragFileName;
 		std::unordered_map<std::string, ShaderUniformData> m_uniformCache;
 		int m_textureIndexCounter = 0;
 	public:

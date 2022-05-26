@@ -15,6 +15,10 @@
 
 namespace sf::Renderer {
 
+	Shader defaultShader;
+	Material defaultMaterial;
+	Shader voxelBoxShader;
+
 	float aspectRatio = 1.7777777777;
 	Entity activeCameraEntity;
 
@@ -29,13 +33,21 @@ namespace sf::Renderer {
 		unsigned int gl_vao;
 	};
 
+	struct VoxelBoxGpuData {
+		unsigned int gl_ssbo;
+		int numberOfCubes;
+		std::vector<glm::mat4> cubeModelMatrices;
+	};
+
 	std::unordered_map<const sf::MeshData*, MeshGpuData> meshGpuData;
 	std::unordered_map<int, std::vector<Material*>> meshMaterials;
+
+	std::unordered_map<const sf::VoxelBoxData*, VoxelBoxGpuData> voxelBoxGpuData;
 
 	void CreateMeshMaterialSlots(int id, const sf::MeshData* mesh)
 	{
 		for (int i = 0; i < mesh->pieces.size(); i++)
-			meshMaterials[id].push_back(&Defaults::material);
+			meshMaterials[id].push_back(&defaultMaterial);
 	}
 
 	void TransferVertexData(const sf::MeshData* mesh)
@@ -81,6 +93,44 @@ namespace sf::Renderer {
 		glBindVertexArray(0);
 
 		TransferVertexData(mesh);
+	}
+
+	void CreateVoxelBoxGpuData(const sf::VoxelBoxData* voxelBox, const Transform& transform)
+	{
+		voxelBoxGpuData[voxelBox] = VoxelBoxGpuData();
+
+		Transform voxelSpaceCursor;
+		voxelSpaceCursor.scale = voxelBox->voxelSize;
+
+		int currentCube = 0;
+		for (int i = 0; i < voxelBox->mat.size(); i++)
+		{
+			for (int j = 0; j < voxelBox->mat[0].size(); j++)
+			{
+				for (int k = 0; k < voxelBox->mat[0][0].size(); k++)
+				{
+					if (voxelBox->mat[i][j][k])
+					{
+						voxelSpaceCursor.position = voxelBox->offset;
+						voxelSpaceCursor.position.x += voxelBox->voxelSize * ((float)i + 0.5f);
+						voxelSpaceCursor.position.y += voxelBox->voxelSize * ((float)j + 0.5f);
+						voxelSpaceCursor.position.z += voxelBox->voxelSize * ((float)k + 0.5f);
+
+						voxelBoxGpuData[voxelBox].cubeModelMatrices.emplace_back();
+						voxelBoxGpuData[voxelBox].cubeModelMatrices[currentCube] = voxelSpaceCursor.ComputeMatrix();
+						currentCube++;
+					}
+				}
+			}
+		}
+		voxelBoxGpuData[voxelBox].numberOfCubes = currentCube;
+
+		glGenBuffers(1, &(voxelBoxGpuData[voxelBox].gl_ssbo));
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, voxelBoxGpuData[voxelBox].gl_ssbo);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, voxelBoxGpuData[voxelBox].cubeModelMatrices.size() * sizeof(glm::mat4), &(voxelBoxGpuData[voxelBox].cubeModelMatrices[0][0][0]), GL_STATIC_DRAW);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, voxelBoxGpuData[voxelBox].gl_ssbo);
+
+		return;
 	}
 
 #ifdef SF_DEBUG
@@ -173,6 +223,11 @@ bool sf::Renderer::Initialize(void* process)
 	glViewport(0, 0, sf::Config::windowWidth, sf::Config::windowHeight);
 
 	sf::Renderer::aspectRatio = (float)sf::Config::windowWidth / (float)sf::Config::windowHeight;
+
+	defaultShader.CreateFromFiles("assets/shaders/defaultV.shader", "assets/shaders/defaultF.shader");
+	defaultMaterial.CreateFromShader(&defaultShader, false);
+	voxelBoxShader.CreateFromFiles("assets/shaders/voxelBoxV.shader", "assets/shaders/uvF.shader");
+
 	return true;
 }
 
@@ -283,40 +338,23 @@ void sf::Renderer::DrawVoxelBox(VoxelBox& voxelBox, Transform& transform)
 	if (meshGpuData.find(&Defaults::cubeMeshData) == meshGpuData.end()) // create mesh data if not there
 		CreateMeshGpuData(&Defaults::cubeMeshData);
 
+	if (voxelBoxGpuData.find(voxelBox.voxelBoxData) == voxelBoxGpuData.end())
+		CreateVoxelBoxGpuData(voxelBox.voxelBoxData, transform);
+
 	// draw instanced box
 	Transform& cameraTransform = activeCameraEntity.GetComponent<Transform>();
 
-	Material* materialToUse = &Defaults::material;
-	materialToUse->Bind();
+	Shader* shaderToUse = &voxelBoxShader;
+	shaderToUse->Bind();
 
-	materialToUse->m_shader->SetUniformMatrix4fv("cameraMatrix", &(cameraMatrix[0][0]));
-	materialToUse->m_shader->SetUniform3fv("camPos", &(cameraTransform.position.x));
+	shaderToUse->SetUniformMatrix4fv("cameraMatrix", &(cameraMatrix[0][0]));
+	shaderToUse->SetUniform3fv("camPos", &(cameraTransform.position.x));
+	shaderToUse->SetUniformMatrix4fv("modelMatrix", &(transform.ComputeMatrix()[0][0]));
 
-	Transform voxelSpaceCursor;
-	voxelSpaceCursor.scale = voxelBox.voxelBoxData->voxelSize;
-
-	for (int i = 0; i < voxelBox.voxelBoxData->mat.size(); i++)
-	{
-		for (int j = 0; j < voxelBox.voxelBoxData->mat[0].size(); j++)
-		{
-			for (int k = 0; k < voxelBox.voxelBoxData->mat[0][0].size(); k++)
-			{
-				if (voxelBox.voxelBoxData->mat[i][j][k])
-				{
-					voxelSpaceCursor.position = voxelBox.voxelBoxData->offset;
-					voxelSpaceCursor.position.x += voxelBox.voxelBoxData->voxelSize * ((float)i + 0.5f);
-					voxelSpaceCursor.position.y += voxelBox.voxelBoxData->voxelSize * ((float)j + 0.5f);
-					voxelSpaceCursor.position.z += voxelBox.voxelBoxData->voxelSize * ((float)k + 0.5f);
-
-					glm::mat4 shaderMatrix = transform.ComputeMatrix() * voxelSpaceCursor.ComputeMatrix();
-
-					materialToUse->m_shader->SetUniformMatrix4fv("modelMatrix", &(shaderMatrix[0][0]));
-					glBindVertexArray(meshGpuData[&Defaults::cubeMeshData].gl_vao);
-					glDrawElements(GL_TRIANGLES, Defaults::cubeMeshData.indexVector.size(), GL_UNSIGNED_INT, (void*)0);
-				}
-			}
-		}
-	}
+	glBindVertexArray(meshGpuData[&Defaults::cubeMeshData].gl_vao);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, voxelBoxGpuData[voxelBox.voxelBoxData].gl_ssbo);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, voxelBoxGpuData[voxelBox.voxelBoxData].gl_ssbo);
+	glDrawElementsInstanced(GL_TRIANGLES, Defaults::cubeMeshData.indexVector.size(), GL_UNSIGNED_INT, (void*)0, voxelBoxGpuData[voxelBox.voxelBoxData].numberOfCubes);
 }
 
 void sf::Renderer::Terminate()

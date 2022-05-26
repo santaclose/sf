@@ -6,9 +6,8 @@
 
 namespace sf::Defaults {
 
-	extern Shader shader;
-	extern Material material;
 	extern MeshData cubeMeshData;
+	extern MeshData monkeMeshData;
 
 	void Initialize();
 }

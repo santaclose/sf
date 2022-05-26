@@ -1,15 +1,14 @@
 #include "Defaults.h"
 #include <Importer/ObjImporter.h>
 
-sf::Shader sf::Defaults::shader;
-sf::Material sf::Defaults::material;
 sf::MeshData sf::Defaults::cubeMeshData;
+sf::MeshData sf::Defaults::monkeMeshData;
 
 void sf::Defaults::Initialize()
-{
-	shader.CreateFromFiles("assets/shaders/defaultV.shader", "assets/shaders/defaultF.shader");
-	material.CreateFromShader(&shader, true);
-	
-	int cubeObjId = ObjImporter::Load("assets/unitCube.obj");
-	ObjImporter::GenerateMeshData(cubeObjId, cubeMeshData);
+{	
+	int objId;
+	objId = ObjImporter::Load("assets/unitCube.obj");
+	ObjImporter::GenerateMeshData(objId, cubeMeshData);
+	objId = ObjImporter::Load("assets/monke.obj");
+	ObjImporter::GenerateMeshData(objId, monkeMeshData);
 }

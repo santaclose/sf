@@ -7,8 +7,8 @@ sf::MeshData sf::Defaults::monkeMeshData;
 void sf::Defaults::Initialize()
 {	
 	int objId;
-	objId = ObjImporter::Load("assets/unitCube.obj");
+	objId = ObjImporter::Load("assets/meshes/unitCube.obj");
 	ObjImporter::GenerateMeshData(objId, cubeMeshData);
-	objId = ObjImporter::Load("assets/monke.obj");
+	objId = ObjImporter::Load("assets/meshes/monke.obj");
 	ObjImporter::GenerateMeshData(objId, monkeMeshData);
 }

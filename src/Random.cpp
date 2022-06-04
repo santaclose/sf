@@ -43,3 +43,18 @@ glm::fquat sf::Random::Rotation()
 
 	return rot;
 }
+
+glm::vec2 sf::Random::PointInCircle()
+{
+	float angle = Float() * 2.0f * glm::pi<float>();
+	float radius = Float();
+	float sep = glm::sqrt(radius);
+	return glm::vec2(glm::cos(angle) * sep, glm::sin(angle) * sep);
+}
+
+glm::vec3 sf::Random::PointInSphere()
+{
+	glm::vec3 point = UnitVec3();
+	float radius = Float();
+	return point * glm::pow(radius, 1.0f / 3.0f);
+}

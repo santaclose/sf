@@ -10,4 +10,7 @@ namespace sf::Random
 	int Int(int limit);
 	glm::vec3 UnitVec3();
 	glm::fquat Rotation();
+
+	glm::vec2 PointInCircle();
+	glm::vec3 PointInSphere();
 }

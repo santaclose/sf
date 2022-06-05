@@ -1,14 +1,23 @@
 #include <GLFW/glfw3.h>
 
 #include <Game.h>
-#include <Texture.h>
-#include <Material.h>
-#include <Mesh.h>
-#include <MeshReference.h>
+
+#include <Defaults.h>
+
+#include <Scene/Entity.h>
+#include <Scene/Scene.h>
+
+#include <Renderer/Renderer.h>
+
+#include <MeshData.h>
+#include <Components/Mesh.h>
+#include <Components/Camera.h>
+#include <Components/Transform.h>
+
 #include <MeshProcessor.h>
 #include <Math.hpp>
 #include <Random.h>
-#include <Camera.h>
+
 #include <Input.h>
 #include <Importer/GltfImporter.h>
 
@@ -22,10 +31,10 @@
 
 namespace sf
 {
+	Scene scene;
+	Entity e_ship, e_mainCamera, e_lookBackCamera;
+
 	float shipSpeed = 5.0;
-	glm::fquat targetShipRotation = glm::fquat(1.0, 0.0, 0.0, 0.0);
-	Camera* theCamera;
-	Camera* lookBackCamera;
 
 	Shader aoShader;
 	Shader uvShader;
@@ -36,22 +45,15 @@ namespace sf
 	Material noiseMaterial;
 	Material uvMaterial;
 	Material aoMaterial;
+	
+	MeshData shipMesh;
+	Entity* things;
 
-	Mesh ship;
-	Mesh uniqueThings[UNIQUE_COUNT];
-	MeshReference* things;
+
+	MeshData* generatedMeshes;
 
 	void Game::Initialize(int argc, char** argv)
 	{
-		CameraSpecs specs;
-		specs.perspective = true;
-		specs.farClippingPlane = 1000.0f;
-		specs.nearClippingPlane = 0.1f;
-		specs.fieldOfView = glm::radians(90.0f);
-		theCamera = new Camera(specs);
-		specs.fieldOfView = glm::radians(120.0f);
-		lookBackCamera = new Camera(specs);
-
 		aoShader.CreateFromFiles("assets/shaders/defaultV.shader", "assets/shaders/vertexAoF.shader");
 		colorShader.CreateFromFiles("examples/spaceship/randomColorsV.shader", "examples/spaceship/randomColorsF.shader");
 		uvShader.CreateFromFiles("assets/shaders/defaultV.shader", "assets/shaders/uvF.shader");
@@ -62,89 +64,98 @@ namespace sf
 		uvMaterial.CreateFromShader(&uvShader);
 		noiseMaterial.CreateFromShader(&noiseShader);
 
+		e_ship = scene.CreateEntity();
+
 		int gltfid = GltfImporter::Load("examples/spaceship/ship.glb");
-		ship.CreateFromGltf(gltfid);
-		ship.SetMaterial(&uvMaterial, 0);
-		targetShipRotation = ship.GetRotation();
+		GltfImporter::GenerateMeshData(gltfid, shipMesh);
+		Mesh& m_ship = e_ship.AddComponent<Mesh>(&shipMesh);
+		Renderer::SetMeshMaterial(m_ship, &uvMaterial);
+		Transform& t_ship = e_ship.AddComponent<Transform>();
 
-		theCamera->SetPosition(ship.GetPosition() - (ship.Forward() * 4.0) + (ship.Up()));
-		theCamera->LookAt(ship.GetPosition(), ship.Up());
+		e_mainCamera = scene.CreateEntity();
+		Renderer::activeCameraEntity = e_mainCamera;
+		e_lookBackCamera = scene.CreateEntity();
 
+		Camera& c_mainCamera = e_mainCamera.AddComponent<Camera>();
+		Camera& c_lookBackCamera = e_lookBackCamera.AddComponent<Camera>();
+		c_mainCamera.perspective = c_lookBackCamera.perspective = true;
+		c_mainCamera.farClippingPlane = c_lookBackCamera.farClippingPlane = 1000.0f;
+		c_mainCamera.nearClippingPlane = c_lookBackCamera.nearClippingPlane = 0.1f;
+		c_mainCamera.fieldOfView = glm::radians(90.0f);
+		c_lookBackCamera.fieldOfView = glm::radians(120.0f);
+
+
+		Transform& t_mainCamera = e_mainCamera.AddComponent<Transform>();
+		Transform& t_lookBackCamera = e_lookBackCamera.AddComponent<Transform>();
+
+		t_mainCamera.position = t_ship.position - (t_ship.Forward() * 4.0) + (t_ship.Up());
+		t_mainCamera.LookAt(t_ship.position, t_ship.Up());
+
+		
+		generatedMeshes = new MeshData[UNIQUE_COUNT];
 		for (unsigned int i = 0; i < UNIQUE_COUNT; i++)
 		{
-			Models::seed = i;
-			uniqueThings[i].CreateFromCode(Models::GenerateModel);
+			errt::seed = i;
+			MeshProcessor::GenerateMeshWithFunction(generatedMeshes[i], errt::GenerateModel);
+			MeshProcessor::BakeAoToVertices(generatedMeshes[i]);
+		}
 
-			switch (i % 3)
+		things = new Entity[COUNT];
+		for (unsigned int i = 0; i < COUNT; i++)
+		{
+			things[i] = scene.CreateEntity();
+			Mesh& m_thing = things[i].AddComponent<Mesh>(&(generatedMeshes[Random::Int(UNIQUE_COUNT)]));
+			switch (Random::Int(3))
 			{
 			case 0:
-				MeshProcessor::BakeAoToVertices(uniqueThings[i]);
-				uniqueThings[i].ReloadVertexData();
-				uniqueThings[i].SetMaterial(&aoMaterial, 0);
+				Renderer::SetMeshMaterial(m_thing, &colorsMaterial);
 				break;
 			case 1:
-				uniqueThings[i].SetMaterial(&colorsMaterial, 0);
+				Renderer::SetMeshMaterial(m_thing, &noiseMaterial);
 				break;
 			case 2:
-				uniqueThings[i].SetMaterial(&noiseMaterial, 0);
+				Renderer::SetMeshMaterial(m_thing, &aoMaterial);
 				break;
 			}
-		}
 
-		things = new MeshReference[COUNT];
-		for (int i = 0; i < COUNT + UNIQUE_COUNT; i++)
-		{
-			if (i < UNIQUE_COUNT)
-			{
-				uniqueThings[i].SetScale(Random::Float() * (COUNT + UNIQUE_COUNT - i) / 100.0 + 1.0);
-				uniqueThings[i].SetPosition(glm::vec3((Random::Float() - 0.5) * SPAWN_RANGE, (Random::Float() - 0.5) * SPAWN_RANGE, (float)(i * -2)));
-				uniqueThings[i].SetRotation(glm::fquat(glm::vec3(0.0, glm::radians(180.0), glm::radians(Random::Float() * 360.0))));
-			}
-			else
-			{
-				things[i - UNIQUE_COUNT].CreateFomMesh(uniqueThings[rand() % UNIQUE_COUNT]);
-				things[i - UNIQUE_COUNT].SetScale(Random::Float() * (COUNT + UNIQUE_COUNT - i) / 100.0 + 1.0);
-				things[i - UNIQUE_COUNT].SetPosition(glm::vec3((Random::Float() - 0.5) * SPAWN_RANGE, (Random::Float() - 0.5) * SPAWN_RANGE, (float)(i * -2)));
-				things[i - UNIQUE_COUNT].SetRotation(glm::fquat(glm::vec3(0.0, glm::radians(180.0), glm::radians(Random::Float() * 360.0))));
-			}
+			Transform& t_thing = things[i].AddComponent<Transform>();
+
+			t_thing.scale = Random::Float() * (COUNT - i) / 100.0 + 1.0;
+			t_thing.position = glm::vec3((Random::Float() - 0.5) * SPAWN_RANGE, (Random::Float() - 0.5) * SPAWN_RANGE, (i * -2.0f));
+			t_thing.rotation = glm::fquat(glm::vec3(0.0, glm::radians(180.0), glm::radians(Random::Float() * 360.0)));
 		}
-		//std::cout << theCamera->GetPosition().x << ", " << theCamera->GetPosition().y << ", " << theCamera->GetPosition().z << std::endl;
-		//std::cout << ship.GetPosition().x << ", " << ship.GetPosition().y << ", " << ship.GetPosition().z << std::endl;
 	}
 
 	void Game::Terminate()
 	{
-		delete theCamera;
-		delete lookBackCamera;
 		delete[] things;
+		delete[] generatedMeshes;
 	}
 
 	void Game::OnUpdate(float deltaTime, float time)
 	{
-		if (Input::KeyDown(Input::KeyCode::M))
-			glPolygonMode(GL_FRONT, GL_POINT);
-		else if (Input::KeyDown(Input::KeyCode::N))
-			glPolygonMode(GL_FRONT, GL_LINE);
-		else if (Input::KeyDown(Input::KeyCode::B))
-			glPolygonMode(GL_FRONT, GL_FILL);
-		else if (Input::KeyDown(Input::KeyCode::Space))
+		if (Input::KeyDown(Input::KeyCode::Space))
 		{
-			if (Camera::boundCamera == theCamera)
-				lookBackCamera->Bind();
+			if (Renderer::activeCameraEntity.GetComponent<Camera>().id == e_mainCamera.GetComponent<Camera>().id)
+				Renderer::activeCameraEntity = e_lookBackCamera;
 			else
-				theCamera->Bind();
+				Renderer::activeCameraEntity = e_mainCamera;
 		}
 		shipSpeed += Input::MouseScrollUp() ? 1.0f : 0.0f;
 		shipSpeed -= Input::MouseScrollDown() ? 1.0f : 0.0f;
-		targetShipRotation *= glm::fquat(glm::vec3(Input::MousePosDeltaY() * SENSITIVITY, 0.0, -Input::MousePosDeltaX() * SENSITIVITY));
 
-		ship.SetPosition(ship.GetPosition() + ship.Forward() * shipSpeed * deltaTime);
-		ship.SetRotation(targetShipRotation);
 
-		theCamera->SetPosition(glm::mix(theCamera->GetPosition(), ship.GetPosition() - (ship.Forward() * 4.0) + (ship.Up()), (float)(deltaTime * 2.0)));
-		theCamera->LookAt(ship.GetPosition(), ship.Up());
+		Transform& t_ship = e_ship.GetComponent<Transform>();
+		Transform& t_mainCamera = e_mainCamera.GetComponent<Transform>();
+		Transform& t_lookBackCamera = e_lookBackCamera.GetComponent<Transform>();
 
-		lookBackCamera->SetPosition(ship.GetPosition() + ship.Forward() * 4.0);
-		lookBackCamera->LookAt(ship.GetPosition(), ship.Up());
+		t_ship.rotation *= glm::fquat(glm::vec3(Input::MousePosDeltaY() * SENSITIVITY, 0.0, -Input::MousePosDeltaX() * SENSITIVITY));
+		t_ship.position += t_ship.Forward() * shipSpeed * deltaTime;
+
+		t_mainCamera.position = glm::mix(t_mainCamera.position, t_ship.position - (t_ship.Forward() * 4.0) + (t_ship.Up()), (float)(deltaTime * 2.0));
+		t_mainCamera.LookAt(t_ship.position, t_ship.Up());
+
+		t_lookBackCamera.position = t_ship.position + t_ship.Forward() * 4.0;
+		t_lookBackCamera.LookAt(t_ship.position, t_ship.Up());
 	}
 }

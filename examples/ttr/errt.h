@@ -1,10 +1,7 @@
 #pragma once
 
-namespace User
+namespace errt
 {
-	namespace Models
-	{
-		extern int seed;
-		void GenerateModel();
-	}
+	extern int seed;
+	void GenerateModel();
 }

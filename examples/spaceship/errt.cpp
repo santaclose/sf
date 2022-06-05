@@ -4,7 +4,7 @@
 #include <vector>
 
 #define RADIUS 0.05
-namespace sf::Models
+namespace errt
 {
 	int seed = 0;
 	int cylinderRes = 8;

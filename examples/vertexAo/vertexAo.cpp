@@ -1,5 +1,6 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include <fstream>
 
 #include <Game.h>
 #include <Math.hpp>
@@ -42,11 +43,16 @@ namespace sf
 	Shader uvShader;
 	Material uvMaterial;
 
+	MeshData* sampleMeshes;
 
 	int selectedModel = 0;
 
 	void Game::Initialize(int argc, char** argv)
 	{
+		std::ifstream f("examples/vertexAo/sponza.obj");
+		if (!f.good()) // download file if not there
+			system("curl https://raw.githubusercontent.com/jimmiebergmann/Sponza/master/sponza.obj --output examples/vertexAo/sponza.obj");
+
 		gimbal = scene.CreateEntity();
 		cameraObject = scene.CreateEntity();
 		Renderer::activeCameraEntity = cameraObject;
@@ -59,44 +65,39 @@ namespace sf
 		shader.CreateFromFiles("assets/shaders/defaultV.shader", "assets/shaders/vertexAoF.shader");
 		material.CreateFromShader(&shader, true);
 
-		uvShader.CreateFromFiles("assets/shaders//defaultV.shader", "assets/shaders/uvF.shader");
+		uvShader.CreateFromFiles("assets/shaders/defaultV.shader", "assets/shaders/uvF.shader");
 		uvMaterial.CreateFromShader(&uvShader);
 		
-		std::vector<std::string> meshFilePaths = { "examples/vertexAo/table.obj", "examples/vertexAo/ag.obj", "examples/vertexAo/shoe.obj", "examples/vertexAo/chestnut.obj"	};
+		std::vector<std::string> meshFilePaths = { "examples/vertexAo/sponza.obj", "assets/meshes/monke.obj"};
+		sampleMeshes = new MeshData[meshFilePaths.size()];
 		for (int i = 0; i < meshFilePaths.size(); i++)
 		{
 			std::string& filePath = meshFilePaths[i];
 			meshObjects.push_back(scene.CreateEntity());
 
-			meshObjects.back().AddComponent<Transform>();
-			Mesh& objectMesh = meshObjects.back().AddComponent<Mesh>();
-
 			int objid = ObjImporter::Load(filePath);
-			ObjImporter::GetMesh(objid, objectMesh);
-			MeshProcessor::BakeAoToVertices(objectMesh);
-			objectMesh.vertexReloadPending = true;
-			objectMesh.SetMaterial(&material);
+			ObjImporter::GenerateMeshData(objid, sampleMeshes[i]);
+			MeshProcessor::BakeAoToVertices(sampleMeshes[i]);
+
+			meshObjects.back().AddComponent<Transform>();
+			Mesh& objectMesh = meshObjects.back().AddComponent<Mesh>(&(sampleMeshes[i]));
+			Renderer::SetMeshMaterial(objectMesh, &material);
 
 			if (i != selectedModel)
 				meshObjects[i].SetEnabled(false);
 		}
 
-		gimbal.GetComponent<Transform>().SetPosition(glm::vec3(0.0, 0.0, 0.0));
+		gimbal.GetComponent<Transform>().position = glm::vec3(0.0, 0.0, 0.0);
 		gimbal.GetComponent<Transform>().LookAt(glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, 1.0, 0.0));
 
-		cameraObject.GetComponent<Transform>().SetPosition(glm::vec3(0.0, 0.0, cameraDistance));
+		cameraObject.GetComponent<Transform>().position = glm::vec3(0.0, 0.0, cameraDistance);
 		cameraObject.GetComponent<Transform>().LookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+		cameraObject.GetComponent<Camera>().farClippingPlane = 5000.0f;
 	}
 
 	void Game::OnUpdate(float deltaTime, float time)
 	{
-		if (Input::KeyDown(Input::KeyCode::M))
-			glPolygonMode(GL_FRONT, GL_POINT);
-		else if (Input::KeyDown(Input::KeyCode::N))
-			glPolygonMode(GL_FRONT, GL_LINE);
-		else if (Input::KeyDown(Input::KeyCode::B))
-			glPolygonMode(GL_FRONT, GL_FILL);
-		else if (Input::KeyDown(Input::KeyCode::Space))
+		if (Input::KeyDown(Input::KeyCode::Space))
 			rotationEnabled = !rotationEnabled;
 		else if (Input::KeyDown(Input::KeyCode::Right))
 		{
@@ -114,6 +115,31 @@ namespace sf
 			meshObjects[prevModel].SetEnabled(false);
 			meshObjects[selectedModel].SetEnabled(true);
 		}
+		if (Input::Key(Input::KeyCode::E))
+		{
+			gimbal.GetComponent<Transform>().position += cameraObject.GetComponent<Transform>().Up();
+		}
+		if (Input::Key(Input::KeyCode::Q))
+		{
+			gimbal.GetComponent<Transform>().position -= cameraObject.GetComponent<Transform>().Up();
+		}
+		if (Input::Key(Input::KeyCode::W))
+		{
+			gimbal.GetComponent<Transform>().position += cameraObject.GetComponent<Transform>().Forward();
+		}
+		if (Input::Key(Input::KeyCode::S))
+		{
+			gimbal.GetComponent<Transform>().position -= cameraObject.GetComponent<Transform>().Forward();
+		}
+		if (Input::Key(Input::KeyCode::D))
+		{
+			gimbal.GetComponent<Transform>().position += cameraObject.GetComponent<Transform>().Right();
+		}
+		if (Input::Key(Input::KeyCode::A))
+		{
+			gimbal.GetComponent<Transform>().position -= cameraObject.GetComponent<Transform>().Right();
+		}
+
 		cameraDistance -= SCROLL_SENSITIVITY * (Input::MouseScrollUp() ? 1.0f : 0.0f);
 		cameraDistance += SCROLL_SENSITIVITY * (Input::MouseScrollDown() ? 1.0f : 0.0f);
 
@@ -121,17 +147,19 @@ namespace sf
 		targetGimbalRotation.x += Input::MousePosDeltaY() * MOVE_SENSITIVITY * (Input::MouseButton(0) ? 1.0f : 0.0f);
 		targetGimbalRotation.x = glm::clamp(targetGimbalRotation.x, -Math::Pi * 0.499f, Math::Pi * 0.499f);
 
-		gimbal.GetComponent<Transform>().SetRotation(glm::slerp(gimbal.GetComponent<Transform>().GetRotation(), glm::fquat(targetGimbalRotation), deltaTime * SPEED));
-		cameraObject.GetComponent<Transform>().SetPosition(gimbal.GetComponent<Transform>().GetPosition() + gimbal.GetComponent<Transform>().Forward() * cameraDistance);
-		cameraObject.GetComponent<Transform>().LookAt(gimbal.GetComponent<Transform>().GetPosition(), glm::vec3(0.0, 1.0, 0.0));
+		gimbal.GetComponent<Transform>().rotation = glm::slerp(gimbal.GetComponent<Transform>().rotation, glm::fquat(targetGimbalRotation), deltaTime * SPEED);
+		cameraObject.GetComponent<Transform>().position = gimbal.GetComponent<Transform>().position + gimbal.GetComponent<Transform>().Forward() * cameraDistance;
+		cameraObject.GetComponent<Transform>().LookAt(gimbal.GetComponent<Transform>().position, glm::vec3(0.0, 1.0, 0.0));
 
 		if (rotationEnabled)
 		{
 			Transform& objectTransform = meshObjects[selectedModel].GetComponent<Transform>();
-			objectTransform.SetRotation(objectTransform.GetRotation() * glm::fquat(glm::vec3(0.0f, 0.07f * deltaTime, 0.0f)));
+			objectTransform.rotation = objectTransform.rotation * glm::fquat(glm::vec3(0.0f, 0.07f * deltaTime, 0.0f));
 		}
 	}
+
 	void Game::Terminate()
 	{
+		delete[] sampleMeshes;
 	}
 }

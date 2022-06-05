@@ -2,21 +2,24 @@
 #include <iostream>
 
 #include <Game.h>
-#include <Texture.h>
-#include <Material.h>
-#include <Mesh.h>
-#include <MeshReference.h>
 #include <Math.hpp>
 #include <Random.h>
-#include <Camera.h>
 #include <Input.h>
+
+#include <Components/Transform.h>
+#include <Components/Mesh.h>
+#include <Components/Camera.h>
+
+#include <Renderer/Renderer.h>
+
+#include <MeshProcessor.h>
 
 #include "errt.h"
 
 #define SENSITIVITY 0.007
 
 #define UNIQUE_COUNT 60
-#define COPY_COUNT 100
+#define ERRT_COUNT 6000
 
 #define PHI_MAX 3.14159265/2.0;
 #define PHI_MIN -3.14159265/2.0;
@@ -28,6 +31,9 @@
 
 namespace sf
 {
+	Scene scene;
+	Entity e_camera;
+
 	Shader pbrShader;
 	Shader noiseShader;
 	Shader randomColorShader;
@@ -38,15 +44,13 @@ namespace sf
 	Material whiteMaterial;
 	Material blackMaterial;
 
-	Camera* theCamera;
-
 	float animation1A = 0.36, animation2A = 0.36;
 	float animation1B = 0.62, animation2B = 0.62;
 	float animation1C = 2.22, animation2C = 2.22;
 	float animation1D = 3.96, animation2D = 3.96;
 
-	Mesh errt[UNIQUE_COUNT];
-	MeshReference* errts;
+	MeshData uniqueErrts[UNIQUE_COUNT];
+	Entity* errts;
 
 	float tFreq = 0.00559973;
 	float tStrength = 12.4;
@@ -54,14 +58,11 @@ namespace sf
 	float xFrequency = 0.00559973;
 	float zWaveStrength = 12.4;
 	float xWaveStrength = 12.4;
-	//float zWaveStrength = 10.0;
-	//float xWaveStrength = 10.0;
 
 	float cameraRot = 0.0;
 
 	float tSpeed = 0.1231;
 	float speed = 0.1231;
-	//float speed = 0.2;
 	float posY = 50.0f;
 	float cameraRadius = 650.0f;
 
@@ -69,14 +70,15 @@ namespace sf
 
 	void Game::Initialize(int argc, char** argv)
 	{
-		CameraSpecs cs;
-		cs.fieldOfView = 0.5f;
-		cs.nearClippingPlane = 0.01f;
-		cs.farClippingPlane = 1000.0f;
-		theCamera = new Camera(cs);
-
-		theCamera->SetPosition(-15, 15, 5);
-		theCamera->SetRotation(-0.1, -0.4, 0);
+		e_camera = scene.CreateEntity();
+		Camera& c_camera = e_camera.AddComponent<Camera>();
+		c_camera.fieldOfView = 0.5f;
+		c_camera.nearClippingPlane = 0.01f;
+		c_camera.farClippingPlane = 1000.0f;
+		Transform& t_camera = e_camera.AddComponent<Transform>();
+		t_camera.position = { -15.0f, 15.0f, 5.0f };
+		t_camera.rotation = glm::fquat(glm::vec3(-0.1f, -0.4f, 0.0f));
+		Renderer::activeCameraEntity = e_camera;
 
 		colorShader.CreateFromFiles("assets/shaders/pbrV.shader", "examples/ttr/solidColorF.shader");
 
@@ -91,68 +93,55 @@ namespace sf
 		blackMaterial.SetUniform("theColor", &theColorb, Material::UniformType::_Color);
 		whiteMaterial.SetUniform("theColor", &theColor, Material::UniformType::_Color);
 
-
-		errts = new MeshReference[COPY_COUNT * UNIQUE_COUNT];
-
 		for (int i = 0; i < UNIQUE_COUNT; i++)
 		{
-			User::Models::seed = i;
-			errt[i].CreateFromCode(User::Models::GenerateModel, true);
-			errt[i].SetMaterial(rand() % 2 == 1 ? &blackMaterial : &whiteMaterial, 0);
-			float randomAngle = Random::Float() * 3.14159265*2.0;
-			float randomDistance = Random::Float() * 200.0;
+			errt::seed = i;
+			MeshProcessor::GenerateMeshWithFunction(uniqueErrts[i], errt::GenerateModel);
+		}
 
-			errt[i].SetPosition(glm::vec3(cos(randomAngle) * randomDistance, 0.0, sin(randomAngle) * randomDistance));
+		errts = new Entity[ERRT_COUNT];
+		for (int i = 0; i < ERRT_COUNT; i++)
+		{
+			errts[i] = scene.CreateEntity();
+			Transform& t_errt = errts[i].AddComponent<Transform>();
+			Mesh& m_errt = errts[i].AddComponent<Mesh>(&(uniqueErrts[Random::Int(UNIQUE_COUNT)]));
 
-			for (int j = 0; j < COPY_COUNT; j++)
-			{
-				errts[j + i * COPY_COUNT].CreateFomMesh(errt[i]);
-				errts[j + i * COPY_COUNT].SetScale(Random::Float() + 0.1);
+			if (Random::Float() > 0.5f)
+				Renderer::SetMeshMaterial(m_errt, &whiteMaterial);
+			else
+				Renderer::SetMeshMaterial(m_errt, &blackMaterial);
 
-				float randomAngle = Random::Float() * 3.14159265*2.0;
-				float randomDistance = Random::Float() * 200.0;
-				errts[j + i * COPY_COUNT].SetPosition(glm::vec3(cos(randomAngle) * randomDistance, 0.0, sin(randomAngle) * randomDistance));
-				float randomRotZ = Random::Float() * 3.14159265 * 2.0;
-				errts[j + i * COPY_COUNT].SetRotation(glm::vec3(0.0, randomRotZ, 0.0));
-			}
+			glm::vec2 randCircle = Random::PointInCircle();
+			t_errt.position.x = randCircle.x * 200.0f;
+			t_errt.position.z = randCircle.y * 200.0f;
+
+			float randomRotZ = Random::Float() * glm::pi<float>() * 2.0f;
+			t_errt.rotation = glm::fquat(glm::vec3(0.0f, randomRotZ, 0.0f));
 		}
 	}
 
 	void Game::Terminate()
 	{
-		delete theCamera;
+		delete[] errts;
 	}
 
-	inline void Animate(Entity& entity, float time, float deltaTime)
+	inline void Animate(Transform& transform, float time, float deltaTime)
 	{
-		// Sin[x] * Sin[x * a + b] * Sin[x * c + d]
-
-		/*animation1D += deltaTime * speed * 0.001f;
-		animation1B += deltaTime * speed * 0.000321f;
-		animation2D += deltaTime * speed * 0.001232f;
-		animation2B += deltaTime * speed * 0.000223f;*/
 		animation1D = time * speed * 10;
 		animation1B = time * speed * 3.21;
 		animation2D = time * speed * 12.32;
 		animation2B = time * speed * 2.23;
 
-		float x = entity.GetPosition().z * zFrequency;
-		float x2 = entity.GetPosition().x * xFrequency;
-		entity.SetPosition(glm::vec3(entity.GetPosition().x,
-									zWaveStrength * sin(CONTANTEA + x) * sin(x * animation1A + animation1B) * sin(x * animation1C + animation1B)*
-									xWaveStrength * sin(CONTANTEB + x2) * sin(x2 * animation2A + animation2B) * sin(x2 * animation2C + animation2B),
-									entity.GetPosition().z));
+		float x = transform.position.z * zFrequency;
+		float x2 = transform.position.x * xFrequency;
+		transform.position.y =
+			zWaveStrength * sin(CONTANTEA + x) * sin(x * animation1A + animation1B) * sin(x * animation1C + animation1B) *
+			xWaveStrength * sin(CONTANTEB + x2) * sin(x2 * animation2A + animation2B) * sin(x2 * animation2C + animation2B);
 	}
 
 	void Game::OnUpdate(float deltaTime, float time)
 	{
-		if (Input::KeyDown(Input::KeyCode::M))
-			glPolygonMode(GL_FRONT, GL_POINT);
-		else if (Input::KeyDown(Input::KeyCode::N))
-			glPolygonMode(GL_FRONT, GL_LINE);
-		else if (Input::KeyDown(Input::KeyCode::B))
-			glPolygonMode(GL_FRONT, GL_FILL);
-		else if (Input::KeyDown(Input::KeyCode::Right))
+		if (Input::KeyDown(Input::KeyCode::Right))
 			selectedVariable++;
 		else if (Input::KeyDown(Input::KeyCode::Left))
 			selectedVariable--;
@@ -185,22 +174,12 @@ namespace sf
 		xWaveStrength = glm::mix(xWaveStrength, tStrength, deltaTime * LERP_TIME);
 		zWaveStrength = glm::mix(zWaveStrength, tStrength, deltaTime * LERP_TIME);
 		speed = glm::mix(speed, tSpeed, deltaTime * LERP_TIME);
-
-		glm::vec3 cameraPos(cos(cameraRot) * cameraRadius, posY, sin(cameraRot) * cameraRadius);
-		//cameraRadius += deltaTime*10.0;
-		//posY += deltaTime;
 		
-		theCamera->SetPosition(cameraPos);
-		theCamera->LookAt(glm::vec3(0.0,0.0,0.0), glm::vec3(0.0,1.0,0.0));
+		Transform& t_camera = e_camera.GetComponent<Transform>();
+		t_camera.position = glm::vec3(cos(cameraRot) * cameraRadius, posY, sin(cameraRot) * cameraRadius);
+		t_camera.LookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 
-		for (int i = 0; i < UNIQUE_COUNT; i++)
-		{
-			Animate(errt[i], time, deltaTime);
-
-			for (int j = 0; j < COPY_COUNT; j++)
-			{
-				Animate(errts[j + i * COPY_COUNT], time, deltaTime);
-			}
-		}
+		for (int i = 0; i < ERRT_COUNT; i++)
+			Animate(errts[i].GetComponent<Transform>(), time, deltaTime);
 	}
 }

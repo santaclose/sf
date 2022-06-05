@@ -1,6 +1,6 @@
 #pragma once
 
-namespace sf::Models
+namespace errt
 {
 	extern int seed;
 	void GenerateModel();

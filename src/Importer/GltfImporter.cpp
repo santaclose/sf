@@ -163,17 +163,17 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& meshData)
 	}
 }
 
-void sf::GltfImporter::GetTexture(int id, int textureIndex, unsigned int& glId, int& width, int& height)
+void sf::GltfImporter::GenerateTexture(int id, int textureIndex, Texture& texture)
 {
 	assert(id > -1 && id < models.size());
 	assert(models[id] != nullptr);
 	assert(textureIndex > -1 && textureIndex < models[id]->textures.size());
 
-	glGenTextures(1, &glId);
+	glGenTextures(1, &texture.gl_id);
 
 	tinygltf::Image& image = models[id]->images[models[id]->textures[textureIndex].source];
 
-	glBindTexture(GL_TEXTURE_2D, glId);
+	glBindTexture(GL_TEXTURE_2D, texture.gl_id);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
@@ -182,6 +182,8 @@ void sf::GltfImporter::GetTexture(int id, int textureIndex, unsigned int& glId, 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
 	GLenum format = GL_RGBA;
+
+	texture.channelCount = image.component;
 
 	if (image.component == 1) {
 		format = GL_RED;
@@ -198,6 +200,7 @@ void sf::GltfImporter::GetTexture(int id, int textureIndex, unsigned int& glId, 
 
 	GLenum type = GL_UNSIGNED_BYTE;
 	if (image.bits == 8) {
+		texture.storageType = Texture::StorageType::UnsignedByte;
 		// ok
 	}
 	else if (image.bits == 16) {
@@ -206,8 +209,11 @@ void sf::GltfImporter::GetTexture(int id, int textureIndex, unsigned int& glId, 
 	else {
 		// ???
 	}
-	width = image.width;
-	height = image.height;
+	texture.width = image.width;
+	texture.height = image.height;
+	texture.standardImgBuffer = &image.image.at(0);
+	texture.needToFreeBuffer = false;
+	texture.wrapMode = Texture::WrapMode::Repeat;
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0, format, type, &image.image.at(0));
 

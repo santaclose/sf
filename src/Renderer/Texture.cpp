@@ -81,25 +81,25 @@ void sf::Texture::GetGlEnums(int channelCount, StorageType storageType, ContentT
 
 void sf::Texture::Create(unsigned int width, unsigned int height, int channelCount,	ContentType contentType, StorageType storageType, WrapMode wrapMode, bool mipmap)
 {
-	m_width = width;
-	m_height = height;
-	m_contentType = contentType;
-	m_storageType = storageType;
-	m_wrapMode = wrapMode;
+	this->width = width;
+	this->height = height;
+	this->contentType = contentType;
+	this->storageType = storageType;
+	this->wrapMode = wrapMode;
 
 	int internalFormat;
 	GLenum type, format;
-	GetGlEnums(channelCount, m_storageType, m_contentType, type, internalFormat, format);
+	GetGlEnums(channelCount, this->storageType, this->contentType, type, internalFormat, format);
 
-	glGenTextures(1, &m_gl_id);
-	glBindTexture(GL_TEXTURE_2D, m_gl_id);
+	glGenTextures(1, &this->gl_id);
+	glBindTexture(GL_TEXTURE_2D, this->gl_id);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, m_width, m_height, 0, format, type, nullptr);
+	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, this->width, this->height, 0, format, type, nullptr);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mipmap ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, m_wrapMode == WrapMode::Repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, m_wrapMode == WrapMode::Repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, this->wrapMode == WrapMode::Repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, this->wrapMode == WrapMode::Repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -107,77 +107,113 @@ void sf::Texture::Create(unsigned int width, unsigned int height, int channelCou
 
 void sf::Texture::CreateFromFile(const std::string& path, int channelCount, ContentType contentType, StorageType storageType, WrapMode wrapMode, bool mipmap, bool flipVertically)
 {
-	m_contentType = contentType;
-	m_storageType = storageType;
-	m_wrapMode = wrapMode;
-
-	float* floatImgBuffer = nullptr;
-	unsigned char* standardImgBuffer = nullptr;
+	this->contentType = contentType;
+	this->storageType = storageType;
+	this->wrapMode = wrapMode;
 
 	stbi_set_flip_vertically_on_load(flipVertically);
 
-	bool isFloatTexture = m_storageType == StorageType::Float16 || m_storageType == StorageType::Float32;
+	bool isFloatTexture = this->storageType == StorageType::Float16 || this->storageType == StorageType::Float32;
 	if (isFloatTexture)
 	{
-		floatImgBuffer = stbi_loadf(path.c_str(), &m_width, &m_height, &m_channelCount, channelCount);
+		floatImgBuffer = stbi_loadf(path.c_str(), &this->width, &this->height, &this->channelCount, channelCount);
 		if (floatImgBuffer == nullptr)
 			std::cout << "[Texture] Could not load image " << path << std::endl;
 	}
 	else
 	{
-		standardImgBuffer = stbi_load(path.c_str(), &m_width, &m_height, &m_channelCount, channelCount);
+		standardImgBuffer = stbi_load(path.c_str(), &this->width, &this->height, &this->channelCount, channelCount);
 		if (standardImgBuffer == nullptr)
 			std::cout << "[Texture] Could not load image " << path << std::endl;
 	}
-	m_channelCount = channelCount;
+	this->channelCount = channelCount;
 
-	glGenTextures(1, &m_gl_id);
-	glBindTexture(GL_TEXTURE_2D, m_gl_id);
+	glGenTextures(1, &this->gl_id);
+	glBindTexture(GL_TEXTURE_2D, this->gl_id);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mipmap ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, m_wrapMode == WrapMode::Repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, m_wrapMode == WrapMode::Repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, this->wrapMode == WrapMode::Repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, this->wrapMode == WrapMode::Repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE);
 
 
 	int internalFormat;
 	GLenum type, format;
-	GetGlEnums(m_channelCount, m_storageType, m_contentType, type, internalFormat, format);
+	GetGlEnums(this->channelCount, this->storageType, this->contentType, type, internalFormat, format);
 
 	void* dataPointer = isFloatTexture ? (void*)floatImgBuffer : (void*)standardImgBuffer;
-	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, m_width, m_height, 0, format, type, dataPointer);
+	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, this->width, this->height, 0, format, type, dataPointer);
 
 	if (mipmap)
 		glGenerateMipmap(GL_TEXTURE_2D);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
-
-	if (standardImgBuffer)
-		stbi_image_free(standardImgBuffer);
-	if (floatImgBuffer)
-		stbi_image_free(floatImgBuffer);
 }
 
-void sf::Texture::CreateFromGltf(unsigned int gltfID, unsigned int textureIndex)
+void sf::Texture::CreateFromChannel(const Texture& source, int channel, bool mipmap)
 {
-	GltfImporter::GetTexture(gltfID, textureIndex, m_gl_id, m_width, m_height);
+	this->contentType = source.contentType;
+	this->height = source.height;
+	this->width = source.width;
+	this->channelCount = 1;
+	this->storageType = source.storageType;
+	this->wrapMode = source.wrapMode;
+
+	if (this->storageType == StorageType::UnsignedByte)
+	{
+		this->standardImgBuffer = new unsigned char[this->width * this->height];
+		for (int i = 0; i < this->width * this->height; i++)
+			this->standardImgBuffer[i] = source.standardImgBuffer[i * source.channelCount + channel];
+	}
+	else
+	{
+		this->floatImgBuffer = new float[this->width * this->height];
+		for (int i = 0; i < this->width * this->height; i++)
+			this->floatImgBuffer[i] = source.floatImgBuffer[i * source.channelCount + channel];
+	}
+
+	glGenTextures(1, &this->gl_id);
+	glBindTexture(GL_TEXTURE_2D, this->gl_id);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mipmap ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, this->wrapMode == WrapMode::Repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, this->wrapMode == WrapMode::Repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+
+
+	int internalFormat;
+	GLenum type, format;
+	GetGlEnums(this->channelCount, this->storageType, this->contentType, type, internalFormat, format);
+
+	void* dataPointer = this->storageType != StorageType::UnsignedByte ? (void*)floatImgBuffer : (void*)standardImgBuffer;
+	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, this->width, this->height, 0, format, type, dataPointer);
+
+	if (mipmap)
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void sf::Texture::ComputeMipmap()
 {
-	glBindTexture(GL_TEXTURE_2D, m_gl_id);
+	glBindTexture(GL_TEXTURE_2D, this->gl_id);
 	glGenerateMipmap(GL_TEXTURE_2D);
 }
 
 sf::Texture::~Texture()
 {
-	glDeleteTextures(1, &m_gl_id);
+	glDeleteTextures(1, &this->gl_id);
+
+	if (standardImgBuffer != nullptr && needToFreeBuffer)
+		stbi_image_free(standardImgBuffer);
+	if (floatImgBuffer != nullptr && needToFreeBuffer)
+		stbi_image_free(floatImgBuffer);
 }
 
 void sf::Texture::Bind(unsigned int slot) const
 {
 	glActiveTexture(GL_TEXTURE0 + slot);
-	glBindTexture(GL_TEXTURE_2D, m_gl_id);
+	glBindTexture(GL_TEXTURE_2D, this->gl_id);
 }
 
 void sf::Texture::Unbind() const

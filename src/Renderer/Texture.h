@@ -18,16 +18,17 @@ namespace sf {
 			Repeat, ClampToEdge
 		};
 
-	private:
-		unsigned int m_gl_id;
-		int m_width, m_height, m_channelCount;
-		ContentType m_contentType;
-		StorageType m_storageType;
-		WrapMode m_wrapMode;
+		unsigned int gl_id;
+		int width, height, channelCount;
+		ContentType contentType;
+		StorageType storageType;
+		WrapMode wrapMode;
+		float* floatImgBuffer = nullptr;
+		unsigned char* standardImgBuffer = nullptr;
+		bool needToFreeBuffer = true;
 
 		void GetGlEnums(int channelCount, StorageType storageType, ContentType contentType, GLenum& type, int& internalFormat, GLenum& format);
 
-	public:
 		void Create(unsigned int width, unsigned int height,
 			int channelCount = 3,
 			ContentType contentType = ContentType::NonColor,
@@ -43,15 +44,12 @@ namespace sf {
 			bool mipmap = true,
 			bool flipVertically = true);
 
-		void CreateFromGltf(unsigned int gltfID, unsigned int textureIndex);
+		void CreateFromChannel(const Texture& source, int channel = 0, bool mipmap = true);
+
 		void ComputeMipmap();
 		~Texture();
 
 		void Bind(unsigned int slot = 0) const;
 		void Unbind() const;
-
-		inline unsigned int GlId() const { return m_gl_id; }
-		inline int GetWidth() const { return m_width; }
-		inline int GetHeight() const { return m_height; }
 	};
 }

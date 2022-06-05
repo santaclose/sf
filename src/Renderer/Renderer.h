@@ -15,7 +15,7 @@ namespace sf::Renderer {
 	void ClearBuffers();
 	void ComputeCameraMatrices();
 
-	void SetMeshMaterial(Mesh mesh, Material* material, int piece = 0);
+	void SetMeshMaterial(Mesh mesh, Material* material, int piece = -1);
 
 	void DrawSkybox();
 	void DrawMesh(Mesh& mesh, Transform& transform);

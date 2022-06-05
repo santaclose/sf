@@ -289,8 +289,16 @@ void sf::Renderer::SetMeshMaterial(Mesh mesh, Material* material, int piece)
 	if (meshMaterials.find(mesh.id) == meshMaterials.end())
 		CreateMeshMaterialSlots(mesh.id, mesh.meshData);
 
-	assert(piece < meshMaterials[mesh.id].size());
-	meshMaterials[mesh.id][piece] = material;
+	if (piece < 0) // set for all pieces by default
+	{
+		for (int i = 0; i < meshMaterials[mesh.id].size(); i++)
+			meshMaterials[mesh.id][i] = material;
+	}
+	else
+	{
+		assert(piece < meshMaterials[mesh.id].size());
+		meshMaterials[mesh.id][piece] = material;
+	}
 }
 
 void sf::Renderer::DrawSkybox()

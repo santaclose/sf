@@ -1,5 +1,7 @@
 #include "MeshProcessor.h"
 
+#include <ml.h>
+
 #include <iostream>
 #include <fstream>
 
@@ -72,4 +74,12 @@ void sf::MeshProcessor::BakeAoToVertices(MeshData& mesh)
 	aobaker::config conf;
 	aobaker::BakeAoToVertices(&mesh.vertexVector[0].position.x, &mesh.vertexVector[0].extraData.x, mesh.vertexVector.size(), sizeof(Vertex), sizeof(Vertex),
 		&mesh.indexVector[0], mesh.indexVector.size(), conf);
+}
+
+void sf::MeshProcessor::GenerateMeshWithFunction(MeshData& mesh, void(*functionPointer)())
+{
+	mesh.pieces.clear();
+	mesh.pieces.push_back(0);
+	sfmg::ml::Initialize(true, &mesh.vertexVector, &mesh.indexVector);
+	functionPointer();
 }

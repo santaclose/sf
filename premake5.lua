@@ -44,7 +44,8 @@ project "sf"
 		"vendor/glm/glm/**.hpp",
 		"vendor/glm/glm/**.inl",
 		"vendor/sfmg/*.cpp",
-		"vendor/aobaker/*.cpp"
+		"vendor/aobaker/*.cpp",
+		"vendor/nanosvg/*.cpp"
 	}
 
 	defines
@@ -63,7 +64,8 @@ project "sf"
 		"vendor/tinygltf",
 		"vendor/gli/gli",
 		"vendor/aobaker",
-		"vendor/entt"
+		"vendor/entt",
+		"vendor/nanosvg"
 	}
 
 	links 

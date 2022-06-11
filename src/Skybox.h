@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Renderer/Shader.h>
-#include <Renderer/Cubemap.h>
+#include <Renderer/GlShader.h>
+#include <Renderer/GlCubemap.h>
 
 namespace sf {
 
@@ -11,11 +11,11 @@ namespace sf {
 		static unsigned int gl_VAO;
 		static unsigned int gl_VBO;
 		static float cubeVertices[];
-		static Shader shader;
-		static Cubemap* cubemap;
+		static GlShader shader;
+		static GlCubemap* cubemap;
 
 	public:
-		static void SetCubemap(Cubemap* cubemap);
+		static void SetCubemap(GlCubemap* cubemap);
 		static void SetUseExposure(bool value);
 		static void SetExposure(float value);
 		static void Draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix);

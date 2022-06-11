@@ -8,12 +8,12 @@
 #include <iostream>
 
 #include <Config.h>
-#include <Renderer/Shader.h>
+#include <Renderer/GlShader.h>
 
 namespace sf::IblHelper {
 
     unsigned int envToCubeFBO, envToCubeRBO, irradianceFBO, irradianceRBO, prefilterFBO, prefilterRBO, brdfLUTFBO, brdfLUTRBO;
-    Shader equirectangularToCubemapShader, irradianceShader, prefilterShader;
+    GlShader equirectangularToCubemapShader, irradianceShader, prefilterShader;
 
     glm::mat4 envMapProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
     glm::mat4 envMapView[] =
@@ -99,13 +99,13 @@ namespace sf::IblHelper {
     }
 }
 
-void sf::IblHelper::HdrToCubemaps(const Texture& hdrTexture, Cubemap& environmentCubemap, Cubemap& irradianceCubemap, Cubemap& prefilterCubemap, Texture& lookupTexture)
+void sf::IblHelper::HdrToCubemaps(const GlTexture& hdrTexture, GlCubemap& environmentCubemap, GlCubemap& irradianceCubemap, GlCubemap& prefilterCubemap, GlTexture& lookupTexture)
 {
-    environmentCubemap.Create(512, 3, Cubemap::StorageType::Float16, true);
-    irradianceCubemap.Create(32, 3, Cubemap::StorageType::Float16, false);
-    prefilterCubemap.Create(128, 3, Cubemap::StorageType::Float16, true);
+    environmentCubemap.Create(512, 3, GlCubemap::StorageType::Float16, true);
+    irradianceCubemap.Create(32, 3, GlCubemap::StorageType::Float16, false);
+    prefilterCubemap.Create(128, 3, GlCubemap::StorageType::Float16, true);
     prefilterCubemap.ComputeMipmap();
-    lookupTexture.CreateFromFile("assets/LUT.hdr", 4, Texture::NonColor, Texture::Float16, Texture::ClampToEdge, false, true);
+    lookupTexture.CreateFromFile("assets/LUT.hdr", 4, GlTexture::Float16, GlTexture::ClampToEdge, false, true);
 
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);

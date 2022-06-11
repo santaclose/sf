@@ -9,10 +9,6 @@
 #include <Defaults.h>
 
 #include <Renderer/Renderer.h>
-#include <Renderer/Texture.h>
-#include <Renderer/Cubemap.h>
-#include <Renderer/Material.h>
-#include <Renderer/IblHelper.h>
 
 #include <Importer/GltfImporter.h>
 #include <Importer/ObjImporter.h>

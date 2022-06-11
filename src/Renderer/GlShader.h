@@ -7,17 +7,17 @@
 namespace sf {
 
 	class ComputeShader;
-	class Material;
+	class GlMaterial;
 
 	struct ShaderUniformData {
 		int location = -1;
 		int textureIndex = -1;
 	};
 
-	class Shader
+	class GlShader
 	{
 		friend ComputeShader;
-		friend Material;
+		friend GlMaterial;
 	private:
 		std::string m_vertFileName;
 		std::string m_fragFileName;
@@ -31,9 +31,8 @@ namespace sf {
 		void AssignTextureNumberToUniform(const std::string& name);
 		int GetTextureIndex(const std::string& name);
 	public:
-		//Shader(const std::string& vertexShaderPath, const std::string& fragmentShaderPath);
-		Shader();
-		~Shader();
+		GlShader();
+		~GlShader();
 		void CreateFromFiles(const std::string& vertexShaderPath, const std::string& fragmentShaderPath);
 		void Bind() const;
 		void SetUniformMatrix4fv(const std::string& name, const float* pointer, unsigned int number = 1);

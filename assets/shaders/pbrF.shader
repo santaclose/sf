@@ -114,9 +114,10 @@ vec3 computeLightContribution(vec3 L, vec3 radiance)
 
 void main()
 {
-    albedo = useAlbedoTexture ? texture(albedoTexture, texCoord).rgb : vec3(1.0);
+    albedo = useAlbedoTexture ? pow(texture(albedoTexture, texCoord).rgb, vec3(2.2)) : vec3(1.0);
+    emissive = useEmissiveTexture ? pow(texture(emissiveTexture, texCoord).rgb, vec3(2.2)) : vec3(0.0);
+
     normalPixel = useNormalTexture ? texture(normalTexture, texCoord).rgb : vec3(0.5, 0.5, 1.0);
-    emissive = useEmissiveTexture ? texture(emissiveTexture, texCoord).rgb : vec3(0.0);
     metalness = useMetalnessTexture ? texture(metalnessTexture, texCoord).r : 0.0;
     roughness = useRoughnessTexture ? texture(roughnessTexture, texCoord).r : 0.4;
     ao = useAoTexture ? texture(aoTexture, texCoord).r : 1.0;

@@ -163,7 +163,7 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& meshData)
 	}
 }
 
-void sf::GltfImporter::GenerateTexture(int id, int textureIndex, Texture& texture)
+void sf::GltfImporter::GenerateTexture(int id, int textureIndex, GlTexture& texture)
 {
 	assert(id > -1 && id < models.size());
 	assert(models[id] != nullptr);
@@ -200,7 +200,7 @@ void sf::GltfImporter::GenerateTexture(int id, int textureIndex, Texture& textur
 
 	GLenum type = GL_UNSIGNED_BYTE;
 	if (image.bits == 8) {
-		texture.storageType = Texture::StorageType::UnsignedByte;
+		texture.storageType = GlTexture::StorageType::UnsignedByte;
 		// ok
 	}
 	else if (image.bits == 16) {
@@ -213,7 +213,7 @@ void sf::GltfImporter::GenerateTexture(int id, int textureIndex, Texture& textur
 	texture.height = image.height;
 	texture.standardImgBuffer = &image.image.at(0);
 	texture.needToFreeBuffer = false;
-	texture.wrapMode = Texture::WrapMode::Repeat;
+	texture.wrapMode = GlTexture::WrapMode::Repeat;
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0, format, type, &image.image.at(0));
 

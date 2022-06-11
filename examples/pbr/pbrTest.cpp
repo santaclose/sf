@@ -9,9 +9,9 @@
 #include <Input.h>
 
 #include <Renderer/Renderer.h>
-#include <Renderer/Texture.h>
-#include <Renderer/Cubemap.h>
-#include <Renderer/Material.h>
+#include <Renderer/GlTexture.h>
+#include <Renderer/GlCubemap.h>
+#include <Renderer/GlMaterial.h>
 #include <Renderer/IblHelper.h>
 
 #include <Importer/GltfImporter.h>
@@ -40,30 +40,30 @@ namespace sf
 	float cameraDistance = 3.0;
 	bool rotationEnabled = false;
 
-	Shader pbrShader;
+	GlShader pbrShader;
 
-	Material sciFiHelmetMaterial;
-	Texture sciFiHelmetAlbedo;
-	Texture sciFiHelmetNormalmap;
-	Texture sciFiHelmetMetalRoughness;
-	Texture sciFiHelmetRoughness;
-	Texture sciFiHelmetMetallic;
-	Texture sciFiHelmetAO;
+	GlMaterial sciFiHelmetMaterial;
+	GlTexture sciFiHelmetAlbedo;
+	GlTexture sciFiHelmetNormalmap;
+	GlTexture sciFiHelmetMetalRoughness;
+	GlTexture sciFiHelmetRoughness;
+	GlTexture sciFiHelmetMetallic;
+	GlTexture sciFiHelmetAO;
 
-	Material damagedHelmetMaterial;
-	Texture damagedHelmetAlbedo;
-	Texture damagedHelmetNormalmap;
-	Texture damagedHelmetMetalRoughness;
-	Texture damagedHelmetRoughness;
-	Texture damagedHelmetMetallic;
-	Texture damagedHelmetEmissive;
-	Texture damagedHelmetAO;
+	GlMaterial damagedHelmetMaterial;
+	GlTexture damagedHelmetAlbedo;
+	GlTexture damagedHelmetNormalmap;
+	GlTexture damagedHelmetMetalRoughness;
+	GlTexture damagedHelmetRoughness;
+	GlTexture damagedHelmetMetallic;
+	GlTexture damagedHelmetEmissive;
+	GlTexture damagedHelmetAO;
 
-	Texture envTexture;
-	Cubemap envCubemap;
-	Cubemap irradianceCubemap;
-	Cubemap prefilterCubemap;
-	Texture lookupTexture;
+	GlTexture envTexture;
+	GlCubemap envCubemap;
+	GlCubemap irradianceCubemap;
+	GlCubemap prefilterCubemap;
+	GlTexture lookupTexture;
 
 	MeshData* meshes;
 
@@ -111,24 +111,26 @@ namespace sf
 		damagedHelmetMaterial.CreateFromShader(&pbrShader);
 		sciFiHelmetMaterial.CreateFromShader(&pbrShader);
 
-		envTexture.CreateFromFile("examples/pbr/brown_photostudio_02_4k.hdr", 3, Texture::Color, Texture::Float16, Texture::ClampToEdge);
+		envTexture.CreateFromFile("examples/pbr/brown_photostudio_02_4k.hdr", 3, GlTexture::Float16, GlTexture::ClampToEdge);
 		IblHelper::HdrToCubemaps(envTexture, envCubemap, irradianceCubemap, prefilterCubemap, lookupTexture);
 
-		damagedHelmetMaterial.SetUniform("irradianceMap", &irradianceCubemap, Material::UniformType::_Cubemap);
-		damagedHelmetMaterial.SetUniform("prefilterMap", &prefilterCubemap, Material::UniformType::_Cubemap);
-		damagedHelmetMaterial.SetUniform("brdfLUT", &lookupTexture, Material::UniformType::_Texture);
-		sciFiHelmetMaterial.SetUniform("irradianceMap", &irradianceCubemap, Material::UniformType::_Cubemap);
-		sciFiHelmetMaterial.SetUniform("prefilterMap", &prefilterCubemap, Material::UniformType::_Cubemap);
-		sciFiHelmetMaterial.SetUniform("brdfLUT", &lookupTexture, Material::UniformType::_Texture);
+		damagedHelmetMaterial.SetUniform("irradianceMap", &irradianceCubemap, GlMaterial::UniformType::_Cubemap);
+		damagedHelmetMaterial.SetUniform("prefilterMap", &prefilterCubemap, GlMaterial::UniformType::_Cubemap);
+		damagedHelmetMaterial.SetUniform("brdfLUT", &lookupTexture, GlMaterial::UniformType::_Texture);
+		sciFiHelmetMaterial.SetUniform("irradianceMap", &irradianceCubemap, GlMaterial::UniformType::_Cubemap);
+		sciFiHelmetMaterial.SetUniform("prefilterMap", &prefilterCubemap, GlMaterial::UniformType::_Cubemap);
+		sciFiHelmetMaterial.SetUniform("brdfLUT", &lookupTexture, GlMaterial::UniformType::_Texture);
 
 		Skybox::SetCubemap(&envCubemap);
+		Renderer::drawSkybox = true;
 
 		int gltfid;
 
 		meshes = new MeshData[2];
 		{
 			galleryObjects.push_back(scene.CreateEntity());
-			galleryObjects.back().AddComponent<Transform>();
+			Transform& e_t = galleryObjects.back().AddComponent<Transform>();
+			e_t.rotation = glm::fquat(glm::vec3(glm::radians(90.0f), 0.0f, 0.0f));
 
 			gltfid = GltfImporter::Load("examples/pbr/DamagedHelmet.glb");
 			GltfImporter::GenerateMeshData(gltfid, meshes[0]);
@@ -140,18 +142,18 @@ namespace sf
 			damagedHelmetRoughness.CreateFromChannel(damagedHelmetMetalRoughness, 1);
 			damagedHelmetMetallic.CreateFromChannel(damagedHelmetMetalRoughness, 2);
 
-			damagedHelmetMaterial.SetUniform("useAlbedoTexture", (void*)true, Material::UniformType::_Boolean);
-			damagedHelmetMaterial.SetUniform("albedoTexture", &damagedHelmetAlbedo, Material::UniformType::_Texture);
-			damagedHelmetMaterial.SetUniform("useRoughnessTexture", (void*)true, Material::UniformType::_Boolean);
-			damagedHelmetMaterial.SetUniform("roughnessTexture", &damagedHelmetRoughness, Material::UniformType::_Texture);
-			damagedHelmetMaterial.SetUniform("useMetalnessTexture", (void*)true, Material::UniformType::_Boolean);
-			damagedHelmetMaterial.SetUniform("metalnessTexture", &damagedHelmetMetallic, Material::UniformType::_Texture);
-			damagedHelmetMaterial.SetUniform("useNormalTexture", (void*)true, Material::UniformType::_Boolean);
-			damagedHelmetMaterial.SetUniform("normalTexture", &damagedHelmetNormalmap, Material::UniformType::_Texture);
-			damagedHelmetMaterial.SetUniform("useEmissiveTexture", (void*)true, Material::UniformType::_Boolean);
-			damagedHelmetMaterial.SetUniform("emissiveTexture", &damagedHelmetEmissive, Material::UniformType::_Texture);
-			damagedHelmetMaterial.SetUniform("useAoTexture", (void*)true, Material::UniformType::_Boolean);
-			damagedHelmetMaterial.SetUniform("aoTexture", &damagedHelmetAO, Material::UniformType::_Texture);
+			damagedHelmetMaterial.SetUniform("useAlbedoTexture", (void*)true, GlMaterial::UniformType::_Boolean);
+			damagedHelmetMaterial.SetUniform("albedoTexture", &damagedHelmetAlbedo, GlMaterial::UniformType::_Texture);
+			damagedHelmetMaterial.SetUniform("useRoughnessTexture", (void*)true, GlMaterial::UniformType::_Boolean);
+			damagedHelmetMaterial.SetUniform("roughnessTexture", &damagedHelmetRoughness, GlMaterial::UniformType::_Texture);
+			damagedHelmetMaterial.SetUniform("useMetalnessTexture", (void*)true, GlMaterial::UniformType::_Boolean);
+			damagedHelmetMaterial.SetUniform("metalnessTexture", &damagedHelmetMetallic, GlMaterial::UniformType::_Texture);
+			damagedHelmetMaterial.SetUniform("useNormalTexture", (void*)true, GlMaterial::UniformType::_Boolean);
+			damagedHelmetMaterial.SetUniform("normalTexture", &damagedHelmetNormalmap, GlMaterial::UniformType::_Texture);
+			damagedHelmetMaterial.SetUniform("useEmissiveTexture", (void*)true, GlMaterial::UniformType::_Boolean);
+			damagedHelmetMaterial.SetUniform("emissiveTexture", &damagedHelmetEmissive, GlMaterial::UniformType::_Texture);
+			damagedHelmetMaterial.SetUniform("useAoTexture", (void*)true, GlMaterial::UniformType::_Boolean);
+			damagedHelmetMaterial.SetUniform("aoTexture", &damagedHelmetAO, GlMaterial::UniformType::_Texture);
 
 			MeshProcessor::ComputeTangentSpace(meshes[0]);
 			Mesh& objectMesh = galleryObjects.back().AddComponent<Mesh>(&(meshes[0]));
@@ -165,24 +167,24 @@ namespace sf
 			gltfid = GltfImporter::Load("examples/pbr/SciFiHelmet.gltf");
 			GltfImporter::GenerateMeshData(gltfid, meshes[1]);
 
-			sciFiHelmetAlbedo.CreateFromFile("examples/pbr/SciFiHelmet_BaseColor.png", 3, Texture::Color, Texture::UnsignedByte);
-			sciFiHelmetNormalmap.CreateFromFile("examples/pbr/SciFiHelmet_Normal.png", 3, Texture::NonColor, Texture::UnsignedByte);
-			sciFiHelmetMetalRoughness.CreateFromFile("examples/pbr/SciFiHelmet_MetallicRoughness.png", 3, Texture::NonColor, Texture::UnsignedByte);
+			sciFiHelmetAlbedo.CreateFromFile("examples/pbr/SciFiHelmet_BaseColor.png", 3, GlTexture::UnsignedByte);
+			sciFiHelmetNormalmap.CreateFromFile("examples/pbr/SciFiHelmet_Normal.png", 3, GlTexture::UnsignedByte);
+			sciFiHelmetMetalRoughness.CreateFromFile("examples/pbr/SciFiHelmet_MetallicRoughness.png", 3, GlTexture::UnsignedByte);
 			sciFiHelmetRoughness.CreateFromChannel(sciFiHelmetMetalRoughness, 1);
 			sciFiHelmetMetallic.CreateFromChannel(sciFiHelmetMetalRoughness, 2);
-			sciFiHelmetAO.CreateFromFile("examples/pbr/SciFiHelmet_AmbientOcclusion.png", 3, Texture::NonColor, Texture::UnsignedByte);
+			sciFiHelmetAO.CreateFromFile("examples/pbr/SciFiHelmet_AmbientOcclusion.png", 3, GlTexture::UnsignedByte);
 
-			sciFiHelmetMaterial.SetUniform("useAlbedoTexture", (void*)true, Material::UniformType::_Boolean);
-			sciFiHelmetMaterial.SetUniform("albedoTexture", &sciFiHelmetAlbedo, Material::UniformType::_Texture);
-			sciFiHelmetMaterial.SetUniform("useRoughnessTexture", (void*)true, Material::UniformType::_Boolean);
-			sciFiHelmetMaterial.SetUniform("roughnessTexture", &sciFiHelmetRoughness, Material::UniformType::_Texture);
-			sciFiHelmetMaterial.SetUniform("useMetalnessTexture", (void*)true, Material::UniformType::_Boolean);
-			sciFiHelmetMaterial.SetUniform("metalnessTexture", &sciFiHelmetMetallic, Material::UniformType::_Texture);
-			sciFiHelmetMaterial.SetUniform("useNormalTexture", (void*)true, Material::UniformType::_Boolean);
-			sciFiHelmetMaterial.SetUniform("normalTexture", &sciFiHelmetNormalmap, Material::UniformType::_Texture);
-			sciFiHelmetMaterial.SetUniform("useAoTexture", (void*)true, Material::UniformType::_Boolean);
-			sciFiHelmetMaterial.SetUniform("aoTexture", &sciFiHelmetAO, Material::UniformType::_Texture);
-			sciFiHelmetMaterial.SetUniform("useEmissiveTexture", (void*)false, Material::UniformType::_Boolean);
+			sciFiHelmetMaterial.SetUniform("useAlbedoTexture", (void*)true, GlMaterial::UniformType::_Boolean);
+			sciFiHelmetMaterial.SetUniform("albedoTexture", &sciFiHelmetAlbedo, GlMaterial::UniformType::_Texture);
+			sciFiHelmetMaterial.SetUniform("useRoughnessTexture", (void*)true, GlMaterial::UniformType::_Boolean);
+			sciFiHelmetMaterial.SetUniform("roughnessTexture", &sciFiHelmetRoughness, GlMaterial::UniformType::_Texture);
+			sciFiHelmetMaterial.SetUniform("useMetalnessTexture", (void*)true, GlMaterial::UniformType::_Boolean);
+			sciFiHelmetMaterial.SetUniform("metalnessTexture", &sciFiHelmetMetallic, GlMaterial::UniformType::_Texture);
+			sciFiHelmetMaterial.SetUniform("useNormalTexture", (void*)true, GlMaterial::UniformType::_Boolean);
+			sciFiHelmetMaterial.SetUniform("normalTexture", &sciFiHelmetNormalmap, GlMaterial::UniformType::_Texture);
+			sciFiHelmetMaterial.SetUniform("useAoTexture", (void*)true, GlMaterial::UniformType::_Boolean);
+			sciFiHelmetMaterial.SetUniform("aoTexture", &sciFiHelmetAO, GlMaterial::UniformType::_Texture);
+			sciFiHelmetMaterial.SetUniform("useEmissiveTexture", (void*)false, GlMaterial::UniformType::_Boolean);
 
 			MeshProcessor::ComputeTangentSpace(meshes[1]);
 			Mesh& objectMesh = galleryObjects.back().AddComponent<Mesh>(&(meshes[1]));
@@ -231,7 +233,7 @@ namespace sf
 		if (rotationEnabled)
 		{
 			Transform& objectTransform = galleryObjects[selectedModel].GetComponent<Transform>();
-			objectTransform.rotation = objectTransform.rotation * glm::fquat(glm::vec3(0.0f, 0.07f * deltaTime, 0.0f));
+			objectTransform.rotation = glm::fquat(glm::vec3(0.0f, 0.07f * deltaTime, 0.0f)) * objectTransform.rotation;
 		}
 	}
 	void Game::Terminate()

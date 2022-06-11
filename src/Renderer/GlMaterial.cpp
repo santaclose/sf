@@ -1,17 +1,17 @@
-#include "Material.h"
+#include "GlMaterial.h"
 
 #include <iostream>
 
-#include <Renderer/Texture.h>
-#include <Renderer/Cubemap.h>
+#include <Renderer/GlTexture.h>
+#include <Renderer/GlCubemap.h>
 
-void sf::Material::CreateFromShader(Shader* theShader, bool isDoubleSided)
+void sf::GlMaterial::CreateFromShader(GlShader* theShader, bool isDoubleSided)
 {
 	m_shader = theShader;
 	m_isDoubleSided = isDoubleSided;
 }
 
-void sf::Material::SetUniform(const std::string& name, void* data, UniformType type)
+void sf::GlMaterial::SetUniform(const std::string& name, void* data, UniformType type)
 {
 	m_uniformNames.push_back(name);
 	m_uniformData.push_back(data);
@@ -21,7 +21,7 @@ void sf::Material::SetUniform(const std::string& name, void* data, UniformType t
 		m_shader->AssignTextureNumberToUniform(name);
 }
 
-void sf::Material::Bind()
+void sf::GlMaterial::Bind()
 {
 	if (m_isDoubleSided)
 		glDisable(GL_CULL_FACE);
@@ -45,7 +45,7 @@ void sf::Material::Bind()
 				m_shader->SetUniform1i(m_uniformNames[i], uniformTextureIndex);
 				continue;
 			}
-			Texture* currentTexture = (Texture*)m_uniformData[i];
+			GlTexture* currentTexture = (GlTexture*)m_uniformData[i];
 			currentTexture->Bind(uniformTextureIndex);
 			m_shader->SetUniform1i(m_uniformNames[i], uniformTextureIndex);
 
@@ -62,7 +62,7 @@ void sf::Material::Bind()
 				m_shader->SetUniform1i(m_uniformNames[i], uniformTextureIndex);
 				continue;
 			}
-			Cubemap* currentCubemap = (Cubemap*)m_uniformData[i];
+			GlCubemap* currentCubemap = (GlCubemap*)m_uniformData[i];
 			currentCubemap->Bind(uniformTextureIndex);
 			m_shader->SetUniform1i(m_uniformNames[i], uniformTextureIndex);
 

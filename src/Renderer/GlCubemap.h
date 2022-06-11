@@ -7,7 +7,7 @@
 
 namespace sf {
 
-	class Cubemap
+	class GlCubemap
 	{
 	public:
 		enum StorageType {
@@ -45,7 +45,7 @@ namespace sf {
 
 		//void CreateFomHDR(const Texture& hdrTexture);
 
-		~Cubemap();
+		~GlCubemap();
 
 		void Bind(unsigned int slot = 0) const;
 		void Unbind() const;

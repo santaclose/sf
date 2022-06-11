@@ -49,10 +49,10 @@ float sf::Skybox::cubeVertices[] = {
     -1.0f, -1.0f,  1.0f,
      1.0f, -1.0f,  1.0f
 };
-sf::Shader sf::Skybox::shader;
-sf::Cubemap* sf::Skybox::cubemap;
+sf::GlShader sf::Skybox::shader;
+sf::GlCubemap* sf::Skybox::cubemap;
 
-void sf::Skybox::SetCubemap(Cubemap* cubemap)
+void sf::Skybox::SetCubemap(GlCubemap* cubemap)
 {
     if (!generated)
     {

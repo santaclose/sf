@@ -36,15 +36,15 @@ namespace sf
 
 	float shipSpeed = 5.0;
 
-	Shader aoShader;
-	Shader uvShader;
-	Shader colorShader;
-	Shader noiseShader;
+	GlShader aoShader;
+	GlShader uvShader;
+	GlShader colorShader;
+	GlShader noiseShader;
 
-	Material colorsMaterial;
-	Material noiseMaterial;
-	Material uvMaterial;
-	Material aoMaterial;
+	GlMaterial colorsMaterial;
+	GlMaterial noiseMaterial;
+	GlMaterial uvMaterial;
+	GlMaterial aoMaterial;
 	
 	MeshData shipMesh;
 	Entity* things;

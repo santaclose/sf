@@ -1,10 +1,10 @@
-#include "Shader.h"
+#include "GlShader.h"
 
 #include <iostream>
 #include <string>
 #include <fstream>
 
-unsigned int sf::Shader::CompileShader(unsigned int type, const std::string& source)
+unsigned int sf::GlShader::CompileShader(unsigned int type, const std::string& source)
 {
 	std::string messageType;
 	switch (type)
@@ -43,9 +43,9 @@ unsigned int sf::Shader::CompileShader(unsigned int type, const std::string& sou
 	return id;
 }
 
-sf::Shader::Shader() : m_gl_id(-1) {}
+sf::GlShader::GlShader() : m_gl_id(-1) {}
 
-void sf::Shader::CreateFromFiles(const std::string& vertexShaderPath, const std::string& fragmentShaderPath)
+void sf::GlShader::CreateFromFiles(const std::string& vertexShaderPath, const std::string& fragmentShaderPath)
 {
 	m_vertFileName = vertexShaderPath;
 	m_fragFileName = fragmentShaderPath;
@@ -79,31 +79,31 @@ void sf::Shader::CreateFromFiles(const std::string& vertexShaderPath, const std:
 	glDeleteShader(fs);
 }
 
-sf::Shader::~Shader()
+sf::GlShader::~GlShader()
 {
 	glDeleteProgram(m_gl_id);
 }
 
-void sf::Shader::Bind() const
+void sf::GlShader::Bind() const
 {
 	glUseProgram(m_gl_id);
 	//std::cout << "Shader " << m_gl_id << " bound\n";
 }
 
-int sf::Shader::GetUniformLocation(const std::string& name)
+int sf::GlShader::GetUniformLocation(const std::string& name)
 {
 	if (m_uniformCache.find(name) != m_uniformCache.end() && m_uniformCache[name].location != -1)
 		return m_uniformCache[name].location;
 
 	int location = glGetUniformLocation(m_gl_id, name.c_str());
-	if (location == -1)
-		std::cout << "[Shader] Could not get uniform location for " << name << " in shader " << m_vertFileName << "-" << m_fragFileName << std::endl;
+	//if (location == -1)
+	//	std::cout << "[Shader] Could not get uniform location for " << name << " in shader " << m_vertFileName << "-" << m_fragFileName << std::endl;
 
 	m_uniformCache[name].location = location;
 	return location;
 }
 
-void sf::Shader::AssignTextureNumberToUniform(const std::string& name)
+void sf::GlShader::AssignTextureNumberToUniform(const std::string& name)
 {
 	if (m_uniformCache[name].textureIndex == -1)
 	{
@@ -112,33 +112,33 @@ void sf::Shader::AssignTextureNumberToUniform(const std::string& name)
 	}
 }
 
-int sf::Shader::GetTextureIndex(const std::string& name)
+int sf::GlShader::GetTextureIndex(const std::string& name)
 {
 	return m_uniformCache[name].textureIndex;
 }
 
-void sf::Shader::SetUniformMatrix4fv(const std::string& name, const float* pointer, unsigned int number)
+void sf::GlShader::SetUniformMatrix4fv(const std::string& name, const float* pointer, unsigned int number)
 {
 	glUniformMatrix4fv(GetUniformLocation(name), number, GL_FALSE, pointer);
 }
-void sf::Shader::SetUniform1fv(const std::string& name, const float* pointer, unsigned int number)
+void sf::GlShader::SetUniform1fv(const std::string& name, const float* pointer, unsigned int number)
 {
 	glUniform1fv(GetUniformLocation(name), number, pointer);
 }
-void sf::Shader::SetUniform3fv(const std::string& name, const float* pointer, unsigned int number)
+void sf::GlShader::SetUniform3fv(const std::string& name, const float* pointer, unsigned int number)
 {
 	glUniform3fv(GetUniformLocation(name), number, pointer);
 }
-void sf::Shader::SetUniform4fv(const std::string& name, const float* pointer, unsigned int number)
+void sf::GlShader::SetUniform4fv(const std::string& name, const float* pointer, unsigned int number)
 {
 	glUniform4fv(GetUniformLocation(name), number, pointer);
 }
-void sf::Shader::SetUniform1i(const std::string& name, int value)
+void sf::GlShader::SetUniform1i(const std::string& name, int value)
 {
 	glUniform1i(GetUniformLocation(name), value);
 }
 
-void sf::Shader::SetUniform1f(const std::string& name, float value)
+void sf::GlShader::SetUniform1f(const std::string& name, float value)
 {
 	glUniform1f(GetUniformLocation(name), value);
 }

@@ -5,9 +5,12 @@
 #include <Components/VoxelBox.h>
 #include <Components/Transform.h>
 
+#include <Renderer/GlMaterial.h>
+
 namespace sf::Renderer {
 
 	extern Entity activeCameraEntity;
+	extern bool drawSkybox;
 
 	bool Initialize(void* process);
 	void OnResize();
@@ -15,7 +18,7 @@ namespace sf::Renderer {
 	void ClearBuffers();
 	void ComputeCameraMatrices();
 
-	void SetMeshMaterial(Mesh mesh, Material* material, int piece = -1);
+	void SetMeshMaterial(Mesh mesh, GlMaterial* material, int piece = -1);
 
 	void DrawSkybox();
 	void DrawMesh(Mesh& mesh, Transform& transform);

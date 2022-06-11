@@ -8,7 +8,6 @@
 #include <Input.h>
 #include <MeshProcessor.h>
 
-#include <Renderer/Material.h>
 #include <Renderer/Renderer.h>
 
 #include <Importer/GltfImporter.h>
@@ -37,11 +36,11 @@ namespace sf
 	float cameraDistance = 3.0;
 	bool rotationEnabled = false;
 
-	Shader shader;
-	Material material;
+	GlShader shader;
+	GlMaterial material;
 
-	Shader uvShader;
-	Material uvMaterial;
+	GlShader uvShader;
+	GlMaterial uvMaterial;
 
 	MeshData* sampleMeshes;
 

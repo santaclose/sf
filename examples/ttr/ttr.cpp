@@ -34,15 +34,15 @@ namespace sf
 	Scene scene;
 	Entity e_camera;
 
-	Shader pbrShader;
-	Shader noiseShader;
-	Shader randomColorShader;
-	Shader colorShader;
+	GlShader pbrShader;
+	GlShader noiseShader;
+	GlShader randomColorShader;
+	GlShader colorShader;
 
-	Material noiseMaterial;
-	Material colorMaterial;
-	Material whiteMaterial;
-	Material blackMaterial;
+	GlMaterial noiseMaterial;
+	GlMaterial colorMaterial;
+	GlMaterial whiteMaterial;
+	GlMaterial blackMaterial;
 
 	float animation1A = 0.36, animation2A = 0.36;
 	float animation1B = 0.62, animation2B = 0.62;
@@ -90,8 +90,8 @@ namespace sf
 
 		static glm::vec4 theColor(1.0, 1.0, 1.0, 1.0);
 		static glm::vec4 theColorb(0.0, 0.0, 0.0, 1.0);
-		blackMaterial.SetUniform("theColor", &theColorb, Material::UniformType::_Color);
-		whiteMaterial.SetUniform("theColor", &theColor, Material::UniformType::_Color);
+		blackMaterial.SetUniform("theColor", &theColorb, GlMaterial::UniformType::_Color);
+		whiteMaterial.SetUniform("theColor", &theColor, GlMaterial::UniformType::_Color);
 
 		for (int i = 0; i < UNIQUE_COUNT; i++)
 		{

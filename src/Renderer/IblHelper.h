@@ -1,9 +1,9 @@
 #pragma once
 
-#include <Renderer/Texture.h>
-#include <Renderer/Cubemap.h>
+#include <Renderer/GlTexture.h>
+#include <Renderer/GlCubemap.h>
 
 namespace sf::IblHelper {
 
-	void HdrToCubemaps(const Texture& hdrTexture, Cubemap& environmentCubemap, Cubemap& irradianceCubemap, Cubemap& prefilterCubemap, Texture& lookupTexture);
+	void HdrToCubemaps(const GlTexture& hdrTexture, GlCubemap& environmentCubemap, GlCubemap& irradianceCubemap, GlCubemap& prefilterCubemap, GlTexture& lookupTexture);
 }

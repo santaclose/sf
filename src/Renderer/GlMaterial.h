@@ -3,12 +3,12 @@
 #include <vector>
 #include <string>
 
-#include <Renderer/Shader.h>
-#include <Renderer/Texture.h>
+#include <Renderer/GlShader.h>
+#include <Renderer/GlTexture.h>
 
 namespace sf {
 
-	class Material
+	class GlMaterial
 	{
 	public:
 		enum UniformType {
@@ -18,7 +18,7 @@ namespace sf {
 			_Color
 		};
 
-		Shader* m_shader;
+		GlShader* m_shader;
 	private:
 		std::vector<std::string> m_uniformNames;
 		std::vector<void*> m_uniformData;
@@ -26,7 +26,7 @@ namespace sf {
 		bool m_isDoubleSided;
 
 	public:
-		void CreateFromShader(Shader* theShader, bool isDoubleSided = false);
+		void CreateFromShader(GlShader* theShader, bool isDoubleSided = false);
 		void SetUniform(const std::string& name, void* data, UniformType type);
 		void Bind();
 	};

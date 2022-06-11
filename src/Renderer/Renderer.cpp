@@ -15,12 +15,13 @@
 
 namespace sf::Renderer {
 
-	Shader defaultShader;
-	Material defaultMaterial;
-	Shader voxelBoxShader;
+	GlShader defaultShader;
+	GlMaterial defaultMaterial;
+	GlShader voxelBoxShader;
 
 	float aspectRatio = 1.7777777777;
 	Entity activeCameraEntity;
+	bool drawSkybox = false;
 
 	glm::mat4 cameraView;
 	glm::mat4 cameraProjection;
@@ -40,7 +41,7 @@ namespace sf::Renderer {
 	};
 
 	std::unordered_map<const sf::MeshData*, MeshGpuData> meshGpuData;
-	std::unordered_map<int, std::vector<Material*>> meshMaterials;
+	std::unordered_map<int, std::vector<GlMaterial*>> meshMaterials;
 
 	std::unordered_map<const sf::VoxelBoxData*, VoxelBoxGpuData> voxelBoxGpuData;
 
@@ -250,11 +251,12 @@ void sf::Renderer::ComputeCameraMatrices()
 	const Camera& cameraComponent = activeCameraEntity.GetComponent<Camera>();
 	if (cameraComponent.perspective)
 	{
-		cameraProjection = glm::perspective(
-			cameraComponent.fieldOfView,
-			aspectRatio,
-			cameraComponent.nearClippingPlane,
-			cameraComponent.farClippingPlane);
+		if (aspectRatio == aspectRatio) // only if aspectRatio is not nan, it is nan when fullscreen and not visible
+			cameraProjection = glm::perspective(
+				cameraComponent.fieldOfView,
+				aspectRatio,
+				cameraComponent.nearClippingPlane,
+				cameraComponent.farClippingPlane);
 	}
 	else
 	{
@@ -282,7 +284,7 @@ void sf::Renderer::ComputeCameraMatrices()
 	cameraMatrix = cameraProjection * cameraView;
 }
 
-void sf::Renderer::SetMeshMaterial(Mesh mesh, Material* material, int piece)
+void sf::Renderer::SetMeshMaterial(Mesh mesh, GlMaterial* material, int piece)
 {
 	if (meshGpuData.find(mesh.meshData) == meshGpuData.end()) // create mesh data if not there
 		CreateMeshGpuData(mesh.meshData);
@@ -303,7 +305,8 @@ void sf::Renderer::SetMeshMaterial(Mesh mesh, Material* material, int piece)
 
 void sf::Renderer::DrawSkybox()
 {
-	Skybox::Draw(cameraView, cameraProjection);
+	if (drawSkybox)
+		Skybox::Draw(cameraView, cameraProjection);
 }
 
 void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
@@ -321,7 +324,7 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 	Transform& cameraTransform = activeCameraEntity.GetComponent<Transform>();
 	for (unsigned int i = 0; i < mesh.meshData->pieces.size(); i++)
 	{
-		Material* materialToUse = meshMaterials[mesh.id][i];
+		GlMaterial* materialToUse = meshMaterials[mesh.id][i];
 
 		materialToUse->Bind();
 
@@ -352,7 +355,7 @@ void sf::Renderer::DrawVoxelBox(VoxelBox& voxelBox, Transform& transform)
 	// draw instanced box
 	Transform& cameraTransform = activeCameraEntity.GetComponent<Transform>();
 
-	Shader* shaderToUse = &voxelBoxShader;
+	GlShader* shaderToUse = &voxelBoxShader;
 	shaderToUse->Bind();
 
 	shaderToUse->SetUniformMatrix4fv("cameraMatrix", &(cameraMatrix[0][0]));

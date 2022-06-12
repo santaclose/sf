@@ -1,6 +1,5 @@
-#version 330 core
+#version 430 core
 
-//in vec3 normal;
 in vec2 texCoord;
 in mat3 TBN;
 out vec4 color;

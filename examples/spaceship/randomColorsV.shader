@@ -1,4 +1,4 @@
-#version 330 core
+#version 430 core
 
 layout(location = 0) in vec4 aPosition;
 layout(location = 1) in vec4 aNormal;
@@ -9,8 +9,12 @@ out vec3 normal;
 out vec4 fragColor;
 out vec2 textureCoord;
 
-uniform mat4 cameraMatrix;
-uniform mat4 modelMatrix;
+layout(std430, binding = 0) buffer SharedGpuData
+{
+	mat4 modelMatrix;
+	mat4 cameraMatrix;
+	vec3 cameraPosition;
+};
 
 float random(vec2 st) {
 	return fract(sin(dot(st.xy,

@@ -1,9 +1,7 @@
-#version 330 core
+#version 430 core
 
 in vec2 screenPos;
 out vec4 color;
-
-uniform vec3 camPos;
 
 float random(vec2 st) {
 	return fract(sin(dot(st.xy,

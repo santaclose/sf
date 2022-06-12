@@ -1,4 +1,4 @@
-#version 330 core
+#version 430 core
 
 layout(location = 0) in vec3 aPosition;
 layout(location = 1) in vec3 aNormal;
@@ -9,8 +9,12 @@ layout(location = 5) in vec2 aExtraData;
 
 out vec2 screenPos;
 
-uniform mat4 cameraMatrix;
-uniform mat4 modelMatrix;
+layout(std430, binding = 0) buffer SharedGpuData
+{
+	mat4 modelMatrix;
+	mat4 cameraMatrix;
+	vec3 cameraPosition;
+};
 
 void main()
 {

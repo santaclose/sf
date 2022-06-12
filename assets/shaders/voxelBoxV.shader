@@ -7,15 +7,19 @@ layout(location = 3) in vec3 aBitangent;
 layout(location = 4) in vec2 aTextureCoord;
 layout(location = 5) in vec2 aExtraData;
 
-layout (std430, binding = 0) buffer VoxelMatricesBuffer
+layout(std430, binding = 0) buffer SharedGpuData
+{
+	mat4 modelMatrix;
+	mat4 cameraMatrix;
+	vec3 cameraPosition;
+};
+
+layout (std430, binding = 1) buffer VoxelMatricesBuffer
 {
   mat4 voxelMatrices[];
 };
 
 out vec2 texCoord;
-
-uniform mat4 cameraMatrix;
-uniform mat4 modelMatrix;
 
 void main()
 {

@@ -25,7 +25,6 @@ namespace sf::Renderer {
 
 	glm::mat4 cameraView;
 	glm::mat4 cameraProjection;
-	glm::mat4 cameraMatrix;
 
 	struct MeshGpuData {
 
@@ -39,6 +38,14 @@ namespace sf::Renderer {
 		int numberOfCubes;
 		std::vector<glm::mat4> cubeModelMatrices;
 	};
+
+	struct SharedGpuData {
+		glm::mat4 modelMatrix;
+		glm::mat4 cameraMatrix;
+		glm::vec3 cameraPosition;
+	};
+	unsigned int sharedGpuData_gl_ssbo;
+	SharedGpuData sharedGpuData;
 
 	std::unordered_map<const sf::MeshData*, MeshGpuData> meshGpuData;
 	std::unordered_map<int, std::vector<GlMaterial*>> meshMaterials;
@@ -129,7 +136,6 @@ namespace sf::Renderer {
 		glGenBuffers(1, &(voxelBoxGpuData[voxelBox].gl_ssbo));
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, voxelBoxGpuData[voxelBox].gl_ssbo);
 		glBufferData(GL_SHADER_STORAGE_BUFFER, voxelBoxGpuData[voxelBox].cubeModelMatrices.size() * sizeof(glm::mat4), &(voxelBoxGpuData[voxelBox].cubeModelMatrices[0][0][0]), GL_STATIC_DRAW);
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, voxelBoxGpuData[voxelBox].gl_ssbo);
 
 		return;
 	}
@@ -229,6 +235,9 @@ bool sf::Renderer::Initialize(void* process)
 	defaultMaterial.CreateFromShader(&defaultShader, false);
 	voxelBoxShader.CreateFromFiles("assets/shaders/voxelBoxV.shader", "assets/shaders/uvF.shader");
 
+
+	glGenBuffers(1, &sharedGpuData_gl_ssbo);
+
 	return true;
 }
 
@@ -281,7 +290,7 @@ void sf::Renderer::ComputeCameraMatrices()
 	cameraView = (glm::mat4)glm::conjugate(transformComponent.rotation);
 	cameraView = glm::translate(cameraView, -transformComponent.position);
 
-	cameraMatrix = cameraProjection * cameraView;
+	sharedGpuData.cameraMatrix = cameraProjection * cameraView;
 }
 
 void sf::Renderer::SetMeshMaterial(Mesh mesh, GlMaterial* material, int piece)
@@ -328,15 +337,17 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 
 		materialToUse->Bind();
 
-		materialToUse->m_shader->SetUniformMatrix4fv("cameraMatrix", &(cameraMatrix[0][0]));
-		materialToUse->m_shader->SetUniform3fv("camPos", &(cameraTransform.position.x));
-		materialToUse->m_shader->SetUniformMatrix4fv("modelMatrix", &(transform.ComputeMatrix()[0][0]));
+		sharedGpuData.cameraPosition = cameraTransform.position;
+		sharedGpuData.modelMatrix = transform.ComputeMatrix();
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, sharedGpuData_gl_ssbo);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
 
 		unsigned int drawEnd, drawStart;
 		drawStart = mesh.meshData->pieces[i];
 		drawEnd = mesh.meshData->pieces.size() > i + 1 ? mesh.meshData->pieces[i + 1] : mesh.meshData->indexVector.size();
 
 		glBindVertexArray(meshGpuData[mesh.meshData].gl_vao);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, sharedGpuData_gl_ssbo);
 		glDrawElements(GL_TRIANGLES, drawEnd - drawStart, GL_UNSIGNED_INT, (void*)(drawStart * sizeof(unsigned int)));
 	}
 }
@@ -358,13 +369,14 @@ void sf::Renderer::DrawVoxelBox(VoxelBox& voxelBox, Transform& transform)
 	GlShader* shaderToUse = &voxelBoxShader;
 	shaderToUse->Bind();
 
-	shaderToUse->SetUniformMatrix4fv("cameraMatrix", &(cameraMatrix[0][0]));
-	shaderToUse->SetUniform3fv("camPos", &(cameraTransform.position.x));
-	shaderToUse->SetUniformMatrix4fv("modelMatrix", &(transform.ComputeMatrix()[0][0]));
+	sharedGpuData.cameraPosition = cameraTransform.position;
+	sharedGpuData.modelMatrix = transform.ComputeMatrix();
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, sharedGpuData_gl_ssbo);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
 
 	glBindVertexArray(meshGpuData[&Defaults::cubeMeshData].gl_vao);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, voxelBoxGpuData[voxelBox.voxelBoxData].gl_ssbo);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, voxelBoxGpuData[voxelBox.voxelBoxData].gl_ssbo);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, sharedGpuData_gl_ssbo);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, voxelBoxGpuData[voxelBox.voxelBoxData].gl_ssbo);
 	glDrawElementsInstanced(GL_TRIANGLES, Defaults::cubeMeshData.indexVector.size(), GL_UNSIGNED_INT, (void*)0, voxelBoxGpuData[voxelBox.voxelBoxData].numberOfCubes);
 }
 

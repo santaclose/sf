@@ -1,4 +1,4 @@
-#version 330 core
+#version 430 core
 
 layout(location = 0) in vec3 aPosition;
 layout(location = 1) in vec3 aNormal;
@@ -7,13 +7,17 @@ layout(location = 3) in vec3 aBitangent;
 layout(location = 4) in vec2 aTextureCoord;
 layout(location = 5) in vec2 aExtraData;
 
-//out vec3 normal;
+
+layout(std430, binding = 0) buffer SharedGpuData
+{
+	mat4 modelMatrix;
+	mat4 cameraMatrix;
+	vec3 cameraPosition;
+};
+
 out vec2 texCoord;
 out mat3 TBN;
 out vec2 extraData;
-
-uniform mat4 cameraMatrix;
-uniform mat4 modelMatrix;
 
 void main()
 {

@@ -7,7 +7,7 @@ layout(location = 3) in vec3 aBitangent;
 layout(location = 4) in vec2 aTextureCoord;
 layout(location = 5) in vec2 aExtraData;
 
-layout(std430, binding = 0) buffer SharedGpuData
+layout(std140, binding = 0) uniform SharedGpuData
 {
 	mat4 modelMatrix;
 	mat4 cameraMatrix;

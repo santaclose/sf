@@ -9,7 +9,7 @@ out vec3 normal;
 out vec4 fragColor;
 out vec2 textureCoord;
 
-layout(std430, binding = 0) buffer SharedGpuData
+layout(std140, binding = 0) uniform SharedGpuData
 {
 	mat4 modelMatrix;
 	mat4 cameraMatrix;

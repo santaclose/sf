@@ -9,7 +9,7 @@ layout(location = 5) in vec2 aExtraData;
 
 out vec2 screenPos;
 
-layout(std430, binding = 0) buffer SharedGpuData
+layout(std140, binding = 0) uniform SharedGpuData
 {
 	mat4 modelMatrix;
 	mat4 cameraMatrix;

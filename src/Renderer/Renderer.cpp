@@ -44,7 +44,7 @@ namespace sf::Renderer {
 		glm::mat4 cameraMatrix;
 		glm::vec3 cameraPosition;
 	};
-	unsigned int sharedGpuData_gl_ssbo;
+	unsigned int sharedGpuData_gl_ubo;
 	SharedGpuData sharedGpuData;
 
 	std::unordered_map<const sf::MeshData*, MeshGpuData> meshGpuData;
@@ -235,8 +235,7 @@ bool sf::Renderer::Initialize(void* process)
 	defaultMaterial.CreateFromShader(&defaultShader, false);
 	voxelBoxShader.CreateFromFiles("assets/shaders/voxelBoxV.shader", "assets/shaders/uvF.shader");
 
-
-	glGenBuffers(1, &sharedGpuData_gl_ssbo);
+	glGenBuffers(1, &sharedGpuData_gl_ubo);
 
 	return true;
 }
@@ -339,15 +338,15 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 
 		sharedGpuData.cameraPosition = cameraTransform.position;
 		sharedGpuData.modelMatrix = transform.ComputeMatrix();
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, sharedGpuData_gl_ssbo);
-		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
+		glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
+		glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
 
 		unsigned int drawEnd, drawStart;
 		drawStart = mesh.meshData->pieces[i];
 		drawEnd = mesh.meshData->pieces.size() > i + 1 ? mesh.meshData->pieces[i + 1] : mesh.meshData->indexVector.size();
 
 		glBindVertexArray(meshGpuData[mesh.meshData].gl_vao);
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, sharedGpuData_gl_ssbo);
+		glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
 		glDrawElements(GL_TRIANGLES, drawEnd - drawStart, GL_UNSIGNED_INT, (void*)(drawStart * sizeof(unsigned int)));
 	}
 }
@@ -371,11 +370,11 @@ void sf::Renderer::DrawVoxelBox(VoxelBox& voxelBox, Transform& transform)
 
 	sharedGpuData.cameraPosition = cameraTransform.position;
 	sharedGpuData.modelMatrix = transform.ComputeMatrix();
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, sharedGpuData_gl_ssbo);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
 
 	glBindVertexArray(meshGpuData[&Defaults::cubeMeshData].gl_vao);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, sharedGpuData_gl_ssbo);
+	glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, voxelBoxGpuData[voxelBox.voxelBoxData].gl_ssbo);
 	glDrawElementsInstanced(GL_TRIANGLES, Defaults::cubeMeshData.indexVector.size(), GL_UNSIGNED_INT, (void*)0, voxelBoxGpuData[voxelBox.voxelBoxData].numberOfCubes);
 }

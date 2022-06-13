@@ -3,7 +3,7 @@
 #include <fstream>
 #include <iostream>
 
-#include <Renderer/Shader.h>
+#include <Renderer/GlShader.h>
 
 sf::ComputeShader::ComputeShader() : m_gl_id(-1) {}
 

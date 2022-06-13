@@ -4,7 +4,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 
-#include <Renderer/Shader.h>
+#include <Renderer/GlShader.h>
 #include <ComputeShader.h>
 
 void sf::GlCubemap::GetGlEnums(int channelCount, StorageType storageType, GLenum& type, int& internalFormat, GLenum& format)

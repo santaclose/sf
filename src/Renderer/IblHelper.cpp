@@ -99,13 +99,12 @@ namespace sf::IblHelper {
     }
 }
 
-void sf::IblHelper::HdrToCubemaps(const GlTexture& hdrTexture, GlCubemap& environmentCubemap, GlCubemap& irradianceCubemap, GlCubemap& prefilterCubemap, GlTexture& lookupTexture)
+void sf::IblHelper::HdrToCubemaps(const GlTexture& hdrTexture, GlCubemap& environmentCubemap, GlCubemap& irradianceCubemap, GlCubemap& prefilterCubemap)
 {
     environmentCubemap.Create(512, 3, GlCubemap::StorageType::Float16, true);
     irradianceCubemap.Create(32, 3, GlCubemap::StorageType::Float16, false);
     prefilterCubemap.Create(128, 3, GlCubemap::StorageType::Float16, true);
     prefilterCubemap.ComputeMipmap();
-    lookupTexture.CreateFromFile("assets/LUT.hdr", 4, GlTexture::Float16, GlTexture::ClampToEdge, false, true);
 
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);

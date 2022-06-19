@@ -5,5 +5,5 @@
 
 namespace sf::IblHelper {
 
-	void HdrToCubemaps(const GlTexture& hdrTexture, GlCubemap& environmentCubemap, GlCubemap& irradianceCubemap, GlCubemap& prefilterCubemap, GlTexture& lookupTexture);
+	void HdrToCubemaps(const GlTexture& hdrTexture, GlCubemap& environmentCubemap, GlCubemap& irradianceCubemap, GlCubemap& prefilterCubemap);
 }

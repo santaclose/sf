@@ -35,7 +35,7 @@ unsigned int sf::GlShader::CompileShader(unsigned int type, const std::string& s
 		glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length);
 		char* message = (char*)alloca(length * sizeof(char));
 		glGetShaderInfoLog(id, length, &length, message);
-		std::cout << "[Shader] Failed to compile " << messageType << " shader" << std::endl;
+		std::cout << "[GlShader] Failed to compile " << messageType << " shader" << std::endl;
 		std::cout << message << std::endl;
 		glDeleteShader(id);
 		return 0;
@@ -57,9 +57,9 @@ void sf::GlShader::CreateFromFiles(const std::string& vertexShaderPath, const st
 	std::ifstream ifs2(fragmentShaderPath);
 
 	if (ifs.fail())
-		std::cout << "[Shader] Could not read vertex shader file: " << vertexShaderPath << std::endl;
+		std::cout << "[GlShader] Could not read vertex shader file: " << vertexShaderPath << std::endl;
 	if (ifs2.fail())
-		std::cout << "[Shader] Could not read fragment shader file: " << fragmentShaderPath << std::endl;
+		std::cout << "[GlShader] Could not read fragment shader file: " << fragmentShaderPath << std::endl;
 
 	std::string vertexShaderSource((std::istreambuf_iterator<char>(ifs)),
 		(std::istreambuf_iterator<char>()));
@@ -97,7 +97,7 @@ int sf::GlShader::GetUniformLocation(const std::string& name)
 
 	int location = glGetUniformLocation(m_gl_id, name.c_str());
 	//if (location == -1)
-	//	std::cout << "[Shader] Could not get uniform location for " << name << " in shader " << m_vertFileName << "-" << m_fragFileName << std::endl;
+	//	std::cout << "[GlShader] Could not get uniform location for " << name << " in shader " << m_vertFileName << "-" << m_fragFileName << std::endl;
 
 	m_uniformCache[name].location = location;
 	return location;

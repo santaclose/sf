@@ -116,13 +116,13 @@ void sf::GlTexture::CreateFromFile(const std::string& path, int channelCount, St
 	{
 		floatImgBuffer = stbi_loadf(path.c_str(), &this->width, &this->height, &this->channelCount, channelCount);
 		if (floatImgBuffer == nullptr)
-			std::cout << "[Texture] Could not load image " << path << std::endl;
+			std::cout << "[GlTexture] Could not load image " << path << std::endl;
 	}
 	else
 	{
 		standardImgBuffer = stbi_load(path.c_str(), &this->width, &this->height, &this->channelCount, channelCount);
 		if (standardImgBuffer == nullptr)
-			std::cout << "[Texture] Could not load image " << path << std::endl;
+			std::cout << "[GlTexture] Could not load image " << path << std::endl;
 	}
 	this->channelCount = channelCount;
 
@@ -133,7 +133,6 @@ void sf::GlTexture::CreateFromFile(const std::string& path, int channelCount, St
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, this->wrapMode == WrapMode::Repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, this->wrapMode == WrapMode::Repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE);
-
 
 	int internalFormat;
 	GLenum type, format;

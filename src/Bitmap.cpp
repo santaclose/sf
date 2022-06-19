@@ -79,6 +79,8 @@ void sf::Bitmap::AddChannels(uint8_t channelCount)
 			((uint8_t*)oldBuffer) + (i * dataTypeSize * originalChannelCount),
 			dataTypeSize * originalChannelCount);
 	}
+
+	free(oldBuffer);
 }
 
 void sf::Bitmap::CopyChannel(const Bitmap& source, uint8_t sourceChannel, uint8_t targetChannel)

@@ -3,7 +3,6 @@
 #include <iostream>
 #include <vector>
 
-#include <Skybox.h>
 #include <Input.h>
 #include <Config.h>
 #include <Game.h>

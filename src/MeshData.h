@@ -4,7 +4,6 @@
 #include <string>
 
 #include <Renderer/Vertex.h>
-#include <Renderer/Material.h>
 
 namespace sf {
 

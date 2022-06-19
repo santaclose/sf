@@ -35,6 +35,9 @@ namespace sf
 	float cameraDistance = 3.0;
 	bool rotationEnabled = false;
 
+	int selectedEnvironment = 0;
+	std::vector<std::string> environments = { "examples/pbr/brown_photostudio_02_4k.hdr", "examples/pbr/aft_lounge_4k.hdr",  };
+
 	MeshData* meshes;
 
 	int selectedModel = 0;
@@ -64,7 +67,8 @@ namespace sf
 			"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/SciFiHelmet/glTF/SciFiHelmet_BaseColor.png",
 			"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/SciFiHelmet/glTF/SciFiHelmet_MetallicRoughness.png",
 			"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/SciFiHelmet/glTF/SciFiHelmet_Normal.png",
-			"https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/4k/brown_photostudio_02_4k.hdr"
+			"https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/4k/brown_photostudio_02_4k.hdr",
+			"https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/4k/aft_lounge_4k.hdr"
 			}, "examples/pbr/");
 
 		gimbal = scene.CreateEntity();
@@ -76,7 +80,7 @@ namespace sf
 		cameraObject.AddComponent<Camera>();
 		cameraObject.AddComponent<Transform>();
 
-		Renderer::SetEnvironment("examples/pbr/brown_photostudio_02_4k.hdr");
+		Renderer::SetEnvironment(environments[selectedEnvironment]);
 		Renderer::drawSkybox = true;
 
 		int gltfid;
@@ -156,6 +160,13 @@ namespace sf
 			galleryObjects[prevModel].SetEnabled(false);
 			galleryObjects[selectedModel].SetEnabled(true);
 		}
+		else if (Input::KeyDown(Input::KeyCode::H))
+		{
+			selectedEnvironment++;
+			selectedEnvironment = Math::Mod(selectedEnvironment, (int)environments.size());
+			Renderer::SetEnvironment(environments[selectedEnvironment]);
+		}
+
 		cameraDistance -= SCROLL_SENSITIVITY * (Input::MouseScrollUp() ? 1.0f : 0.0f);
 		cameraDistance += SCROLL_SENSITIVITY * (Input::MouseScrollDown() ? 1.0f : 0.0f);
 

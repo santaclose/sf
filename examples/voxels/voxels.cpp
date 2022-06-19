@@ -4,7 +4,6 @@
 #include <MeshProcessor.h>
 #include <Math.hpp>
 #include <Random.h>
-#include <Skybox.h>
 #include <Input.h>
 #include <Defaults.h>
 
@@ -54,9 +53,6 @@ namespace sf
 		cameraObject.AddComponent<Camera>();
 		cameraObject.AddComponent<Transform>();
 
-		int gltfid, objid;
-		objid = ObjImporter::Load("assets/monke.obj");
-		ObjImporter::GenerateMeshData(objid, Defaults::monkeMeshData);
 		monkevbd = new VoxelBoxData(Defaults::monkeMeshData, 0.007f);
 		monkevbd2 = new VoxelBoxData(Defaults::monkeMeshData, 0.02f);
 		monkevbd3 = new VoxelBoxData(Defaults::monkeMeshData, 0.07);

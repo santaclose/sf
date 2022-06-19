@@ -1,12 +1,12 @@
-#include "Skybox.h"
+#include "GlSkybox.h"
 
 #include <Components/Camera.h>
 
-bool sf::Skybox::generated = false;
-unsigned int sf::Skybox::gl_VAO;
-unsigned int sf::Skybox::gl_VBO;
+bool sf::GlSkybox::generated = false;
+unsigned int sf::GlSkybox::gl_VAO;
+unsigned int sf::GlSkybox::gl_VBO;
 
-float sf::Skybox::cubeVertices[] = {   
+float sf::GlSkybox::cubeVertices[] = {   
     -1.0f,  1.0f, -1.0f,
     -1.0f, -1.0f, -1.0f,
      1.0f, -1.0f, -1.0f,
@@ -49,10 +49,10 @@ float sf::Skybox::cubeVertices[] = {
     -1.0f, -1.0f,  1.0f,
      1.0f, -1.0f,  1.0f
 };
-sf::GlShader sf::Skybox::shader;
-sf::GlCubemap* sf::Skybox::cubemap;
+sf::GlShader sf::GlSkybox::shader;
+sf::GlCubemap* sf::GlSkybox::cubemap;
 
-void sf::Skybox::SetCubemap(GlCubemap* cubemap)
+void sf::GlSkybox::SetCubemap(GlCubemap* cubemap)
 {
     if (!generated)
     {
@@ -76,23 +76,23 @@ void sf::Skybox::SetCubemap(GlCubemap* cubemap)
     else
         shader.CreateFromFiles("assets/shaders/skyboxV.shader", "assets/shaders/skyboxF.shader");
 
-    sf::Skybox::cubemap = cubemap;
+    sf::GlSkybox::cubemap = cubemap;
 }
 
-void sf::Skybox::SetUseExposure(bool value)
+void sf::GlSkybox::SetUseExposure(bool value)
 {
     shader.Bind();
     shader.SetUniform1i("useExposure", (int)value);
 }
 
-void sf::Skybox::SetExposure(float value)
+void sf::GlSkybox::SetExposure(float value)
 {
     shader.Bind();
     shader.SetUniform1f("exposure", value);
 }
 
 
-void sf::Skybox::Draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix)
+void sf::GlSkybox::Draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix)
 {
     if (!generated)
         return;

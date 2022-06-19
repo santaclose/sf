@@ -36,12 +36,6 @@ namespace sf
 	float cameraDistance = 3.0;
 	bool rotationEnabled = false;
 
-	GlShader shader;
-	GlMaterial material;
-
-	GlShader uvShader;
-	GlMaterial uvMaterial;
-
 	MeshData* sampleMeshes;
 
 	int selectedModel = 0;
@@ -61,11 +55,7 @@ namespace sf
 		cameraObject.AddComponent<Camera>();
 		cameraObject.AddComponent<Transform>();
 
-		shader.CreateFromFiles("assets/shaders/defaultV.shader", "assets/shaders/vertexAoF.shader");
-		material.CreateFromShader(&shader, true);
-
-		uvShader.CreateFromFiles("assets/shaders/defaultV.shader", "assets/shaders/uvF.shader");
-		uvMaterial.CreateFromShader(&uvShader);
+		uint32_t aoMaterial = Renderer::CreateMaterial(Material("assets/shaders/defaultV.shader", "assets/shaders/vertexAoF.shader", true));
 		
 		std::vector<std::string> meshFilePaths = { "examples/vertexAo/sponza.obj", "assets/meshes/monke.obj"};
 		sampleMeshes = new MeshData[meshFilePaths.size()];
@@ -80,7 +70,7 @@ namespace sf
 
 			meshObjects.back().AddComponent<Transform>();
 			Mesh& objectMesh = meshObjects.back().AddComponent<Mesh>(&(sampleMeshes[i]));
-			Renderer::SetMeshMaterial(objectMesh, &material);
+			Renderer::SetMeshMaterial(objectMesh, aoMaterial);
 
 			if (i != selectedModel)
 				meshObjects[i].SetEnabled(false);

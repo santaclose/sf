@@ -35,16 +35,6 @@ namespace sf
 	Entity e_ship, e_mainCamera, e_lookBackCamera;
 
 	float shipSpeed = 5.0;
-
-	GlShader aoShader;
-	GlShader uvShader;
-	GlShader colorShader;
-	GlShader noiseShader;
-
-	GlMaterial colorsMaterial;
-	GlMaterial noiseMaterial;
-	GlMaterial uvMaterial;
-	GlMaterial aoMaterial;
 	
 	MeshData shipMesh;
 	Entity* things;
@@ -54,22 +44,17 @@ namespace sf
 
 	void Game::Initialize(int argc, char** argv)
 	{
-		aoShader.CreateFromFiles("assets/shaders/defaultV.shader", "assets/shaders/vertexAoF.shader");
-		colorShader.CreateFromFiles("examples/spaceship/randomColorsV.shader", "examples/spaceship/randomColorsF.shader");
-		uvShader.CreateFromFiles("assets/shaders/defaultV.shader", "assets/shaders/uvF.shader");
-		noiseShader.CreateFromFiles("examples/spaceship/noiseV.shader", "examples/spaceship/noiseF.shader");
-
-		aoMaterial.CreateFromShader(&aoShader);
-		colorsMaterial.CreateFromShader(&colorShader);
-		uvMaterial.CreateFromShader(&uvShader);
-		noiseMaterial.CreateFromShader(&noiseShader);
+		uint32_t aoMaterial = Renderer::CreateMaterial(Material("assets/shaders/defaultV.shader", "assets/shaders/vertexAoF.shader", false));
+		uint32_t colorsMaterial = Renderer::CreateMaterial(Material("examples/spaceship/randomColorsV.shader", "examples/spaceship/randomColorsF.shader", false));
+		uint32_t uvMaterial = Renderer::CreateMaterial(Material("assets/shaders/defaultV.shader", "assets/shaders/uvF.shader", false));
+		uint32_t noiseMaterial = Renderer::CreateMaterial(Material("examples/spaceship/noiseV.shader", "examples/spaceship/noiseF.shader", false));
 
 		e_ship = scene.CreateEntity();
 
 		int gltfid = GltfImporter::Load("examples/spaceship/ship.glb");
 		GltfImporter::GenerateMeshData(gltfid, shipMesh);
 		Mesh& m_ship = e_ship.AddComponent<Mesh>(&shipMesh);
-		Renderer::SetMeshMaterial(m_ship, &uvMaterial);
+		Renderer::SetMeshMaterial(m_ship, uvMaterial);
 		Transform& t_ship = e_ship.AddComponent<Transform>();
 
 		e_mainCamera = scene.CreateEntity();
@@ -108,13 +93,13 @@ namespace sf
 			switch (Random::Int(3))
 			{
 			case 0:
-				Renderer::SetMeshMaterial(m_thing, &colorsMaterial);
+				Renderer::SetMeshMaterial(m_thing, colorsMaterial);
 				break;
 			case 1:
-				Renderer::SetMeshMaterial(m_thing, &noiseMaterial);
+				Renderer::SetMeshMaterial(m_thing, noiseMaterial);
 				break;
 			case 2:
-				Renderer::SetMeshMaterial(m_thing, &aoMaterial);
+				Renderer::SetMeshMaterial(m_thing, aoMaterial);
 				break;
 			}
 

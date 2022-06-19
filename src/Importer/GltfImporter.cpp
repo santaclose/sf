@@ -163,62 +163,43 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& meshData)
 	}
 }
 
-void sf::GltfImporter::GenerateTexture(int id, int textureIndex, GlTexture& texture)
+sf::Bitmap sf::GltfImporter::GenerateBitmap(int id, int index)
 {
 	assert(id > -1 && id < models.size());
-	assert(models[id] != nullptr);
-	assert(textureIndex > -1 && textureIndex < models[id]->textures.size());
+	
+	tinygltf::Image& image = models[id]->images[models[id]->textures[index].source];
 
-	glGenTextures(1, &texture.gl_id);
-
-	tinygltf::Image& image = models[id]->images[models[id]->textures[textureIndex].source];
-
-	glBindTexture(GL_TEXTURE_2D, texture.gl_id);
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-	GLenum format = GL_RGBA;
-
-	texture.channelCount = image.component;
-
-	if (image.component == 1) {
-		format = GL_RED;
+	DataType dataType;
+	switch (image.pixel_type)
+	{
+	case TINYGLTF_COMPONENT_TYPE_BYTE:
+		dataType = DataType::i8;
+		break;
+	case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
+		dataType = DataType::u8;
+		break;
+	case TINYGLTF_COMPONENT_TYPE_SHORT:
+		dataType = DataType::i16;
+		break;
+	case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
+		dataType = DataType::u16;
+		break;
+	case TINYGLTF_COMPONENT_TYPE_INT:
+		dataType = DataType::i32;
+		break;
+	case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
+		dataType = DataType::u32;
+		break;
+	case TINYGLTF_COMPONENT_TYPE_FLOAT:
+		dataType = DataType::f32;
+		break;
+	case TINYGLTF_COMPONENT_TYPE_DOUBLE:
+		dataType = DataType::f64;
+		break;
 	}
-	else if (image.component == 2) {
-		format = GL_RG;
-	}
-	else if (image.component == 3) {
-		format = GL_RGB;
-	}
-	else {
-		// ???
-	}
 
-	GLenum type = GL_UNSIGNED_BYTE;
-	if (image.bits == 8) {
-		texture.storageType = GlTexture::StorageType::UnsignedByte;
-		// ok
-	}
-	else if (image.bits == 16) {
-		type = GL_UNSIGNED_SHORT;
-	}
-	else {
-		// ???
-	}
-	texture.width = image.width;
-	texture.height = image.height;
-	texture.standardImgBuffer = &image.image.at(0);
-	texture.needToFreeBuffer = false;
-	texture.wrapMode = GlTexture::WrapMode::Repeat;
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0, format, type, &image.image.at(0));
-
-	// mipmapping
-	glGenerateMipmap(GL_TEXTURE_2D);
-
-	glBindTexture(GL_TEXTURE_2D, 0);
+	uint32_t dataTypeSize = GetDataTypeSize(dataType);
+	Bitmap output(dataType, image.component, image.width, image.height);
+	memcpy(output.buffer, &image.image.at(0), dataTypeSize * output.width * output.height * output.channelCount);
+	return output;
 }

@@ -6,6 +6,9 @@
 #include <Components/Transform.h>
 
 #include <Renderer/GlMaterial.h>
+#include <Material.h>
+
+#include <Bitmap.h>
 
 namespace sf::Renderer {
 
@@ -18,7 +21,12 @@ namespace sf::Renderer {
 	void ClearBuffers();
 	void ComputeCameraMatrices();
 
+	uint32_t CreateMaterial(const Material& material);
+
 	void SetMeshMaterial(Mesh mesh, GlMaterial* material, int piece = -1);
+	void SetMeshMaterial(Mesh mesh, uint32_t materialId, int piece = -1);
+
+	void SetEnvironment(const std::string& hdrFilePath);
 
 	void DrawSkybox();
 	void DrawMesh(Mesh& mesh, Transform& transform);

@@ -1,0 +1,11 @@
+shader: "assets/shaders/pbrV.shader" "assets/shaders/pbrF.shader"
+b useAlbedoTexture: true
+b useNormalTexture: true
+b useMetalnessTexture: true
+b useRoughnessTexture: true
+b useEmissiveTexture: true
+b useAoTexture: true
+
+cubemap irradianceMap: _IRRADIANCE_MAP_
+cubemap prefilterMap: _PREFILTER_MAP_
+bitmap brdfLUT: _BRDF_LUT_

@@ -5,7 +5,7 @@
 
 namespace sf {
 
-	class Skybox
+	class GlSkybox
 	{
 		static bool generated;
 		static unsigned int gl_VAO;

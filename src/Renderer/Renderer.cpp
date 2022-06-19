@@ -1,17 +1,23 @@
 #include "Renderer.h"
 
+#include <assert.h>
 #include <iostream>
 #include <unordered_map>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 
 #include <Config.h>
+#include <Bitmap.h>
 
 #include <glad/glad.h>
 #include <Components/Camera.h>
-#include <Skybox.h>
 #include <Renderer/Vertex.h>
+
+#include <Material.h>
 #include <Defaults.h>
+
+#include <Renderer/GlSkybox.h>
+#include <Renderer/IblHelper.h>
 
 namespace sf::Renderer {
 
@@ -26,20 +32,22 @@ namespace sf::Renderer {
 	glm::mat4 cameraView;
 	glm::mat4 cameraProjection;
 
-	struct MeshGpuData {
-
+	struct MeshGpuData
+	{
 		unsigned int gl_vertexBuffer;
 		unsigned int gl_indexBuffer;
 		unsigned int gl_vao;
 	};
 
-	struct VoxelBoxGpuData {
+	struct VoxelBoxGpuData
+	{
 		unsigned int gl_ssbo;
 		int numberOfCubes;
 		std::vector<glm::mat4> cubeModelMatrices;
 	};
 
-	struct SharedGpuData {
+	struct SharedGpuData
+	{
 		glm::mat4 modelMatrix;
 		glm::mat4 cameraMatrix;
 		glm::vec3 cameraPosition;
@@ -51,6 +59,19 @@ namespace sf::Renderer {
 	std::unordered_map<int, std::vector<GlMaterial*>> meshMaterials;
 
 	std::unordered_map<const sf::VoxelBoxData*, VoxelBoxGpuData> voxelBoxGpuData;
+
+	std::vector<GlMaterial*> materials;
+	struct EnvironmentData
+	{
+		GlTexture envTexture;
+		GlCubemap envCubemap;
+		GlCubemap irradianceCubemap;
+		GlCubemap prefilterCubemap;
+		GlTexture lookupTexture;
+	};
+	std::vector<void*> rendererUniformVector;
+	EnvironmentData environmentData;
+	unsigned int environment_gl_ubo;
 
 	void CreateMeshMaterialSlots(int id, const sf::MeshData* mesh)
 	{
@@ -237,6 +258,12 @@ bool sf::Renderer::Initialize(void* process)
 
 	glGenBuffers(1, &sharedGpuData_gl_ubo);
 
+
+	rendererUniformVector.resize(3);
+	rendererUniformVector[(uint32_t)RendererUniformData::BrdfLUT] = &environmentData.lookupTexture;
+	rendererUniformVector[(uint32_t)RendererUniformData::PrefilterMap] = &environmentData.prefilterCubemap;
+	rendererUniformVector[(uint32_t)RendererUniformData::IrradianceMap] = &environmentData.irradianceCubemap;
+
 	return true;
 }
 
@@ -311,10 +338,38 @@ void sf::Renderer::SetMeshMaterial(Mesh mesh, GlMaterial* material, int piece)
 	}
 }
 
+void sf::Renderer::SetMeshMaterial(Mesh mesh, uint32_t materialId, int piece)
+{
+	assert(materialId < materials.size());
+	SetMeshMaterial(mesh, materials[materialId]);
+}
+
+uint32_t sf::Renderer::CreateMaterial(const Material& material)
+{
+	GlMaterial* newMaterial = new GlMaterial();
+	newMaterial->Create(material, rendererUniformVector);
+	materials.push_back(newMaterial);
+	return materials.size() - 1;
+}
+
+void sf::Renderer::SetEnvironment(const std::string& hdrFilePath)
+{
+	environmentData = EnvironmentData();
+	environmentData.envTexture.CreateFromFile(hdrFilePath, 3, GlTexture::Float16, GlTexture::ClampToEdge);
+	IblHelper::HdrToCubemaps(
+		environmentData.envTexture,
+		environmentData.envCubemap,
+		environmentData.irradianceCubemap,
+		environmentData.prefilterCubemap,
+		environmentData.lookupTexture);
+
+	GlSkybox::SetCubemap(&(environmentData.envCubemap));
+}
+
 void sf::Renderer::DrawSkybox()
 {
 	if (drawSkybox)
-		Skybox::Draw(cameraView, cameraProjection);
+		GlSkybox::Draw(cameraView, cameraProjection);
 }
 
 void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
@@ -386,5 +441,10 @@ void sf::Renderer::Terminate()
 		glDeleteVertexArrays(1, &(pair.second.gl_vao));
 		glDeleteBuffers(1, &(pair.second.gl_indexBuffer));
 		glDeleteBuffers(1, &(pair.second.gl_vertexBuffer));
+	}
+
+	for (GlMaterial* material : materials)
+	{
+		delete material;
 	}
 }

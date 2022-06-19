@@ -147,6 +147,47 @@ void sf::GlTexture::CreateFromFile(const std::string& path, int channelCount, St
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+void sf::GlTexture::CreateFromBitmap(const Bitmap& bitmap, WrapMode wrapMode, bool mipmap)
+{
+	this->height = bitmap.height;
+	this->width = bitmap.width;
+	this->channelCount = bitmap.channelCount;
+	this->wrapMode = wrapMode;
+	switch (bitmap.dataType)
+	{
+	case DataType::u8:
+		this->storageType = StorageType::UnsignedByte;
+		break;
+	case DataType::f16:
+		this->storageType = StorageType::Float16;
+		break;
+	case DataType::f32:
+		this->storageType = StorageType::Float32;
+		break;
+	default:
+		std::cout << "[GLTexture] Can't create texture from this bitmap\n";
+	}
+
+	glGenTextures(1, &this->gl_id);
+	glBindTexture(GL_TEXTURE_2D, this->gl_id);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mipmap ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, this->wrapMode == WrapMode::Repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, this->wrapMode == WrapMode::Repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+
+	int internalFormat;
+	GLenum type, format;
+	GetGlEnums(this->channelCount, this->storageType, type, internalFormat, format);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, this->width, this->height, 0, format, type, bitmap.buffer);
+
+	if (mipmap)
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
 void sf::GlTexture::CreateFromChannel(const GlTexture& source, int channel, bool mipmap)
 {
 	this->height = source.height;

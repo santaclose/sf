@@ -3,6 +3,8 @@
 #include <glad/glad.h>
 #include <string>
 
+#include <Bitmap.h>
+
 namespace sf {
 
 	class GlTexture
@@ -37,6 +39,8 @@ namespace sf {
 			WrapMode wrapMode = WrapMode::Repeat,
 			bool mipmap = true,
 			bool flipVertically = true);
+
+		void CreateFromBitmap(const Bitmap& bitmap, WrapMode wrapMode = WrapMode::Repeat, bool mipmap = true);
 
 		void CreateFromChannel(const GlTexture& source, int channel = 0, bool mipmap = true);
 

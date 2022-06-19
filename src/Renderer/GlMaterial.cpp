@@ -5,6 +5,47 @@
 #include <Renderer/GlTexture.h>
 #include <Renderer/GlCubemap.h>
 
+void sf::GlMaterial::Create(const Material& material, const std::vector<void*>& rendererUniformVector)
+{
+	m_shader = new GlShader();
+	m_shader->CreateFromFiles(material.vertexShaderFilePath, material.fragmentShaderFilePath);
+	m_isDoubleSided = material.isDoubleSided;
+
+	for (const std::pair<std::string, Uniform>& uniformPair : material.uniforms)
+	{
+		switch (uniformPair.second.dataType)
+		{
+		case (uint32_t)DataType::b:
+			SetUniform(uniformPair.first, uniformPair.second.data, UniformType::_Boolean);
+			break;
+		case (uint32_t)DataType::vec4f32:
+			SetUniform(uniformPair.first, uniformPair.second.data, UniformType::_Color);
+			break;
+		case (uint32_t)ShaderDataType::bitmap:
+			GlTexture* newTexture = new GlTexture();
+			newTexture->CreateFromBitmap(*((Bitmap*)uniformPair.second.data));
+			SetUniform(uniformPair.first, newTexture, UniformType::_Texture);
+			break;
+		}
+	}
+
+	for (const std::pair<std::string, RendererUniform>& uniformPair : material.rendererUniforms)
+	{
+		switch (uniformPair.second.dataType)
+		{
+		case (uint32_t)DataType::b:
+			SetUniform(uniformPair.first, rendererUniformVector[(uint32_t)uniformPair.second.data], UniformType::_Boolean);
+			break;
+		case (uint32_t)ShaderDataType::bitmap:
+			SetUniform(uniformPair.first, rendererUniformVector[(uint32_t)uniformPair.second.data], UniformType::_Texture);
+			break;
+		case (uint32_t)ShaderDataType::cubemap:
+			SetUniform(uniformPair.first, rendererUniformVector[(uint32_t)uniformPair.second.data], UniformType::_Cubemap);
+			break;
+		}
+	}
+}
+
 void sf::GlMaterial::CreateFromShader(GlShader* theShader, bool isDoubleSided)
 {
 	m_shader = theShader;

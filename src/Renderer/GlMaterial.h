@@ -3,6 +3,8 @@
 #include <vector>
 #include <string>
 
+#include <Material.h>
+
 #include <Renderer/GlShader.h>
 #include <Renderer/GlTexture.h>
 
@@ -26,6 +28,7 @@ namespace sf {
 		bool m_isDoubleSided;
 
 	public:
+		void Create(const Material& material, const std::vector<void*>& rendererUniformVector);
 		void CreateFromShader(GlShader* theShader, bool isDoubleSided = false);
 		void SetUniform(const std::string& name, void* data, UniformType type);
 		void Bind();

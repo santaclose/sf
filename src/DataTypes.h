@@ -31,5 +31,10 @@ namespace sf
 		mat4f64 = 23
 	};
 
+	enum class ShaderDataType {
+		bitmap = 24,
+		cubemap = 25
+	};
+
 	unsigned int GetDataTypeSize(DataType dataType);
 }

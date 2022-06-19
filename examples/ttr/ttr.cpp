@@ -34,16 +34,6 @@ namespace sf
 	Scene scene;
 	Entity e_camera;
 
-	GlShader pbrShader;
-	GlShader noiseShader;
-	GlShader randomColorShader;
-	GlShader colorShader;
-
-	GlMaterial noiseMaterial;
-	GlMaterial colorMaterial;
-	GlMaterial whiteMaterial;
-	GlMaterial blackMaterial;
-
 	float animation1A = 0.36, animation2A = 0.36;
 	float animation1B = 0.62, animation2B = 0.62;
 	float animation1C = 2.22, animation2C = 2.22;
@@ -80,18 +70,17 @@ namespace sf
 		t_camera.rotation = glm::fquat(glm::vec3(-0.1f, -0.4f, 0.0f));
 		Renderer::activeCameraEntity = e_camera;
 
-		colorShader.CreateFromFiles("assets/shaders/pbrV.shader", "examples/ttr/solidColorF.shader");
 
-		noiseMaterial.CreateFromShader(&noiseShader);
-		colorMaterial.CreateFromShader(&randomColorShader);
-
-		blackMaterial.CreateFromShader(&colorShader);
-		whiteMaterial.CreateFromShader(&colorShader);
-
-		static glm::vec4 theColor(1.0, 1.0, 1.0, 1.0);
-		static glm::vec4 theColorb(0.0, 0.0, 0.0, 1.0);
-		blackMaterial.SetUniform("theColor", &theColorb, GlMaterial::UniformType::_Color);
-		whiteMaterial.SetUniform("theColor", &theColor, GlMaterial::UniformType::_Color);
+		uint32_t whiteMaterial, blackMaterial;
+		{
+			static glm::vec4 theColor(1.0, 1.0, 1.0, 1.0);
+			static glm::vec4 theColorb(0.0, 0.0, 0.0, 1.0);
+			Material materialTemplate("assets/shaders/pbrV.shader", "examples/ttr/solidColorF.shader", false);
+			materialTemplate.uniforms["theColor"] = { (uint32_t)DataType::vec4f32, &theColor };
+			whiteMaterial = Renderer::CreateMaterial(materialTemplate);
+			materialTemplate.uniforms["theColor"] = { (uint32_t)DataType::vec4f32, &theColorb };
+			blackMaterial = Renderer::CreateMaterial(materialTemplate);
+		}
 
 		for (int i = 0; i < UNIQUE_COUNT; i++)
 		{
@@ -107,9 +96,9 @@ namespace sf
 			Mesh& m_errt = errts[i].AddComponent<Mesh>(&(uniqueErrts[Random::Int(UNIQUE_COUNT)]));
 
 			if (Random::Float() > 0.5f)
-				Renderer::SetMeshMaterial(m_errt, &whiteMaterial);
+				Renderer::SetMeshMaterial(m_errt, whiteMaterial);
 			else
-				Renderer::SetMeshMaterial(m_errt, &blackMaterial);
+				Renderer::SetMeshMaterial(m_errt, blackMaterial);
 
 			glm::vec2 randCircle = Random::PointInCircle();
 			t_errt.position.x = randCircle.x * 200.0f;

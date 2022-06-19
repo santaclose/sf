@@ -96,8 +96,8 @@ int sf::GlShader::GetUniformLocation(const std::string& name)
 		return m_uniformCache[name].location;
 
 	int location = glGetUniformLocation(m_gl_id, name.c_str());
-	//if (location == -1)
-	//	std::cout << "[GlShader] Could not get uniform location for " << name << " in shader " << m_vertFileName << "-" << m_fragFileName << std::endl;
+	if (location == -1)
+		std::cout << "[GlShader] Could not get uniform location for " << name << " in shader " << m_vertFileName << "-" << m_fragFileName << std::endl;
 
 	m_uniformCache[name].location = location;
 	return location;

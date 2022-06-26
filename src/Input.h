@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 namespace sf::Input {
 
 	extern bool mouseButtons[3];
@@ -11,7 +13,7 @@ namespace sf::Input {
 	void UpdateMouseButtons(int button, int action);
 	void UpdateMousePosition(double xpos, double ypos);
 	void UpdateKeyboard(int key, int action);
-	void UpdateCharacter(unsigned int character);
+	void UpdateCharacter(uint32_t character);
 	void UpdateMouseScroll(float xoffset, float yoffset);
 	void FrameEnd();
 
@@ -29,7 +31,7 @@ namespace sf::Input {
 	bool Key(int key);
 	bool KeyRepeat(int key);
 
-	bool CharacterInput(unsigned int& character);
+	bool CharacterInput(uint32_t& character);
 
 	enum KeyCode
 	{

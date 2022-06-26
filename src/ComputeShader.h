@@ -7,7 +7,7 @@ namespace sf {
 	class ComputeShader
 	{
 	private:
-		unsigned int m_gl_id;
+		uint32_t m_gl_id;
 	public:
 		ComputeShader();
 		~ComputeShader();

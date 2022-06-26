@@ -26,7 +26,7 @@ namespace sf::Input {
 	std::unordered_map<int, KeyState> keyStates;
 
 	bool charInput = false;
-	unsigned int character;
+	uint32_t character;
 
 	bool cursorCollisionDetected = false;
 	void* currentlyHandling = nullptr;
@@ -99,7 +99,7 @@ void sf::Input::UpdateKeyboard(int key, int action)
 	}
 }
 
-void sf::Input::UpdateCharacter(unsigned int character)
+void sf::Input::UpdateCharacter(uint32_t character)
 {
 	Input::character = character;
 	Input::charInput = true;
@@ -179,7 +179,7 @@ bool sf::Input::KeyRepeat(int key)
 	return keyStates[key].repeating;
 }
 
-bool sf::Input::CharacterInput(unsigned int& character)
+bool sf::Input::CharacterInput(uint32_t& character)
 {
 	character = Input::character;
 	return charInput;

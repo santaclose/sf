@@ -2,7 +2,7 @@
 
 #include <Math.hpp>
 
-sf::VoxelBoxData::VoxelBoxData(unsigned int voxelCountX, unsigned int voxelCountY, unsigned int voxelCountZ, float voxelSize, const glm::vec3& offset)
+sf::VoxelBoxData::VoxelBoxData(uint32_t voxelCountX, uint32_t voxelCountY, uint32_t voxelCountZ, float voxelSize, const glm::vec3& offset)
 {
 	this->voxelSize = voxelSize;
 	this->offset = offset;
@@ -42,9 +42,9 @@ sf::VoxelBoxData::VoxelBoxData(const MeshData& mesh, float voxelSize)
 	this->offset = minP;
 
 	glm::uvec3 voxelCount = {
-		(unsigned int)glm::ceil((maxP.x - minP.x) / voxelSize),
-		(unsigned int)glm::ceil((maxP.y - minP.y) / voxelSize),
-		(unsigned int)glm::ceil((maxP.z - minP.z) / voxelSize)
+		(uint32_t)glm::ceil((maxP.x - minP.x) / voxelSize),
+		(uint32_t)glm::ceil((maxP.y - minP.y) / voxelSize),
+		(uint32_t)glm::ceil((maxP.z - minP.z) / voxelSize)
 	};
 
 	// allocate matrix
@@ -59,9 +59,9 @@ sf::VoxelBoxData::VoxelBoxData(const MeshData& mesh, float voxelSize)
 	// rasterize
 	for (int indexI = 0; indexI < mesh.indexVector.size(); indexI += 3)
 	{
-		unsigned int indexA = mesh.indexVector[indexI + 0];
-		unsigned int indexB = mesh.indexVector[indexI + 1];
-		unsigned int indexC = mesh.indexVector[indexI + 2];
+		uint32_t indexA = mesh.indexVector[indexI + 0];
+		uint32_t indexB = mesh.indexVector[indexI + 1];
+		uint32_t indexC = mesh.indexVector[indexI + 2];
 
 		glm::vec3* posPtrA = (glm::vec3*)mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::vertexPositionAttr, indexA);
 		glm::vec3* posPtrB = (glm::vec3*)mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::vertexPositionAttr, indexB);

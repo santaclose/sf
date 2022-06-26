@@ -10,9 +10,9 @@ namespace sf::ObjImporter {
 
 	struct ObjVertex {
 
-		unsigned int posID;
-		unsigned int normalID;
-		unsigned int coordsID;
+		uint32_t posID;
+		uint32_t normalID;
+		uint32_t coordsID;
 	};
 	std::ostream& operator<<(std::ostream& o, const ObjVertex& v)
 	{
@@ -41,7 +41,7 @@ namespace sf::ObjImporter {
 		std::vector<glm::vec3> normals;
 		std::vector<glm::vec2> texCoords;
 		std::vector<ObjFace> faces;
-		std::unordered_set<unsigned int> pieces;
+		std::unordered_set<uint32_t> pieces;
 	};
 
 	void parseVec3(const std::string& line, glm::vec3& target, int start = 0)
@@ -183,7 +183,7 @@ void sf::ObjImporter::GenerateMeshData(int id, MeshData& mesh)
 	}
 
 	// build mesh
-	std::unordered_map<ObjVertex, unsigned int, ObjVertexHash> uniqueVertices;
+	std::unordered_map<ObjVertex, uint32_t, ObjVertexHash> uniqueVertices;
 	std::vector<ObjVertex> finalVertices;
 
 	for (int vi = 0; vi < triangulatedVtxSequence.size(); vi++)

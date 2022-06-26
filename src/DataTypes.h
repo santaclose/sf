@@ -36,5 +36,5 @@ namespace sf
 		cubemap = 25
 	};
 
-	unsigned int GetDataTypeSize(DataType dataType);
+	uint32_t GetDataTypeSize(DataType dataType);
 }

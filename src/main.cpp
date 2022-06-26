@@ -37,7 +37,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 {
 	sf::Input::UpdateKeyboard(key, action);
 }
-void character_callback(GLFWwindow* window, unsigned int codepoint)
+void character_callback(GLFWwindow* window, uint32_t codepoint)
 {
 	sf::Input::UpdateCharacter(codepoint);
 }

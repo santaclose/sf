@@ -26,10 +26,10 @@ namespace sf {
 			{"ao", DataType::f32}
 		});
 		void* vertexBuffer = nullptr;
-		unsigned int vertexCount = 0;
+		uint32_t vertexCount = 0;
 
-		std::vector<unsigned int> indexVector;
-		std::vector<unsigned int> pieces;
+		std::vector<uint32_t> indexVector;
+		std::vector<uint32_t> pieces;
 
 		void ChangeVertexLayout(const DataLayout& newLayout);
 	};

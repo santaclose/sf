@@ -24,9 +24,9 @@ namespace sf {
 		std::unordered_map<std::string, ShaderUniformData> m_uniformCache;
 		int m_textureIndexCounter = 0;
 	public:
-		unsigned int m_gl_id;
+		uint32_t m_gl_id;
 	private:
-		static unsigned int CompileShader(unsigned int type, const std::string& source);
+		static uint32_t CompileShader(uint32_t type, const std::string& source);
 		int GetUniformLocation(const std::string& name);
 		void AssignTextureNumberToUniform(const std::string& name);
 		int GetTextureIndex(const std::string& name);
@@ -35,10 +35,10 @@ namespace sf {
 		~GlShader();
 		void CreateFromFiles(const std::string& vertexShaderPath, const std::string& fragmentShaderPath);
 		void Bind() const;
-		void SetUniformMatrix4fv(const std::string& name, const float* pointer, unsigned int number = 1);
-		void SetUniform1fv(const std::string& name, const float* pointer, unsigned int number = 1);
-		void SetUniform3fv(const std::string& name, const float* pointer, unsigned int number = 1);
-		void SetUniform4fv(const std::string& name, const float* pointer, unsigned int number = 1);
+		void SetUniformMatrix4fv(const std::string& name, const float* pointer, uint32_t number = 1);
+		void SetUniform1fv(const std::string& name, const float* pointer, uint32_t number = 1);
+		void SetUniform3fv(const std::string& name, const float* pointer, uint32_t number = 1);
+		void SetUniform4fv(const std::string& name, const float* pointer, uint32_t number = 1);
 		void SetUniform1i(const std::string& name, int value);
 		void SetUniform1f(const std::string& name, float value);
 	};

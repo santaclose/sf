@@ -11,7 +11,7 @@ namespace sf {
 		float voxelSize;
 		glm::vec3 offset;
 		std::vector<std::vector<std::vector<bool>>> mat;
-		VoxelBoxData(unsigned int voxelCountX, unsigned int voxelCountY, unsigned int voxelCountZ, float voxelSize = 1.0f, const glm::vec3& offset = { 0.0f, 0.0f, 0.0f });
+		VoxelBoxData(uint32_t voxelCountX, uint32_t voxelCountY, uint32_t voxelCountZ, float voxelSize = 1.0f, const glm::vec3& offset = { 0.0f, 0.0f, 0.0f });
 		VoxelBoxData(const MeshData& meshData, float voxelSize);
 
 		bool CastRay(const glm::vec3& origin, const glm::vec3& direction, bool avoidEarlyCollision = true, float* out_t = nullptr, bool draw = false);

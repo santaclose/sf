@@ -80,7 +80,7 @@ void sf::GlCubemap::GetGlEnums(int channelCount, StorageType storageType, GLenum
 	}
 }
 
-void sf::GlCubemap::Create(unsigned int size, int channelCount, StorageType storageType, bool mipmap)
+void sf::GlCubemap::Create(uint32_t size, int channelCount, StorageType storageType, bool mipmap)
 {
 	m_size = size;
 	m_storageType = storageType;
@@ -92,7 +92,7 @@ void sf::GlCubemap::Create(unsigned int size, int channelCount, StorageType stor
 
 	glGenTextures(1, &m_gl_id);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, m_gl_id);
-	for (unsigned int i = 0; i < 6; ++i)
+	for (uint32_t i = 0; i < 6; ++i)
 	{
 		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalFormat, size, size, 0, format, type, nullptr);
 	}
@@ -120,7 +120,7 @@ void sf::GlCubemap::CreateFromFiles(const std::vector<std::string>& files, int c
 	int width, height, nrChannels;
 	if (!isHdr)
 	{
-		for (unsigned int i = 0; i < files.size(); i++)
+		for (uint32_t i = 0; i < files.size(); i++)
 		{
 			unsigned char* data = stbi_load(files[i].c_str(), &width, &height, &nrChannels, 0);
 			m_size = width;
@@ -138,7 +138,7 @@ void sf::GlCubemap::CreateFromFiles(const std::vector<std::string>& files, int c
 	}
 	else
 	{
-		for (unsigned int i = 0; i < files.size(); i++)
+		for (uint32_t i = 0; i < files.size(); i++)
 		{
 			float* data = stbi_loadf(files[i].c_str(), &width, &height, &nrChannels, 0);
 			m_size = width;
@@ -196,7 +196,7 @@ sf::GlCubemap::~GlCubemap()
 	glDeleteTextures(1, &m_gl_id);
 }
 
-void sf::GlCubemap::Bind(unsigned int slot) const
+void sf::GlCubemap::Bind(uint32_t slot) const
 {
 	glActiveTexture(GL_TEXTURE0 + slot);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, m_gl_id);

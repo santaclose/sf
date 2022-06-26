@@ -4,7 +4,7 @@
 #include <string>
 #include <fstream>
 
-unsigned int sf::GlShader::CompileShader(unsigned int type, const std::string& source)
+uint32_t sf::GlShader::CompileShader(uint32_t type, const std::string& source)
 {
 	std::string messageType;
 	switch (type)
@@ -22,7 +22,7 @@ unsigned int sf::GlShader::CompileShader(unsigned int type, const std::string& s
 		messageType = "unknown";
 		break;
 	}
-	unsigned int id = glCreateShader(type);
+	uint32_t id = glCreateShader(type);
 	const char* src = source.c_str();
 	glShaderSource(id, 1, &src, nullptr);
 	glCompileShader(id);
@@ -67,8 +67,8 @@ void sf::GlShader::CreateFromFiles(const std::string& vertexShaderPath, const st
 		(std::istreambuf_iterator<char>()));
 
 	m_gl_id = glCreateProgram();
-	unsigned int vs = CompileShader(GL_VERTEX_SHADER, vertexShaderSource);
-	unsigned int fs = CompileShader(GL_FRAGMENT_SHADER, fragmentShaderSource);
+	uint32_t vs = CompileShader(GL_VERTEX_SHADER, vertexShaderSource);
+	uint32_t fs = CompileShader(GL_FRAGMENT_SHADER, fragmentShaderSource);
 
 	glAttachShader(m_gl_id, vs);
 	glAttachShader(m_gl_id, fs);
@@ -117,19 +117,19 @@ int sf::GlShader::GetTextureIndex(const std::string& name)
 	return m_uniformCache[name].textureIndex;
 }
 
-void sf::GlShader::SetUniformMatrix4fv(const std::string& name, const float* pointer, unsigned int number)
+void sf::GlShader::SetUniformMatrix4fv(const std::string& name, const float* pointer, uint32_t number)
 {
 	glUniformMatrix4fv(GetUniformLocation(name), number, GL_FALSE, pointer);
 }
-void sf::GlShader::SetUniform1fv(const std::string& name, const float* pointer, unsigned int number)
+void sf::GlShader::SetUniform1fv(const std::string& name, const float* pointer, uint32_t number)
 {
 	glUniform1fv(GetUniformLocation(name), number, pointer);
 }
-void sf::GlShader::SetUniform3fv(const std::string& name, const float* pointer, unsigned int number)
+void sf::GlShader::SetUniform3fv(const std::string& name, const float* pointer, uint32_t number)
 {
 	glUniform3fv(GetUniformLocation(name), number, pointer);
 }
-void sf::GlShader::SetUniform4fv(const std::string& name, const float* pointer, unsigned int number)
+void sf::GlShader::SetUniform4fv(const std::string& name, const float* pointer, uint32_t number)
 {
 	glUniform4fv(GetUniformLocation(name), number, pointer);
 }

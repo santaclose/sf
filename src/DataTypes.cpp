@@ -2,7 +2,7 @@
 
 namespace sf {
 
-	unsigned int sf::GetDataTypeSize(DataType dataType)
+	uint32_t sf::GetDataTypeSize(DataType dataType)
 	{
 		switch (dataType)
 		{

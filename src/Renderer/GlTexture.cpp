@@ -79,7 +79,7 @@ void sf::GlTexture::GetGlEnums(int channelCount, StorageType storageType, GLenum
 	}
 }
 
-void sf::GlTexture::Create(unsigned int width, unsigned int height, int channelCount, StorageType storageType, WrapMode wrapMode, bool mipmap)
+void sf::GlTexture::Create(uint32_t width, uint32_t height, int channelCount, StorageType storageType, WrapMode wrapMode, bool mipmap)
 {
 	this->width = width;
 	this->height = height;
@@ -247,7 +247,7 @@ sf::GlTexture::~GlTexture()
 		stbi_image_free(floatImgBuffer);
 }
 
-void sf::GlTexture::Bind(unsigned int slot) const
+void sf::GlTexture::Bind(uint32_t slot) const
 {
 	glActiveTexture(GL_TEXTURE0 + slot);
 	glBindTexture(GL_TEXTURE_2D, this->gl_id);

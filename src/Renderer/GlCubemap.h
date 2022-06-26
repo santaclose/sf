@@ -15,7 +15,7 @@ namespace sf {
 		};
 
 	private:
-		unsigned int m_gl_id;
+		uint32_t m_gl_id;
 		int m_size;
 		StorageType m_storageType;
 
@@ -23,7 +23,7 @@ namespace sf {
 
 	public:
 		void Create(
-			unsigned int size,
+			uint32_t size,
 			int channelCount = 3,
 			StorageType storageType = StorageType::Float16,
 			bool mipmap = true);
@@ -47,10 +47,10 @@ namespace sf {
 
 		~GlCubemap();
 
-		void Bind(unsigned int slot = 0) const;
+		void Bind(uint32_t slot = 0) const;
 		void Unbind() const;
 
-		inline unsigned int GlId() const { return m_gl_id; }
+		inline uint32_t GlId() const { return m_gl_id; }
 		inline bool IsHDR() const { return m_storageType == StorageType::Float16 || m_storageType == StorageType::Float32; }
 		inline int GetSize() const { return m_size; }
 	};

@@ -3,8 +3,8 @@
 #include <Components/Camera.h>
 
 bool sf::GlSkybox::generated = false;
-unsigned int sf::GlSkybox::gl_VAO;
-unsigned int sf::GlSkybox::gl_VBO;
+uint32_t sf::GlSkybox::gl_VAO;
+uint32_t sf::GlSkybox::gl_VBO;
 
 float sf::GlSkybox::cubeVertices[] = {   
 	-1.0f,  1.0f, -1.0f,

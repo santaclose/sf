@@ -33,14 +33,14 @@ namespace sf::Renderer {
 
 	struct MeshGpuData
 	{
-		unsigned int gl_vertexBuffer;
-		unsigned int gl_indexBuffer;
-		unsigned int gl_vao;
+		uint32_t gl_vertexBuffer;
+		uint32_t gl_indexBuffer;
+		uint32_t gl_vao;
 	};
 
 	struct VoxelBoxGpuData
 	{
-		unsigned int gl_ssbo;
+		uint32_t gl_ssbo;
 		int numberOfCubes;
 		std::vector<glm::mat4> cubeModelMatrices;
 	};
@@ -51,7 +51,7 @@ namespace sf::Renderer {
 		glm::mat4 cameraMatrix;
 		glm::vec3 cameraPosition;
 	};
-	unsigned int sharedGpuData_gl_ubo;
+	uint32_t sharedGpuData_gl_ubo;
 	SharedGpuData sharedGpuData;
 
 	std::unordered_map<const sf::MeshData*, MeshGpuData> meshGpuData;
@@ -70,7 +70,7 @@ namespace sf::Renderer {
 	};
 	std::vector<void*> rendererUniformVector;
 	EnvironmentData environmentData;
-	unsigned int environment_gl_ubo;
+	uint32_t environment_gl_ubo;
 
 	void CreateMeshMaterialSlots(int id, const sf::MeshData* mesh)
 	{
@@ -84,7 +84,7 @@ namespace sf::Renderer {
 		glBufferData(GL_ARRAY_BUFFER, mesh->vertexCount * mesh->vertexLayout.GetSize(), mesh->vertexBuffer, GL_STATIC_DRAW);
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshGpuData[mesh].gl_indexBuffer);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->indexVector.size() * sizeof(unsigned int), &mesh->indexVector[0], GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->indexVector.size() * sizeof(uint32_t), &mesh->indexVector[0], GL_STATIC_DRAW);
 	}
 
 	void CreateMeshGpuData(const sf::MeshData* mesh)
@@ -103,7 +103,7 @@ namespace sf::Renderer {
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshGpuData[mesh].gl_indexBuffer);
 		// update indices to draw
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->indexVector.size() * sizeof(unsigned int), &mesh->indexVector[0], GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->indexVector.size() * sizeof(uint32_t), &mesh->indexVector[0], GL_STATIC_DRAW);
 
 		const std::vector<DataComponent>& components = mesh->vertexLayout.GetComponents();
 		for (int i = 0; i < components.size(); i++)
@@ -168,7 +168,7 @@ namespace sf::Renderer {
 #ifdef SF_DEBUG
 	void APIENTRY glDebugOutput(GLenum source,
 		GLenum type,
-		unsigned int id,
+		uint32_t id,
 		GLenum severity,
 		GLsizei length,
 		const char* message,
@@ -388,7 +388,7 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 		CreateMeshMaterialSlots(mesh.id, mesh.meshData);
 
 	Transform& cameraTransform = activeCameraEntity.GetComponent<Transform>();
-	for (unsigned int i = 0; i < mesh.meshData->pieces.size(); i++)
+	for (uint32_t i = 0; i < mesh.meshData->pieces.size(); i++)
 	{
 		GlMaterial* materialToUse = meshMaterials[mesh.id][i];
 
@@ -399,13 +399,13 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 		glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
 
-		unsigned int drawEnd, drawStart;
+		uint32_t drawEnd, drawStart;
 		drawStart = mesh.meshData->pieces[i];
 		drawEnd = mesh.meshData->pieces.size() > i + 1 ? mesh.meshData->pieces[i + 1] : mesh.meshData->indexVector.size();
 
 		glBindVertexArray(meshGpuData[mesh.meshData].gl_vao);
 		glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
-		glDrawElements(GL_TRIANGLES, drawEnd - drawStart, GL_UNSIGNED_INT, (void*)(drawStart * sizeof(unsigned int)));
+		glDrawElements(GL_TRIANGLES, drawEnd - drawStart, GL_UNSIGNED_INT, (void*)(drawStart * sizeof(uint32_t)));
 	}
 }
 

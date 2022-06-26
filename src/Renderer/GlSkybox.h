@@ -8,8 +8,8 @@ namespace sf {
 	class GlSkybox
 	{
 		static bool generated;
-		static unsigned int gl_VAO;
-		static unsigned int gl_VBO;
+		static uint32_t gl_VAO;
+		static uint32_t gl_VBO;
 		static float cubeVertices[];
 		static GlShader shader;
 		static GlCubemap* cubemap;

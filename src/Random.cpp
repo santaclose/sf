@@ -2,7 +2,7 @@
 
 #include <Math.hpp>
 
-void sf::Random::SetSeed(unsigned int seed)
+void sf::Random::SetSeed(uint32_t seed)
 {
 	srand(seed);
 }

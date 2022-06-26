@@ -11,7 +11,6 @@
 
 #include <glad/glad.h>
 #include <Components/Camera.h>
-#include <Renderer/Vertex.h>
 
 #include <Material.h>
 #include <Defaults.h>
@@ -82,7 +81,7 @@ namespace sf::Renderer {
 	void TransferVertexData(const sf::MeshData* mesh)
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, meshGpuData[mesh].gl_vertexBuffer);
-		glBufferData(GL_ARRAY_BUFFER, mesh->vertexVector.size() * sizeof(Vertex), &mesh->vertexVector[0], GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, mesh->vertexCount * mesh->vertexLayout.GetSize(), mesh->vertexBuffer, GL_STATIC_DRAW);
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshGpuData[mesh].gl_indexBuffer);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->indexVector.size() * sizeof(unsigned int), &mesh->indexVector[0], GL_STATIC_DRAW);
@@ -100,24 +99,29 @@ namespace sf::Renderer {
 		glBindBuffer(GL_ARRAY_BUFFER, meshGpuData[mesh].gl_vertexBuffer);
 
 		// update vertices
-		glBufferData(GL_ARRAY_BUFFER, mesh->vertexVector.size() * sizeof(Vertex), &mesh->vertexVector[0], GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, mesh->vertexCount * mesh->vertexLayout.GetSize(), mesh->vertexBuffer, GL_STATIC_DRAW);
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshGpuData[mesh].gl_indexBuffer);
 		// update indices to draw
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->indexVector.size() * sizeof(unsigned int), &mesh->indexVector[0], GL_STATIC_DRAW);
 
-		glEnableVertexAttribArray(0); // position
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
-		glEnableVertexAttribArray(1); // normal
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 3));
-		glEnableVertexAttribArray(2); // tangent
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 6));
-		glEnableVertexAttribArray(3); // bitangent
-		glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 9));
-		glEnableVertexAttribArray(4); // texture coords
-		glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 12));
-		glEnableVertexAttribArray(5); // extra data
-		glVertexAttribPointer(5, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 14));
+		const std::vector<DataComponent>& components = mesh->vertexLayout.GetComponents();
+		for (int i = 0; i < components.size(); i++)
+		{
+			glEnableVertexAttribArray(i);
+			switch (components[i].dataType)
+			{
+				case DataType::f32:
+					glVertexAttribPointer(i, 1, GL_FLOAT, GL_FALSE, mesh->vertexLayout.GetSize(), (void*)components[i].byteOffset);
+					break;
+				case DataType::vec2f32:
+					glVertexAttribPointer(i, 2, GL_FLOAT, GL_FALSE, mesh->vertexLayout.GetSize(), (void*)components[i].byteOffset);
+					break;
+				case DataType::vec3f32:
+					glVertexAttribPointer(i, 3, GL_FLOAT, GL_FALSE, mesh->vertexLayout.GetSize(), (void*)components[i].byteOffset);
+					break;
+			}
+		}
 
 		glBindVertexArray(0);
 
@@ -373,7 +377,7 @@ void sf::Renderer::DrawSkybox()
 
 void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 {
-	if (mesh.meshData->vertexVector.size() == 0)
+	if (mesh.meshData->vertexCount == 0)
 		return;
 
 	assert(activeCameraEntity);

@@ -44,7 +44,7 @@ namespace sf
 
 	void Game::Initialize(int argc, char** argv)
 	{
-		uint32_t aoMaterial = Renderer::CreateMaterial(Material("assets/shaders/defaultV.shader", "assets/shaders/vertexAoF.shader", false));
+		uint32_t aoMaterial = Renderer::CreateMaterial(Material("assets/shaders/vertexAoV.shader", "assets/shaders/vertexAoF.shader", false));
 		uint32_t colorsMaterial = Renderer::CreateMaterial(Material("examples/spaceship/randomColorsV.shader", "examples/spaceship/randomColorsF.shader", false));
 		uint32_t uvMaterial = Renderer::CreateMaterial(Material("assets/shaders/defaultV.shader", "assets/shaders/uvF.shader", false));
 		uint32_t noiseMaterial = Renderer::CreateMaterial(Material("examples/spaceship/noiseV.shader", "examples/spaceship/noiseF.shader", false));
@@ -82,6 +82,10 @@ namespace sf
 		{
 			errt::seed = i;
 			MeshProcessor::GenerateMeshWithFunction(generatedMeshes[i], errt::GenerateModel);
+			generatedMeshes[i].ChangeVertexLayout(DataLayout({
+					{MeshData::vertexPositionAttr, DataType::vec3f32},
+					{MeshData::vertexAoAttr, DataType::f32},
+				}));
 			MeshProcessor::BakeAoToVertices(generatedMeshes[i]);
 		}
 

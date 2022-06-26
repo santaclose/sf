@@ -2,35 +2,34 @@
 
 namespace sf {
 
-	std::unordered_map<DataType, unsigned int> dataTypeSizes = {
-		{DataType::b, 1},
-		{DataType::i8, 1},
-		{DataType::i16, 2},
-		{DataType::i32, 4},
-		{DataType::i64, 8},
-		{DataType::u8, 1},
-		{DataType::u16, 2},
-		{DataType::u32, 4},
-		{DataType::u64, 8},
-		{DataType::f16, 2},
-		{DataType::f32, 4},
-		{DataType::f64, 8},
-		{DataType::vec2f32, 8},
-		{DataType::vec3f32, 12},
-		{DataType::vec4f32, 16},
-		{DataType::mat2f32, 16},
-		{DataType::mat3f32, 36},
-		{DataType::mat4f32, 64},
-		{DataType::vec2f64, 16},
-		{DataType::vec3f64, 24},
-		{DataType::vec4f64, 32},
-		{DataType::mat2f64, 32},
-		{DataType::mat3f64, 72},
-		{DataType::mat4f64, 128}
-	};
-
 	unsigned int sf::GetDataTypeSize(DataType dataType)
 	{
-		return dataTypeSizes[dataType];
+		switch (dataType)
+		{
+		case DataType::b: return 1;
+		case DataType::i8: return 1;
+		case DataType::i16: return 2;
+		case DataType::i32: return 4;
+		case DataType::i64: return 8;
+		case DataType::u8: return 1;
+		case DataType::u16: return 2;
+		case DataType::u32: return 4;
+		case DataType::u64: return 8;
+		case DataType::f16: return 2;
+		case DataType::f32: return 4;
+		case DataType::f64: return 8;
+		case DataType::vec2f32: return 8;
+		case DataType::vec3f32: return 12;
+		case DataType::vec4f32: return 16;
+		case DataType::mat2f32: return 16;
+		case DataType::mat3f32: return 36;
+		case DataType::mat4f32: return 64;
+		case DataType::vec2f64: return 16;
+		case DataType::vec3f64: return 24;
+		case DataType::vec4f64: return 32;
+		case DataType::mat2f64: return 32;
+		case DataType::mat3f64: return 72;
+		case DataType::mat4f64: return 128;
+		}
 	}
 }

@@ -3,7 +3,6 @@
 #include <vector>
 #include <string>
 
-#include <Renderer/Vertex.h>
 #include <MeshData.h>
 #include <Bitmap.h>
 

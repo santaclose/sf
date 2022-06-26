@@ -4,28 +4,35 @@ namespace sfmg
 {
 	namespace ml
 	{
-		using namespace sf;
 		using namespace vl;
 
 		bool calculateVertexNormals = true;
-		unsigned int vertexCounter = 0;
-		unsigned int indexCounter = 0;
+		uint32_t vertexCounter = 0;
+		uint32_t indexCounter = 0;
 
-		std::vector<Vertex>* vertices;
-		std::vector<unsigned int>* indexList;
+		std::vector<Vertex> vertices;
+		std::vector<uint32_t> indexList;
 
-		void Initialize(bool smooth, std::vector<Vertex>* theVertices, std::vector<unsigned int>* theIndexList)
+		void Initialize(bool smooth)
 		{
 			calculateVertexNormals = smooth;
 			vertexCounter = indexCounter = 0;
-			vertices = theVertices;
-			indexList = theIndexList;
+			vertices.clear();
+			indexList.clear();
+		}
+
+		void GetData(Vertex*& vertexBuffer, uint32_t& vertexCount, const uint32_t*& indexBuffer, uint32_t& indexCount)
+		{
+			vertexBuffer = &(vertices[0]);
+			vertexCount = vertexCounter;
+			indexBuffer = &(indexList[0]);
+			indexCount = indexCounter;
 		}
 
 		inline vec calcNormal(faceS& theFace)
 		{
-			glm::vec3 a = ((vertices[0][theFace.verts[1]].position - vertices[0][theFace.verts[0]].position) *
-				(vertices[0][theFace.verts[2]].position - vertices[0][theFace.verts[1]].position));
+			glm::vec3 a = ((vertices[theFace.verts[1]].position - vertices[theFace.verts[0]].position) *
+				(vertices[theFace.verts[2]].position - vertices[theFace.verts[1]].position));
 			vec res(a.x, a.y, a.z);
 			return res.Normalized();
 		}
@@ -36,77 +43,67 @@ namespace sfmg
 
 			if (calculateVertexNormals)
 			{
-				for (unsigned int theVertex : theFace.verts) // update all vertex normals of the face
+				for (uint32_t theVertex : theFace.verts) // update all vertex normals of the face
 				{
-					vertices[0][theVertex].normal.x += normal.x;
-					vertices[0][theVertex].normal.y += normal.y;
-					vertices[0][theVertex].normal.z += normal.z;
+					vertices[theVertex].normal.x += normal.x;
+					vertices[theVertex].normal.y += normal.y;
+					vertices[theVertex].normal.z += normal.z;
 				}
 				for (int i = 2; i < theFace.verts.size(); i++) // triangulate
 				{
-					indexList->push_back(theFace.verts[0]);
-					indexList->push_back(theFace.verts[i-1]);
-					indexList->push_back(theFace.verts[i]);
+					indexList.push_back(theFace.verts[0]);
+					indexList.push_back(theFace.verts[i-1]);
+					indexList.push_back(theFace.verts[i]);
 					indexCounter += 3;
 				}
 			}
 			else
 			{
-				Vertex newVertex(glm::vec3(0,0,0));
+				Vertex newVertex;
 				for (int i = 2; i < theFace.verts.size(); i++) // triangulate
 				{
-					newVertex = vertices[0][theFace.verts[0]];
+					newVertex = vertices[theFace.verts[0]];
 					newVertex.normal.x = normal.x; newVertex.normal.y = normal.y; newVertex.normal.z = normal.z; // set vertex normals equal to face normals
 					
-					vertices->push_back(newVertex);
-					indexList->push_back(vertices->size() - 1);
-					newVertex = vertices[0][theFace.verts[i - 1]];
+					vertices.push_back(newVertex);
+					indexList.push_back(vertices.size() - 1);
+					newVertex = vertices[theFace.verts[i - 1]];
 					newVertex.normal.x = normal.x; newVertex.normal.y = normal.y; newVertex.normal.z = normal.z;
 					
-					vertices->push_back(newVertex);
-					indexList->push_back(vertices->size() - 1);
-					newVertex = vertices[0][theFace.verts[i]];
+					vertices.push_back(newVertex);
+					indexList.push_back(vertices.size() - 1);
+					newVertex = vertices[theFace.verts[i]];
 					newVertex.normal.x = normal.x; newVertex.normal.y = normal.y; newVertex.normal.z = normal.z;
 					
-					vertices->push_back(newVertex);
-					indexList->push_back(vertices->size() - 1);
+					vertices.push_back(newVertex);
+					indexList.push_back(vertices.size() - 1);
 					vertexCounter += 3;
 				}
 			}
 		}
 
-		unsigned int vertex(float x, float y, float z, float u, float v)
+		uint32_t vertex(float x, float y, float z, float u, float v)
 		{
-			Vertex newVertex = Vertex(x, y, z);
-			newVertex.textureCoord.x = u;
-			newVertex.textureCoord.y = v;
+			Vertex newVertex;
+			newVertex.position = { x, y, z };
+			newVertex.textureCoord = { u, v };
 			
-			vertices->push_back(newVertex);
+			vertices.push_back(newVertex);
 			vertexCounter++;
 			return vertexCounter - 1;
 		}
-		unsigned int vertex(vec& pos, float u, float v)
+		uint32_t vertex(const vec& pos, float u, float v)
 		{
-			Vertex newVertex = Vertex(pos.x, pos.y, pos.z);
-			newVertex.textureCoord.x = u;
-			newVertex.textureCoord.y = v;
+			Vertex newVertex;
+			newVertex.position = { pos.x, pos.y, pos.z };
+			newVertex.textureCoord = { u, v };
 			
-			vertices->push_back(newVertex);
-			vertexCounter++;
-			return vertexCounter - 1;
-		}
-		unsigned int vertex(vec&& pos, float u, float v)
-		{
-			Vertex newVertex = Vertex(pos.x, pos.y, pos.z);
-			newVertex.textureCoord.x = u;
-			newVertex.textureCoord.y = v;
-			
-			vertices->push_back(newVertex);
+			vertices.push_back(newVertex);
 			vertexCounter++;
 			return vertexCounter - 1;
 		}
 
-		void face(unsigned int* ids, int length)
+		void face(uint32_t* ids, int length)
 		{
 			faceS fce;
 			for (int i = 0; i < length; i++)
@@ -115,7 +112,7 @@ namespace sfmg
 			}
 			generateFace(fce);
 		}
-		void face(unsigned int* ids, int length, bool invert)
+		void face(uint32_t* ids, int length, bool invert)
 		{
 			faceS fce;
 			if (invert)
@@ -135,7 +132,7 @@ namespace sfmg
 				generateFace(fce);
 			}
 		}
-		void face(unsigned int* ids, int length, int start)
+		void face(uint32_t* ids, int length, int start)
 		{
 			faceS fce;
 			for (int i = 0; i < length; i++)
@@ -144,7 +141,7 @@ namespace sfmg
 			}
 			generateFace(fce);
 		}
-		void face(unsigned int* ids, int length, int start, bool invert)
+		void face(uint32_t* ids, int length, int start, bool invert)
 		{
 			faceS fce;
 			if (invert)
@@ -163,7 +160,7 @@ namespace sfmg
 			}
 			generateFace(fce);
 		}
-		void faceSeq(unsigned int* ids, int count, int vertsPerFace)
+		void faceSeq(uint32_t* ids, int count, int vertsPerFace)
 		{
 			int length = count / vertsPerFace;
 			faceS* fce = (faceS*)alloca(length * sizeof(faceS));

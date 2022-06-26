@@ -4,6 +4,7 @@
 #include <iostream>
 #include <tiny_gltf.h>
 #include <glad/glad.h>
+#include <glm/glm.hpp>
 
 #include <MeshProcessor.h>
 
@@ -56,8 +57,16 @@ void sf::GltfImporter::Destroy(int id)
 }
 
 // https://github.com/SaschaWillems/Vulkan/blob/master/examples/gltfloading/gltfloading.cpp
-void sf::GltfImporter::GenerateMeshData(int id, MeshData& meshData)
+void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 {
+	DataType positionDataType = mesh.vertexLayout.GetComponent(MeshData::vertexPositionAttr)->dataType;
+	DataType normalDataType = mesh.vertexLayout.GetComponent(MeshData::vertexNormalAttr)->dataType;
+	DataType uvsDataType = mesh.vertexLayout.GetComponent(MeshData::vertexUvsAttr)->dataType;
+
+	assert(positionDataType == DataType::vec3f32);
+	assert(normalDataType == DataType::vec3f32);
+	assert(uvsDataType == DataType::vec2f32);
+
 	assert(id > -1 && id < models.size());
 	assert(models[id] != nullptr);
 
@@ -71,7 +80,7 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& meshData)
 	{
 		for (auto& prim : gltfMesh.primitives)
 		{
-			uint32_t vertexStart = static_cast<uint32_t>(meshData.vertexVector.size());
+			uint32_t vertexStart = static_cast<uint32_t>(mesh.vertexCount);
 			uint32_t indexCount = 0;
 
 			// Vertices
@@ -79,14 +88,14 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& meshData)
 				const float* positionBuffer = nullptr;
 				const float* normalsBuffer = nullptr;
 				const float* texCoordsBuffer = nullptr;
-				size_t vertexCount = 0;
+				size_t primitiveVertexCount = 0;
 
 				if (prim.attributes.find("POSITION") != prim.attributes.end())
 				{
 					const tinygltf::Accessor& accessor = model.accessors[prim.attributes.find("POSITION")->second];
 					const tinygltf::BufferView& view = model.bufferViews[accessor.bufferView];
 					positionBuffer = reinterpret_cast<const float*>(&(model.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
-					vertexCount = accessor.count;
+					primitiveVertexCount = accessor.count;
 				}
 				if (prim.attributes.find("NORMAL") != prim.attributes.end())
 				{
@@ -101,16 +110,28 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& meshData)
 					texCoordsBuffer = reinterpret_cast<const float*>(&(model.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
 				}
 
+				void* oldVertexBuffer = mesh.vertexBuffer;
+				mesh.vertexCount += primitiveVertexCount;
+				mesh.vertexBuffer = malloc(mesh.vertexLayout.GetSize() * mesh.vertexCount);
+				if (oldVertexBuffer != nullptr)
+					memcpy(mesh.vertexBuffer, oldVertexBuffer, mesh.vertexLayout.GetSize() * vertexStart);
+				free(oldVertexBuffer);
+
 				// Create Vertices
-				for (int i = 0; i < vertexCount; i++)
+				for (uint32_t i = 0; i < primitiveVertexCount; i++)
 				{
-					Vertex v;
-					v.position = { positionBuffer[i * 3 + 0], positionBuffer[i * 3 + 1], positionBuffer[i * 3 + 2] };
+					glm::vec3* posPtr = (glm::vec3*) mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::vertexPositionAttr, vertexStart + i);
+					*posPtr = { positionBuffer[i * 3 + 0], positionBuffer[i * 3 + 1], positionBuffer[i * 3 + 2] };
 					if (normalsBuffer)
-						v.normal = glm::normalize(glm::vec3(normalsBuffer[i * 3 + 0], normalsBuffer[i * 3 + 1], normalsBuffer[i * 3 + 2]));
+					{
+						glm::vec3* normalPtr = (glm::vec3*)mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::vertexNormalAttr, vertexStart + i);
+						*normalPtr = glm::normalize(glm::vec3(normalsBuffer[i * 3 + 0], normalsBuffer[i * 3 + 1], normalsBuffer[i * 3 + 2]));
+					}
 					if (texCoordsBuffer)
-						v.textureCoord = { texCoordsBuffer[i * 2 + 0], 1.0 - texCoordsBuffer[i * 2 + 1] };
-					meshData.vertexVector.push_back(v);
+					{
+						glm::vec2* uvsPtr = (glm::vec2*)mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::vertexUvsAttr, vertexStart + i);
+						*uvsPtr = { texCoordsBuffer[i * 2 + 0], 1.0 - texCoordsBuffer[i * 2 + 1] };
+					}
 				}
 			}
 			// Indices
@@ -128,9 +149,9 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& meshData)
 				{
 					uint32_t* buf = new uint32_t[accessor.count];
 					memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint32_t));
-					meshData.pieces.push_back(meshData.indexVector.size());
+					mesh.pieces.push_back(mesh.indexVector.size());
 					for (size_t index = 0; index < accessor.count; index++)
-						meshData.indexVector.push_back(buf[index] + vertexStart);
+						mesh.indexVector.push_back(buf[index] + vertexStart);
 					delete[] buf;
 					break;
 				}
@@ -138,9 +159,9 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& meshData)
 				{
 					uint16_t* buf = new uint16_t[accessor.count];
 					memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint16_t));
-					meshData.pieces.push_back(meshData.indexVector.size());
+					mesh.pieces.push_back(mesh.indexVector.size());
 					for (size_t index = 0; index < accessor.count; index++)
-						meshData.indexVector.push_back(buf[index] + vertexStart);
+						mesh.indexVector.push_back(buf[index] + vertexStart);
 					delete[] buf;
 					break;
 				}
@@ -148,9 +169,9 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& meshData)
 				{
 					uint8_t* buf = new uint8_t[accessor.count];
 					memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint8_t));
-					meshData.pieces.push_back(meshData.indexVector.size());
+					mesh.pieces.push_back(mesh.indexVector.size());
 					for (size_t index = 0; index < accessor.count; index++)
-						meshData.indexVector.push_back(buf[index] + vertexStart);
+						mesh.indexVector.push_back(buf[index] + vertexStart);
 					delete[] buf;
 					break;
 				}

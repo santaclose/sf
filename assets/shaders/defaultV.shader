@@ -4,8 +4,9 @@ layout(location = 0) in vec3 aPosition;
 layout(location = 1) in vec3 aNormal;
 layout(location = 2) in vec3 aTangent;
 layout(location = 3) in vec3 aBitangent;
-layout(location = 4) in vec2 aTextureCoord;
-layout(location = 5) in vec2 aExtraData;
+layout(location = 4) in vec3 aColor;
+layout(location = 5) in vec2 aTextureCoord;
+layout(location = 6) in float aAo;
 
 
 layout(std140, binding = 0) uniform SharedGpuData
@@ -17,12 +18,12 @@ layout(std140, binding = 0) uniform SharedGpuData
 
 out vec2 texCoord;
 out mat3 TBN;
-out vec2 extraData;
+out float vertexAo;
 
 void main()
 {
 	texCoord = aTextureCoord;
-	extraData = aExtraData;
+	vertexAo = aAo;
 
 	vec3 T = normalize(vec3(modelMatrix * vec4(aTangent, 0.0)));
 	vec3 B = normalize(vec3(modelMatrix * vec4(aBitangent, 0.0)));

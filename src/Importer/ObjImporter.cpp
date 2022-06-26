@@ -152,8 +152,16 @@ void sf::ObjImporter::Destroy(int id)
 	meshes[id] = nullptr;
 }
 
-void sf::ObjImporter::GenerateMeshData(int id, MeshData& meshData)
+void sf::ObjImporter::GenerateMeshData(int id, MeshData& mesh)
 {
+	DataType positionDataType = mesh.vertexLayout.GetComponent(MeshData::vertexPositionAttr)->dataType;
+	DataType normalDataType = mesh.vertexLayout.GetComponent(MeshData::vertexNormalAttr)->dataType;
+	DataType uvsDataType = mesh.vertexLayout.GetComponent(MeshData::vertexUvsAttr)->dataType;
+
+	assert(positionDataType == DataType::vec3f32);
+	assert(normalDataType == DataType::vec3f32);
+	assert(uvsDataType == DataType::vec2f32);
+
 	assert(id > -1 && id < meshes.size());
 	assert(meshes[id] != nullptr);
 
@@ -163,7 +171,7 @@ void sf::ObjImporter::GenerateMeshData(int id, MeshData& meshData)
 	for (int fi = 0; fi < meshes[id]->faces.size(); fi++)
 	{
 		if (meshes[id]->pieces.find(fi) != meshes[id]->pieces.end())
-			meshData.pieces.push_back(triangulatedVtxSequence.size());
+			mesh.pieces.push_back(triangulatedVtxSequence.size());
 
 		const ObjFace& f = meshes[id]->faces[fi];
 		for (int i = 2; i < f.vertices.size(); i++)
@@ -176,20 +184,35 @@ void sf::ObjImporter::GenerateMeshData(int id, MeshData& meshData)
 
 	// build mesh
 	std::unordered_map<ObjVertex, unsigned int, ObjVertexHash> uniqueVertices;
+	std::vector<ObjVertex> finalVertices;
 
 	for (int vi = 0; vi < triangulatedVtxSequence.size(); vi++)
 	{
+		int vertexCounter = 0;
 		const ObjVertex& v = triangulatedVtxSequence[vi];
 		if (uniqueVertices.find(v) == uniqueVertices.end()) // not found
 		{
-			meshData.vertexVector.emplace_back();
-			meshData.vertexVector.back().position = meshes[id]->positions[v.posID];
-			if (meshes[id]->normals.size() > 0)
-				meshData.vertexVector.back().normal = meshes[id]->normals[v.normalID];
-			if (meshes[id]->texCoords.size() > 0)
-				meshData.vertexVector.back().textureCoord = meshes[id]->texCoords[v.coordsID];
-			uniqueVertices.insert({ v, meshData.vertexVector.size() - 1 });
+			finalVertices.push_back(v);
+			uniqueVertices.insert({ v, finalVertices.size() - 1 });
 		}
-		meshData.indexVector.push_back(uniqueVertices[v]);
+		mesh.indexVector.push_back(uniqueVertices[v]);
 	}
+
+	mesh.vertexBuffer = malloc(mesh.vertexLayout.GetSize() * finalVertices.size());
+	for (int i = 0; i < finalVertices.size(); i++)
+	{
+		glm::vec3* posPtr = (glm::vec3*) mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::vertexPositionAttr, i);
+		*posPtr = meshes[id]->positions[finalVertices[i].posID];
+		if (meshes[id]->normals.size() > 0)
+		{
+			glm::vec3* normalPtr = (glm::vec3*)mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::vertexNormalAttr, i);
+			*normalPtr = meshes[id]->normals[finalVertices[i].normalID];
+		}
+		if (meshes[id]->texCoords.size() > 0)
+		{
+			glm::vec2* coordsPtr = (glm::vec2*)mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::vertexUvsAttr, i);
+			*coordsPtr = meshes[id]->texCoords[finalVertices[i].coordsID];
+		}
+	}
+	mesh.vertexCount = finalVertices.size();
 }

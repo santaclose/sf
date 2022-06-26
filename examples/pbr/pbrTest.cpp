@@ -93,11 +93,12 @@ namespace sf
 
 			gltfid = GltfImporter::Load("examples/pbr/DamagedHelmet.glb");
 
-			Bitmap albedo = GltfImporter::GenerateBitmap(gltfid, 0);
-			Bitmap metalRoughness = GltfImporter::GenerateBitmap(gltfid, 1);
-			Bitmap normalmap = GltfImporter::GenerateBitmap(gltfid, 4);
-			Bitmap emissive = GltfImporter::GenerateBitmap(gltfid, 2);
-			Bitmap ao = GltfImporter::GenerateBitmap(gltfid, 3);
+			Bitmap albedo, metalRoughness, normalmap, emissive, ao;
+			GltfImporter::GenerateBitmap(gltfid, 0, albedo);
+			GltfImporter::GenerateBitmap(gltfid, 1, metalRoughness);
+			GltfImporter::GenerateBitmap(gltfid, 4, normalmap);
+			GltfImporter::GenerateBitmap(gltfid, 2, emissive);
+			GltfImporter::GenerateBitmap(gltfid, 3, ao);
 			Bitmap metal(metalRoughness.dataType, 1, metalRoughness.width, metalRoughness.height);
 			Bitmap roughness(metalRoughness.dataType, 1, metalRoughness.width, metalRoughness.height);
 			roughness.CopyChannel(metalRoughness, 1, 0);

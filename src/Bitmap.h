@@ -13,6 +13,7 @@ namespace sf
 		uint32_t height = 0;
 		void* buffer = nullptr;
 
+		Bitmap::Bitmap() = default;
 		Bitmap::Bitmap(DataType dataType, uint8_t channelCount, uint32_t width, uint32_t height, const void* pixelValue = nullptr);
 		Bitmap::Bitmap(const std::string& filePath, bool flipVertically = true);
 		void AddChannels(uint8_t channelCount = 1);

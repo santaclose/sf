@@ -163,7 +163,7 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& meshData)
 	}
 }
 
-sf::Bitmap sf::GltfImporter::GenerateBitmap(int id, int index)
+void sf::GltfImporter::GenerateBitmap(int id, int index, Bitmap& bitmap)
 {
 	assert(id > -1 && id < models.size());
 	
@@ -198,8 +198,13 @@ sf::Bitmap sf::GltfImporter::GenerateBitmap(int id, int index)
 		break;
 	}
 
+	bitmap.dataType = dataType;
+	bitmap.channelCount = image.component;
+	bitmap.width = image.width;
+	bitmap.height = image.height;
+
 	uint32_t dataTypeSize = GetDataTypeSize(dataType);
-	Bitmap output(dataType, image.component, image.width, image.height);
-	memcpy(output.buffer, &image.image.at(0), dataTypeSize * output.width * output.height * output.channelCount);
-	return output;
+	free(bitmap.buffer);
+	bitmap.buffer = malloc(dataTypeSize * (bitmap.width) * (bitmap.height) * (bitmap.channelCount));
+	memcpy(bitmap.buffer, &image.image.at(0), dataTypeSize * bitmap.width * bitmap.height * bitmap.channelCount);
 }

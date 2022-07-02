@@ -47,6 +47,7 @@ sf::GlShader::GlShader() : gl_id(-1) {}
 
 void sf::GlShader::CreateFromFiles(const std::string& vertexShaderPath, const std::string& fragmentShaderPath)
 {
+	std::cout << "[GlShader] Creating shader from files: " << vertexShaderPath << ", " << fragmentShaderPath << std::endl;
 	m_vertFileName = vertexShaderPath;
 	m_fragFileName = fragmentShaderPath;
 
@@ -81,6 +82,7 @@ void sf::GlShader::CreateFromFiles(const std::string& vertexShaderPath, const st
 
 void sf::GlShader::CreateComputeFromFile(const std::string& computeShaderPath)
 {
+	std::cout << "[GlShader] Creating compute shader from file: " << computeShaderPath << std::endl;
 	std::ifstream ifs(computeShaderPath);
 	if (ifs.fail())
 		std::cout << "[GlShader] Could not read compute shader file: " << computeShaderPath << std::endl;

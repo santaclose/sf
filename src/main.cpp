@@ -1,5 +1,6 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
+#include <filesystem>
 #include <iostream>
 #include <vector>
 
@@ -54,6 +55,12 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 
 int main(int argc, char** argv)
 {
+	if (!std::filesystem::is_directory("assets"))
+	{
+		std::filesystem::current_path("../../../");
+		std::cout << "Adjusting working directory\n";
+	}
+
 	GLFWwindow* window;
 
 	/* Initialize the library */

@@ -31,14 +31,6 @@ namespace sf {
 			WrapMode wrapMode = WrapMode::Repeat,
 			bool mipmap = true);
 
-		void CreateFromFile(const std::string& path,
-			int channelCount = 0,
-			StorageType storageType = StorageType::UnsignedByte,
-			WrapMode wrapMode = WrapMode::Repeat,
-			bool mipmap = true,
-			bool flipVertically = true,
-			int internalFormat = -1);
-
 		void CreateFromBitmap(const Bitmap& bitmap, WrapMode wrapMode = WrapMode::Repeat, bool mipmap = true, int internalFormat = -1);
 
 		void ComputeMipmap();

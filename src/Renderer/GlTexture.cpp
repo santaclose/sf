@@ -2,9 +2,6 @@
 
 #include <string>
 #include <iostream>
-#include <stb_image.h>
-
-#include <Importer/GltfImporter.h>
 
 void sf::GlTexture::GetGlEnums(int channelCount, StorageType storageType, GLenum& type, int& internalFormat, GLenum& format)
 {
@@ -106,48 +103,6 @@ void sf::GlTexture::Create(uint32_t width, uint32_t height, int channelCount, St
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-}
-
-void sf::GlTexture::CreateFromFile(const std::string& path, int channelCount, StorageType storageType, WrapMode wrapMode, bool mipmap, bool flipVertically, int internalFormat)
-{
-	if (this->isInitialized)
-		glDeleteTextures(1, &this->gl_id);
-
-	this->isInitialized = true;
-	this->storageType = storageType;
-	this->wrapMode = wrapMode;
-
-	stbi_set_flip_vertically_on_load(flipVertically);
-
-	bool isFloatTexture = this->storageType == StorageType::Float16 || this->storageType == StorageType::Float32;
-	void* bitmapBuffer;
-	if (isFloatTexture)
-		bitmapBuffer = stbi_loadf(path.c_str(), &this->width, &this->height, &this->channelCount, channelCount);
-	else
-		bitmapBuffer = stbi_load(path.c_str(), &this->width, &this->height, &this->channelCount, channelCount);
-	if (bitmapBuffer == nullptr)
-		std::cout << "[GlTexture] Could not load image " << path << std::endl;
-	this->channelCount = channelCount;
-
-	glGenTextures(1, &this->gl_id);
-	glBindTexture(GL_TEXTURE_2D, this->gl_id);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mipmap ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, this->wrapMode == WrapMode::Repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, this->wrapMode == WrapMode::Repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE);
-
-	int deducedInternalFormat;
-	GLenum type, format;
-	GetGlEnums(this->channelCount, this->storageType, type, deducedInternalFormat, format);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat == -1 ? deducedInternalFormat : internalFormat, this->width, this->height, 0, format, type, bitmapBuffer);
-
-	if (mipmap)
-		glGenerateMipmap(GL_TEXTURE_2D);
-
-	glBindTexture(GL_TEXTURE_2D, 0);
-	stbi_image_free(bitmapBuffer);
 }
 
 void sf::GlTexture::CreateFromBitmap(const Bitmap& bitmap, WrapMode wrapMode, bool mipmap, int internalFormat)

@@ -267,7 +267,6 @@ bool sf::Renderer::Initialize(void* process)
 	rendererUniformVector[(uint32_t)RendererUniformData::BrdfLUT] = &environmentData.lookupTexture;
 	rendererUniformVector[(uint32_t)RendererUniformData::PrefilterMap] = &environmentData.prefilterCubemap;
 	rendererUniformVector[(uint32_t)RendererUniformData::IrradianceMap] = &environmentData.irradianceCubemap;
-	environmentData.lookupTexture.CreateFromFile("assets/LUT.hdr", 4, GlTexture::Float16, GlTexture::ClampToEdge, false, true);
 
 	return true;
 }
@@ -357,13 +356,15 @@ uint32_t sf::Renderer::CreateMaterial(const Material& material)
 	return materials.size() - 1;
 }
 
-void sf::Renderer::SetEnvironment(const std::string& hdrFilePath)
+void sf::Renderer::SetEnvironment(const std::string& hdrFilePath, DataType hdrDataType)
 {
+	assert(hdrDataType == DataType::f16 || hdrDataType == DataType::f32);
+
 	if (!environmentData.lookupTexture.isInitialized)
-		IblHelper::GenerateLUT(environmentData.lookupTexture);
-	IblHelper::CubemapFromHdr(hdrFilePath, environmentData.envCubemap);
-	IblHelper::SpecularFromEnv(environmentData.envCubemap, environmentData.prefilterCubemap);
-	IblHelper::IrradianceFromEnv(environmentData.envCubemap, environmentData.irradianceCubemap);
+		IblHelper::GenerateLUT(environmentData.lookupTexture, hdrDataType);
+	IblHelper::CubemapFromHdr(hdrFilePath, environmentData.envCubemap, hdrDataType);
+	IblHelper::SpecularFromEnv(environmentData.envCubemap, environmentData.prefilterCubemap, hdrDataType);
+	IblHelper::IrradianceFromEnv(environmentData.envCubemap, environmentData.irradianceCubemap, hdrDataType);
 
 	GlSkybox::SetCubemap(&(environmentData.envCubemap));
 }

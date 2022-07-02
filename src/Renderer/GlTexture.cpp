@@ -108,7 +108,7 @@ void sf::GlTexture::Create(uint32_t width, uint32_t height, int channelCount, St
 
 }
 
-void sf::GlTexture::CreateFromFile(const std::string& path, int channelCount, StorageType storageType, WrapMode wrapMode, bool mipmap, bool flipVertically)
+void sf::GlTexture::CreateFromFile(const std::string& path, int channelCount, StorageType storageType, WrapMode wrapMode, bool mipmap, bool flipVertically, int internalFormat)
 {
 	if (this->isInitialized)
 		glDeleteTextures(1, &this->gl_id);
@@ -137,11 +137,11 @@ void sf::GlTexture::CreateFromFile(const std::string& path, int channelCount, St
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, this->wrapMode == WrapMode::Repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, this->wrapMode == WrapMode::Repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE);
 
-	int internalFormat;
+	int deducedInternalFormat;
 	GLenum type, format;
-	GetGlEnums(this->channelCount, this->storageType, type, internalFormat, format);
+	GetGlEnums(this->channelCount, this->storageType, type, deducedInternalFormat, format);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, this->width, this->height, 0, format, type, bitmapBuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat == -1 ? deducedInternalFormat : internalFormat, this->width, this->height, 0, format, type, bitmapBuffer);
 
 	if (mipmap)
 		glGenerateMipmap(GL_TEXTURE_2D);
@@ -150,7 +150,7 @@ void sf::GlTexture::CreateFromFile(const std::string& path, int channelCount, St
 	stbi_image_free(bitmapBuffer);
 }
 
-void sf::GlTexture::CreateFromBitmap(const Bitmap& bitmap, WrapMode wrapMode, bool mipmap)
+void sf::GlTexture::CreateFromBitmap(const Bitmap& bitmap, WrapMode wrapMode, bool mipmap, int internalFormat)
 {
 	if (this->isInitialized)
 		glDeleteTextures(1, &this->gl_id);
@@ -184,11 +184,11 @@ void sf::GlTexture::CreateFromBitmap(const Bitmap& bitmap, WrapMode wrapMode, bo
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, this->wrapMode == WrapMode::Repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, this->wrapMode == WrapMode::Repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE);
 
-	int internalFormat;
+	int deducedInternalFormat;
 	GLenum type, format;
-	GetGlEnums(this->channelCount, this->storageType, type, internalFormat, format);
+	GetGlEnums(this->channelCount, this->storageType, type, deducedInternalFormat, format);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, this->width, this->height, 0, format, type, bitmap.buffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat == -1 ? deducedInternalFormat : internalFormat, this->width, this->height, 0, format, type, bitmap.buffer);
 
 	if (mipmap)
 		glGenerateMipmap(GL_TEXTURE_2D);

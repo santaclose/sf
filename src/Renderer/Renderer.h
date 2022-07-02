@@ -26,7 +26,7 @@ namespace sf::Renderer {
 	void SetMeshMaterial(Mesh mesh, GlMaterial* material, int piece = -1);
 	void SetMeshMaterial(Mesh mesh, uint32_t materialId, int piece = -1);
 
-	void SetEnvironment(const std::string& hdrFilePath);
+	void SetEnvironment(const std::string& hdrFilePath, DataType hdrDataType = DataType::f16);
 
 	void DrawSkybox();
 	void DrawMesh(Mesh& mesh, Transform& transform);

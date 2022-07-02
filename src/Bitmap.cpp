@@ -25,7 +25,7 @@ sf::Bitmap::Bitmap(DataType dataType, uint8_t channelCount, uint32_t width, uint
 	}
 }
 
-sf::Bitmap::Bitmap(const std::string& filePath, bool flipVertically)
+sf::Bitmap::Bitmap(const std::string& filePath, bool flipVertically, bool limitRangeTo16bitFloat)
 {
 	assert(GetDataTypeSize(DataType::f32) == sizeof(float));
 	assert(GetDataTypeSize(DataType::u8) == sizeof(stbi_uc));
@@ -36,7 +36,6 @@ sf::Bitmap::Bitmap(const std::string& filePath, bool flipVertically)
 	int x, y, c;
 	if (fileExtension == "hdr")
 	{
-
 		stb_buffer = stbi_loadf(filePath.c_str(), &x, &y, &c, 0);
 		this->dataType = DataType::f32;
 	}
@@ -55,6 +54,20 @@ sf::Bitmap::Bitmap(const std::string& filePath, bool flipVertically)
 	memcpy(this->buffer, stb_buffer, this->width * this->height * this->channelCount * dataTypeSize);
 
 	stbi_image_free(stb_buffer);
+
+	if (limitRangeTo16bitFloat && this->dataType == DataType::f32)
+	{
+		uint32_t dataTypeSize = GetDataTypeSize(this->dataType);
+		for (int i = 0; i < (this->width) * (this->height); i++)
+		{
+			for (int j = 0; j < this->channelCount; j++)
+			{
+				float* pointer = (float*)(((uint8_t*)this->buffer) + (i * dataTypeSize * (this->channelCount)) + (dataTypeSize * j));
+				if (*pointer > 6.55e4)
+					*pointer = 6.55e4;
+			}
+		}
+	}
 }
 
 void sf::Bitmap::AddChannels(uint8_t channelCount)

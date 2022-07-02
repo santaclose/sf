@@ -5,8 +5,8 @@
 
 namespace sf::IblHelper
 {
-	void GenerateLUT(GlTexture& lut);
-	void CubemapFromHdr(const std::string &hdrFilePath, GlCubemap& environmentCubemap);
-	void IrradianceFromEnv(const GlCubemap& environmentCubemap, GlCubemap& irradianceCubemap);
-	void SpecularFromEnv(const GlCubemap& environmentCubemap, GlCubemap& prefilterCubemap);
+	void GenerateLUT(GlTexture& lut, DataType dataType = DataType::f16);
+	void CubemapFromHdr(const std::string &hdrFilePath, GlCubemap& environmentCubemap, DataType dataType = DataType::f16);
+	void SpecularFromEnv(const GlCubemap& environmentCubemap, GlCubemap& prefilterCubemap, DataType dataType = DataType::f16);
+	void IrradianceFromEnv(const GlCubemap& environmentCubemap, GlCubemap& irradianceCubemap, DataType dataType = DataType::f16);
 }

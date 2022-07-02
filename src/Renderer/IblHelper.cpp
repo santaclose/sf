@@ -10,209 +10,134 @@
 #include <Config.h>
 #include <Renderer/GlShader.h>
 
-namespace sf::IblHelper {
-
-	uint32_t envToCubeFBO, envToCubeRBO, irradianceFBO, irradianceRBO, prefilterFBO, prefilterRBO, brdfLUTFBO, brdfLUTRBO;
-	GlShader equirectangularToCubemapShader, irradianceShader, prefilterShader;
-
-	glm::mat4 envMapProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
-	glm::mat4 envMapView[] =
-	{
-		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
-		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
-		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
-	};
-
-
-	uint32_t renderCubeVAO = 0, renderCubeVBO;
-	float cubeVertices[] =
-	{
-		// back face
-		-1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
-		 1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right
-		 1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 0.0f, // bottom-right         
-		 1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right
-		-1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
-		-1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 1.0f, // top-left
-		// front face
-		-1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f, // bottom-left
-		 1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 0.0f, // bottom-right
-		 1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f, // top-right
-		 1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f, // top-right
-		-1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 1.0f, // top-left
-		-1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f, // bottom-left
-		// left face
-		-1.0f,  1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
-		-1.0f,  1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-left
-		-1.0f, -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-left
-		-1.0f, -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-left
-		-1.0f, -1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-right
-		-1.0f,  1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
-		// right face
-		 1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
-		 1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
-		 1.0f,  1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-right         
-		 1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
-		 1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
-		 1.0f, -1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-left     
-		// bottom face
-		-1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
-		 1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 1.0f, // top-left
-		 1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
-		 1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
-		-1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 0.0f, // bottom-right
-		-1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
-		// top face
-		-1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
-		 1.0f,  1.0f , 1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
-		 1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 1.0f, // top-right     
-		 1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
-		-1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
-		-1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 0.0f  // bottom-left      
-	};
-	void renderCube()
-	{
-		if (renderCubeVAO == 0)
-		{
-			glGenVertexArrays(1, &renderCubeVAO);
-			glGenBuffers(1, &renderCubeVBO);
-			// fill buffer
-			glBindBuffer(GL_ARRAY_BUFFER, renderCubeVBO);
-			glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
-			// link vertex attributes
-			glBindVertexArray(renderCubeVAO);
-			glEnableVertexAttribArray(0);
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-			glEnableVertexAttribArray(1);
-			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-			glEnableVertexAttribArray(2);
-			glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-			glBindBuffer(GL_ARRAY_BUFFER, 0);
-			glBindVertexArray(0);
-		}
-		glBindVertexArray(renderCubeVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-		glBindVertexArray(0);
-	}
-}
-
-void sf::IblHelper::HdrToCubemaps(const GlTexture& hdrTexture, GlCubemap& environmentCubemap, GlCubemap& irradianceCubemap, GlCubemap& prefilterCubemap)
+namespace sf::IblHelper
 {
-	environmentCubemap.Create(512, 3, GlCubemap::StorageType::Float16, true);
-	irradianceCubemap.Create(32, 3, GlCubemap::StorageType::Float16, false);
-	prefilterCubemap.Create(128, 3, GlCubemap::StorageType::Float16, true);
-	prefilterCubemap.ComputeMipmap();
-
-	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_CULL_FACE);
-
-	equirectangularToCubemapShader.CreateFromFiles("assets/shaders/ibl/equirectangularToCubemapV.shader", "assets/shaders/ibl/equirectangularToCubemapF.shader");
-	irradianceShader.CreateFromFiles("assets/shaders/ibl/irradianceV.shader", "assets/shaders/ibl/irradianceF.shader");
-	prefilterShader.CreateFromFiles("assets/shaders/ibl/prefilterV.shader", "assets/shaders/ibl/prefilterF.shader");
-
-	// equirectangular to cubemap conversion
-	glGenFramebuffers(1, &envToCubeFBO);
-	glGenRenderbuffers(1, &envToCubeRBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, envToCubeFBO);
-	glBindRenderbuffer(GL_RENDERBUFFER, envToCubeRBO);
-
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, environmentCubemap.GetSize(), environmentCubemap.GetSize());
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, envToCubeRBO);
-
-	equirectangularToCubemapShader.Bind();
-	equirectangularToCubemapShader.SetUniform1i("envMap", 0);
-	equirectangularToCubemapShader.SetUniformMatrix4fv("projection", glm::value_ptr(envMapProjection));
-	hdrTexture.Bind();
-	environmentCubemap.Bind();
-
-	glViewport(0, 0, environmentCubemap.GetSize() , environmentCubemap.GetSize());
-	glBindFramebuffer(GL_FRAMEBUFFER, envToCubeFBO);
-
-	for (uint32_t i = 0; i < 6; ++i)
+	struct Texture
 	{
-		equirectangularToCubemapShader.SetUniformMatrix4fv("view", glm::value_ptr(envMapView[i]));
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, environmentCubemap.GlId(), 0);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		uint32_t id;
+		uint32_t width;
+		uint32_t height;
+		uint32_t levels;
+	};
 
-		renderCube();
+	uint32_t numMipmapLevels(uint32_t width, uint32_t height)
+	{
+		uint32_t levels = 1;
+		while ((width | height) >> levels)
+			++levels;
+		return levels;
 	}
 
-	environmentCubemap.ComputeMipmap();
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	// diffuse irradiance capture
-	glGenFramebuffers(1, &irradianceFBO);
-	glGenRenderbuffers(1, &irradianceRBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, irradianceFBO);
-	glBindRenderbuffer(GL_RENDERBUFFER, irradianceRBO);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, irradianceCubemap.GetSize(), irradianceCubemap.GetSize());
-
-	irradianceShader.Bind();
-
-	irradianceShader.SetUniformMatrix4fv("projection", glm::value_ptr(envMapProjection));
-	environmentCubemap.Bind();
-
-	glViewport(0, 0, irradianceCubemap.GetSize(), irradianceCubemap.GetSize());
-	glBindFramebuffer(GL_FRAMEBUFFER, irradianceFBO);
-
-	for (uint32_t i = 0; i < 6; ++i)
+	Texture createTexture(GLenum target, int width, int height, GLenum internalformat, bool mipmap)
 	{
-		irradianceShader.SetUniformMatrix4fv("view", glm::value_ptr(envMapView[i]));
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, irradianceCubemap.GlId(), 0);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		Texture texture;
+		texture.width = width;
+		texture.height = height;
+		texture.levels = mipmap ? numMipmapLevels(width, height) : 1;
 
-		renderCube();
+		glCreateTextures(target, 1, &texture.id);
+		glTextureStorage2D(texture.id, texture.levels, internalformat, width, height);
+		glTextureParameteri(texture.id, GL_TEXTURE_MIN_FILTER, texture.levels > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
+		glTextureParameteri(texture.id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		return texture;
 	}
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	// prefilter cubemap
-	prefilterShader.Bind();
-
-	prefilterShader.SetUniformMatrix4fv("projection", glm::value_ptr(envMapProjection));
-	environmentCubemap.Bind();
-
-	glGenFramebuffers(1, &prefilterFBO);
-	glGenRenderbuffers(1, &prefilterRBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, prefilterFBO);
-
-	uint32_t maxMipLevels = 5;
-
-	for (uint32_t mip = 0; mip < maxMipLevels; ++mip)
+	void GenerateLUT(GlTexture& lut)
 	{
-		uint32_t mipWidth = prefilterCubemap.GetSize() * std::pow(0.5, mip);
-		uint32_t mipHeight = prefilterCubemap.GetSize() * std::pow(0.5, mip);
+		GlShader lutComputeShader;
+		lutComputeShader.CreateComputeFromFile("assets/shaders/ibl/spbrdfC.glsl");
 
-		glBindRenderbuffer(GL_RENDERBUFFER, prefilterRBO);
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mipWidth, mipHeight);
+		static constexpr int kBRDF_LUT_Size = 256;
+		Texture m_spBRDF_LUT = createTexture(GL_TEXTURE_2D, kBRDF_LUT_Size, kBRDF_LUT_Size, GL_RG32F, false);
+		glTextureParameteri(m_spBRDF_LUT.id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTextureParameteri(m_spBRDF_LUT.id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-		glViewport(0, 0, mipWidth, mipHeight);
+		lutComputeShader.Bind();
+		glBindImageTexture(0, m_spBRDF_LUT.id, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RG32F);
+		glDispatchCompute(m_spBRDF_LUT.width / 32, m_spBRDF_LUT.height / 32, 1);
 
-		float roughness = (float)mip / (float)(maxMipLevels - 1);
+		lut.width = m_spBRDF_LUT.width;
+		lut.height = m_spBRDF_LUT.height;
+		lut.channelCount = 2;
+		lut.storageType = GlTexture::StorageType::Float32;
+		if (lut.isInitialized)
+			glDeleteTextures(1, &lut.gl_id);
+		lut.gl_id = m_spBRDF_LUT.id;
+		lut.isInitialized = true;
+	}
 
-		prefilterShader.SetUniform1f("roughness", roughness);
-		prefilterShader.SetUniform1f("cubeResolutionWidth", prefilterCubemap.GetSize());
-		prefilterShader.SetUniform1f("cubeResolutionHeight", prefilterCubemap.GetSize());
+	void CubemapFromHdr(const std::string& hdrFilePath, GlCubemap& environmentCubemap)
+	{
+		GlTexture equirectTexture;
+		equirectTexture.CreateFromFile(hdrFilePath, 3, GlTexture::Float32, GlTexture::ClampToEdge);
 
-		for (uint32_t i = 0; i < 6; ++i)
+		static constexpr int kEnvMapSize = 1024;
+		GlShader equirect2CubeComputeShader;
+		equirect2CubeComputeShader.CreateComputeFromFile("assets/shaders/ibl/equirect2cubeC.glsl");
+
+		equirect2CubeComputeShader.Bind();
+		Texture envTextureUnfiltered = createTexture(GL_TEXTURE_CUBE_MAP, kEnvMapSize, kEnvMapSize, GL_RGBA32F, true);
+		glBindTextureUnit(0, equirectTexture.gl_id);
+		glBindImageTexture(0, envTextureUnfiltered.id, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+		glDispatchCompute(envTextureUnfiltered.width / 32, envTextureUnfiltered.height / 32, 6);
+
+		glGenerateTextureMipmap(envTextureUnfiltered.id);
+		environmentCubemap.size = envTextureUnfiltered.width;
+		environmentCubemap.storageType = GlCubemap::StorageType::Float32;
+		if (environmentCubemap.isInitialized)
+			glDeleteTextures(1, &environmentCubemap.gl_id);
+		environmentCubemap.gl_id = envTextureUnfiltered.id;
+		environmentCubemap.isInitialized = true;
+	}
+	void SpecularFromEnv(const GlCubemap& environmentCubemap, GlCubemap& prefilterCubemap)
+	{
+		GlShader spmapComputeShader;
+		spmapComputeShader.CreateComputeFromFile("assets/shaders/ibl/spmapC.glsl");
+
+		static constexpr int kEnvMapSize = 1024;
+		Texture m_envTexture = createTexture(GL_TEXTURE_CUBE_MAP, kEnvMapSize, kEnvMapSize, GL_RGBA32F, true);
+
+		// Copy 0th mipmap level into destination environment map.
+		glCopyImageSubData(environmentCubemap.gl_id, GL_TEXTURE_CUBE_MAP, 0, 0, 0, 0,
+			m_envTexture.id, GL_TEXTURE_CUBE_MAP, 0, 0, 0, 0,
+			m_envTexture.width, m_envTexture.height, 6);
+
+		spmapComputeShader.Bind();
+		glBindTextureUnit(0, environmentCubemap.gl_id);
+
+		// Pre-filter rest of the mip chain.
+		const float deltaRoughness = 1.0f / glm::max(float(m_envTexture.levels - 1), 1.0f);
+		for (int level = 1, size = kEnvMapSize / 2; level <= m_envTexture.levels; ++level, size /= 2)
 		{
-			prefilterShader.SetUniformMatrix4fv("view", glm::value_ptr(envMapView[i]));
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, prefilterCubemap.GlId(), mip);
-
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-			renderCube();
+			const GLuint numGroups = glm::max(1, size / 32);
+			glBindImageTexture(0, m_envTexture.id, level, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+			glProgramUniform1f(spmapComputeShader.gl_id, 0, level * deltaRoughness);
+			glDispatchCompute(numGroups, numGroups, 6);
 		}
+		prefilterCubemap.size = m_envTexture.width;
+		prefilterCubemap.storageType = GlCubemap::StorageType::Float32;
+		if (prefilterCubemap.isInitialized)
+			glDeleteTextures(1, &prefilterCubemap.gl_id);
+		prefilterCubemap.gl_id = m_envTexture.id;
+		prefilterCubemap.isInitialized = true;
 	}
+	void IrradianceFromEnv(const GlCubemap& environmentCubemap, GlCubemap& irradianceCubemap)
+	{
+		static constexpr int kIrradianceMapSize = 32;
+		GlShader irmapComputeShader;
+		irmapComputeShader.CreateComputeFromFile("assets/shaders/ibl/irmapC.glsl");
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		Texture m_irmapTexture = createTexture(GL_TEXTURE_CUBE_MAP, kIrradianceMapSize, kIrradianceMapSize, GL_RGBA32F, false);
 
-	glViewport(0, 0, Config::windowWidth, Config::windowHeight);
-
-	glEnable(GL_CULL_FACE);
-	glEnable(GL_DEPTH_TEST);
+		irmapComputeShader.Bind();
+		glBindTextureUnit(0, environmentCubemap.gl_id);
+		glBindImageTexture(0, m_irmapTexture.id, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+		glDispatchCompute(m_irmapTexture.width / 32, m_irmapTexture.height / 32, 6);
+		irradianceCubemap.size = m_irmapTexture.width;
+		irradianceCubemap.storageType = GlCubemap::StorageType::Float32;
+		if (irradianceCubemap.isInitialized)
+			glDeleteTextures(1, &irradianceCubemap.gl_id);
+		irradianceCubemap.gl_id = m_irmapTexture.id;
+		irradianceCubemap.isInitialized = true;
+	}
 }

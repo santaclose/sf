@@ -17,13 +17,11 @@ namespace sf {
 			Repeat, ClampToEdge
 		};
 
+		bool isInitialized = false;
 		uint32_t gl_id;
 		int width, height, channelCount;
 		StorageType storageType;
 		WrapMode wrapMode;
-		float* floatImgBuffer = nullptr;
-		unsigned char* standardImgBuffer = nullptr;
-		bool needToFreeBuffer = true;
 
 		void GetGlEnums(int channelCount, StorageType storageType, GLenum& type, int& internalFormat, GLenum& format);
 
@@ -41,8 +39,6 @@ namespace sf {
 			bool flipVertically = true);
 
 		void CreateFromBitmap(const Bitmap& bitmap, WrapMode wrapMode = WrapMode::Repeat, bool mipmap = true);
-
-		void CreateFromChannel(const GlTexture& source, int channel = 0, bool mipmap = true);
 
 		void ComputeMipmap();
 		~GlTexture();

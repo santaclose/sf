@@ -81,6 +81,10 @@ void sf::GlTexture::GetGlEnums(int channelCount, StorageType storageType, GLenum
 
 void sf::GlTexture::Create(uint32_t width, uint32_t height, int channelCount, StorageType storageType, WrapMode wrapMode, bool mipmap)
 {
+	if (this->isInitialized)
+		glDeleteTextures(1, &this->gl_id);
+	
+	this->isInitialized = true;
 	this->width = width;
 	this->height = height;
 	this->storageType = storageType;
@@ -106,24 +110,23 @@ void sf::GlTexture::Create(uint32_t width, uint32_t height, int channelCount, St
 
 void sf::GlTexture::CreateFromFile(const std::string& path, int channelCount, StorageType storageType, WrapMode wrapMode, bool mipmap, bool flipVertically)
 {
+	if (this->isInitialized)
+		glDeleteTextures(1, &this->gl_id);
+
+	this->isInitialized = true;
 	this->storageType = storageType;
 	this->wrapMode = wrapMode;
 
 	stbi_set_flip_vertically_on_load(flipVertically);
 
 	bool isFloatTexture = this->storageType == StorageType::Float16 || this->storageType == StorageType::Float32;
+	void* bitmapBuffer;
 	if (isFloatTexture)
-	{
-		floatImgBuffer = stbi_loadf(path.c_str(), &this->width, &this->height, &this->channelCount, channelCount);
-		if (floatImgBuffer == nullptr)
-			std::cout << "[GlTexture] Could not load image " << path << std::endl;
-	}
+		bitmapBuffer = stbi_loadf(path.c_str(), &this->width, &this->height, &this->channelCount, channelCount);
 	else
-	{
-		standardImgBuffer = stbi_load(path.c_str(), &this->width, &this->height, &this->channelCount, channelCount);
-		if (standardImgBuffer == nullptr)
-			std::cout << "[GlTexture] Could not load image " << path << std::endl;
-	}
+		bitmapBuffer = stbi_load(path.c_str(), &this->width, &this->height, &this->channelCount, channelCount);
+	if (bitmapBuffer == nullptr)
+		std::cout << "[GlTexture] Could not load image " << path << std::endl;
 	this->channelCount = channelCount;
 
 	glGenTextures(1, &this->gl_id);
@@ -138,21 +141,26 @@ void sf::GlTexture::CreateFromFile(const std::string& path, int channelCount, St
 	GLenum type, format;
 	GetGlEnums(this->channelCount, this->storageType, type, internalFormat, format);
 
-	void* dataPointer = isFloatTexture ? (void*)floatImgBuffer : (void*)standardImgBuffer;
-	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, this->width, this->height, 0, format, type, dataPointer);
+	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, this->width, this->height, 0, format, type, bitmapBuffer);
 
 	if (mipmap)
 		glGenerateMipmap(GL_TEXTURE_2D);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
+	stbi_image_free(bitmapBuffer);
 }
 
 void sf::GlTexture::CreateFromBitmap(const Bitmap& bitmap, WrapMode wrapMode, bool mipmap)
 {
+	if (this->isInitialized)
+		glDeleteTextures(1, &this->gl_id);
+
+	this->isInitialized = true;
 	this->height = bitmap.height;
 	this->width = bitmap.width;
 	this->channelCount = bitmap.channelCount;
 	this->wrapMode = wrapMode;
+
 	switch (bitmap.dataType)
 	{
 	case DataType::u8:
@@ -188,49 +196,6 @@ void sf::GlTexture::CreateFromBitmap(const Bitmap& bitmap, WrapMode wrapMode, bo
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void sf::GlTexture::CreateFromChannel(const GlTexture& source, int channel, bool mipmap)
-{
-	this->height = source.height;
-	this->width = source.width;
-	this->channelCount = 1;
-	this->storageType = source.storageType;
-	this->wrapMode = source.wrapMode;
-
-	if (this->storageType == StorageType::UnsignedByte)
-	{
-		this->standardImgBuffer = new unsigned char[this->width * this->height];
-		for (int i = 0; i < this->width * this->height; i++)
-			this->standardImgBuffer[i] = source.standardImgBuffer[i * source.channelCount + channel];
-	}
-	else
-	{
-		this->floatImgBuffer = new float[this->width * this->height];
-		for (int i = 0; i < this->width * this->height; i++)
-			this->floatImgBuffer[i] = source.floatImgBuffer[i * source.channelCount + channel];
-	}
-
-	glGenTextures(1, &this->gl_id);
-	glBindTexture(GL_TEXTURE_2D, this->gl_id);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mipmap ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, this->wrapMode == WrapMode::Repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, this->wrapMode == WrapMode::Repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE);
-
-
-	int internalFormat;
-	GLenum type, format;
-	GetGlEnums(this->channelCount, this->storageType, type, internalFormat, format);
-
-	void* dataPointer = this->storageType != StorageType::UnsignedByte ? (void*)floatImgBuffer : (void*)standardImgBuffer;
-	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, this->width, this->height, 0, format, type, dataPointer);
-
-	if (mipmap)
-		glGenerateMipmap(GL_TEXTURE_2D);
-
-	glBindTexture(GL_TEXTURE_2D, 0);
-}
-
 void sf::GlTexture::ComputeMipmap()
 {
 	glBindTexture(GL_TEXTURE_2D, this->gl_id);
@@ -240,11 +205,6 @@ void sf::GlTexture::ComputeMipmap()
 sf::GlTexture::~GlTexture()
 {
 	glDeleteTextures(1, &this->gl_id);
-
-	if (standardImgBuffer != nullptr && needToFreeBuffer)
-		stbi_image_free(standardImgBuffer);
-	if (floatImgBuffer != nullptr && needToFreeBuffer)
-		stbi_image_free(floatImgBuffer);
 }
 
 void sf::GlTexture::Bind(uint32_t slot) const

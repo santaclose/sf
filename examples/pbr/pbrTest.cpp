@@ -53,7 +53,6 @@ namespace sf
 				std::string commandString = "curl " + url + " --output " + targetPath + fileName;
 				system(commandString.c_str());
 			}
-
 		}
 	}
 
@@ -118,7 +117,6 @@ namespace sf
 			uint32_t materialId = Renderer::CreateMaterial(damagedHelmetMaterial);
 			Renderer::SetMeshMaterial(objectMesh, materialId);
 			galleryObjects.back().SetEnabled(true);
-			
 		}
 		{
 			galleryObjects.push_back(scene.CreateEntity());

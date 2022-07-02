@@ -359,12 +359,11 @@ uint32_t sf::Renderer::CreateMaterial(const Material& material)
 
 void sf::Renderer::SetEnvironment(const std::string& hdrFilePath)
 {
-	environmentData.envTexture.CreateFromFile(hdrFilePath, 3, GlTexture::Float16, GlTexture::ClampToEdge);
-	IblHelper::HdrToCubemaps(
-		environmentData.envTexture,
-		environmentData.envCubemap,
-		environmentData.irradianceCubemap,
-		environmentData.prefilterCubemap);
+	if (!environmentData.lookupTexture.isInitialized)
+		IblHelper::GenerateLUT(environmentData.lookupTexture);
+	IblHelper::CubemapFromHdr(hdrFilePath, environmentData.envCubemap);
+	IblHelper::SpecularFromEnv(environmentData.envCubemap, environmentData.prefilterCubemap);
+	IblHelper::IrradianceFromEnv(environmentData.envCubemap, environmentData.irradianceCubemap);
 
 	GlSkybox::SetCubemap(&(environmentData.envCubemap));
 }

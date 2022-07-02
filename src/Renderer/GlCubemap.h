@@ -14,10 +14,11 @@ namespace sf {
 			UnsignedByte, Float16, Float32
 		};
 
-	private:
-		uint32_t m_gl_id;
-		int m_size;
-		StorageType m_storageType;
+	public:
+		bool isInitialized = false;
+		uint32_t gl_id;
+		int size;
+		StorageType storageType;
 
 		void GetGlEnums(int channelCount, StorageType storageType, GLenum& type, int& internalFormat, GLenum& format);
 
@@ -43,15 +44,11 @@ namespace sf {
 
 		void ComputeMipmap();
 
-		//void CreateFomHDR(const Texture& hdrTexture);
-
 		~GlCubemap();
 
 		void Bind(uint32_t slot = 0) const;
 		void Unbind() const;
 
-		inline uint32_t GlId() const { return m_gl_id; }
-		inline bool IsHDR() const { return m_storageType == StorageType::Float16 || m_storageType == StorageType::Float32; }
-		inline int GetSize() const { return m_size; }
+		inline bool IsHDR() const { return storageType == StorageType::Float16 || storageType == StorageType::Float32; }
 	};
 }

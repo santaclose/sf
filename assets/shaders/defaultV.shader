@@ -8,11 +8,11 @@ layout(location = 4) in vec3 aColor;
 layout(location = 5) in vec2 aTextureCoord;
 layout(location = 6) in float aAo;
 
-
 layout(std140, binding = 0) uniform SharedGpuData
 {
 	mat4 modelMatrix;
 	mat4 cameraMatrix;
+	mat4 screenSpaceMatrix;
 	vec3 cameraPosition;
 };
 

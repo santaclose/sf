@@ -18,8 +18,8 @@
 #include <Renderer/GlSkybox.h>
 #include <Renderer/IblHelper.h>
 
-namespace sf::Renderer {
-
+namespace sf::Renderer
+{
 	GlShader defaultShader;
 	GlMaterial defaultMaterial;
 	GlShader voxelBoxShader;
@@ -30,6 +30,8 @@ namespace sf::Renderer {
 
 	glm::mat4 cameraView;
 	glm::mat4 cameraProjection;
+
+	GlShader spriteShader;
 
 	struct MeshGpuData
 	{
@@ -45,10 +47,22 @@ namespace sf::Renderer {
 		std::vector<glm::mat4> cubeModelMatrices;
 	};
 
+	struct SpriteQuad
+	{
+		uint32_t gl_vertexBuffer;
+		uint32_t gl_indexBuffer;
+		uint32_t gl_vao;
+		glm::vec2 vertices[8];
+		uint32_t indices[6];
+	};
+	SpriteQuad spriteQuad;
+	std::unordered_map<const sf::Bitmap*, GlTexture> spriteTextures;
+
 	struct SharedGpuData
 	{
 		glm::mat4 modelMatrix;
 		glm::mat4 cameraMatrix;
+		glm::mat4 screenSpaceMatrix;
 		glm::vec3 cameraPosition;
 	};
 	uint32_t sharedGpuData_gl_ubo;
@@ -89,7 +103,6 @@ namespace sf::Renderer {
 
 	void CreateMeshGpuData(const sf::MeshData* mesh)
 	{
-
 		meshGpuData[mesh] = MeshGpuData();
 		glGenVertexArrays(1, &meshGpuData[mesh].gl_vao);
 		glGenBuffers(1, &meshGpuData[mesh].gl_vertexBuffer);
@@ -123,9 +136,8 @@ namespace sf::Renderer {
 			}
 		}
 
-		glBindVertexArray(0);
-
 		TransferVertexData(mesh);
+		glBindVertexArray(0);
 	}
 
 	void CreateVoxelBoxGpuData(const sf::VoxelBoxData* voxelBox, const Transform& transform)
@@ -262,12 +274,46 @@ bool sf::Renderer::Initialize(void* process)
 
 	glGenBuffers(1, &sharedGpuData_gl_ubo);
 
-
 	rendererUniformVector.resize(3);
 	rendererUniformVector[(uint32_t)RendererUniformData::BrdfLUT] = &environmentData.lookupTexture;
 	rendererUniformVector[(uint32_t)RendererUniformData::PrefilterMap] = &environmentData.prefilterCubemap;
 	rendererUniformVector[(uint32_t)RendererUniformData::IrradianceMap] = &environmentData.irradianceCubemap;
 
+	// sprites
+	spriteShader.CreateFromFiles("assets/shaders/spriteV.shader", "assets/shaders/spriteF.shader");
+
+	// quad uvs and indices won't change
+	spriteQuad.vertices[1] = { 0.0f, 0.0f };
+	spriteQuad.vertices[3] = { 0.0f, 1.0f };
+	spriteQuad.vertices[5] = { 1.0f, 1.0f };
+	spriteQuad.vertices[7] = { 1.0f, 0.0f };
+
+	spriteQuad.indices[0] = 0;
+	spriteQuad.indices[1] = 1;
+	spriteQuad.indices[2] = 2;
+	spriteQuad.indices[3] = 2;
+	spriteQuad.indices[4] = 3;
+	spriteQuad.indices[5] = 0;
+
+	glGenVertexArrays(1, &spriteQuad.gl_vao);
+	glGenBuffers(1, &spriteQuad.gl_vertexBuffer);
+	glGenBuffers(1, &spriteQuad.gl_indexBuffer);
+
+	glBindVertexArray(spriteQuad.gl_vao);
+	glBindBuffer(GL_ARRAY_BUFFER, spriteQuad.gl_vertexBuffer);
+
+	// update vertices
+	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2) * 2 * 4, spriteQuad.vertices, GL_DYNAMIC_DRAW);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, spriteQuad.gl_indexBuffer);
+	// update indices to draw
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * 6, spriteQuad.indices, GL_DYNAMIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2) * 2, (void*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2) * 2, (void*)sizeof(glm::vec2));
+
+	glBindVertexArray(0);
 	return true;
 }
 
@@ -277,13 +323,15 @@ void sf::Renderer::OnResize()
 	aspectRatio = (float)Config::windowWidth / (float)Config::windowHeight;
 }
 
-void sf::Renderer::ClearBuffers()
+void sf::Renderer::Predraw()
 {
+	// clear
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-}
 
-void sf::Renderer::ComputeCameraMatrices()
-{
+	// screen space matrix
+	sharedGpuData.screenSpaceMatrix = glm::ortho(0.0f, (float)Config::windowWidth, (float)Config::windowHeight, 0.0f);
+
+	// camera matrices
 	assert(activeCameraEntity);
 
 	const Transform& transformComponent = activeCameraEntity.GetComponent<Transform>();
@@ -321,6 +369,8 @@ void sf::Renderer::ComputeCameraMatrices()
 	cameraView = glm::translate(cameraView, -transformComponent.position);
 
 	sharedGpuData.cameraMatrix = cameraProjection * cameraView;
+	Transform& cameraTransform = activeCameraEntity.GetComponent<Transform>();
+	sharedGpuData.cameraPosition = cameraTransform.position;
 }
 
 void sf::Renderer::SetMeshMaterial(Mesh mesh, GlMaterial* material, int piece)
@@ -377,6 +427,7 @@ void sf::Renderer::DrawSkybox()
 
 void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 {
+	glEnable(GL_DEPTH_TEST);
 	if (mesh.meshData->vertexCount == 0)
 		return;
 
@@ -387,14 +438,12 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 	if (meshMaterials.find(mesh.id) == meshMaterials.end())
 		CreateMeshMaterialSlots(mesh.id, mesh.meshData);
 
-	Transform& cameraTransform = activeCameraEntity.GetComponent<Transform>();
 	for (uint32_t i = 0; i < mesh.meshData->pieces.size(); i++)
 	{
 		GlMaterial* materialToUse = meshMaterials[mesh.id][i];
 
 		materialToUse->Bind();
 
-		sharedGpuData.cameraPosition = cameraTransform.position;
 		sharedGpuData.modelMatrix = transform.ComputeMatrix();
 		glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
@@ -411,7 +460,7 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 
 void sf::Renderer::DrawVoxelBox(VoxelBox& voxelBox, Transform& transform)
 {
-	const VoxelBoxData* voxelBoxData = voxelBox.voxelBoxData;
+	glEnable(GL_DEPTH_TEST);
 	assert(activeCameraEntity);
 
 	if (meshGpuData.find(&Defaults::cubeMeshData) == meshGpuData.end()) // create mesh data if not there
@@ -421,12 +470,9 @@ void sf::Renderer::DrawVoxelBox(VoxelBox& voxelBox, Transform& transform)
 		CreateVoxelBoxGpuData(voxelBox.voxelBoxData, transform);
 
 	// draw instanced box
-	Transform& cameraTransform = activeCameraEntity.GetComponent<Transform>();
-
 	GlShader* shaderToUse = &voxelBoxShader;
 	shaderToUse->Bind();
 
-	sharedGpuData.cameraPosition = cameraTransform.position;
 	sharedGpuData.modelMatrix = transform.ComputeMatrix();
 	glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
@@ -435,6 +481,35 @@ void sf::Renderer::DrawVoxelBox(VoxelBox& voxelBox, Transform& transform)
 	glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, voxelBoxGpuData[voxelBox.voxelBoxData].gl_ssbo);
 	glDrawElementsInstanced(GL_TRIANGLES, Defaults::cubeMeshData.indexVector.size(), GL_UNSIGNED_INT, (void*)0, voxelBoxGpuData[voxelBox.voxelBoxData].numberOfCubes);
+}
+
+void sf::Renderer::DrawSprite(Sprite& sprite, ScreenCoordinates& screenCoordinates)
+{
+	glDisable(GL_DEPTH_TEST);
+
+	if (spriteTextures.find(sprite.bitmap) == spriteTextures.end()) // create mesh data if not there
+		spriteTextures[sprite.bitmap].CreateFromBitmap(*sprite.bitmap, GlTexture::ClampToEdge, false);
+
+	spriteQuad.vertices[0] = screenCoordinates.origin * glm::vec2(Config::windowWidth, Config::windowHeight) + (glm::vec2)screenCoordinates.offset;
+	spriteQuad.vertices[2] = screenCoordinates.origin * glm::vec2(Config::windowWidth, Config::windowHeight) + (glm::vec2)screenCoordinates.offset + glm::vec2(0.0f, (float)(sprite.bitmap->height));
+	spriteQuad.vertices[4] = screenCoordinates.origin * glm::vec2(Config::windowWidth, Config::windowHeight) + (glm::vec2)screenCoordinates.offset + glm::vec2((float)(sprite.bitmap->width), (float)(sprite.bitmap->height));
+	spriteQuad.vertices[6] = screenCoordinates.origin * glm::vec2(Config::windowWidth, Config::windowHeight) + (glm::vec2)screenCoordinates.offset + glm::vec2((float)(sprite.bitmap->width), 0.0f);
+
+	glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
+
+	spriteShader.Bind();
+	spriteTextures[sprite.bitmap].Bind(0);
+	spriteShader.SetUniform1i("bitmap", 0);
+
+	glBindVertexArray(spriteQuad.gl_vao);
+	glBindBuffer(GL_ARRAY_BUFFER, spriteQuad.gl_vertexBuffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2) * 2 * 4, spriteQuad.vertices, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, spriteQuad.gl_indexBuffer);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * 6, spriteQuad.indices, GL_DYNAMIC_DRAW);
+
+	glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }
 
 void sf::Renderer::Terminate()

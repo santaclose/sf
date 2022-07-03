@@ -3,11 +3,11 @@
 layout(location = 0) in vec3 aPosition;
 layout(location = 1) in float aAo;
 
-
 layout(std140, binding = 0) uniform SharedGpuData
 {
 	mat4 modelMatrix;
 	mat4 cameraMatrix;
+	mat4 screenSpaceMatrix;
 	vec3 cameraPosition;
 };
 

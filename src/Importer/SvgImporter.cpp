@@ -22,13 +22,13 @@ void sf::SvgImporter::Destroy(int id)
 	svgData[id] = nullptr;
 }
 
-void sf::SvgImporter::RenderToBitmap(int id, Bitmap& bitmap)
+void sf::SvgImporter::RenderToBitmap(int id, Bitmap& bitmap, float scale)
 {
 	NSVGimage* image = svgData[id];
 	NSVGrasterizer* rast = NULL;
 
-	int w = (int)image->width;
-	int h = (int)image->height;
+	int w = (int)(image->width * scale) + 1;
+	int h = (int)(image->height * scale) + 1;
 
 	rast = nsvgCreateRasterizer();
 	if (rast == NULL) {
@@ -44,7 +44,7 @@ void sf::SvgImporter::RenderToBitmap(int id, Bitmap& bitmap)
 	bitmap.height = h;
 	bitmap.buffer = malloc(w * h * 4);
 
-	nsvgRasterize(rast, image, 0, 0, 1, (unsigned char *)bitmap.buffer, w, h, w * 4);
+	nsvgRasterize(rast, image, 0, 0, scale, (unsigned char *)bitmap.buffer, w, h, w * 4);
 
 	nsvgDeleteRasterizer(rast);
 }

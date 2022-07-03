@@ -17,6 +17,8 @@
 #include <Components/Camera.h>
 #include <Components/Transform.h>
 #include <Components/Mesh.h>
+#include <Components/ScreenCoordinates.h>
+#include <Components/Sprite.h>
 
 #define BACKGROUND_COLOR 0.1
 
@@ -119,8 +121,7 @@ int main(int argc, char** argv)
 		gameTime += deltaTime;
 
 		/* Draw scene */
-		sf::Renderer::ClearBuffers();
-		sf::Renderer::ComputeCameraMatrices();
+		sf::Renderer::Predraw();
 		sf::Renderer::DrawSkybox();
 		auto meshRenderView = sf::Scene::activeScene->GetRegistry().view<sf::Base, sf::Mesh, sf::Transform>();
 		for (auto entity : meshRenderView)
@@ -135,6 +136,13 @@ int main(int argc, char** argv)
 			auto [base, voxelBox, transform] = voxelBoxRenderView.get<sf::Base, sf::VoxelBox, sf::Transform>(entity);
 			if (base.isEntityEnabled)
 				sf::Renderer::DrawVoxelBox(voxelBox, transform);
+		}
+		auto spriteRenderView = sf::Scene::activeScene->GetRegistry().view<sf::Base, sf::Sprite, sf::ScreenCoordinates>();
+		for (auto entity : spriteRenderView)
+		{
+			auto [base, sprite, screenCooordinates] = spriteRenderView.get<sf::Base, sf::Sprite, sf::ScreenCoordinates>(entity);
+			if (base.isEntityEnabled)
+				sf::Renderer::DrawSprite(sprite, screenCooordinates);
 		}
 
 		/* Swap front and back buffers */

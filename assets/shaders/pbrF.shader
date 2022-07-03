@@ -14,6 +14,7 @@ layout(std140, binding = 0) uniform SharedGpuData
 {
     mat4 modelMatrix;
     mat4 cameraMatrix;
+    mat4 screenSpaceMatrix;
     vec3 cameraPosition;
 };
 

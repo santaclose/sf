@@ -108,6 +108,4 @@ void sf::GlSkybox::Draw(const glm::mat4& viewMatrix, const glm::mat4& projection
 	cubemap->Bind();
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 	glBindVertexArray(0);
-
-	glEnable(GL_DEPTH_TEST);
 }

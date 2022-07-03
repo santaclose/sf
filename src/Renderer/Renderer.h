@@ -4,6 +4,8 @@
 #include <Components/Mesh.h>
 #include <Components/VoxelBox.h>
 #include <Components/Transform.h>
+#include <Components/ScreenCoordinates.h>
+#include <Components/Sprite.h>
 
 #include <Renderer/GlMaterial.h>
 #include <Material.h>
@@ -18,8 +20,7 @@ namespace sf::Renderer {
 	bool Initialize(void* process);
 	void OnResize();
 
-	void ClearBuffers();
-	void ComputeCameraMatrices();
+	void Predraw();
 
 	uint32_t CreateMaterial(const Material& material);
 
@@ -31,6 +32,7 @@ namespace sf::Renderer {
 	void DrawSkybox();
 	void DrawMesh(Mesh& mesh, Transform& transform);
 	void DrawVoxelBox(VoxelBox& voxelBox, Transform& transform);
+	void DrawSprite(Sprite& sprite, ScreenCoordinates& screenCoordinates);
 
 	void Terminate();
 }

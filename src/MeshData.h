@@ -8,6 +8,16 @@ namespace sf {
 
 	struct MeshData
 	{
+		enum VertexAttribute
+		{
+			Position = 0,
+			Normal = 1,
+			Tangent = 2,
+			Bitangent = 3,
+			Color = 4,
+			UV = 5,
+			AO = 6
+		};
 		static std::string vertexPositionAttr;
 		static std::string vertexNormalAttr;
 		static std::string vertexTangentAttr;
@@ -17,13 +27,13 @@ namespace sf {
 		static std::string vertexAoAttr;
 
 		DataLayout vertexLayout = DataLayout({
-			{"pos", DataType::vec3f32},
-			{"nor", DataType::vec3f32},
-			{"tan", DataType::vec3f32},
-			{"bit", DataType::vec3f32},
-			{"col", DataType::vec3f32},
-			{"uv", DataType::vec2f32},
-			{"ao", DataType::f32}
+			{VertexAttribute::Position, DataType::vec3f32},
+			{VertexAttribute::Normal, DataType::vec3f32},
+			{VertexAttribute::Tangent, DataType::vec3f32},
+			{VertexAttribute::Bitangent, DataType::vec3f32},
+			{VertexAttribute::Color, DataType::vec3f32},
+			{VertexAttribute::UV, DataType::vec2f32},
+			{VertexAttribute::AO, DataType::f32}
 		});
 		void* vertexBuffer = nullptr;
 		uint32_t vertexCount = 0;

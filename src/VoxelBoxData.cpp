@@ -18,19 +18,19 @@ sf::VoxelBoxData::VoxelBoxData(uint32_t voxelCountX, uint32_t voxelCountY, uint3
 
 sf::VoxelBoxData::VoxelBoxData(const MeshData& mesh, float voxelSize)
 {
-	DataType positionDataType = mesh.vertexLayout.GetComponent(MeshData::vertexPositionAttr)->dataType;
+	DataType positionDataType = mesh.vertexLayout.GetComponent(MeshData::VertexAttribute::Position)->dataType;
 	assert(positionDataType == DataType::vec3f32);
 
 	const float RASTERIZE_MAX_DISTANCE = 0.7f;
 
 	this->voxelSize = voxelSize;
 
-	glm::vec3 minP = *((glm::vec3*)mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::vertexPositionAttr, 0));
+	glm::vec3 minP = *((glm::vec3*)mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Position, 0));
 	glm::vec3 maxP = minP;
 
 	for (int i = 1; i < mesh.vertexCount; i++)
 	{
-		glm::vec3* posPtr = (glm::vec3*)mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::vertexPositionAttr, i);
+		glm::vec3* posPtr = (glm::vec3*)mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Position, i);
 		minP.x = glm::min(minP.x, posPtr->x);
 		minP.y = glm::min(minP.y, posPtr->y);
 		minP.z = glm::min(minP.z, posPtr->z);
@@ -63,9 +63,9 @@ sf::VoxelBoxData::VoxelBoxData(const MeshData& mesh, float voxelSize)
 		uint32_t indexB = mesh.indexVector[indexI + 1];
 		uint32_t indexC = mesh.indexVector[indexI + 2];
 
-		glm::vec3* posPtrA = (glm::vec3*)mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::vertexPositionAttr, indexA);
-		glm::vec3* posPtrB = (glm::vec3*)mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::vertexPositionAttr, indexB);
-		glm::vec3* posPtrC = (glm::vec3*)mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::vertexPositionAttr, indexC);
+		glm::vec3* posPtrA = (glm::vec3*)mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Position, indexA);
+		glm::vec3* posPtrB = (glm::vec3*)mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Position, indexB);
+		glm::vec3* posPtrC = (glm::vec3*)mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Position, indexC);
 
 		glm::vec3 triNormal = glm::cross(
 			*posPtrB - *posPtrA,

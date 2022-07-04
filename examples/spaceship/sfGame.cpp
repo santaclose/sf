@@ -83,8 +83,8 @@ namespace sf
 			errt::seed = i;
 			MeshProcessor::GenerateMeshWithFunction(generatedMeshes[i], errt::GenerateModel);
 			generatedMeshes[i].ChangeVertexLayout(DataLayout({
-					{MeshData::vertexPositionAttr, DataType::vec3f32},
-					{MeshData::vertexAoAttr, DataType::f32},
+					{MeshData::VertexAttribute::Position, DataType::vec3f32},
+					{MeshData::VertexAttribute::AO, DataType::f32},
 				}));
 			MeshProcessor::BakeAoToVertices(generatedMeshes[i]);
 		}

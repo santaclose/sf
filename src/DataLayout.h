@@ -10,7 +10,7 @@ namespace sf
 {
 	struct DataComponent
 	{
-		std::string name;
+		uint32_t id;
 		DataType dataType;
 		uint32_t byteOffset;
 	};
@@ -20,14 +20,14 @@ namespace sf
 	private:
 		uint32_t sizeInBytes;
 		std::vector<DataComponent> components;
-		std::unordered_map<std::string, uint32_t> componentsByName;
+		std::unordered_map<uint32_t, uint32_t> componentsById;
 
 	public:
-		DataLayout(const std::vector<std::pair<std::string, DataType>>& components);
+		DataLayout(const std::vector<std::pair<uint32_t, DataType>>& components);
 		uint32_t GetSize() const;
 
-		void* Access(void* buffer, const std::string& componentName, uint32_t index) const;
-		const DataComponent* GetComponent(const std::string& componentName) const;
+		void* Access(void* buffer, uint32_t componentName, uint32_t index) const;
+		const DataComponent* GetComponent(uint32_t componentName) const;
 		const std::vector<DataComponent>& GetComponents() const;
 	};
 }

@@ -19,6 +19,7 @@
 #include <Components/Mesh.h>
 #include <Components/ScreenCoordinates.h>
 #include <Components/Sprite.h>
+#include <Components/Skeleton.h>
 
 #define BACKGROUND_COLOR 0.1
 
@@ -136,6 +137,13 @@ int main(int argc, char** argv)
 			auto [base, voxelBox, transform] = voxelBoxRenderView.get<sf::Base, sf::VoxelBox, sf::Transform>(entity);
 			if (base.isEntityEnabled)
 				sf::Renderer::DrawVoxelBox(voxelBox, transform);
+		}
+		auto skeletonRenderView = sf::Scene::activeScene->GetRegistry().view<sf::Base, sf::Skeleton, sf::Transform>();
+		for (auto entity : skeletonRenderView)
+		{
+			auto [base, skeleton, transform] = skeletonRenderView.get<sf::Base, sf::Skeleton, sf::Transform>(entity);
+			if (base.isEntityEnabled)
+				sf::Renderer::DrawSkeleton(skeleton, transform);
 		}
 		auto spriteRenderView = sf::Scene::activeScene->GetRegistry().view<sf::Base, sf::Sprite, sf::ScreenCoordinates>();
 		for (auto entity : spriteRenderView)

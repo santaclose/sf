@@ -5,8 +5,9 @@
 #include <tiny_gltf.h>
 #include <glad/glad.h>
 #include <glm/glm.hpp>
-
-#include <MeshProcessor.h>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 namespace sf::GltfImporter {
 
@@ -228,4 +229,72 @@ void sf::GltfImporter::GenerateBitmap(int id, int index, Bitmap& bitmap)
 	free(bitmap.buffer);
 	bitmap.buffer = malloc(dataTypeSize * (bitmap.width) * (bitmap.height) * (bitmap.channelCount));
 	memcpy(bitmap.buffer, &image.image.at(0), dataTypeSize * bitmap.width * bitmap.height * bitmap.channelCount);
+}
+
+namespace sf::GltfImporter
+{
+	void GenerateSkeletonProcessNodes(const tinygltf::Model& model, int node, SkeletonData& skeleton, int parentNode = -1, int parentBone = -1)
+	{
+		float scale;
+		if (model.nodes[node].scale.size() == 3)
+			scale = glm::max(glm::max(model.nodes[node].scale[0], model.nodes[node].scale[1]), model.nodes[node].scale[2]);
+		else
+			scale = 1.0f;
+		glm::vec3 translation = glm::vec3(0.0f);;
+		if (model.nodes[node].translation.size() == 3)
+			translation = glm::make_vec3(model.nodes[node].translation.data());
+		glm::mat4 rotation = glm::mat4(1.0f);
+		if (model.nodes[node].rotation.size() == 4)
+		{
+			glm::quat q = glm::make_quat(model.nodes[node].rotation.data());
+			rotation = glm::mat4(q);
+		}
+		glm::mat4 mat = glm::mat4(1.0f);
+		if (model.nodes[node].matrix.size() == 16)
+			mat = glm::make_mat4x4(model.nodes[node].matrix.data());
+
+		skeleton.bones.emplace_back();
+		int currentBone = skeleton.bones.size() - 1;
+		skeleton.bones.back().parent = parentBone;
+		skeleton.bones.back().localMatrix = glm::translate(glm::mat4(1.0f), translation) * glm::mat4(rotation) * glm::scale(glm::mat4(1.0f), glm::vec3(scale)) * mat;
+
+		for (int child : model.nodes[node].children)
+		{
+			GenerateSkeletonProcessNodes(model, child, skeleton, node, currentBone);
+		}
+	}
+}
+
+void sf::GltfImporter::GenerateSkeleton(int id, SkeletonData& skeleton, int index)
+{
+	skeleton.bones.clear();
+	
+	const tinygltf::Model& model = *(models[id]);
+
+	// find root bones
+	std::vector<int> rootBones;
+	for (int i = 0; i < model.nodes.size(); i++)
+		rootBones.push_back(i);
+	for (int i = 0; i < model.nodes.size(); i++)
+	{
+		for (int child : model.nodes[i].children)
+			for (int j = 0; j < rootBones.size(); j++)
+				if (rootBones[j] == child)
+				{
+					rootBones.erase(rootBones.begin() + j);
+					break;
+				}
+	}
+	for (int i = 0; i < model.nodes.size(); i++)
+	{
+		if (model.nodes[i].children.size() == 0)
+			for (int j = 0; j < rootBones.size(); j++)
+				if (rootBones[j] == i)
+				{
+					rootBones.erase(rootBones.begin() + j);
+					break;
+				}
+	}
+
+	GenerateSkeletonProcessNodes(model, rootBones[index], skeleton);
 }

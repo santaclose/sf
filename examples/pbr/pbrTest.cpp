@@ -18,6 +18,7 @@
 #include <Components/Mesh.h>
 #include <Components/Camera.h>
 #include <Components/Transform.h>
+#include <Components/Skeleton.h>
 
 #define MOVE_SENSITIVITY 0.003
 #define SCROLL_SENSITIVITY 0.06
@@ -38,6 +39,7 @@ namespace sf
 	int selectedEnvironment = 0;
 	std::vector<std::string> environments = { "examples/pbr/brown_photostudio_02_4k.hdr", "examples/pbr/aft_lounge_4k.hdr",  };
 
+	SkeletonData testSkeleton;
 	MeshData* meshes;
 
 	int selectedModel = 0;
@@ -129,6 +131,15 @@ namespace sf
 			Mesh& objectMesh = galleryObjects.back().AddComponent<Mesh>(&(meshes[1]));
 			uint32_t materialId = Renderer::CreateMaterial(Material("examples/pbr/SciFiHelmet.mat", false));
 			Renderer::SetMeshMaterial(objectMesh, materialId);
+			galleryObjects.back().SetEnabled(false);
+		}
+		gltfid = GltfImporter::Load("examples/pbr/untitled.gltf");
+		{
+			galleryObjects.push_back(scene.CreateEntity());
+			galleryObjects.back().AddComponent<Transform>();
+
+			GltfImporter::GenerateSkeleton(gltfid, testSkeleton, 0);
+			Skeleton& objectSkeleton = galleryObjects.back().AddComponent<Skeleton>(&testSkeleton);
 			galleryObjects.back().SetEnabled(false);
 		}
 

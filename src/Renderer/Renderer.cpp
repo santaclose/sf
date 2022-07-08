@@ -483,6 +483,40 @@ void sf::Renderer::DrawVoxelBox(VoxelBox& voxelBox, Transform& transform)
 	glDrawElementsInstanced(GL_TRIANGLES, Defaults::cubeMeshData.indexVector.size(), GL_UNSIGNED_INT, (void*)0, voxelBoxGpuData[voxelBox.voxelBoxData].numberOfCubes);
 }
 
+void sf::Renderer::DrawSkeleton(Skeleton& skeleton, Transform& transform)
+{
+	glEnable(GL_DEPTH_TEST);
+
+	assert(activeCameraEntity);
+
+	if (meshGpuData.find(&Defaults::cubeMeshData) == meshGpuData.end()) // create mesh data if not there
+		CreateMeshGpuData(&Defaults::cubeMeshData);
+
+	GlShader* shaderToUse = &defaultShader;
+	shaderToUse->Bind();
+
+	glm::mat4 worldMatrix = transform.ComputeMatrix();
+	glm::mat4* boneMatrices = (glm::mat4*)alloca(sizeof(glm::mat4) * skeleton.skeletonData->bones.size());
+
+	for (uint32_t i = 0; i < skeleton.skeletonData->bones.size(); i++)
+	{
+		const Bone* currentBone = &(skeleton.skeletonData->bones[i]);
+		if (currentBone->parent < 0)
+			boneMatrices[i] = worldMatrix * currentBone->localMatrix;
+		else
+			boneMatrices[i] = boneMatrices[currentBone->parent] * currentBone->localMatrix;
+
+		sharedGpuData.modelMatrix = boneMatrices[i];
+		sharedGpuData.modelMatrix = glm::scale(sharedGpuData.modelMatrix, glm::vec3(0.1f, 0.1f, 0.1f));
+		glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
+		glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
+
+		glBindVertexArray(meshGpuData[&Defaults::cubeMeshData].gl_vao);
+		glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
+		glDrawElements(GL_TRIANGLES, Defaults::cubeMeshData.indexVector.size(), GL_UNSIGNED_INT, (void*)0);
+	}
+}
+
 void sf::Renderer::DrawSprite(Sprite& sprite, ScreenCoordinates& screenCoordinates)
 {
 	glDisable(GL_DEPTH_TEST);

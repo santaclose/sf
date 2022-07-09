@@ -9,7 +9,8 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-namespace sf::GltfImporter {
+namespace sf::GltfImporter
+{
 
 	std::vector<tinygltf::Model*> models;
 }
@@ -121,7 +122,7 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 				// Create Vertices
 				for (uint32_t i = 0; i < primitiveVertexCount; i++)
 				{
-					glm::vec3* posPtr = (glm::vec3*) mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Position, vertexStart + i);
+					glm::vec3* posPtr = (glm::vec3*)mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Position, vertexStart + i);
 					*posPtr = { positionBuffer[i * 3 + 0], positionBuffer[i * 3 + 1], positionBuffer[i * 3 + 2] };
 					if (normalsBuffer)
 					{
@@ -188,7 +189,7 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 void sf::GltfImporter::GenerateBitmap(int id, int index, Bitmap& bitmap)
 {
 	assert(id > -1 && id < models.size());
-	
+
 	tinygltf::Image& image = models[id]->images[models[id]->textures[index].source];
 
 	DataType dataType;
@@ -233,7 +234,7 @@ void sf::GltfImporter::GenerateBitmap(int id, int index, Bitmap& bitmap)
 
 namespace sf::GltfImporter
 {
-	void GenerateSkeletonProcessNodes(const tinygltf::Model& model, int node, SkeletonData& skeleton, int parentNode = -1, int parentBone = -1)
+	void GenerateSkeletonProcessNodes(const tinygltf::Model& model, int node, SkeletonData& skeleton, std::unordered_map<uint32_t, uint32_t>& nodeToBone, int parentNode = -1, int parentBone = -1)
 	{
 		float scale;
 		if (model.nodes[node].scale.size() == 3)
@@ -255,21 +256,20 @@ namespace sf::GltfImporter
 
 		skeleton.bones.emplace_back();
 		int currentBone = skeleton.bones.size() - 1;
+		nodeToBone[node] = currentBone;
 		skeleton.bones.back().parent = parentBone;
 		skeleton.bones.back().localMatrix = glm::translate(glm::mat4(1.0f), translation) * glm::mat4(rotation) * glm::scale(glm::mat4(1.0f), glm::vec3(scale)) * mat;
 
 		for (int child : model.nodes[node].children)
-		{
-			GenerateSkeletonProcessNodes(model, child, skeleton, node, currentBone);
-		}
+			GenerateSkeletonProcessNodes(model, child, skeleton, nodeToBone, node, currentBone);
 	}
 }
 
 void sf::GltfImporter::GenerateSkeleton(int id, SkeletonData& skeleton, int index)
 {
 	skeleton.bones.clear();
-	
-	const tinygltf::Model& model = *(models[id]);
+
+	tinygltf::Model& model = *(models[id]);
 
 	// find root bones
 	std::vector<int> rootBones;
@@ -296,5 +296,106 @@ void sf::GltfImporter::GenerateSkeleton(int id, SkeletonData& skeleton, int inde
 				}
 	}
 
-	GenerateSkeletonProcessNodes(model, rootBones[index], skeleton);
+	// generate skeleton
+	std::unordered_map<uint32_t, uint32_t> nodeToBone;
+	GenerateSkeletonProcessNodes(model, rootBones[index], skeleton, nodeToBone);
+
+	// load animations
+	for (tinygltf::Animation& anim : model.animations)
+	{
+		skeleton.animations.emplace_back();
+		SkeletalAnimation& skeletonAnimation = skeleton.animations.back();
+		for (auto& samp : anim.samplers)
+		{
+			skeleton.animations.back().samplers.emplace_back();
+			AnimationSampler& skeletonAnimationSampler = skeleton.animations.back().samplers.back();
+
+			if (samp.interpolation == "LINEAR")
+				skeletonAnimationSampler.interpolation = AnimationSampler::InterpolationType::LINEAR;
+			if (samp.interpolation == "STEP")
+				skeletonAnimationSampler.interpolation = AnimationSampler::InterpolationType::STEP;
+			if (samp.interpolation == "CUBICSPLINE")
+				skeletonAnimationSampler.interpolation = AnimationSampler::InterpolationType::CUBICSPLINE;
+
+			// Read sampler input time values
+			{
+				const tinygltf::Accessor& accessor = model.accessors[samp.input];
+				const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
+				const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
+
+				assert(accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
+
+				const void* dataPtr = &buffer.data[accessor.byteOffset + bufferView.byteOffset];
+				const float* buf = static_cast<const float*>(dataPtr);
+				for (size_t index = 0; index < accessor.count; index++)
+					skeletonAnimationSampler.inputs.push_back(buf[index]);
+
+				for (auto input : skeletonAnimationSampler.inputs)
+				{
+					if (input < skeletonAnimation.start)
+						skeletonAnimation.start = input;
+					if (input > skeletonAnimation.end)
+						skeletonAnimation.end = input;
+				}
+			}
+
+			// Read sampler output T/R/S values 
+			{
+				const tinygltf::Accessor& accessor = model.accessors[samp.output];
+				const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
+				const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
+
+				assert(accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
+
+				const void* dataPtr = &buffer.data[accessor.byteOffset + bufferView.byteOffset];
+
+				switch (accessor.type)
+				{
+				case TINYGLTF_TYPE_VEC3:
+				{
+					const glm::vec3* buf = static_cast<const glm::vec3*>(dataPtr);
+					for (size_t index = 0; index < accessor.count; index++)
+						skeletonAnimationSampler.outputsVec4.push_back(glm::vec4(buf[index], 0.0f));
+					break;
+				}
+				case TINYGLTF_TYPE_VEC4:
+				{
+					const glm::vec4* buf = static_cast<const glm::vec4*>(dataPtr);
+					for (size_t index = 0; index < accessor.count; index++)
+						skeletonAnimationSampler.outputsVec4.push_back(buf[index]);
+					break;
+				}
+				default:
+				{
+					std::cout << "unknown type" << std::endl;
+					break;
+				}
+				}
+			}
+		}
+
+		// Channels
+		for (auto& source : anim.channels)
+		{
+			skeleton.animations.back().channels.emplace_back();
+			AnimationChannel& skeletonAnimationChannel = skeleton.animations.back().channels.back();
+
+			if (source.target_path == "rotation")
+				skeletonAnimationChannel.path = AnimationChannel::PathType::ROTATION;
+			if (source.target_path == "translation")
+				skeletonAnimationChannel.path = AnimationChannel::PathType::TRANSLATION;
+			if (source.target_path == "scale")
+				skeletonAnimationChannel.path = AnimationChannel::PathType::SCALE;
+			if (source.target_path == "weights")
+			{
+				std::cout << "weights not yet supported, skipping channel" << std::endl;
+				continue;
+			}
+			skeletonAnimationChannel.samplerIndex = source.sampler;
+			if (nodeToBone.find(source.target_node) != nodeToBone.end())
+				skeletonAnimationChannel.bone = nodeToBone[source.target_node];
+			else
+				std::cout << "Target node not found\n";
+		}
+	}
 }

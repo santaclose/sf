@@ -82,11 +82,11 @@ namespace sf
 		cameraObject.AddComponent<Transform>();
 
 		Renderer::SetEnvironment(environments[selectedEnvironment]);
-		Renderer::drawSkybox = true;
+		//Renderer::drawSkybox = true;
 
 		int gltfid;
 
-		meshes = new MeshData[2];
+		meshes = new MeshData[3];
 		{
 			galleryObjects.push_back(scene.CreateEntity());
 			Transform& e_t = galleryObjects.back().AddComponent<Transform>();
@@ -133,13 +133,23 @@ namespace sf
 			Renderer::SetMeshMaterial(objectMesh, materialId);
 			galleryObjects.back().SetEnabled(false);
 		}
-		gltfid = GltfImporter::Load("examples/pbr/untitled.gltf");
 		{
+			//gltfid = GltfImporter::Load("examples/pbr/untitled.gltf");
+			gltfid = GltfImporter::Load("examples/pbr/bb.glb");
 			galleryObjects.push_back(scene.CreateEntity());
-			galleryObjects.back().AddComponent<Transform>();
+			Transform& e_t = galleryObjects.back().AddComponent<Transform>();
+			e_t.position -= glm::vec3(0.0f, 1.0f, 0.0f) * 0.2;
 
 			GltfImporter::GenerateSkeleton(gltfid, testSkeleton, 0);
 			Skeleton& objectSkeleton = galleryObjects.back().AddComponent<Skeleton>(&testSkeleton);
+			galleryObjects.back().SetEnabled(false);
+
+
+			galleryObjects.push_back(scene.CreateEntity());
+			galleryObjects.back().AddComponent<Transform>();
+
+			GltfImporter::GenerateMeshData(gltfid, meshes[2]);
+			Mesh& objectMesh = galleryObjects.back().AddComponent<Mesh>(&(meshes[2]));
 			galleryObjects.back().SetEnabled(false);
 		}
 
@@ -175,6 +185,27 @@ namespace sf
 			selectedEnvironment++;
 			selectedEnvironment = Math::Mod(selectedEnvironment, (int)environments.size());
 			Renderer::SetEnvironment(environments[selectedEnvironment]);
+		}
+		else if (Input::KeyDown(Input::KeyCode::A))
+		{
+			testSkeleton.animate = !testSkeleton.animate;
+		}
+		else if (Input::KeyDown(Input::KeyCode::KP6))
+		{
+			testSkeleton.animationIndex++;
+			testSkeleton.animationIndex = Math::Mod(testSkeleton.animationIndex, testSkeleton.animations.size());
+		}
+		else if (Input::KeyDown(Input::KeyCode::KP4))
+		{
+			testSkeleton.animationIndex--;
+			testSkeleton.animationIndex = Math::Mod(testSkeleton.animationIndex, testSkeleton.animations.size());
+		}
+
+		if (testSkeleton.animate)
+		{
+			testSkeleton.animationTime += deltaTime;
+			testSkeleton.ClampAnimationTime();
+			testSkeleton.UpdateAnimation();
 		}
 
 		cameraDistance -= SCROLL_SENSITIVITY * (Input::MouseScrollUp() ? 1.0f : 0.0f);

@@ -17,6 +17,7 @@
 #include <Components/Camera.h>
 #include <Components/Transform.h>
 #include <Components/Mesh.h>
+#include <Components/SkinnedMesh.h>
 #include <Components/ScreenCoordinates.h>
 #include <Components/Sprite.h>
 #include <Components/Skeleton.h>
@@ -130,6 +131,13 @@ int main(int argc, char** argv)
 			auto [base, mesh, transform] = meshRenderView.get<sf::Base, sf::Mesh, sf::Transform>(entity);
 			if (base.isEntityEnabled)
 				sf::Renderer::DrawMesh(mesh, transform);
+		}
+		auto skinnedMeshRenderView = sf::Scene::activeScene->GetRegistry().view<sf::Base, sf::SkinnedMesh, sf::Transform>();
+		for (auto entity : skinnedMeshRenderView)
+		{
+			auto [base, mesh, transform] = skinnedMeshRenderView.get<sf::Base, sf::SkinnedMesh, sf::Transform>(entity);
+			if (base.isEntityEnabled)
+				sf::Renderer::DrawSkinnedMesh(mesh, transform);
 		}
 		auto voxelBoxRenderView = sf::Scene::activeScene->GetRegistry().view<sf::Base, sf::VoxelBox, sf::Transform>();
 		for (auto entity : voxelBoxRenderView)

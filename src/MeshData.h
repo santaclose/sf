@@ -16,7 +16,9 @@ namespace sf {
 			Bitangent = 3,
 			Color = 4,
 			UV = 5,
-			AO = 6
+			AO = 6,
+			BoneWeights = 7,
+			BoneIndices = 8
 		};
 		static std::string vertexPositionAttr;
 		static std::string vertexNormalAttr;

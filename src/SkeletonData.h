@@ -14,7 +14,7 @@ namespace sf
 		glm::mat4 localMatrixAnim;
 		glm::vec3 translationAnim;
 		glm::fquat rotationAnim;
-		float scaleAnim;
+		float scaleAnim = 1.0f;
 	};
 
 	struct AnimationChannel
@@ -49,6 +49,7 @@ namespace sf
 
 		std::vector<Bone> bones;
 		std::vector<SkeletalAnimation> animations;
+		std::vector<glm::mat4> skinningMatrices;
 
 		void ClampAnimationTime();
 		void UpdateAnimation();

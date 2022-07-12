@@ -68,6 +68,8 @@ namespace sf::Renderer
 	uint32_t sharedGpuData_gl_ubo;
 	SharedGpuData sharedGpuData;
 
+	std::unordered_map<const sf::SkeletonData*, uint32_t> skeletonSsbos;
+
 	std::unordered_map<const sf::MeshData*, MeshGpuData> meshGpuData;
 	std::unordered_map<int, std::vector<GlMaterial*>> meshMaterials;
 
@@ -132,6 +134,15 @@ namespace sf::Renderer
 					break;
 				case DataType::vec3f32:
 					glVertexAttribPointer(i, 3, GL_FLOAT, GL_FALSE, mesh->vertexLayout.GetSize(), (void*)components[i].byteOffset);
+					break;
+				case DataType::vec4f32:
+					glVertexAttribPointer(i, 4, GL_FLOAT, GL_FALSE, mesh->vertexLayout.GetSize(), (void*)components[i].byteOffset);
+					break;
+				case DataType::vec4u8:
+					glVertexAttribPointer(i, 4, GL_UNSIGNED_BYTE, GL_FALSE, mesh->vertexLayout.GetSize(), (void*)components[i].byteOffset);
+					break;
+				case DataType::vec4u16:
+					glVertexAttribPointer(i, 4, GL_UNSIGNED_SHORT, GL_FALSE, mesh->vertexLayout.GetSize(), (void*)components[i].byteOffset);
 					break;
 			}
 		}
@@ -454,6 +465,51 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 
 		glBindVertexArray(meshGpuData[mesh.meshData].gl_vao);
 		glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
+		glDrawElements(GL_TRIANGLES, drawEnd - drawStart, GL_UNSIGNED_INT, (void*)(drawStart * sizeof(uint32_t)));
+	}
+}
+
+void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
+{
+	if (skeletonSsbos.find(mesh.skeletonData) == skeletonSsbos.end()) // create skeleton ssbo if not there
+	{
+		uint32_t newSsbo;
+		glGenBuffers(1, &newSsbo);
+		skeletonSsbos[mesh.skeletonData] = newSsbo;
+	}
+
+	glEnable(GL_DEPTH_TEST);
+	if (mesh.meshData->vertexCount == 0)
+		return;
+
+	assert(activeCameraEntity);
+
+	if (meshGpuData.find(mesh.meshData) == meshGpuData.end()) // create mesh data if not there
+		CreateMeshGpuData(mesh.meshData);
+	if (meshMaterials.find(mesh.id) == meshMaterials.end())
+		CreateMeshMaterialSlots(mesh.id, mesh.meshData);
+
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, skeletonSsbos[mesh.skeletonData]);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, mesh.skeletonData->skinningMatrices.size() * sizeof(glm::mat4), &(mesh.skeletonData->skinningMatrices[0][0][0]), GL_DYNAMIC_DRAW);
+
+	for (uint32_t i = 0; i < mesh.meshData->pieces.size(); i++)
+	{
+		GlMaterial* materialToUse = meshMaterials[mesh.id][i];
+
+		materialToUse->Bind();
+		materialToUse->m_shader->SetUniform1i("animate", mesh.skeletonData->animate);
+
+		sharedGpuData.modelMatrix = transform.ComputeMatrix();
+		glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
+		glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
+
+		uint32_t drawEnd, drawStart;
+		drawStart = mesh.meshData->pieces[i];
+		drawEnd = mesh.meshData->pieces.size() > i + 1 ? mesh.meshData->pieces[i + 1] : mesh.meshData->indexVector.size();
+
+		glBindVertexArray(meshGpuData[mesh.meshData].gl_vao);
+		glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, skeletonSsbos[mesh.skeletonData]);
 		glDrawElements(GL_TRIANGLES, drawEnd - drawStart, GL_UNSIGNED_INT, (void*)(drawStart * sizeof(uint32_t)));
 	}
 }

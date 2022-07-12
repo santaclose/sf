@@ -16,7 +16,6 @@ void sf::SkeletonData::UpdateAnimation()
 
 	SkeletalAnimation& animation = animations[animationIndex];
 
-	bool updated = false;
 	for (auto& channel : animation.channels)
 	{
 		AnimationSampler& sampler = animation.samplers[channel.samplerIndex];
@@ -62,13 +61,31 @@ void sf::SkeletonData::UpdateAnimation()
 						break;
 					}
 					}
-					updated = true;
 				}
 			}
 		}
 	}
 
-	// update matrices
+	// update local matrices
 	for (Bone& bone : bones)
 		bone.localMatrixAnim = glm::translate(glm::mat4(1.0f), bone.translationAnim) * glm::mat4(bone.rotationAnim) * glm::scale(glm::mat4(1.0f), glm::vec3(bone.scaleAnim));
+
+	// update skinning matrices
+	{
+		glm::mat4* boneMatrices = (glm::mat4*)alloca(sizeof(glm::mat4) * bones.size());
+		for (uint32_t i = 0; i < bones.size(); i++)
+		{
+			const Bone* currentBone = &(bones[i]);
+			if (currentBone->parent < 0)
+			{
+				boneMatrices[i] = currentBone->localMatrixAnim;
+				skinningMatrices[i] = boneMatrices[i] * currentBone->invModelMatrix;
+			}
+			else
+			{
+				boneMatrices[i] = boneMatrices[currentBone->parent] * currentBone->localMatrixAnim;
+				skinningMatrices[i] = boneMatrices[i] * currentBone->invModelMatrix;
+			}
+		}
+	}
 }

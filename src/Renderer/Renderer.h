@@ -2,6 +2,7 @@
 
 #include <Scene/Entity.h>
 #include <Components/Mesh.h>
+#include <Components/SkinnedMesh.h>
 #include <Components/VoxelBox.h>
 #include <Components/Transform.h>
 #include <Components/Skeleton.h>
@@ -32,6 +33,7 @@ namespace sf::Renderer {
 
 	void DrawSkybox();
 	void DrawMesh(Mesh& mesh, Transform& transform);
+	void DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform);
 	void DrawVoxelBox(VoxelBox& voxelBox, Transform& transform);
 	void DrawSkeleton(Skeleton& skeleton, Transform& transform);
 	void DrawSprite(Sprite& sprite, ScreenCoordinates& screenCoordinates);

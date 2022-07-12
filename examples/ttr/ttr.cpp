@@ -67,7 +67,7 @@ namespace sf
 		c_camera.farClippingPlane = 1000.0f;
 		Transform& t_camera = e_camera.AddComponent<Transform>();
 		t_camera.position = { -15.0f, 15.0f, 5.0f };
-		t_camera.rotation = glm::fquat(glm::vec3(-0.1f, -0.4f, 0.0f));
+		t_camera.rotation = glm::quat(glm::vec3(-0.1f, -0.4f, 0.0f));
 		Renderer::activeCameraEntity = e_camera;
 
 
@@ -105,7 +105,7 @@ namespace sf
 			t_errt.position.z = randCircle.y * 200.0f;
 
 			float randomRotZ = Random::Float() * glm::pi<float>() * 2.0f;
-			t_errt.rotation = glm::fquat(glm::vec3(0.0f, randomRotZ, 0.0f));
+			t_errt.rotation = glm::quat(glm::vec3(0.0f, randomRotZ, 0.0f));
 		}
 	}
 

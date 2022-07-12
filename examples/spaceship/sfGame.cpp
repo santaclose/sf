@@ -111,7 +111,7 @@ namespace sf
 
 			t_thing.scale = Random::Float() * (COUNT - i) / 100.0 + 1.0;
 			t_thing.position = glm::vec3((Random::Float() - 0.5) * SPAWN_RANGE, (Random::Float() - 0.5) * SPAWN_RANGE, (i * -2.0f));
-			t_thing.rotation = glm::fquat(glm::vec3(0.0, glm::radians(180.0), glm::radians(Random::Float() * 360.0)));
+			t_thing.rotation = glm::quat(glm::vec3(0.0, glm::radians(180.0), glm::radians(Random::Float() * 360.0)));
 		}
 	}
 
@@ -138,7 +138,7 @@ namespace sf
 		Transform& t_mainCamera = e_mainCamera.GetComponent<Transform>();
 		Transform& t_lookBackCamera = e_lookBackCamera.GetComponent<Transform>();
 
-		t_ship.rotation *= glm::fquat(glm::vec3(Input::MousePosDeltaY() * SENSITIVITY, 0.0, -Input::MousePosDeltaX() * SENSITIVITY));
+		t_ship.rotation *= glm::quat(glm::vec3(Input::MousePosDeltaY() * SENSITIVITY, 0.0, -Input::MousePosDeltaX() * SENSITIVITY));
 		t_ship.position += t_ship.Forward() * shipSpeed * deltaTime;
 
 		t_mainCamera.position = glm::mix(t_mainCamera.position, t_ship.position - (t_ship.Forward() * 4.0) + (t_ship.Up()), (float)(deltaTime * 2.0));

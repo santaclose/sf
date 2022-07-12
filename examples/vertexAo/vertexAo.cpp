@@ -136,14 +136,14 @@ namespace sf
 		targetGimbalRotation.x += Input::MousePosDeltaY() * MOVE_SENSITIVITY * (Input::MouseButton(0) ? 1.0f : 0.0f);
 		targetGimbalRotation.x = glm::clamp(targetGimbalRotation.x, -Math::Pi * 0.499f, Math::Pi * 0.499f);
 
-		gimbal.GetComponent<Transform>().rotation = glm::slerp(gimbal.GetComponent<Transform>().rotation, glm::fquat(targetGimbalRotation), deltaTime * SPEED);
+		gimbal.GetComponent<Transform>().rotation = glm::slerp(gimbal.GetComponent<Transform>().rotation, glm::quat(targetGimbalRotation), deltaTime * SPEED);
 		cameraObject.GetComponent<Transform>().position = gimbal.GetComponent<Transform>().position + gimbal.GetComponent<Transform>().Forward() * cameraDistance;
 		cameraObject.GetComponent<Transform>().LookAt(gimbal.GetComponent<Transform>().position, glm::vec3(0.0, 1.0, 0.0));
 
 		if (rotationEnabled)
 		{
 			Transform& objectTransform = meshObjects[selectedModel].GetComponent<Transform>();
-			objectTransform.rotation = objectTransform.rotation * glm::fquat(glm::vec3(0.0f, 0.07f * deltaTime, 0.0f));
+			objectTransform.rotation = objectTransform.rotation * glm::quat(glm::vec3(0.0f, 0.07f * deltaTime, 0.0f));
 		}
 	}
 

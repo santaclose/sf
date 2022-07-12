@@ -9,7 +9,7 @@ namespace sf::Random
 	float Float();
 	int Int(int limit);
 	glm::vec3 UnitVec3();
-	glm::fquat Rotation();
+	glm::quat Rotation();
 
 	glm::vec2 PointInCircle();
 	glm::vec3 PointInSphere();

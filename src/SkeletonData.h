@@ -13,7 +13,7 @@ namespace sf
 		glm::mat4 invModelMatrix;
 		glm::mat4 localMatrixAnim;
 		glm::vec3 translationAnim;
-		glm::fquat rotationAnim;
+		glm::quat rotationAnim;
 		float scaleAnim = 1.0f;
 	};
 

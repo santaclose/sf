@@ -9,7 +9,7 @@ namespace sf {
 	struct Transform
 	{
 		glm::vec3 position = glm::vec3(0.0, 0.0, 0.0);
-		glm::fquat rotation = glm::fquat(1.0, 0.0, 0.0, 0.0);
+		glm::quat rotation = glm::quat(1.0, 0.0, 0.0, 0.0);
 		float scale = 1.0f;
 
 		Transform() = default;

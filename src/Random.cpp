@@ -29,9 +29,9 @@ glm::vec3 sf::Random::UnitVec3()
 	return rayDir;
 }
 
-glm::fquat sf::Random::Rotation()
+glm::quat sf::Random::Rotation()
 {
-	glm::fquat rot;
+	glm::quat rot;
 	float u = Float();
 	float v = Float();
 	float w = Float();

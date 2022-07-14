@@ -449,15 +449,15 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 	if (meshMaterials.find(mesh.id) == meshMaterials.end())
 		CreateMeshMaterialSlots(mesh.id, mesh.meshData);
 
+	sharedGpuData.modelMatrix = transform.ComputeMatrix();
+	glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
+
 	for (uint32_t i = 0; i < mesh.meshData->pieces.size(); i++)
 	{
 		GlMaterial* materialToUse = meshMaterials[mesh.id][i];
 
 		materialToUse->Bind();
-
-		sharedGpuData.modelMatrix = transform.ComputeMatrix();
-		glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
-		glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
 
 		uint32_t drawEnd, drawStart;
 		drawStart = mesh.meshData->pieces[i];
@@ -489,6 +489,10 @@ void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 	if (meshMaterials.find(mesh.id) == meshMaterials.end())
 		CreateMeshMaterialSlots(mesh.id, mesh.meshData);
 
+	sharedGpuData.modelMatrix = transform.ComputeMatrix();
+	glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
+
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, skeletonSsbos[mesh.skeletonData]);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, mesh.skeletonData->skinningMatrices.size() * sizeof(glm::mat4), &(mesh.skeletonData->skinningMatrices[0][0][0]), GL_DYNAMIC_DRAW);
 
@@ -498,10 +502,6 @@ void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 
 		materialToUse->Bind();
 		materialToUse->m_shader->SetUniform1i("animate", mesh.skeletonData->animate);
-
-		sharedGpuData.modelMatrix = transform.ComputeMatrix();
-		glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
-		glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
 
 		uint32_t drawEnd, drawStart;
 		drawStart = mesh.meshData->pieces[i];

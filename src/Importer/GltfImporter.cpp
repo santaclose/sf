@@ -11,12 +11,21 @@
 
 namespace sf::GltfImporter
 {
+	struct ExtraGltfNodeInfo
+	{
+		int parent = -1;
+		glm::mat4 transform;
+	};
+
+	//std::unordered_map<uint32_t, std::unordered_map<int, int>> nodeToParentPerModel;
+	std::unordered_map<uint32_t, std::vector<ExtraGltfNodeInfo>> extraNodeInfoPerModel;
 	std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t>> nodeToBonePerModel;
 	std::vector<tinygltf::Model*> models;
 }
 
 int sf::GltfImporter::Load(const std::string& filePath)
 {
+	uint32_t newModelId = models.size();
 	tinygltf::Model* newModel = new tinygltf::Model();
 
 	tinygltf::TinyGLTF loader;
@@ -47,9 +56,29 @@ int sf::GltfImporter::Load(const std::string& filePath)
 	if (!ret)
 		printf("[GltfImporter] Failed to parse glTF\n");
 
+	extraNodeInfoPerModel[newModelId].resize(newModel->nodes.size());
+	for (int i = 0; i < newModel->nodes.size(); i++)
+	{
+		float scale = 1.0f;
+		glm::quat rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+		glm::vec3 translation = glm::vec3(0.0f);
+		if (newModel->nodes[i].scale.size() == 3)
+			scale = glm::max(glm::max(newModel->nodes[i].scale[0], newModel->nodes[i].scale[1]), newModel->nodes[i].scale[2]);
+		if (newModel->nodes[i].translation.size() == 3)
+			translation = glm::make_vec3(newModel->nodes[i].translation.data());
+		if (newModel->nodes[i].rotation.size() == 4)
+			rotation = glm::make_quat(newModel->nodes[i].rotation.data());
+		if (newModel->nodes[i].matrix.size() == 16)
+			extraNodeInfoPerModel[newModelId][i].transform = glm::make_mat4x4(newModel->nodes[i].matrix.data());
+		else
+			extraNodeInfoPerModel[newModelId][i].transform = glm::translate(glm::mat4(1.0f), translation) * glm::mat4(rotation) * glm::scale(glm::mat4(1.0f), glm::vec3(scale));
+
+		for (int child : newModel->nodes[i].children)
+			extraNodeInfoPerModel[newModelId][child].parent = i;
+	}
 
 	models.push_back(newModel);
-	return models.size() - 1;
+	return newModelId;
 }
 
 void sf::GltfImporter::Destroy(int id)
@@ -311,6 +340,19 @@ namespace sf::GltfImporter
 		for (int child : model.nodes[node].children)
 			GenerateSkeletonProcessNodes(model, child, skeleton, nodeToBone, currentBoneIndex);
 	}
+
+	void ComputeGlobalMatrices(int modelId, int rootNode, std::vector<glm::mat4>& output)
+	{
+		if (extraNodeInfoPerModel[modelId][rootNode].parent < 0)
+			output[rootNode] = extraNodeInfoPerModel[modelId][rootNode].transform;
+
+		const tinygltf::Model& model = *models[modelId];
+		for (int child : model.nodes[rootNode].children)
+		{
+			output[child] = output[extraNodeInfoPerModel[modelId][child].parent] * extraNodeInfoPerModel[modelId][child].transform;
+			ComputeGlobalMatrices(modelId, child, output);
+		}
+	}
 }
 
 void sf::GltfImporter::GenerateSkeleton(int id, SkeletonData& skeleton, int index)
@@ -325,6 +367,17 @@ void sf::GltfImporter::GenerateSkeleton(int id, SkeletonData& skeleton, int inde
 	GenerateSkeletonProcessNodes(model, rootBoneNode, skeleton, nodeToBonePerModel[id]);
 
 	// copy inverse model matrix for each bone
+	std::vector<glm::mat4> computedInverseBindMatrices(model.nodes.size());
+	{
+		for (int i = 0; i < model.nodes.size(); i++)
+		{
+			if (extraNodeInfoPerModel[id][i].parent < 0)
+				ComputeGlobalMatrices(id, i, computedInverseBindMatrices);
+		}
+		for (int i = 0; i < model.nodes.size(); i++)
+			computedInverseBindMatrices[i] = glm::inverse(computedInverseBindMatrices[i]);
+	}
+
 	std::vector<glm::mat4> invModelMatricesTemp;
 	const tinygltf::Accessor& accessor = model.accessors[model.skins[index].inverseBindMatrices];
 	const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
@@ -332,7 +385,8 @@ void sf::GltfImporter::GenerateSkeleton(int id, SkeletonData& skeleton, int inde
 	invModelMatricesTemp.resize(accessor.count);
 	memcpy(invModelMatricesTemp.data(), &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(glm::mat4));
 	for (size_t i = 0; i < model.skins[index].joints.size(); i++)
-		skeleton.bones[nodeToBonePerModel[id][model.skins[index].joints[i]]].invModelMatrix = invModelMatricesTemp[i];
+		skeleton.bones[nodeToBonePerModel[id][model.skins[index].joints[i]]].invModelMatrix = computedInverseBindMatrices[model.skins[index].joints[i]];
+		//skeleton.bones[nodeToBonePerModel[id][model.skins[index].joints[i]]].invModelMatrix = invModelMatricesTemp[i];
 
 	std::cout << "[GltfImporter] Generated skeleton with " << skeleton.bones.size() << " bones\n";
 

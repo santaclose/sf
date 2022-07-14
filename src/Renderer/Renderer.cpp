@@ -558,20 +558,9 @@ void sf::Renderer::DrawSkeleton(Skeleton& skeleton, Transform& transform)
 	{
 		const Bone* currentBone = &(skeleton.skeletonData->bones[i]);
 		if (currentBone->parent < 0)
-		{
-			if (skeleton.skeletonData->animate)
-				boneMatrices[i] = worldMatrix * currentBone->localMatrixAnim;
-			else
-				boneMatrices[i] = worldMatrix * currentBone->localMatrix;
-		}
+			boneMatrices[i] = worldMatrix * currentBone->localMatrix;
 		else
-		{
-
-			if (skeleton.skeletonData->animate)
-				boneMatrices[i] = boneMatrices[currentBone->parent] * currentBone->localMatrixAnim;
-			else
-				boneMatrices[i] = boneMatrices[currentBone->parent] * currentBone->localMatrix;
-		}
+			boneMatrices[i] = boneMatrices[currentBone->parent] * currentBone->localMatrix;
 
 		sharedGpuData.modelMatrix = boneMatrices[i];
 		sharedGpuData.modelMatrix = glm::scale(sharedGpuData.modelMatrix, glm::vec3(0.1f, 0.1f, 0.1f));

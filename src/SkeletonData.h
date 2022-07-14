@@ -8,13 +8,12 @@ namespace sf
 {
 	struct Bone
 	{
-		int32_t parent;
-		glm::mat4 localMatrix;
+		int32_t parent = -1;
+		glm::mat4 localMatrix = glm::mat4(1.0f);
 		glm::mat4 invModelMatrix;
-		glm::mat4 localMatrixAnim;
-		glm::vec3 translationAnim;
-		glm::quat rotationAnim;
-		float scaleAnim = 1.0f;
+		glm::vec3 translation = glm::vec3(0.0f, 0.0f, 0.0f);
+		glm::quat rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+		float scale = 1.0f;
 	};
 
 	struct AnimationChannel

@@ -85,6 +85,7 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 			uint32_t vertexStart = static_cast<uint32_t>(mesh.vertexCount);
 			uint32_t indexCount = 0;
 
+			size_t primitiveVertexCount = 0;
 			// Vertices
 			{
 				const float* positionBuffer = nullptr;
@@ -92,7 +93,6 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 				const float* texCoordsBuffer = nullptr;
 				const float* boneWeightsBuffer = nullptr;
 				const void* jointsBuffer = nullptr;
-				size_t primitiveVertexCount = 0;
 
 				if (prim.attributes.find("POSITION") != prim.attributes.end())
 				{
@@ -122,7 +122,6 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 				int jointComponentType;
 				if (prim.attributes.find("JOINTS_0") != prim.attributes.end())
 				{
-					DataType boneIndicesDataType = mesh.vertexLayout.GetComponent(MeshData::VertexAttribute::BoneIndices)->dataType;
 					const tinygltf::Accessor& accessor = model.accessors[prim.attributes.find("JOINTS_0")->second];
 					const tinygltf::BufferView& view = model.bufferViews[accessor.bufferView];
 					jointComponentType = accessor.componentType;
@@ -185,48 +184,59 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 			}
 			// Indices
 			{
-				const tinygltf::Accessor& accessor = model.accessors[prim.indices];
-				const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
-				const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
+				if (prim.indices < 0)
+				{
+					int startIndex = mesh.indexVector.size();
+					mesh.pieces.push_back(startIndex);
+					mesh.indexVector.resize(startIndex + primitiveVertexCount);
+					for (int i = startIndex; i < mesh.indexVector.size(); i++)
+						mesh.indexVector[i] = vertexStart + (i - startIndex);
+				}
+				else
+				{
+					const tinygltf::Accessor& accessor = model.accessors[prim.indices];
+					const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
+					const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
 
-				indexCount += static_cast<uint32_t>(accessor.count);
+					indexCount += static_cast<uint32_t>(accessor.count);
 
-				// glTF supports different component types of indices
-				switch (accessor.componentType)
-				{
-				case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT:
-				{
-					uint32_t* buf = new uint32_t[accessor.count];
-					memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint32_t));
-					mesh.pieces.push_back(mesh.indexVector.size());
-					for (size_t index = 0; index < accessor.count; index++)
-						mesh.indexVector.push_back(buf[index] + vertexStart);
-					delete[] buf;
-					break;
-				}
-				case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT:
-				{
-					uint16_t* buf = new uint16_t[accessor.count];
-					memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint16_t));
-					mesh.pieces.push_back(mesh.indexVector.size());
-					for (size_t index = 0; index < accessor.count; index++)
-						mesh.indexVector.push_back(buf[index] + vertexStart);
-					delete[] buf;
-					break;
-				}
-				case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE:
-				{
-					uint8_t* buf = new uint8_t[accessor.count];
-					memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint8_t));
-					mesh.pieces.push_back(mesh.indexVector.size());
-					for (size_t index = 0; index < accessor.count; index++)
-						mesh.indexVector.push_back(buf[index] + vertexStart);
-					delete[] buf;
-					break;
-				}
-				default:
-					std::cerr << "[GltfImporter] Index component type " << accessor.componentType << " not supported!" << std::endl;
-					return;
+					// glTF supports different component types of indices
+					switch (accessor.componentType)
+					{
+					case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT:
+					{
+						uint32_t* buf = new uint32_t[accessor.count];
+						memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint32_t));
+						mesh.pieces.push_back(mesh.indexVector.size());
+						for (size_t index = 0; index < accessor.count; index++)
+							mesh.indexVector.push_back(buf[index] + vertexStart);
+						delete[] buf;
+						break;
+					}
+					case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT:
+					{
+						uint16_t* buf = new uint16_t[accessor.count];
+						memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint16_t));
+						mesh.pieces.push_back(mesh.indexVector.size());
+						for (size_t index = 0; index < accessor.count; index++)
+							mesh.indexVector.push_back(buf[index] + vertexStart);
+						delete[] buf;
+						break;
+					}
+					case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE:
+					{
+						uint8_t* buf = new uint8_t[accessor.count];
+						memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint8_t));
+						mesh.pieces.push_back(mesh.indexVector.size());
+						for (size_t index = 0; index < accessor.count; index++)
+							mesh.indexVector.push_back(buf[index] + vertexStart);
+						delete[] buf;
+						break;
+					}
+					default:
+						std::cerr << "[GltfImporter] Index component type " << accessor.componentType << " not supported!" << std::endl;
+						return;
+					}
 				}
 			}
 		}

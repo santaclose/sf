@@ -44,10 +44,10 @@ namespace sf
 
 	void Game::Initialize(int argc, char** argv)
 	{
-		uint32_t aoMaterial = Renderer::CreateMaterial(Material("assets/shaders/vertexAoV.shader", "assets/shaders/vertexAoF.shader", false));
-		uint32_t colorsMaterial = Renderer::CreateMaterial(Material("examples/spaceship/randomColorsV.shader", "examples/spaceship/randomColorsF.shader", false));
-		uint32_t uvMaterial = Renderer::CreateMaterial(Material("assets/shaders/defaultV.shader", "assets/shaders/uvF.shader", false));
-		uint32_t noiseMaterial = Renderer::CreateMaterial(Material("examples/spaceship/noiseV.shader", "examples/spaceship/noiseF.shader", false));
+		uint32_t aoMaterial = Renderer::CreateMaterial(Material("assets/shaders/defaultV.glsl", "assets/shaders/vertexAoF.glsl", false));
+		uint32_t colorsMaterial = Renderer::CreateMaterial(Material("examples/spaceship/randomColorsV.glsl", "examples/spaceship/randomColorsF.glsl", false));
+		uint32_t uvMaterial = Renderer::CreateMaterial(Material("assets/shaders/defaultV.glsl", "assets/shaders/uvF.glsl", false));
+		uint32_t noiseMaterial = Renderer::CreateMaterial(Material("examples/spaceship/noiseV.glsl", "examples/spaceship/noiseF.glsl", false));
 
 		e_ship = scene.CreateEntity();
 
@@ -82,10 +82,7 @@ namespace sf
 		{
 			errt::seed = i;
 			MeshProcessor::GenerateMeshWithFunction(generatedMeshes[i], errt::GenerateModel);
-			generatedMeshes[i].ChangeVertexLayout(DataLayout({
-					{MeshData::VertexAttribute::Position, DataType::vec3f32},
-					{MeshData::VertexAttribute::AO, DataType::f32},
-				}));
+			generatedMeshes[i].ChangeVertexLayout(Defaults::defaultVertexLayout);
 			MeshProcessor::BakeAoToVertices(generatedMeshes[i]);
 		}
 

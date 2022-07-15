@@ -14,10 +14,12 @@ namespace sf {
 	{
 	public:
 		enum UniformType {
-			_Boolean,
+			_1i,
+			_2f,
+			_3f,
+			_4f,
 			_Texture,
-			_Cubemap,
-			_Color
+			_Cubemap
 		};
 
 		GlShader* m_shader;

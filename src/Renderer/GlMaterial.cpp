@@ -16,10 +16,16 @@ void sf::GlMaterial::Create(const Material& material, const std::vector<void*>& 
 		switch (uniformPair.second.dataType)
 		{
 		case (uint32_t)DataType::b:
-			SetUniform(uniformPair.first, uniformPair.second.data, UniformType::_Boolean);
+			SetUniform(uniformPair.first, uniformPair.second.data, UniformType::_1i);
+			break;
+		case (uint32_t)DataType::vec2f32:
+			SetUniform(uniformPair.first, uniformPair.second.data, UniformType::_2f);
+			break;
+		case (uint32_t)DataType::vec3f32:
+			SetUniform(uniformPair.first, uniformPair.second.data, UniformType::_3f);
 			break;
 		case (uint32_t)DataType::vec4f32:
-			SetUniform(uniformPair.first, uniformPair.second.data, UniformType::_Color);
+			SetUniform(uniformPair.first, uniformPair.second.data, UniformType::_4f);
 			break;
 		case (uint32_t)ShaderDataType::bitmap:
 			GlTexture* newTexture = new GlTexture();
@@ -34,7 +40,7 @@ void sf::GlMaterial::Create(const Material& material, const std::vector<void*>& 
 		switch (uniformPair.second.dataType)
 		{
 		case (uint32_t)DataType::b:
-			SetUniform(uniformPair.first, rendererUniformVector[(uint32_t)uniformPair.second.data], UniformType::_Boolean);
+			SetUniform(uniformPair.first, rendererUniformVector[(uint32_t)uniformPair.second.data], UniformType::_1i);
 			break;
 		case (uint32_t)ShaderDataType::bitmap:
 			SetUniform(uniformPair.first, rendererUniformVector[(uint32_t)uniformPair.second.data], UniformType::_Texture);
@@ -80,7 +86,6 @@ void sf::GlMaterial::Bind()
 		{
 			if (m_uniformData[i] == nullptr) // clear uniform if not provided
 			{
-				//std::cout << "clearing uniform: " << m_uniformNames[i] << std::endl;
 				glActiveTexture(GL_TEXTURE0 + uniformTextureIndex);
 				glBindTexture(GL_TEXTURE_2D, 0);
 				m_shader->SetUniform1i(m_uniformNames[i], uniformTextureIndex);
@@ -89,15 +94,12 @@ void sf::GlMaterial::Bind()
 			GlTexture* currentTexture = (GlTexture*)m_uniformData[i];
 			currentTexture->Bind(uniformTextureIndex);
 			m_shader->SetUniform1i(m_uniformNames[i], uniformTextureIndex);
-
-			//std::cout << "setting value \"" << uniformTextureIndex << "\" to uniform \"" << m_uniformNames[i] << "\"\n";
 			break;
 		}
 		case UniformType::_Cubemap:
 		{
 			if (m_uniformData[i] == nullptr) // clear uniform if not provided
 			{
-				//std::cout << "clearing uniform: " << m_uniformNames[i] << std::endl;
 				glActiveTexture(GL_TEXTURE0 + uniformTextureIndex);
 				glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 				m_shader->SetUniform1i(m_uniformNames[i], uniformTextureIndex);
@@ -106,20 +108,26 @@ void sf::GlMaterial::Bind()
 			GlCubemap* currentCubemap = (GlCubemap*)m_uniformData[i];
 			currentCubemap->Bind(uniformTextureIndex);
 			m_shader->SetUniform1i(m_uniformNames[i], uniformTextureIndex);
-
-			//std::cout << "setting value \"" << uniformTextureIndex << "\" to uniform \"" << m_uniformNames[i] << "\"\n";
 			break;
 		}
-		case UniformType::_Color:
-		{
-			m_shader->SetUniform4fv(m_uniformNames[i], (float*)m_uniformData[i]);
-			//std::cout << "setting color to uniform \"" << m_uniformNames[i] << "\"\n";
-			break;
-		}
-		case UniformType::_Boolean:
+		case UniformType::_1i:
 		{
 			m_shader->SetUniform1i(m_uniformNames[i], (int)m_uniformData[i]);
-			//std::cout << "setting boolean \"" << (int)m_uniformData[i] << "\" to uniform \"" << m_uniformNames[i] << "\"\n";
+			break;
+		}
+		case UniformType::_2f:
+		{
+			m_shader->SetUniform2fv(m_uniformNames[i], (float*)m_uniformData[i]);
+			break;
+		}
+		case UniformType::_3f:
+		{
+			m_shader->SetUniform3fv(m_uniformNames[i], (float*)m_uniformData[i]);
+			break;
+		}
+		case UniformType::_4f:
+		{
+			m_shader->SetUniform4fv(m_uniformNames[i], (float*)m_uniformData[i]);
 			break;
 		}
 		}

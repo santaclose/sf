@@ -18,11 +18,12 @@ namespace sf
 	class DataLayout
 	{
 	private:
-		uint32_t sizeInBytes;
+		uint32_t sizeInBytes = 0;
 		std::vector<DataComponent> components;
 		std::unordered_map<uint32_t, uint32_t> componentsById;
 
 	public:
+		DataLayout() = default;
 		DataLayout(const std::vector<std::pair<uint32_t, DataType>>& components);
 		uint32_t GetSize() const;
 

@@ -55,7 +55,7 @@ namespace sf
 		cameraObject.AddComponent<Camera>();
 		cameraObject.AddComponent<Transform>();
 
-		uint32_t aoMaterial = Renderer::CreateMaterial(Material("assets/shaders/defaultV.shader", "assets/shaders/vertexAoF.shader", true));
+		uint32_t aoMaterial = Renderer::CreateMaterial(Material("assets/shaders/defaultV.glsl", "assets/shaders/vertexAoF.glsl", true));
 		
 		std::vector<std::string> meshFilePaths = { "examples/vertexAo/sponza.obj", "assets/meshes/monke.obj"};
 		sampleMeshes = new MeshData[meshFilePaths.size()];

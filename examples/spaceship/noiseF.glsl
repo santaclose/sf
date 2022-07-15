@@ -1,7 +1,7 @@
 #version 430 core
 
-in vec2 screenPos;
-out vec4 color;
+in vec2 fScreenPos;
+out vec4 outColor;
 
 float random(vec2 st) {
 	return fract(sin(dot(st.xy,
@@ -11,5 +11,5 @@ float random(vec2 st) {
 
 void main()
 {
-	color = vec4(vec3(random(screenPos)), 1.0);
+	outColor = vec4(vec3(random(fScreenPos)), 1.0);
 }

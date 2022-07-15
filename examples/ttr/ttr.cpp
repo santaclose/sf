@@ -73,12 +73,12 @@ namespace sf
 
 		uint32_t whiteMaterial, blackMaterial;
 		{
-			static glm::vec4 theColor(1.0, 1.0, 1.0, 1.0);
-			static glm::vec4 theColorb(0.0, 0.0, 0.0, 1.0);
-			Material materialTemplate("assets/shaders/pbrV.shader", "examples/ttr/solidColorF.shader", false);
-			materialTemplate.uniforms["theColor"] = { (uint32_t)DataType::vec4f32, &theColor };
+			static glm::vec3 color(1.0, 1.0, 1.0);
+			static glm::vec3 colorb(0.0, 0.0, 0.0);
+			Material materialTemplate("assets/shaders/defaultV.glsl", "assets/shaders/solidColorF.glsl", false);
+			materialTemplate.uniforms["color"] = { (uint32_t)DataType::vec3f32, &color };
 			whiteMaterial = Renderer::CreateMaterial(materialTemplate);
-			materialTemplate.uniforms["theColor"] = { (uint32_t)DataType::vec4f32, &theColorb };
+			materialTemplate.uniforms["color"] = { (uint32_t)DataType::vec3f32, &colorb };
 			blackMaterial = Renderer::CreateMaterial(materialTemplate);
 		}
 

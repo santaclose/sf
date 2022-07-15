@@ -142,6 +142,10 @@ void sf::GlShader::SetUniform1fv(const std::string& name, const float* pointer, 
 {
 	glUniform1fv(GetUniformLocation(name), number, pointer);
 }
+void sf::GlShader::SetUniform2fv(const std::string& name, const float* pointer, uint32_t number)
+{
+	glUniform2fv(GetUniformLocation(name), number, pointer);
+}
 void sf::GlShader::SetUniform3fv(const std::string& name, const float* pointer, uint32_t number)
 {
 	glUniform3fv(GetUniformLocation(name), number, pointer);

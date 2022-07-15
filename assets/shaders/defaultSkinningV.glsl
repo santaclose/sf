@@ -23,17 +23,17 @@ layout (std430, binding = 1) buffer SkinningMatricesBuffer
 	mat4 skinningMatrices[];
 };
 
-out vec3 worldPos;
-out vec2 texCoord;
-out mat3 TBN;
-out float vertexAo;
+out float fVertexAo;
+out vec2 fTexCoords;
+out vec3 fWorldPos;
+out mat3 fTBN;
 
 uniform bool animate = false;
 
 void main()
 {
-	texCoord = aTextureCoord;
-	vertexAo = aAo;
+	fTexCoords = aTextureCoord;
+	fVertexAo = aAo;
 
 	mat4 skinMat = animate ?
 		aBoneWeights.x * skinningMatrices[int(aBoneIndices.x)] +
@@ -44,13 +44,13 @@ void main()
 	vec3 T = normalize(vec3(modelMatrix * skinMat * vec4(aTangent, 0.0)));
 	vec3 B = normalize(vec3(modelMatrix * skinMat * vec4(aBitangent, 0.0)));
 	vec3 N = normalize(vec3(modelMatrix * skinMat * vec4(aNormal, 0.0)));
-	TBN = mat3(T, B, N);
+	fTBN = mat3(T, B, N);
 
 	// standard normal passing
 	//normal = (modelMatrix * vec4(aNormal, 0.0)).xyz;
 	// for allowing non uniform scaling
 	//normal = (transpose(inverse(modelMatrix))* aNormal).xyz;
 
-	worldPos = (modelMatrix * skinMat * vec4(aPosition, 1.0)).rgb;
+	fWorldPos = (modelMatrix * skinMat * vec4(aPosition, 1.0)).rgb;
 	gl_Position = cameraMatrix * modelMatrix * skinMat * vec4(aPosition, 1.0);
 }

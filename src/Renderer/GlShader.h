@@ -38,6 +38,7 @@ namespace sf {
 		void Bind() const;
 		void SetUniformMatrix4fv(const std::string& name, const float* pointer, uint32_t number = 1);
 		void SetUniform1fv(const std::string& name, const float* pointer, uint32_t number = 1);
+		void SetUniform2fv(const std::string& name, const float* pointer, uint32_t number = 1);
 		void SetUniform3fv(const std::string& name, const float* pointer, uint32_t number = 1);
 		void SetUniform4fv(const std::string& name, const float* pointer, uint32_t number = 1);
 		void SetUniform1i(const std::string& name, int value);

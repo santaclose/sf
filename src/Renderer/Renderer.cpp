@@ -419,6 +419,7 @@ uint32_t sf::Renderer::CreateMaterial(const Material& material)
 
 void sf::Renderer::SetEnvironment(const std::string& hdrFilePath, DataType hdrDataType)
 {
+	std::cout << "[Renderer] Loading environment: " << hdrFilePath << std::endl;
 	assert(hdrDataType == DataType::f16 || hdrDataType == DataType::f32);
 
 	if (!environmentData.lookupTexture.isInitialized)

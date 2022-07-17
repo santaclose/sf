@@ -54,9 +54,13 @@ namespace sf
 
 	void Game::Initialize(int argc, char** argv)
 	{
-		std::ifstream f("examples/vertexAo/sponza.obj");
+		std::ifstream f("examples/vertexAo/bunny/bunny.obj");
 		if (!f.good()) // download file if not there
-			system("curl https://raw.githubusercontent.com/jimmiebergmann/Sponza/master/sponza.obj --output examples/vertexAo/sponza.obj");
+		{
+			system("curl https://casual-effects.com/g3d/data10/research/model/bunny/bunny.zip --output examples/vertexAo/bunny.zip");
+			system("powershell -Command \"Expand-Archive examples\\vertexAo\\bunny.zip -DestinationPath examples\\vertexAo\\bunny\"");
+			system("del examples\\vertexAo\\bunny.zip");
+		}
 
 		gimbal = scene.CreateEntity();
 		cameraObject = scene.CreateEntity();
@@ -69,7 +73,7 @@ namespace sf
 
 		uint32_t aoMaterial = Renderer::CreateMaterial(Material("assets/shaders/defaultV.glsl", "assets/shaders/vertexAoF.glsl", true));
 
-		std::vector<std::string> meshFilePaths = { "examples/vertexAo/sponza.obj", "assets/meshes/monke.obj" };
+		std::vector<std::string> meshFilePaths = { "examples/vertexAo/bunny/bunny.obj", "assets/meshes/monke.obj" };
 		sampleMeshes = new MeshData[meshFilePaths.size()];
 		for (int i = 0; i < meshFilePaths.size(); i++)
 		{
@@ -82,11 +86,7 @@ namespace sf
 
 			Transform& e_t = galleryObjects.back().AddComponent<Transform>();
 			if (i == 0)
-			{
-				e_t.rotation = glm::quat(glm::vec3(0.0f, glm::radians(90.0f), 0.0f));
-				e_t.scale = 0.01f;
-				e_t.position.y = -4.0f;
-			}
+				e_t.position += glm::vec3(0.3f, -0.6f, 0.0f);
 
 			Mesh& objectMesh = galleryObjects.back().AddComponent<Mesh>(&(sampleMeshes[i]));
 			Renderer::SetMeshMaterial(objectMesh, aoMaterial);

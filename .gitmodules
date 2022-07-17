@@ -10,3 +10,6 @@
 [submodule "vendor/aobaker"]
 	path = vendor/aobaker
 	url = https://github.com/santaclose/aobaker
+[submodule "vendor/imgui"]
+	path = vendor/imgui
+	url = git@github.com:santaclose/imgui.git

@@ -30,6 +30,7 @@ namespace sf {
 		int GetUniformLocation(const std::string& name);
 		void AssignTextureNumberToUniform(const std::string& name);
 		int GetTextureIndex(const std::string& name);
+		void Delete();
 	public:
 		GlShader();
 		~GlShader();

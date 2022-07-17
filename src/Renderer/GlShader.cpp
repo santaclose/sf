@@ -51,8 +51,7 @@ void sf::GlShader::CreateFromFiles(const std::string& vertexShaderPath, const st
 	m_vertFileName = vertexShaderPath;
 	m_fragFileName = fragmentShaderPath;
 
-	if (gl_id != -1)
-		glDeleteProgram(gl_id);
+	Delete();
 
 	std::ifstream ifs(vertexShaderPath);
 	std::ifstream ifs2(fragmentShaderPath);
@@ -68,6 +67,7 @@ void sf::GlShader::CreateFromFiles(const std::string& vertexShaderPath, const st
 		(std::istreambuf_iterator<char>()));
 
 	gl_id = glCreateProgram();
+	std::cout << "[GlShader] Created program with id " << gl_id << std::endl;
 	uint32_t vs = CompileShader(GL_VERTEX_SHADER, vertexShaderSource);
 	uint32_t fs = CompileShader(GL_FRAGMENT_SHADER, fragmentShaderSource);
 
@@ -89,6 +89,7 @@ void sf::GlShader::CreateComputeFromFile(const std::string& computeShaderPath)
 	std::string computeShaderSource((std::istreambuf_iterator<char>(ifs)),
 		(std::istreambuf_iterator<char>()));
 	gl_id = glCreateProgram();
+	std::cout << "[GlShader] Created program with id " << gl_id << std::endl;
 	uint32_t cs = CompileShader(GL_COMPUTE_SHADER, computeShaderSource);
 	glAttachShader(gl_id, cs);
 	glLinkProgram(gl_id);
@@ -98,7 +99,7 @@ void sf::GlShader::CreateComputeFromFile(const std::string& computeShaderPath)
 
 sf::GlShader::~GlShader()
 {
-	glDeleteProgram(gl_id);
+	Delete();
 }
 
 void sf::GlShader::Bind() const
@@ -132,6 +133,19 @@ void sf::GlShader::AssignTextureNumberToUniform(const std::string& name)
 int sf::GlShader::GetTextureIndex(const std::string& name)
 {
 	return m_uniformCache[name].textureIndex;
+}
+
+void sf::GlShader::Delete()
+{
+	if (gl_id != -1)
+	{
+		glDeleteProgram(gl_id);
+		uint32_t boundProgram; glGetIntegerv(GL_CURRENT_PROGRAM, (GLint*)&boundProgram);
+		if (gl_id == boundProgram)
+			glUseProgram(0); // can't leave deleted program bound
+		std::cout << "[GlShader] Deleted program with id " << gl_id << std::endl;
+		gl_id = -1;
+	}
 }
 
 void sf::GlShader::SetUniformMatrix4fv(const std::string& name, const float* pointer, uint32_t number)

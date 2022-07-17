@@ -60,6 +60,7 @@ namespace sf::IblHelper
 		lutComputeShader.Bind();
 		glBindImageTexture(0, m_spBRDF_LUT.id, 0, GL_FALSE, 0, GL_WRITE_ONLY, internalFormat);
 		glDispatchCompute(m_spBRDF_LUT.width / 32, m_spBRDF_LUT.height / 32, 1);
+		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
 		lut.width = m_spBRDF_LUT.width;
 		lut.height = m_spBRDF_LUT.height;
@@ -90,6 +91,7 @@ namespace sf::IblHelper
 		glBindTextureUnit(0, equirectTexture.gl_id);
 		glBindImageTexture(0, envTextureUnfiltered.id, 0, GL_TRUE, 0, GL_WRITE_ONLY, internalFormat);
 		glDispatchCompute(envTextureUnfiltered.width / 32, envTextureUnfiltered.height / 32, 6);
+		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
 		glGenerateTextureMipmap(envTextureUnfiltered.id);
 		environmentCubemap.size = envTextureUnfiltered.width;
@@ -127,7 +129,9 @@ namespace sf::IblHelper
 			glBindImageTexture(0, m_envTexture.id, level, GL_TRUE, 0, GL_WRITE_ONLY, internalFormat);
 			glProgramUniform1f(spmapComputeShader.gl_id, 0, level * deltaRoughness);
 			glDispatchCompute(numGroups, numGroups, 6);
+			glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 		}
+
 		prefilterCubemap.size = m_envTexture.width;
 		prefilterCubemap.storageType = cubemapStorageType;
 		if (prefilterCubemap.isInitialized)
@@ -151,6 +155,8 @@ namespace sf::IblHelper
 		glBindTextureUnit(0, environmentCubemap.gl_id);
 		glBindImageTexture(0, m_irmapTexture.id, 0, GL_TRUE, 0, GL_WRITE_ONLY, internalFormat);
 		glDispatchCompute(m_irmapTexture.width / 32, m_irmapTexture.height / 32, 6);
+		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
 		irradianceCubemap.size = m_irmapTexture.width;
 		irradianceCubemap.storageType = cubemapStorageType;
 		if (irradianceCubemap.isInitialized)

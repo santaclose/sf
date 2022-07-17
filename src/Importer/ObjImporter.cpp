@@ -82,6 +82,18 @@ namespace sf::ObjImporter {
 			for (p = q; p < line.length() && line[p] != ' ' && line[p] != '\t'; p++);
 			int c = p - q == 0 ? -1 : std::stoi(line.substr(q, p - q));
 			target.push_back({ a, b, c });
+			bool moreVerticesAhead = false;
+			for (int i = p; i < line.length(); i++)
+			{
+				if (line[i] >= '0' && line[i] <= '9')
+				{
+					moreVerticesAhead = true;
+					break;
+				}
+			}
+			if (!moreVerticesAhead)
+				break;
+
 		}
 	}
 

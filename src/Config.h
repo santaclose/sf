@@ -10,4 +10,5 @@ namespace sf::Config
 	extern int msaaCount;
 	extern bool fullscreen;
 	extern float clearColor[3];
+	extern bool imGuiMenuBarEnabled;
 };

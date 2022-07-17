@@ -22,6 +22,8 @@
 #include <Components/Sprite.h>
 #include <Components/Skeleton.h>
 
+#include <ImGuiController.h>
+
 #define BACKGROUND_COLOR 0.1
 
 float gameTime = 0.0;
@@ -97,6 +99,8 @@ int main(int argc, char** argv)
 
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
+	sf::ImGuiController::Setup(window);
+
 	if (!sf::Renderer::Initialize(glfwGetProcAddress))
 		std::cout << "Failed to initialize renderer\n";
 	sf::Defaults::Initialize();
@@ -160,6 +164,8 @@ int main(int argc, char** argv)
 			if (base.isEntityEnabled)
 				sf::Renderer::DrawSprite(sprite, screenCooordinates);
 		}
+
+		sf::ImGuiController::Tick(deltaTime);
 
 		/* Swap front and back buffers */
 		glfwSwapBuffers(window);

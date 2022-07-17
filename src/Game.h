@@ -12,5 +12,6 @@ namespace sf
 		static void Initialize(int argc, char** argv);
 		static void Terminate();
 		static void OnUpdate(float deltaTime, float time);
+		static void ImGuiCall();
 	};
 }

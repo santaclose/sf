@@ -1,7 +1,9 @@
 #include <GLFW/glfw3.h>
+#include <imgui.h>
 #include <iostream>
 #include <fstream>
 
+#include <Config.h>
 #include <Game.h>
 #include <MeshProcessor.h>
 #include <Math.hpp>
@@ -189,32 +191,32 @@ namespace sf
 		cameraObject.GetComponent<Transform>().LookAt(gimbal.GetComponent<Transform>().position, glm::vec3(0.0, 1.0, 0.0));
 	}
 
+	void ChangeEnvironment()
+	{
+		selectedEnvironment++;
+		selectedEnvironment = Math::Mod(selectedEnvironment, (int)environments.size());
+		Renderer::SetEnvironment(environments[selectedEnvironment]);
+	}
+
+	void GalleryChange(bool next)
+	{
+		int prevModel = selectedModel;
+		selectedModel += next ? 1 : -1;
+		selectedModel = Math::Mod(selectedModel, (int)galleryObjects.size());
+		galleryObjects[prevModel].SetEnabled(false);
+		galleryObjects[selectedModel].SetEnabled(true);
+	}
+
 	void Game::OnUpdate(float deltaTime, float time)
 	{
 		if (Input::KeyDown(Input::KeyCode::Space))
 			rotationEnabled = !rotationEnabled;
 		else if (Input::KeyDown(Input::KeyCode::Right))
-		{
-			int prevModel = selectedModel;
-			selectedModel++;
-			selectedModel = Math::Mod(selectedModel, (int)galleryObjects.size());
-			galleryObjects[prevModel].SetEnabled(false);
-			galleryObjects[selectedModel].SetEnabled(true);
-		}
+			GalleryChange(true);
 		else if (Input::KeyDown(Input::KeyCode::Left))
-		{
-			int prevModel = selectedModel;
-			selectedModel--;
-			selectedModel = Math::Mod(selectedModel, (int)galleryObjects.size());
-			galleryObjects[prevModel].SetEnabled(false);
-			galleryObjects[selectedModel].SetEnabled(true);
-		}
+			GalleryChange(false);
 		else if (Input::KeyDown(Input::KeyCode::H))
-		{
-			selectedEnvironment++;
-			selectedEnvironment = Math::Mod(selectedEnvironment, (int)environments.size());
-			Renderer::SetEnvironment(environments[selectedEnvironment]);
-		}
+			ChangeEnvironment();
 
 		UpdateCamera(deltaTime);
 
@@ -226,6 +228,40 @@ namespace sf
 
 		Transform& objectTransform = galleryObjects[selectedModel].GetComponent<Transform>();
 		objectTransform.rotation = modelRotation * objectTransform.rotation;
+	}
+	void Game::ImGuiCall()
+	{
+		if (Config::imGuiMenuBarEnabled)
+		{
+			if (ImGui::BeginMainMenuBar())
+			{
+				if (ImGui::BeginMenu("Gallery"))
+				{
+					if (ImGui::MenuItem("Previous", "Left arrow")) { GalleryChange(false); }
+					if (ImGui::MenuItem("Next", "Right arrow")) { GalleryChange(true); }
+					if (ImGui::MenuItem("Toggle rotation", "Space")) { rotationEnabled = !rotationEnabled; }
+					ImGui::EndMenu();
+				}
+				if (ImGui::BeginMenu("Camera"))
+				{
+					if (ImGui::MenuItem("Center", "C"))
+						gimbal.GetComponent<Transform>().position = glm::vec3(0.0f);
+					ImGui::EndMenu();
+				}
+				if (ImGui::BeginMenu("Environment"))
+				{
+					if (ImGui::MenuItem("Change", "H")) { ChangeEnvironment(); }
+					ImGui::Separator();
+					ImGui::Text("From file");
+					static char environmentTextFieldBuffer[256];
+					ImGui::InputText("Path", environmentTextFieldBuffer, 256);
+					if (ImGui::Button("Load"))
+						Renderer::SetEnvironment(std::string(environmentTextFieldBuffer));
+					ImGui::EndMenu();
+				}
+				ImGui::EndMainMenuBar();
+			}
+		}
 	}
 	void Game::Terminate()
 	{

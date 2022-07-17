@@ -144,4 +144,6 @@ namespace sf
 		t_lookBackCamera.position = t_ship.position + t_ship.Forward() * 4.0;
 		t_lookBackCamera.LookAt(t_ship.position, t_ship.Up());
 	}
+
+	void Game::ImGuiCall() {}
 }

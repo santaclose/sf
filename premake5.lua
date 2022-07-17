@@ -19,6 +19,7 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 group "Dependencies"
 	include "vendor/GLFW"
 	include "vendor/Glad"
+	include "vendor/imgui"
 
 group ""
 
@@ -45,7 +46,8 @@ project "sf"
 		"vendor/glm/glm/**.inl",
 		"vendor/sfmg/*.cpp",
 		"vendor/aobaker/*.cpp",
-		"vendor/nanosvg/*.cpp"
+		"vendor/nanosvg/*.cpp",
+		"vendor/load.cpp"
 	}
 
 	defines
@@ -65,13 +67,15 @@ project "sf"
 		"vendor/gli/gli",
 		"vendor/aobaker",
 		"vendor/entt",
-		"vendor/nanosvg"
+		"vendor/nanosvg",
+		"vendor/imgui"
 	}
 
 	links 
 	{ 
 		"GLFW",
 		"Glad",
+		"ImGui",
 		"opengl32.lib"
 	}
 

@@ -1,6 +1,8 @@
 #include <GLFW/glfw3.h>
+#include <imgui.h>
 #include <iostream>
 
+#include <Config.h>
 #include <Game.h>
 #include <Math.hpp>
 #include <Random.h>
@@ -29,6 +31,10 @@
 
 #define LERP_TIME 0.05
 
+#define INITIAL_FREQUENCY 0.00559973
+#define INITIAL_STRENGTH 12.4
+#define INITIAL_SPEED 0.1231
+
 namespace sf
 {
 	Scene scene;
@@ -42,21 +48,19 @@ namespace sf
 	MeshData uniqueErrts[UNIQUE_COUNT];
 	Entity* errts;
 
-	float tFreq = 0.00559973;
-	float tStrength = 12.4;
-	float zFrequency = 0.00559973;
-	float xFrequency = 0.00559973;
-	float zWaveStrength = 12.4;
-	float xWaveStrength = 12.4;
+	float tFreq = INITIAL_FREQUENCY;
+	float tStrength = INITIAL_STRENGTH;
+	float zFrequency = INITIAL_FREQUENCY;
+	float xFrequency = INITIAL_FREQUENCY;
+	float zWaveStrength = INITIAL_STRENGTH;
+	float xWaveStrength = INITIAL_STRENGTH;
 
 	float cameraRot = 0.0;
 
-	float tSpeed = 0.1231;
-	float speed = 0.1231;
+	float tSpeed = INITIAL_SPEED;
+	float speed = INITIAL_SPEED;
 	float posY = 50.0f;
 	float cameraRadius = 650.0f;
-
-	int selectedVariable = 0;
 
 	void Game::Initialize(int argc, char** argv)
 	{
@@ -130,32 +134,6 @@ namespace sf
 
 	void Game::OnUpdate(float deltaTime, float time)
 	{
-		if (Input::KeyDown(Input::KeyCode::Right))
-			selectedVariable++;
-		else if (Input::KeyDown(Input::KeyCode::Left))
-			selectedVariable--;
-
-		float scrollValue = Input::MouseScrollUp() ? 1.0f : (Input::MouseScrollDown() ? -1.0f : 0.0f);
-		if (scrollValue != 0.0f)
-		{
-			switch (selectedVariable % 3)
-			{
-			case 0:
-				tFreq += scrollValue * 0.0012;
-				std::cout << "new freq: " << tFreq << std::endl;
-				break;
-			case 1:
-				tStrength += scrollValue * 0.7;
-				std::cout << "new strength: " << tStrength << std::endl;
-				break;
-			case 2:
-				tSpeed += scrollValue * 0.0007;
-				std::cout << "new speed: " << tSpeed << std::endl;
-				break;
-
-			}
-		}
-
 		cameraRot = time * 0.01;
 
 		zFrequency = glm::mix(zFrequency, tFreq, deltaTime * LERP_TIME);
@@ -163,12 +141,36 @@ namespace sf
 		xWaveStrength = glm::mix(xWaveStrength, tStrength, deltaTime * LERP_TIME);
 		zWaveStrength = glm::mix(zWaveStrength, tStrength, deltaTime * LERP_TIME);
 		speed = glm::mix(speed, tSpeed, deltaTime * LERP_TIME);
-		
+
 		Transform& t_camera = e_camera.GetComponent<Transform>();
 		t_camera.position = glm::vec3(cos(cameraRot) * cameraRadius, posY, sin(cameraRot) * cameraRadius);
 		t_camera.LookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 
 		for (int i = 0; i < ERRT_COUNT; i++)
 			Animate(errts[i].GetComponent<Transform>(), time, deltaTime);
+	}
+
+	void Game::ImGuiCall()
+	{
+		if (Config::imGuiMenuBarEnabled)
+		{
+			if (ImGui::BeginMainMenuBar())
+			{
+				if (ImGui::BeginMenu("Animation"))
+				{
+					ImGui::DragFloat("Frequency", &tFreq, 0.00012);
+					ImGui::DragFloat("Strength", &tStrength, 0.07);
+					ImGui::DragFloat("Speed", &tSpeed, 0.00007);
+					if (ImGui::Button("Reset"))
+					{
+						tFreq = INITIAL_FREQUENCY;
+						tStrength = INITIAL_STRENGTH;
+						tSpeed = INITIAL_SPEED;
+					}
+					ImGui::EndMenu();
+				}
+				ImGui::EndMainMenuBar();
+			}
+		}
 	}
 }

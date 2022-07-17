@@ -1,7 +1,9 @@
 #include <GLFW/glfw3.h>
+#include <imgui.h>
 #include <iostream>
 #include <fstream>
 
+#include <Config.h>
 #include <Game.h>
 #include <Math.hpp>
 #include <Random.h>
@@ -76,7 +78,14 @@ namespace sf
 			ObjImporter::GenerateMeshData(objid, sampleMeshes[i]);
 			MeshProcessor::BakeAoToVertices(sampleMeshes[i]);
 
-			galleryObjects.back().AddComponent<Transform>();
+			Transform& e_t = galleryObjects.back().AddComponent<Transform>();
+			if (i == 0)
+			{
+				e_t.rotation = glm::quat(glm::vec3(0.0f, glm::radians(90.0f), 0.0f));
+				e_t.scale = 0.01f;
+				e_t.position.y = -4.0f;
+			}
+
 			Mesh& objectMesh = galleryObjects.back().AddComponent<Mesh>(&(sampleMeshes[i]));
 			Renderer::SetMeshMaterial(objectMesh, aoMaterial);
 
@@ -133,26 +142,23 @@ namespace sf
 		cameraObject.GetComponent<Transform>().LookAt(gimbal.GetComponent<Transform>().position, glm::vec3(0.0, 1.0, 0.0));
 	}
 
+	void GalleryChange(bool next)
+	{
+		int prevModel = selectedModel;
+		selectedModel += next ? 1 : -1;
+		selectedModel = Math::Mod(selectedModel, (int)galleryObjects.size());
+		galleryObjects[prevModel].SetEnabled(false);
+		galleryObjects[selectedModel].SetEnabled(true);
+	}
+
 	void Game::OnUpdate(float deltaTime, float time)
 	{
 		if (Input::KeyDown(Input::KeyCode::Space))
 			rotationEnabled = !rotationEnabled;
 		else if (Input::KeyDown(Input::KeyCode::Right))
-		{
-			int prevModel = selectedModel;
-			selectedModel++;
-			selectedModel = Math::Mod(selectedModel, (int)galleryObjects.size());
-			galleryObjects[prevModel].SetEnabled(false);
-			galleryObjects[selectedModel].SetEnabled(true);
-		}
+			GalleryChange(true);
 		else if (Input::KeyDown(Input::KeyCode::Left))
-		{
-			int prevModel = selectedModel;
-			selectedModel--;
-			selectedModel = Math::Mod(selectedModel, (int)galleryObjects.size());
-			galleryObjects[prevModel].SetEnabled(false);
-			galleryObjects[selectedModel].SetEnabled(true);
-		}
+			GalleryChange(false);
 
 		UpdateCamera(deltaTime);
 
@@ -164,6 +170,30 @@ namespace sf
 
 		Transform& objectTransform = galleryObjects[selectedModel].GetComponent<Transform>();
 		objectTransform.rotation = modelRotation * objectTransform.rotation;
+	}
+
+	void Game::ImGuiCall()
+	{
+		if (Config::imGuiMenuBarEnabled)
+		{
+			if (ImGui::BeginMainMenuBar())
+			{
+				if (ImGui::BeginMenu("Gallery"))
+				{
+					if (ImGui::MenuItem("Previous", "Left arrow")) { GalleryChange(false); }
+					if (ImGui::MenuItem("Next", "Right arrow")) { GalleryChange(true); }
+					if (ImGui::MenuItem("Toggle rotation", "Space")) { rotationEnabled = !rotationEnabled; }
+					ImGui::EndMenu();
+				}
+				if (ImGui::BeginMenu("Camera"))
+				{
+					if (ImGui::MenuItem("Center", "C"))
+						gimbal.GetComponent<Transform>().position = glm::vec3(0.0f);
+					ImGui::EndMenu();
+				}
+				ImGui::EndMainMenuBar();
+			}
+		}
 	}
 
 	void Game::Terminate()

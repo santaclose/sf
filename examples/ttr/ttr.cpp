@@ -37,6 +37,8 @@
 
 namespace sf
 {
+	std::string Game::ConfigFilePath = "examples/ttr/config.json";
+
 	Scene scene;
 	Entity e_camera;
 
@@ -152,7 +154,7 @@ namespace sf
 
 	void Game::ImGuiCall()
 	{
-		if (Config::imGuiMenuBarEnabled)
+		if (Config::GetImGuiBarEnabled())
 		{
 			if (ImGui::BeginMainMenuBar())
 			{

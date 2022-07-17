@@ -1,6 +1,6 @@
 #pragma once
 
-#include <glm/glm.hpp>
+#include <string>
 
 namespace sf
 {
@@ -9,6 +9,7 @@ namespace sf
 	private:
 
 	public:
+		static std::string ConfigFilePath;
 		static void Initialize(int argc, char** argv);
 		static void Terminate();
 		static void OnUpdate(float deltaTime, float time);

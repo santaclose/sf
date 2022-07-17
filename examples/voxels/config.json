@@ -1,0 +1,11 @@
+{
+	"name": "voxels",
+	"windowWidth": 1280,
+	"windowHeight": 720,
+	"msaaCount": 8,
+	"clearColorR": 0.6,
+	"clearColorG": 0.6,
+	"clearColorB": 0.6,
+	"imguiBarEnabled": true,
+	"cursorEnabled": true
+}

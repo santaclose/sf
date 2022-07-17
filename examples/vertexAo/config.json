@@ -1,0 +1,11 @@
+{
+	"name": "vao",
+	"windowWidth": 1280,
+	"windowHeight": 720,
+	"msaaCount": 8,
+	"clearColorR": 0.5,
+	"clearColorG": 0.5,
+	"clearColorB": 0.5,
+	"imguiBarEnabled": true,
+	"cursorEnabled": true
+}

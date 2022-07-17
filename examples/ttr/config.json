@@ -1,0 +1,11 @@
+{
+	"name": "ttr",
+	"windowWidth": 1280,
+	"windowHeight": 720,
+	"msaaCount": 8,
+	"clearColorR": 0.2,
+	"clearColorG": 0.2,
+	"clearColorB": 0.2,
+	"imguiBarEnabled": true,
+	"cursorEnabled": true
+}

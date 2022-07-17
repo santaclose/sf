@@ -1,14 +1,24 @@
 #pragma once
 
 #include <string>
+#include <glm/glm.hpp>
+#include <GLFW/glfw3.h>
 
 namespace sf::Config
 {
-	extern std::string name;
-	extern uint32_t windowWidth;
-	extern uint32_t windowHeight;
-	extern int msaaCount;
-	extern bool fullscreen;
-	extern float clearColor[3];
-	extern bool imGuiMenuBarEnabled;
+	void LoadFromFile(const std::string& filePath);
+	void UpdateWindow(GLFWwindow* window);
+	void UpdateWindowSize(int width, int height);
+
+	void SetImGuiBarEnabled(bool value);
+	void SetFullscreen(bool value);
+	void SetCursorEnabled(bool value);
+
+	const std::string& GetName();
+	const glm::uvec2& GetWindowSize();
+	const uint32_t GetMsaaCount();
+	const glm::vec3& GetClearColor();
+	bool GetFullscreen();
+	bool GetImGuiBarEnabled();
+	bool GetCursorEnabled();
 };

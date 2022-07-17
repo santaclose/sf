@@ -31,6 +31,8 @@
 
 namespace sf
 {
+	std::string Game::ConfigFilePath = "examples/spaceship/config.json";
+
 	Scene scene;
 	Entity e_ship, e_mainCamera, e_lookBackCamera;
 

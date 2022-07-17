@@ -274,10 +274,10 @@ bool sf::Renderer::Initialize(void* process)
 
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
-	glClearColor(sf::Config::clearColor[0], sf::Config::clearColor[1], sf::Config::clearColor[2], 0.0);
-	glViewport(0, 0, sf::Config::windowWidth, sf::Config::windowHeight);
+	glClearColor(sf::Config::GetClearColor().r, sf::Config::GetClearColor().g, sf::Config::GetClearColor().b, 0.0);
+	glViewport(0, 0, sf::Config::GetWindowSize().x, sf::Config::GetWindowSize().y);
 
-	sf::Renderer::aspectRatio = (float)sf::Config::windowWidth / (float)sf::Config::windowHeight;
+	sf::Renderer::aspectRatio = (float)sf::Config::GetWindowSize().x / (float)sf::Config::GetWindowSize().y;
 
 	defaultShader.CreateFromFiles("assets/shaders/defaultV.glsl", "assets/shaders/defaultF.glsl");
 	defaultMaterial.CreateFromShader(&defaultShader, false);
@@ -330,8 +330,8 @@ bool sf::Renderer::Initialize(void* process)
 
 void sf::Renderer::OnResize()
 {
-	glViewport(0, 0, Config::windowWidth, Config::windowHeight);
-	aspectRatio = (float)Config::windowWidth / (float)Config::windowHeight;
+	glViewport(0, 0, sf::Config::GetWindowSize().x, sf::Config::GetWindowSize().y);
+	aspectRatio = (float)sf::Config::GetWindowSize().x / (float)sf::Config::GetWindowSize().y;
 }
 
 void sf::Renderer::Predraw()
@@ -340,7 +340,7 @@ void sf::Renderer::Predraw()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// screen space matrix
-	sharedGpuData.screenSpaceMatrix = glm::ortho(0.0f, (float)Config::windowWidth, (float)Config::windowHeight, 0.0f);
+	sharedGpuData.screenSpaceMatrix = glm::ortho(0.0f, (float)sf::Config::GetWindowSize().x, (float)sf::Config::GetWindowSize().y, 0.0f);
 
 	// camera matrices
 	assert(activeCameraEntity);
@@ -581,10 +581,10 @@ void sf::Renderer::DrawSprite(Sprite& sprite, ScreenCoordinates& screenCoordinat
 	if (spriteTextures.find(sprite.bitmap) == spriteTextures.end()) // create mesh data if not there
 		spriteTextures[sprite.bitmap].CreateFromBitmap(*sprite.bitmap, GlTexture::ClampToEdge, false);
 
-	spriteQuad.vertices[0] = screenCoordinates.origin * glm::vec2(Config::windowWidth, Config::windowHeight) + (glm::vec2)screenCoordinates.offset;
-	spriteQuad.vertices[2] = screenCoordinates.origin * glm::vec2(Config::windowWidth, Config::windowHeight) + (glm::vec2)screenCoordinates.offset + glm::vec2(0.0f, (float)(sprite.bitmap->height));
-	spriteQuad.vertices[4] = screenCoordinates.origin * glm::vec2(Config::windowWidth, Config::windowHeight) + (glm::vec2)screenCoordinates.offset + glm::vec2((float)(sprite.bitmap->width), (float)(sprite.bitmap->height));
-	spriteQuad.vertices[6] = screenCoordinates.origin * glm::vec2(Config::windowWidth, Config::windowHeight) + (glm::vec2)screenCoordinates.offset + glm::vec2((float)(sprite.bitmap->width), 0.0f);
+	spriteQuad.vertices[0] = screenCoordinates.origin * glm::vec2(sf::Config::GetWindowSize().x, sf::Config::GetWindowSize().y) + (glm::vec2)screenCoordinates.offset;
+	spriteQuad.vertices[2] = screenCoordinates.origin * glm::vec2(sf::Config::GetWindowSize().x, sf::Config::GetWindowSize().y) + (glm::vec2)screenCoordinates.offset + glm::vec2(0.0f, (float)(sprite.bitmap->height));
+	spriteQuad.vertices[4] = screenCoordinates.origin * glm::vec2(sf::Config::GetWindowSize().x, sf::Config::GetWindowSize().y) + (glm::vec2)screenCoordinates.offset + glm::vec2((float)(sprite.bitmap->width), (float)(sprite.bitmap->height));
+	spriteQuad.vertices[6] = screenCoordinates.origin * glm::vec2(sf::Config::GetWindowSize().x, sf::Config::GetWindowSize().y) + (glm::vec2)screenCoordinates.offset + glm::vec2((float)(sprite.bitmap->width), 0.0f);
 
 	glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);

@@ -1,4 +1,4 @@
-#include <GLFW/glfw3.h>
+﻿#include <GLFW/glfw3.h>
 #include <imgui.h>
 #include <iostream>
 #include <fstream>
@@ -33,6 +33,8 @@
 
 namespace sf
 {
+	std::string Game::ConfigFilePath = "examples/pbr/config.json";
+
 	Scene scene;
 	Entity gimbal, cameraObject;
 	std::vector<Entity> galleryObjects;
@@ -152,7 +154,7 @@ namespace sf
 
 	void UpdateCamera(float deltaTime)
 	{
-		if (Input::Key(Input::KeyCode::C))
+		if (Input::Key(Input::KeyCode::F))
 			gimbal.GetComponent<Transform>().position = glm::vec3(0.0f);
 		if (Input::Key(Input::KeyCode::E))
 			gimbal.GetComponent<Transform>().position += cameraObject.GetComponent<Transform>().Up() * GIMBAL_MOVEMENT_SPEED * (Input::Key(Input::KeyCode::LeftShift) ? 0.5f : 1.0f);
@@ -231,7 +233,7 @@ namespace sf
 	}
 	void Game::ImGuiCall()
 	{
-		if (Config::imGuiMenuBarEnabled)
+		if (Config::GetImGuiBarEnabled())
 		{
 			if (ImGui::BeginMainMenuBar())
 			{
@@ -244,7 +246,7 @@ namespace sf
 				}
 				if (ImGui::BeginMenu("Camera"))
 				{
-					if (ImGui::MenuItem("Center", "C"))
+					if (ImGui::MenuItem("Center", "F"))
 						gimbal.GetComponent<Transform>().position = glm::vec3(0.0f);
 					ImGui::EndMenu();
 				}

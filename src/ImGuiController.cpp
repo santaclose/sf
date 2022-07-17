@@ -42,19 +42,28 @@ bool sf::ImGuiController::HasControl()
 void sf::ImGuiController::Tick(float deltaTime)
 {
 	if (Input::KeyDown(Input::F1))
-		Config::imGuiMenuBarEnabled = !Config::imGuiMenuBarEnabled;
+		Config::SetImGuiBarEnabled(!Config::GetImGuiBarEnabled());
+	if (Input::KeyDown(Input::F2))
+		Config::SetCursorEnabled(!Config::GetCursorEnabled());
+	if (Input::KeyDown(Input::Enter) && Input::Key(Input::RightAlt))
+		Config::SetFullscreen(!Config::GetFullscreen());
 
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
-	if (Config::imGuiMenuBarEnabled)
+	if (Config::GetImGuiBarEnabled())
 	{
 		if (ImGui::BeginMainMenuBar())
 		{
 			if (ImGui::BeginMenu("sf"))
 			{
 				ImGui::MenuItem("Stats", NULL, &statsEnabled);
-				if (ImGui::MenuItem("Hide menu bar", "F1")) { Config::imGuiMenuBarEnabled = false; }
+				if (ImGui::MenuItem("Fullscreen", "Alt+Enter"))
+					Config::SetFullscreen(!Config::GetFullscreen());
+				if (ImGui::MenuItem("Cursor enabled", "F2"))
+					Config::SetCursorEnabled(!Config::GetCursorEnabled());
+				if (ImGui::MenuItem("Menu bar", "F1"))
+					Config::SetImGuiBarEnabled(false);
 				ImGui::EndMenu();
 			}
 			ImGui::EndMainMenuBar();

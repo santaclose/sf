@@ -54,8 +54,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 }
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-	sf::Config::windowWidth = width;
-	sf::Config::windowHeight = height;
+	sf::Config::UpdateWindowSize(width, height);
 	sf::Renderer::OnResize();
 }
 
@@ -73,22 +72,24 @@ int main(int argc, char** argv)
 	if (!glfwInit())
 		return -1;
 
-	glfwWindowHint(GLFW_SAMPLES, sf::Config::msaaCount);
+	sf::Config::LoadFromFile(sf::Game::ConfigFilePath);
+	glfwWindowHint(GLFW_SAMPLES, sf::Config::GetMsaaCount());
 #ifdef SF_DEBUG
 	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
 #endif
 
-	window = glfwCreateWindow(sf::Config::windowWidth, sf::Config::windowHeight, sf::Config::name.c_str(), sf::Config::fullscreen ? glfwGetPrimaryMonitor() : NULL, NULL);
+	window = glfwCreateWindow(sf::Config::GetWindowSize().x, sf::Config::GetWindowSize().y, sf::Config::GetName().c_str(), sf::Config::GetFullscreen() ? glfwGetPrimaryMonitor() : NULL, NULL);
 
 	if (!window)
 	{
 		glfwTerminate();
 		return -1;
 	}
+	sf::Config::UpdateWindow(window);
 
 	/* Make the window's context current */
 	glfwMakeContextCurrent(window);
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+	glfwSetInputMode(window, GLFW_CURSOR, sf::Config::GetCursorEnabled() ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
 
 	/* INPUT BINDINGS */
 	glfwSetCursorPosCallback(window, cursor_position_callback);

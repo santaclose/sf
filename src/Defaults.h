@@ -8,6 +8,7 @@ namespace sf::Defaults {
 	extern MeshData cubeMeshData;
 	extern MeshData monkeMeshData;
 	extern DataLayout defaultVertexLayout;
+	extern DataLayout defaultSkinningVertexLayout;
 
 	void Initialize();
 }

@@ -22,6 +22,8 @@ namespace sf::Renderer
 {
 	GlShader defaultShader;
 	GlMaterial defaultMaterial;
+	GlShader defaultSkinningShader;
+	GlMaterial defaultSkinningMaterial;
 	GlShader voxelBoxShader;
 
 	float aspectRatio = 1.7777777777;
@@ -92,6 +94,11 @@ namespace sf::Renderer
 	{
 		for (int i = 0; i < mesh->pieces.size(); i++)
 			meshMaterials[id].push_back(&defaultMaterial);
+	}
+	void CreateSkinnedMeshMaterialSlots(int id, const sf::MeshData* mesh)
+	{
+		for (int i = 0; i < mesh->pieces.size(); i++)
+			meshMaterials[id].push_back(&defaultSkinningMaterial);
 	}
 
 	void TransferVertexData(const sf::MeshData* mesh)
@@ -281,6 +288,8 @@ bool sf::Renderer::Initialize(void* process)
 
 	defaultShader.CreateFromFiles("assets/shaders/defaultV.glsl", "assets/shaders/defaultF.glsl");
 	defaultMaterial.CreateFromShader(&defaultShader, false);
+	defaultSkinningShader.CreateFromFiles("assets/shaders/defaultSkinningV.glsl", "assets/shaders/defaultF.glsl");
+	defaultSkinningMaterial.CreateFromShader(&defaultSkinningShader, false);
 	voxelBoxShader.CreateFromFiles("assets/shaders/voxelBoxV.glsl", "assets/shaders/uvF.glsl");
 
 	glGenBuffers(1, &sharedGpuData_gl_ubo);
@@ -488,7 +497,7 @@ void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 	if (meshGpuData.find(mesh.meshData) == meshGpuData.end()) // create mesh data if not there
 		CreateMeshGpuData(mesh.meshData);
 	if (meshMaterials.find(mesh.id) == meshMaterials.end())
-		CreateMeshMaterialSlots(mesh.id, mesh.meshData);
+		CreateSkinnedMeshMaterialSlots(mesh.id, mesh.meshData);
 
 	sharedGpuData.modelMatrix = transform.ComputeMatrix();
 	glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);

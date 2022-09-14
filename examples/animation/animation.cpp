@@ -53,6 +53,9 @@ namespace sf
 
 	int selectedModel = 0;
 
+	std::vector<uint32_t> animationBlendingIndices = { 1, 2, 0 };
+	std::vector<float> animationBlendingWeights = { 0.1f, 0.2f, 0.7 };
+
 	void DownloadAssetDependencies(const std::vector<std::string>& urls, const std::string& targetPath)
 	{
 		for (const std::string& url : urls)
@@ -102,11 +105,11 @@ namespace sf
 		{
 			galleryObjects.push_back(scene.CreateEntity());
 			Transform& e_t = galleryObjects.back().AddComponent<Transform>();
-			e_t.rotation = glm::quat(glm::vec3(glm::radians(-90.0f), 0.0f, 0.0f));
-			e_t.scale = 1.7f;
+			//e_t.rotation = glm::quat(glm::vec3(glm::radians(-90.0f), 0.0f, 0.0f));
+			e_t.scale = 0.6f;
 			e_t.position.y -= 1.5f;
 
-			gltfid = GltfImporter::Load("examples/animation/BrainStem.glb");
+			gltfid = GltfImporter::Load("examples/animation/bb.glb");
 			GltfImporter::GenerateSkeleton(gltfid, skeletons[1]);
 			meshes[1].ChangeVertexLayout(Defaults::defaultSkinningVertexLayout);
 			GltfImporter::GenerateMeshData(gltfid, meshes[1]);
@@ -198,7 +201,8 @@ namespace sf
 		{
 			skeletons[selectedModel].animationTime += deltaTime;
 			skeletons[selectedModel].ClampAnimationTime();
-			skeletons[selectedModel].UpdateAnimation();
+			//skeletons[selectedModel].UpdateAnimation();
+			skeletons[selectedModel].UpdateAnimation(animationBlendingIndices, animationBlendingWeights, deltaTime);
 		}
 
 		UpdateCamera(deltaTime);
@@ -236,6 +240,13 @@ namespace sf
 					if (ImGui::MenuItem("Animate", "NumPad5")) { skeletons[selectedModel].animate = !skeletons[selectedModel].animate; }
 					if (ImGui::MenuItem("Previous", "NumPad4")) { AnimationChange(false); }
 					if (ImGui::MenuItem("Next", "NumPad6")) { AnimationChange(true); }
+					ImGui::DragInt3("Animation indices", (int*) & (animationBlendingIndices[0]), 0.05f, 0, skeletons[selectedModel].animations.size() - 1);
+					ImGui::DragFloat3("Animation weights", &(animationBlendingWeights[0]), 0.01f, 0.0f, 1.0f);
+					float sum = 0.0f;
+					for (float w : animationBlendingWeights)
+						sum += w;
+					for (float& w : animationBlendingWeights)
+						w /= sum;
 					ImGui::EndMenu();
 				}
 				ImGui::EndMainMenuBar();

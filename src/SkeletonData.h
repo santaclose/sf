@@ -52,5 +52,6 @@ namespace sf
 
 		void ClampAnimationTime();
 		void UpdateAnimation();
+		void UpdateAnimation(const std::vector<uint32_t>& indices, const std::vector<float>& weights, float deltaTime);
 	};
 }

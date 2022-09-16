@@ -5,9 +5,9 @@
 #define PI 3.14159265359
 
 out vec4 outColor;
-in vec3 fWorldPos;
-in vec2 fTextureCoords;
 in mat3 fTBN;
+in vec3 fWorldPos;
+in vec2 fTexCoords;
 in float fVertexAo;
 
 layout(std140, binding = 0) uniform SharedGpuData
@@ -120,13 +120,13 @@ vec3 computeLightContribution(vec3 L, vec3 radiance)
 
 void main()
 {
-	albedo = useAlbedoTexture ? pow(texture(albedoTexture, fTextureCoords).rgb, vec3(2.2)) : vec3(1.0);
-	emissive = useEmissiveTexture ? pow(texture(emissiveTexture, fTextureCoords).rgb, vec3(2.2)) : vec3(0.0);
+	albedo = useAlbedoTexture ? pow(texture(albedoTexture, fTexCoords).rgb, vec3(2.2)) : vec3(1.0);
+	emissive = useEmissiveTexture ? pow(texture(emissiveTexture, fTexCoords).rgb, vec3(2.2)) : vec3(0.0);
 
-	normalPixel = useNormalTexture ? texture(normalTexture, fTextureCoords).rgb : vec3(0.5, 0.5, 1.0);
-	metalness = useMetalnessTexture ? texture(metalnessTexture, fTextureCoords).r : 0.0;
-	roughness = useRoughnessTexture ? texture(roughnessTexture, fTextureCoords).r : 0.4;
-	ao = useAoTexture ? texture(aoTexture, fTextureCoords).r : 1.0;
+	normalPixel = useNormalTexture ? texture(normalTexture, fTexCoords).rgb : vec3(0.5, 0.5, 1.0);
+	metalness = useMetalnessTexture ? texture(metalnessTexture, fTexCoords).r : 0.0;
+	roughness = useRoughnessTexture ? texture(roughnessTexture, fTexCoords).r : 0.4;
+	ao = useAoTexture ? texture(aoTexture, fTexCoords).r : 1.0;
 	ao = useVertexAo ? min(fVertexAo, ao) : ao;
 
 	// Get current fragment's normal and transform to world space.

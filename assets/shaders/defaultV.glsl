@@ -5,7 +5,7 @@ layout(location = 1) in vec3 vNormal;
 layout(location = 2) in vec3 vTangent;
 layout(location = 3) in vec3 vBitangent;
 layout(location = 4) in vec3 vColor;
-layout(location = 5) in vec2 vTextureCoords;
+layout(location = 5) in vec2 vTexCoords;
 layout(location = 6) in float vAo;
 
 layout(std140, binding = 0) uniform SharedGpuData
@@ -16,15 +16,15 @@ layout(std140, binding = 0) uniform SharedGpuData
 	vec3 cameraPosition;
 };
 
-out float fVertexAo;
-out vec2 fTextureCoords;
-out vec3 fWorldPos;
 out mat3 fTBN;
+out vec3 fWorldPos;
+out vec2 fTexCoords;
+out float fVertexAo;
 
 void main()
 {
 	fVertexAo = vAo;
-	fTextureCoords = vTextureCoords;
+	fTexCoords = vTexCoords;
 	fWorldPos = (modelMatrix * vec4(vPosition, 1.0)).rgb;
 
 	vec3 T = normalize(vec3(modelMatrix * vec4(vTangent, 0.0)));

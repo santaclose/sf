@@ -1,7 +1,7 @@
 #version 430 core
 
 out vec4 outColor;
-in vec3 fTextureCoords;
+in vec3 fTexCoords;
 
 uniform samplerCube skybox;
 uniform bool useExposure = false;
@@ -13,7 +13,7 @@ void main()
 {
 	if (useExposure)
 	{
-		vec3 hdrColor = texture(skybox, fTextureCoords).rgb;
+		vec3 hdrColor = texture(skybox, fTexCoords).rgb;
 
 		// exposure tone mapping
 		vec3 mapped = vec3(1.0) - exp(-hdrColor * exposure);
@@ -24,7 +24,7 @@ void main()
 	}
 	else
 	{
-		vec3 envColor = textureLod(skybox, fTextureCoords, 0.0).rgb;
+		vec3 envColor = textureLod(skybox, fTexCoords, 0.0).rgb;
 
 		// HDR tonemap and gamma correct
 		envColor = envColor / (envColor + vec3(1.0));

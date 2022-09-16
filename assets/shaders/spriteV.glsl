@@ -1,7 +1,7 @@
 #version 430 core
 
 layout(location = 0) in vec2 vPosition;
-layout(location = 1) in vec2 vTextureCoords;
+layout(location = 1) in vec2 vTexCoords;
 
 layout(std140, binding = 0) uniform SharedGpuData
 {
@@ -11,10 +11,10 @@ layout(std140, binding = 0) uniform SharedGpuData
 	vec3 cameraPosition;
 };
 
-out vec2 fTextureCoords;
+out vec2 fTexCoords;
 
 void main()
 {
-	fTextureCoords = vTextureCoords;
+	fTexCoords = vTexCoords;
 	gl_Position = screenSpaceMatrix * vec4(vPosition, 0.0, 1.0);
 }

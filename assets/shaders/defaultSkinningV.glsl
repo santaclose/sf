@@ -1,14 +1,14 @@
 #version 430 core
 
-layout(location = 0) in vec3 vPosition;
-layout(location = 1) in vec3 vNormal;
-layout(location = 2) in vec3 vTangent;
-layout(location = 3) in vec3 vBitangent;
-layout(location = 4) in vec3 vColor;
-layout(location = 5) in vec2 vTextureCoords;
-layout(location = 6) in float vAo;
-layout(location = 7) in vec4 vBoneIndices;
-layout(location = 8) in vec4 vBoneWeights;
+layout(location = 0) in vec4 vBoneIndices;
+layout(location = 1) in vec4 vBoneWeights;
+layout(location = 2) in vec3 vPosition;
+layout(location = 3) in vec3 vNormal;
+layout(location = 4) in vec3 vTangent;
+layout(location = 5) in vec3 vBitangent;
+layout(location = 6) in vec3 vColor;
+layout(location = 7) in vec2 vTexCoords;
+layout(location = 8) in float vAo;
 
 layout(std140, binding = 0) uniform SharedGpuData
 {
@@ -23,16 +23,16 @@ layout (std430, binding = 1) buffer SkinningMatricesBuffer
 	mat4 skinningMatrices[];
 };
 
-out float fVertexAo;
-out vec2 fTexCoords;
-out vec3 fWorldPos;
 out mat3 fTBN;
+out vec3 fWorldPos;
+out vec2 fTexCoords;
+out float fVertexAo;
 
 uniform bool animate = false;
 
 void main()
 {
-	fTexCoords = vTextureCoords;
+	fTexCoords = vTexCoords;
 	fVertexAo = vAo;
 
 	mat4 skinMat = animate ?

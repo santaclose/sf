@@ -13,12 +13,14 @@ namespace sf::Config
 	void SetImGuiBarEnabled(bool value);
 	void SetFullscreen(bool value);
 	void SetCursorEnabled(bool value);
+	void SetVsyncEnabled(bool value);
 
 	const std::string& GetName();
 	const glm::uvec2& GetWindowSize();
 	const uint32_t GetMsaaCount();
 	const glm::vec3& GetClearColor();
-	bool GetFullscreen();
-	bool GetImGuiBarEnabled();
-	bool GetCursorEnabled();
+	const bool& GetFullscreen();
+	const bool& GetImGuiBarEnabled();
+	const bool& GetCursorEnabled();
+	const bool& GetVsyncEnabled();
 };

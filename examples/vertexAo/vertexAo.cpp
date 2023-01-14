@@ -24,9 +24,9 @@
 
 #define MOUSE_SENSITIVITY 0.003
 #define SCROLL_SENSITIVITY 0.12
-#define MODEL_ROTATION_SENSITIVITY 0.5
-#define PAN_SENSITIVITY 6.0f
-#define GIMBAL_MOVEMENT_SPEED 0.1
+#define MODEL_ROTATION_SENSITIVITY 10.0
+#define PAN_SENSITIVITY 0.1f
+#define GIMBAL_MOVEMENT_SPEED 7.5
 
 #define GIMBAL_ROTATION_SPEED 15.0f
 #define MODEL_OFFSET 50.0
@@ -108,17 +108,17 @@ namespace sf
 		if (Input::Key(Input::KeyCode::F))
 			gimbal.GetComponent<Transform>().position = glm::vec3(0.0f);
 		if (Input::Key(Input::KeyCode::E))
-			gimbal.GetComponent<Transform>().position += cameraObject.GetComponent<Transform>().Up() * GIMBAL_MOVEMENT_SPEED * (Input::Key(Input::KeyCode::LeftShift) ? 0.5f : 1.0f);
+			gimbal.GetComponent<Transform>().position += cameraObject.GetComponent<Transform>().Up() * GIMBAL_MOVEMENT_SPEED * (Input::Key(Input::KeyCode::LeftShift) ? 0.5f : 1.0f) * deltaTime;
 		if (Input::Key(Input::KeyCode::Q))
-			gimbal.GetComponent<Transform>().position -= cameraObject.GetComponent<Transform>().Up() * GIMBAL_MOVEMENT_SPEED * (Input::Key(Input::KeyCode::LeftShift) ? 0.5f : 1.0f);
+			gimbal.GetComponent<Transform>().position -= cameraObject.GetComponent<Transform>().Up() * GIMBAL_MOVEMENT_SPEED * (Input::Key(Input::KeyCode::LeftShift) ? 0.5f : 1.0f) * deltaTime;
 		if (Input::Key(Input::KeyCode::W))
-			gimbal.GetComponent<Transform>().position += cameraObject.GetComponent<Transform>().Forward() * GIMBAL_MOVEMENT_SPEED * (Input::Key(Input::KeyCode::LeftShift) ? 0.5f : 1.0f);
+			gimbal.GetComponent<Transform>().position += cameraObject.GetComponent<Transform>().Forward() * GIMBAL_MOVEMENT_SPEED * (Input::Key(Input::KeyCode::LeftShift) ? 0.5f : 1.0f) * deltaTime;
 		if (Input::Key(Input::KeyCode::S))
-			gimbal.GetComponent<Transform>().position -= cameraObject.GetComponent<Transform>().Forward() * GIMBAL_MOVEMENT_SPEED * (Input::Key(Input::KeyCode::LeftShift) ? 0.5f : 1.0f);
+			gimbal.GetComponent<Transform>().position -= cameraObject.GetComponent<Transform>().Forward() * GIMBAL_MOVEMENT_SPEED * (Input::Key(Input::KeyCode::LeftShift) ? 0.5f : 1.0f) * deltaTime;
 		if (Input::Key(Input::KeyCode::D))
-			gimbal.GetComponent<Transform>().position += cameraObject.GetComponent<Transform>().Right() * GIMBAL_MOVEMENT_SPEED * (Input::Key(Input::KeyCode::LeftShift) ? 0.5f : 1.0f);
+			gimbal.GetComponent<Transform>().position += cameraObject.GetComponent<Transform>().Right() * GIMBAL_MOVEMENT_SPEED * (Input::Key(Input::KeyCode::LeftShift) ? 0.5f : 1.0f) * deltaTime;
 		if (Input::Key(Input::KeyCode::A))
-			gimbal.GetComponent<Transform>().position -= cameraObject.GetComponent<Transform>().Right() * GIMBAL_MOVEMENT_SPEED * (Input::Key(Input::KeyCode::LeftShift) ? 0.5f : 1.0f);
+			gimbal.GetComponent<Transform>().position -= cameraObject.GetComponent<Transform>().Right() * GIMBAL_MOVEMENT_SPEED * (Input::Key(Input::KeyCode::LeftShift) ? 0.5f : 1.0f) * deltaTime;
 
 		cameraDistance -= glm::sqrt(cameraDistance) * (Input::Key(Input::KeyCode::LeftShift) ? 0.5f : 1.0f) * (Input::MouseScrollUp() ? SCROLL_SENSITIVITY : 0.0f);
 		cameraDistance += glm::sqrt(cameraDistance) * (Input::Key(Input::KeyCode::LeftShift) ? 0.5f : 1.0f) * (Input::MouseScrollDown() ? SCROLL_SENSITIVITY : 0.0f);
@@ -166,7 +166,7 @@ namespace sf
 
 		modelRotationY += Input::MousePosDeltaX() * MOUSE_SENSITIVITY * MODEL_ROTATION_SENSITIVITY * (Input::MouseButton(0) ? 1.0f : 0.0f);
 		modelRotationY = glm::mix(modelRotationY, 0.0f, deltaTime * 7.0f);
-		modelRotation = glm::quat(glm::vec3(0.0f, modelRotationY, 0.0f));
+		modelRotation = glm::quat(glm::vec3(0.0f, modelRotationY * deltaTime, 0.0f));
 		if (rotationEnabled)
 			modelRotation *= glm::quat(glm::vec3(0.0f, 1.5f * deltaTime, 0.0f));
 

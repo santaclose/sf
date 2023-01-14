@@ -99,6 +99,7 @@ int main(int argc, char** argv)
 	glfwSetScrollCallback(window, scroll_callback);
 
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+	glfwSwapInterval(sf::Config::GetVsyncEnabled());
 
 	sf::ImGuiController::Setup(window);
 

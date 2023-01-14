@@ -13,6 +13,7 @@ namespace sf::Config
     bool fullscreen = false;
     bool imguiBarEnabled = true;
     bool cursorEnabled = true;
+    bool vsyncEnabled = true;
     GLFWwindow* window;
 }
 
@@ -40,6 +41,8 @@ void sf::Config::LoadFromFile(const std::string& filePath)
         imguiBarEnabled = j["imguiBarEnabled"];
     if (j.find("cursorEnabled") != j.end())
         cursorEnabled = j["cursorEnabled"];
+    if (j.find("vsyncEnabled") != j.end())
+        vsyncEnabled = j["vsyncEnabled"];
     std::cout << "[Config] Config file loaded\n";
 }
 
@@ -94,10 +97,17 @@ void sf::Config::SetCursorEnabled(bool value)
     glfwSetInputMode(window, GLFW_CURSOR, cursorEnabled ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
 }
 
+void sf::Config::SetVsyncEnabled(bool value)
+{
+    vsyncEnabled = value;
+    glfwSwapInterval(value);
+}
+
 const std::string& sf::Config::GetName() { return name; }
 const glm::uvec2& sf::Config::GetWindowSize() { return windowSize; }
 const uint32_t sf::Config::GetMsaaCount() { return msaaCount; }
 const glm::vec3& sf::Config::GetClearColor() { return clearColor; }
-bool sf::Config::GetFullscreen() { return fullscreen; }
-bool sf::Config::GetImGuiBarEnabled() { return imguiBarEnabled; }
-bool sf::Config::GetCursorEnabled() { return cursorEnabled; }
+const bool& sf::Config::GetFullscreen() { return fullscreen; }
+const bool& sf::Config::GetImGuiBarEnabled() { return imguiBarEnabled; }
+const bool& sf::Config::GetCursorEnabled() { return cursorEnabled; }
+const bool& sf::Config::GetVsyncEnabled() { return vsyncEnabled; }

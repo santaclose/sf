@@ -45,6 +45,8 @@ void sf::ImGuiController::Tick(float deltaTime)
 		Config::SetImGuiBarEnabled(!Config::GetImGuiBarEnabled());
 	if (Input::KeyDown(Input::F2))
 		Config::SetCursorEnabled(!Config::GetCursorEnabled());
+	if (Input::KeyDown(Input::F3))
+		Config::SetVsyncEnabled(!Config::GetVsyncEnabled());
 	if (Input::KeyDown(Input::Enter) && Input::Key(Input::RightAlt))
 		Config::SetFullscreen(!Config::GetFullscreen());
 
@@ -58,12 +60,14 @@ void sf::ImGuiController::Tick(float deltaTime)
 			if (ImGui::BeginMenu("sf"))
 			{
 				ImGui::MenuItem("Stats", NULL, &statsEnabled);
-				if (ImGui::MenuItem("Fullscreen", "Alt+Enter"))
+				if (ImGui::MenuItem("Fullscreen", "Alt+Enter", Config::GetFullscreen()))
 					Config::SetFullscreen(!Config::GetFullscreen());
-				if (ImGui::MenuItem("Cursor enabled", "F2"))
-					Config::SetCursorEnabled(!Config::GetCursorEnabled());
-				if (ImGui::MenuItem("Menu bar", "F1"))
+				if (ImGui::MenuItem("Menu bar", "F1", Config::GetImGuiBarEnabled()))
 					Config::SetImGuiBarEnabled(false);
+				if (ImGui::MenuItem("Cursor enabled", "F2", Config::GetCursorEnabled()))
+					Config::SetCursorEnabled(!Config::GetCursorEnabled());
+				if (ImGui::MenuItem("Vsync enabled", "F3", Config::GetVsyncEnabled()))
+					Config::SetVsyncEnabled(!Config::GetVsyncEnabled());
 				ImGui::EndMenu();
 			}
 			ImGui::EndMainMenuBar();

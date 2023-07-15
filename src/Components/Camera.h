@@ -10,10 +10,10 @@ namespace sf {
 
 		int id;
 		bool perspective = true;
-		float orthographicScale = 5.0;
+		float orthographicScale = 5.0f;
 		float fieldOfView = glm::radians(90.0f);
-		float nearClippingPlane = 0.1;
-		float farClippingPlane = 1000.0;
+		float nearClippingPlane = 0.1f;
+		float farClippingPlane = 1000.0f;
 
 		Camera();
 	};

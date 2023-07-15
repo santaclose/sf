@@ -1,3 +1,4 @@
+VULKAN_SDK = os.getenv("VULKAN_SDK")
 workspace "sf"
 	architecture "x64"
 	startproject "sf"
@@ -47,7 +48,9 @@ project "sf"
 		"vendor/sfmg/*.cpp",
 		"vendor/aobaker/*.cpp",
 		"vendor/nanosvg/*.cpp",
-		"vendor/load.cpp"
+		"vendor/load.cpp",
+
+		"examples/pbr/*.cpp"
 	}
 
 	defines
@@ -68,15 +71,22 @@ project "sf"
 		"vendor/aobaker",
 		"vendor/entt",
 		"vendor/nanosvg",
-		"vendor/imgui"
+		"vendor/imgui",
+		"%{VULKAN_SDK}/Include"
 	}
 
-	links 
-	{ 
+	libdirs
+	{
+		"%{VULKAN_SDK}/Lib"
+	}
+
+	links
+	{
 		"GLFW",
 		"Glad",
 		"ImGui",
-		"opengl32.lib"
+		"opengl32.lib",
+		"vulkan-1.lib"
 	}
 
 	filter "system:windows"
@@ -85,7 +95,7 @@ project "sf"
 		defines
 		{
 			"SF_PLATFORM_WINDOWS",
-			"GLFW_INCLUDE_NONE"
+			"SF_USE_OPENGL"
 		}
 
 	filter "configurations:Debug"

@@ -1,5 +1,6 @@
 #include "GlSkybox.h"
 
+#include <glad/glad.h>
 #include <Components/Camera.h>
 
 bool sf::GlSkybox::generated = false;

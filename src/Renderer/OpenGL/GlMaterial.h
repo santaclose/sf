@@ -5,8 +5,8 @@
 
 #include <Material.h>
 
-#include <Renderer/GlShader.h>
-#include <Renderer/GlTexture.h>
+#include <Renderer/OpenGL/GlShader.h>
+#include <Renderer/OpenGL/GlTexture.h>
 
 namespace sf {
 

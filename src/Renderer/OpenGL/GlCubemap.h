@@ -3,7 +3,6 @@
 #include <string>
 #include <vector>
 #include <glm/glm.hpp>
-#include <glad/glad.h>
 
 namespace sf {
 
@@ -20,7 +19,7 @@ namespace sf {
 		int size;
 		StorageType storageType;
 
-		void GetGlEnums(int channelCount, StorageType storageType, GLenum& type, int& internalFormat, GLenum& format);
+		void GetGlEnums(int channelCount, StorageType storageType, unsigned int& type, int& internalFormat, unsigned int& format);
 
 	public:
 		void Create(

@@ -1,12 +1,13 @@
 #include "GlCubemap.h"
 
+#include <glad/glad.h>
 #include <stb_image.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 
-#include <Renderer/GlShader.h>
+#include <Renderer/OpenGL/GlShader.h>
 
-void sf::GlCubemap::GetGlEnums(int channelCount, StorageType storageType, GLenum& type, int& internalFormat, GLenum& format)
+void sf::GlCubemap::GetGlEnums(int channelCount, StorageType storageType, unsigned int& type, int& internalFormat, unsigned int& format)
 {
 	switch (storageType)
 	{

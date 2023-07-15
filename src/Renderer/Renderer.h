@@ -9,7 +9,6 @@
 #include <Components/ScreenCoordinates.h>
 #include <Components/Sprite.h>
 
-#include <Renderer/GlMaterial.h>
 #include <Material.h>
 
 #include <Bitmap.h>
@@ -26,8 +25,7 @@ namespace sf::Renderer {
 
 	uint32_t CreateMaterial(const Material& material);
 
-	void SetMeshMaterial(Mesh mesh, GlMaterial* material, int piece = -1);
-	void SetMeshMaterial(Mesh mesh, uint32_t materialId, int piece = -1);
+	void SetMeshMaterial(const Mesh& mesh, uint32_t materialId, int piece = -1);
 
 	void SetEnvironment(const std::string& hdrFilePath, DataType hdrDataType = DataType::f16);
 

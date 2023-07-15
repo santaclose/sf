@@ -1,37 +1,43 @@
 #include "ImGuiController.h"
 
 #include <string>
-
-#include <backends/imgui_impl_glfw.h>
-#include <backends/imgui_impl_opengl3.h>
 #include <imgui.h>
 
 #include <Game.h>
 #include <Config.h>
 #include <Input.h>
 
+#include <Renderer/ImGuiBind.h>
+
 namespace sf::ImGuiController
 {
 	bool statsEnabled;
+	Renderer::ImGuiBind imGuiBind;
 }
 
-void sf::ImGuiController::Setup(GLFWwindow* window)
+void sf::ImGuiController::Initialize(GLFWwindow* window)
 {
+	imGuiBind.Initialize(window);
+
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
+
 	ImGuiIO& io = ImGui::GetIO();
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
 	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
 
-	// Setup Platform/Renderer bindings
-	ImGui_ImplGlfw_InitForOpenGL(window, true);
-	ImGui_ImplOpenGL3_Init();
-
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
 	auto f = io.Fonts->AddFontFromFileTTF("assets/fonts/FiraCode/FiraCode-Regular.ttf", 15.0f);
+
+	imGuiBind.AfterConfigure(window);
+}
+
+void sf::ImGuiController::Terminate()
+{
+	imGuiBind.Terminate();
 }
 
 bool sf::ImGuiController::HasControl()
@@ -50,9 +56,9 @@ void sf::ImGuiController::Tick(float deltaTime)
 	if (Input::KeyDown(Input::Enter) && Input::Key(Input::RightAlt))
 		Config::SetFullscreen(!Config::GetFullscreen());
 
-	ImGui_ImplOpenGL3_NewFrame();
-	ImGui_ImplGlfw_NewFrame();
+	imGuiBind.NewFrame();
 	ImGui::NewFrame();
+
 	if (Config::GetImGuiBarEnabled())
 	{
 		if (ImGui::BeginMainMenuBar())
@@ -87,7 +93,11 @@ void sf::ImGuiController::Tick(float deltaTime)
 
 	// Render dear imgui into screen
 	ImGui::Render();
-	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	ImDrawData* draw_data = ImGui::GetDrawData();
+	const bool is_minimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);
+	if (!is_minimized)
+		imGuiBind.FrameRender(draw_data);
+
 	if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 	{
 		GLFWwindow* backup_current_context = glfwGetCurrentContext();
@@ -95,4 +105,9 @@ void sf::ImGuiController::Tick(float deltaTime)
 		ImGui::RenderPlatformWindowsDefault();
 		glfwMakeContextCurrent(backup_current_context);
 	}
+}
+
+void sf::ImGuiController::OnResize()
+{
+	imGuiBind.OnResize();
 }

@@ -1,5 +1,8 @@
-#include "Renderer.h"
+#ifdef SF_USE_OPENGL
 
+#include "../Renderer.h"
+
+#include <glad/glad.h>
 #include <assert.h>
 #include <iostream>
 #include <unordered_map>
@@ -9,14 +12,15 @@
 #include <Config.h>
 #include <Bitmap.h>
 
-#include <glad/glad.h>
+#include <Scene/Entity.h>
 #include <Components/Camera.h>
 
 #include <Material.h>
 #include <Defaults.h>
 
-#include <Renderer/GlSkybox.h>
-#include <Renderer/IblHelper.h>
+#include <Renderer/OpenGL/GlMaterial.h>
+#include <Renderer/OpenGL/GlSkybox.h>
+#include <Renderer/OpenGL/IblHelper.h>
 
 namespace sf::Renderer
 {
@@ -195,6 +199,25 @@ namespace sf::Renderer
 		return;
 	}
 
+	void SetMeshMaterial(const Mesh& mesh, GlMaterial* material, int piece = -1)
+	{
+		if (meshGpuData.find(mesh.meshData) == meshGpuData.end()) // create mesh data if not there
+			CreateMeshGpuData(mesh.meshData);
+		if (meshMaterials.find(mesh.id) == meshMaterials.end())
+			CreateMeshMaterialSlots(mesh.id, mesh.meshData);
+
+		if (piece < 0) // set for all pieces by default
+		{
+			for (int i = 0; i < meshMaterials[mesh.id].size(); i++)
+				meshMaterials[mesh.id][i] = material;
+		}
+		else
+		{
+			assert(piece < meshMaterials[mesh.id].size());
+			meshMaterials[mesh.id][piece] = material;
+		}
+	}
+
 #ifdef SF_DEBUG
 	void APIENTRY glDebugOutput(GLenum source,
 		GLenum type,
@@ -281,7 +304,8 @@ bool sf::Renderer::Initialize(void* process)
 
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
-	glClearColor(sf::Config::GetClearColor().r, sf::Config::GetClearColor().g, sf::Config::GetClearColor().b, 0.0);
+	const glm::vec4& clearColor = Config::GetClearColor();
+	glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
 	glViewport(0, 0, sf::Config::GetWindowSize().x, sf::Config::GetWindowSize().y);
 
 	sf::Renderer::aspectRatio = (float)sf::Config::GetWindowSize().x / (float)sf::Config::GetWindowSize().y;
@@ -393,26 +417,7 @@ void sf::Renderer::Predraw()
 	sharedGpuData.cameraPosition = cameraTransform.position;
 }
 
-void sf::Renderer::SetMeshMaterial(Mesh mesh, GlMaterial* material, int piece)
-{
-	if (meshGpuData.find(mesh.meshData) == meshGpuData.end()) // create mesh data if not there
-		CreateMeshGpuData(mesh.meshData);
-	if (meshMaterials.find(mesh.id) == meshMaterials.end())
-		CreateMeshMaterialSlots(mesh.id, mesh.meshData);
-
-	if (piece < 0) // set for all pieces by default
-	{
-		for (int i = 0; i < meshMaterials[mesh.id].size(); i++)
-			meshMaterials[mesh.id][i] = material;
-	}
-	else
-	{
-		assert(piece < meshMaterials[mesh.id].size());
-		meshMaterials[mesh.id][piece] = material;
-	}
-}
-
-void sf::Renderer::SetMeshMaterial(Mesh mesh, uint32_t materialId, int piece)
+void sf::Renderer::SetMeshMaterial(const Mesh& mesh, uint32_t materialId, int piece)
 {
 	assert(materialId < materials.size());
 	SetMeshMaterial(mesh, materials[materialId]);
@@ -626,3 +631,5 @@ void sf::Renderer::Terminate()
 		delete material;
 	}
 }
+
+#endif

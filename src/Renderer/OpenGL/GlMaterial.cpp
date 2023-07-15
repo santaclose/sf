@@ -1,9 +1,10 @@
 #include "GlMaterial.h"
 
+#include <glad/glad.h>
 #include <iostream>
 
-#include <Renderer/GlTexture.h>
-#include <Renderer/GlCubemap.h>
+#include <Renderer/OpenGL/GlTexture.h>
+#include <Renderer/OpenGL/GlCubemap.h>
 
 void sf::GlMaterial::Create(const Material& material, const std::vector<void*>& rendererUniformVector)
 {

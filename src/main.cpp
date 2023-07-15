@@ -55,6 +55,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
 	sf::Config::UpdateWindowSize(width, height);
+	sf::ImGuiController::OnResize();
 	sf::Renderer::OnResize();
 }
 
@@ -73,9 +74,14 @@ int main(int argc, char** argv)
 		return -1;
 
 	sf::Config::LoadFromFile(sf::Game::ConfigFilePath);
+#ifdef SF_USE_VULKAN
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+#endif
+#ifdef SF_USE_OPENGL
 	glfwWindowHint(GLFW_SAMPLES, sf::Config::GetMsaaCount());
 #ifdef SF_DEBUG
 	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
+#endif
 #endif
 
 	window = glfwCreateWindow(sf::Config::GetWindowSize().x, sf::Config::GetWindowSize().y, sf::Config::GetName().c_str(), sf::Config::GetFullscreen() ? glfwGetPrimaryMonitor() : NULL, NULL);
@@ -86,6 +92,14 @@ int main(int argc, char** argv)
 		return -1;
 	}
 	sf::Config::UpdateWindow(window);
+
+#if SF_USE_VULKAN
+	if (!glfwVulkanSupported())
+	{
+		printf("GLFW: Vulkan Not Supported\n");
+		return 1;
+	}
+#endif
 
 	/* Make the window's context current */
 	glfwMakeContextCurrent(window);
@@ -101,7 +115,7 @@ int main(int argc, char** argv)
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	glfwSwapInterval(sf::Config::GetVsyncEnabled());
 
-	sf::ImGuiController::Setup(window);
+	sf::ImGuiController::Initialize(window);
 
 	if (!sf::Renderer::Initialize(glfwGetProcAddress))
 		std::cout << "Failed to initialize renderer\n";
@@ -183,6 +197,9 @@ int main(int argc, char** argv)
 	sf::Game::Terminate();
 	//-------------------//
 
+	sf::ImGuiController::Terminate();
+
+	glfwDestroyWindow(window);
 	glfwTerminate();
 	return 0;
 }

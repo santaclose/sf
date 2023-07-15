@@ -4,7 +4,9 @@
 
 namespace sf::ImGuiController
 {
-	void Setup(GLFWwindow* window);
+	void Initialize(GLFWwindow* window);
+	void Terminate();
 	bool HasControl();
 	void Tick(float deltaTime);
+	void OnResize();
 }

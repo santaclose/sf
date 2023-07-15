@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Renderer/GlTexture.h>
-#include <Renderer/GlCubemap.h>
+#include <Renderer/OpenGL/GlTexture.h>
+#include <Renderer/OpenGL/GlCubemap.h>
 
 namespace sf::IblHelper
 {

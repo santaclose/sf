@@ -1,6 +1,5 @@
 #pragma once
 
-#include <glad/glad.h>
 #include <string>
 
 #include <Bitmap.h>
@@ -23,7 +22,7 @@ namespace sf {
 		StorageType storageType;
 		WrapMode wrapMode;
 
-		void GetGlEnums(int channelCount, StorageType storageType, GLenum& type, int& internalFormat, GLenum& format);
+		void GetGlEnums(int channelCount, StorageType storageType, unsigned int& type, int& internalFormat, unsigned int& format);
 
 		void Create(uint32_t width, uint32_t height,
 			int channelCount = 3,

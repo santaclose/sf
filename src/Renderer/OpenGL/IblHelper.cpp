@@ -8,7 +8,7 @@
 #include <iostream>
 
 #include <Config.h>
-#include <Renderer/GlShader.h>
+#include <Renderer/OpenGL/GlShader.h>
 #include <Bitmap.h>
 
 namespace sf::IblHelper

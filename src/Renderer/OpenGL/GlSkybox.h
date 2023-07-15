@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Renderer/GlShader.h>
-#include <Renderer/GlCubemap.h>
+#include <Renderer/OpenGL/GlShader.h>
+#include <Renderer/OpenGL/GlCubemap.h>
 
 namespace sf {
 

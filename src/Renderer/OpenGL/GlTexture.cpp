@@ -1,9 +1,10 @@
 #include "GlTexture.h"
 
+#include <glad/glad.h>
 #include <string>
 #include <iostream>
 
-void sf::GlTexture::GetGlEnums(int channelCount, StorageType storageType, GLenum& type, int& internalFormat, GLenum& format)
+void sf::GlTexture::GetGlEnums(int channelCount, StorageType storageType, unsigned int& type, int& internalFormat, unsigned int& format)
 {
 	switch (storageType)
 	{

@@ -488,6 +488,15 @@ namespace sf::Renderer
 		}
 	}
 
+	void CleanupSwapChain()
+	{
+		for (size_t i = 0; i < swapChainFramebuffers.size(); i++)
+			vkDestroyFramebuffer(device, swapChainFramebuffers[i], nullptr);
+		for (size_t i = 0; i < swapChainImageViews.size(); i++)
+			vkDestroyImageView(device, swapChainImageViews[i], nullptr);
+		vkDestroySwapchainKHR(device, swapChain, nullptr);
+	}
+
 	bool CreateShaderModule(const std::vector<char>& shaderCode, VkShaderModule& outShaderModule)
 	{
 		VkShaderModuleCreateInfo createInfo{};
@@ -957,7 +966,11 @@ bool sf::Renderer::Initialize(void* process)
 
 void sf::Renderer::OnResize()
 {
-
+	vkDeviceWaitIdle(device);
+	CleanupSwapChain();
+	CreateSwapChain();
+	CreateImageViews();
+	CreateFrameBuffers();
 }
 
 void sf::Renderer::Predraw()
@@ -1045,6 +1058,7 @@ void sf::Renderer::DrawSprite(Sprite& sprite, ScreenCoordinates& screenCoordinat
 
 void sf::Renderer::Terminate()
 {
+	CleanupSwapChain();
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{
 		vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);

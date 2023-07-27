@@ -1,9 +1,10 @@
 #include "GlShader.h"
 
+#include <FileUtils.h>
+
 #include <glad/glad.h>
 #include <iostream>
 #include <string>
-#include <fstream>
 
 uint32_t sf::GlShader::CompileShader(uint32_t type, const std::string& source)
 {
@@ -54,18 +55,11 @@ void sf::GlShader::CreateFromFiles(const std::string& vertexShaderPath, const st
 
 	Delete();
 
-	std::ifstream ifs(vertexShaderPath);
-	std::ifstream ifs2(fragmentShaderPath);
-
-	if (ifs.fail())
+	std::string vertexShaderSource, fragmentShaderSource;
+	if (!FileUtils::ReadFileAsString(vertexShaderPath, vertexShaderSource))
 		std::cout << "[GlShader] Could not read vertex shader file: " << vertexShaderPath << std::endl;
-	if (ifs2.fail())
+	if (!FileUtils::ReadFileAsString(fragmentShaderPath, fragmentShaderSource))
 		std::cout << "[GlShader] Could not read fragment shader file: " << fragmentShaderPath << std::endl;
-
-	std::string vertexShaderSource((std::istreambuf_iterator<char>(ifs)),
-		(std::istreambuf_iterator<char>()));
-	std::string fragmentShaderSource((std::istreambuf_iterator<char>(ifs2)),
-		(std::istreambuf_iterator<char>()));
 
 	gl_id = glCreateProgram();
 	std::cout << "[GlShader] Created program with id " << gl_id << std::endl;
@@ -84,11 +78,10 @@ void sf::GlShader::CreateFromFiles(const std::string& vertexShaderPath, const st
 void sf::GlShader::CreateComputeFromFile(const std::string& computeShaderPath)
 {
 	std::cout << "[GlShader] Creating compute shader from file: " << computeShaderPath << std::endl;
-	std::ifstream ifs(computeShaderPath);
-	if (ifs.fail())
+	std::string computeShaderSource;
+	if (!FileUtils::ReadFileAsString(computeShaderPath, computeShaderSource))
 		std::cout << "[GlShader] Could not read compute shader file: " << computeShaderPath << std::endl;
-	std::string computeShaderSource((std::istreambuf_iterator<char>(ifs)),
-		(std::istreambuf_iterator<char>()));
+
 	gl_id = glCreateProgram();
 	std::cout << "[GlShader] Created program with id " << gl_id << std::endl;
 	uint32_t cs = CompileShader(GL_COMPUTE_SHADER, computeShaderSource);

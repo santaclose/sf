@@ -108,6 +108,7 @@ void sf::Config::SetVsyncEnabled(bool value)
 }
 
 const std::string& sf::Config::GetName() { return name; }
+GLFWwindow* sf::Config::GetWindow() { return window; }
 const glm::uvec2& sf::Config::GetWindowSize() { return windowSize; }
 const uint32_t sf::Config::GetMsaaCount() { return msaaCount; }
 const glm::vec4& sf::Config::GetClearColor() { return clearColor; }

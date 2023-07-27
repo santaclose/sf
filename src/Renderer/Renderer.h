@@ -37,4 +37,6 @@ namespace sf::Renderer {
 	void DrawSprite(Sprite& sprite, ScreenCoordinates& screenCoordinates);
 
 	void Terminate();
+
+	void* GetWindowSurface();
 }

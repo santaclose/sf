@@ -95,7 +95,7 @@ project "sf"
 		defines
 		{
 			"SF_PLATFORM_WINDOWS",
-			"SF_USE_OPENGL"
+			"SF_USE_VULKAN"
 		}
 
 	filter "configurations:Debug"

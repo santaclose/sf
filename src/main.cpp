@@ -64,7 +64,7 @@ int main(int argc, char** argv)
 	if (!std::filesystem::is_directory("assets"))
 	{
 		std::filesystem::current_path("../../../");
-		std::cout << "Adjusting working directory\n";
+		std::cout << "[main] Adjusting working directory\n";
 	}
 
 	GLFWwindow* window;
@@ -115,10 +115,11 @@ int main(int argc, char** argv)
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	glfwSwapInterval(sf::Config::GetVsyncEnabled());
 
+	if (!sf::Renderer::Initialize(glfwGetProcAddress))
+		std::cout << "[main] Failed to initialize renderer\n";
+
 	sf::ImGuiController::Initialize(window);
 
-	if (!sf::Renderer::Initialize(glfwGetProcAddress))
-		std::cout << "Failed to initialize renderer\n";
 	sf::Defaults::Initialize();
 	//-------------------//
 	sf::Game::Initialize(argc, argv);
@@ -198,6 +199,7 @@ int main(int argc, char** argv)
 	//-------------------//
 
 	sf::ImGuiController::Terminate();
+	sf::Renderer::Terminate();
 
 	glfwDestroyWindow(window);
 	glfwTerminate();

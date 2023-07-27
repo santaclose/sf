@@ -16,6 +16,7 @@ namespace sf::Config
 	void SetVsyncEnabled(bool value);
 
 	const std::string& GetName();
+	GLFWwindow* GetWindow();
 	const glm::uvec2& GetWindowSize();
 	const uint32_t GetMsaaCount();
 	const glm::vec4& GetClearColor();

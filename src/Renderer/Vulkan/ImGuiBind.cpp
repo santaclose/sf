@@ -9,6 +9,7 @@
 #include <glm/glm.hpp>
 
 #include "VulkanState.h"
+#include "../Renderer.h"
 
 #include <Config.h>
 
@@ -210,9 +211,11 @@ void sf::Renderer::ImGuiBind::Initialize(GLFWwindow* window)
 	}
 
 	// Create Window Surface
-	VkSurfaceKHR surface;
-	err = glfwCreateWindowSurface(vulkanState.instance, window, vulkanState.allocator, &surface);
-	check_vk_result(err);
+	//VkSurfaceKHR surface;
+	//err = glfwCreateWindowSurface(vulkanState.instance, window, vulkanState.allocator, &surface);
+	//check_vk_result(err);
+
+	VkSurfaceKHR surface = *((VkSurfaceKHR*)Renderer::GetWindowSurface());
 
 	// Create Framebuffers
 	int w, h;

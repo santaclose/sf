@@ -41,6 +41,7 @@ namespace sf::Renderer
 	glm::mat4 cameraProjection;
 
 	VkInstance instance;
+	VkPhysicalDevice physicalDeviceToUse;
 	VkDevice device;
 	VkQueue graphicsQueue;
 	VkQueue presentQueue;
@@ -56,6 +57,9 @@ namespace sf::Renderer
 	std::vector<VkFramebuffer> swapChainFramebuffers;
 	VkCommandPool commandPool;
 	std::vector<VkCommandBuffer> commandBuffers;
+
+	uint32_t graphicsQueueFamilyIndex;
+	uint32_t presentQueueFamilyIndex;
 
 	std::vector<VkSemaphore> imageAvailableSemaphores;
 	std::vector<VkSemaphore> renderFinishedSemaphores;
@@ -346,6 +350,144 @@ namespace sf::Renderer
 		return details;
 	}
 
+	bool CreateSwapChain()
+	{
+		SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(physicalDeviceToUse, surface);
+		if (swapChainSupport.formats.empty() || swapChainSupport.presentModes.empty())
+		{
+			std::cout << "[Renderer] No swap chain support for device\n";
+			return false;
+		}
+
+		// Choose format
+		VkSurfaceFormatKHR formatToUse = swapChainSupport.formats[0]; // in case none meet condition below
+		for (const auto& availableFormat : swapChainSupport.formats)
+		{
+			if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+			{
+				formatToUse = availableFormat;
+				break;
+			}
+		}
+
+		// Choose presentation mode
+		VkPresentModeKHR presentModeToUse = VK_PRESENT_MODE_FIFO_KHR;
+
+		// Choose swap extent
+		VkExtent2D swapExtentToUse;
+		uint32_t maxint = (std::numeric_limits<uint32_t>::max)();
+		if (swapChainSupport.capabilities.currentExtent.width != maxint)
+			swapExtentToUse = swapChainSupport.capabilities.currentExtent;
+		else
+		{
+			int width, height;
+			glfwGetFramebufferSize(Config::GetWindow(), &width, &height);
+			swapExtentToUse = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
+			swapExtentToUse.width = std::clamp(swapExtentToUse.width, swapChainSupport.capabilities.minImageExtent.width, swapChainSupport.capabilities.maxImageExtent.width);
+			swapExtentToUse.height = std::clamp(swapExtentToUse.height, swapChainSupport.capabilities.minImageExtent.height, swapChainSupport.capabilities.maxImageExtent.height);
+		}
+
+		// Choose image count
+		uint32_t imageCount = swapChainSupport.capabilities.minImageCount;
+
+		VkSwapchainCreateInfoKHR createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+		createInfo.surface = surface;
+
+		createInfo.minImageCount = imageCount;
+		createInfo.imageFormat = formatToUse.format;
+		createInfo.imageColorSpace = formatToUse.colorSpace;
+		createInfo.imageExtent = swapExtentToUse;
+		createInfo.imageArrayLayers = 1;
+		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+		uint32_t queueFamilyIndices[] = { graphicsQueueFamilyIndex, presentQueueFamilyIndex };
+		if (graphicsQueueFamilyIndex != presentQueueFamilyIndex)
+		{
+			createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+			createInfo.queueFamilyIndexCount = 2;
+			createInfo.pQueueFamilyIndices = queueFamilyIndices;
+		}
+		else
+		{
+			createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			createInfo.queueFamilyIndexCount = 0; // Optional
+			createInfo.pQueueFamilyIndices = nullptr; // Optional
+		}
+
+		createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
+		createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+		createInfo.presentMode = presentModeToUse;
+		createInfo.clipped = VK_TRUE; // don't care about pixels behind other windows
+		createInfo.oldSwapchain = VK_NULL_HANDLE;
+
+		VkResult swapchainCreationResult = vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain);
+		if (swapchainCreationResult != VK_SUCCESS)
+		{
+			// can fail if glfwCreateWindowSurface is called multiple times
+			std::cout << "[Renderer] Failed to create swap chain\n";
+			return false;
+		}
+		vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr);
+		swapChainImages.resize(imageCount);
+		vkGetSwapchainImagesKHR(device, swapChain, &imageCount, swapChainImages.data());
+		swapChainImageFormat = formatToUse.format;
+		swapChainExtent = swapExtentToUse;
+	}
+	bool CreateImageViews()
+	{
+		swapChainImageViews.resize(swapChainImages.size());
+		for (size_t i = 0; i < swapChainImages.size(); i++)
+		{
+			VkImageViewCreateInfo createInfo{};
+			createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+			createInfo.image = swapChainImages[i];
+			createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+			createInfo.format = swapChainImageFormat;
+			createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+			createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+			createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+			createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+			createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			createInfo.subresourceRange.baseMipLevel = 0;
+			createInfo.subresourceRange.levelCount = 1;
+			createInfo.subresourceRange.baseArrayLayer = 0;
+			createInfo.subresourceRange.layerCount = 1;
+
+			VkResult imageViewCreationResult = vkCreateImageView(device, &createInfo, nullptr, &swapChainImageViews[i]);
+			if (imageViewCreationResult != VK_SUCCESS)
+			{
+				std::cout << "[Renderer] Failed to create image view\n";
+				return false;
+			}
+		}
+	}
+	bool CreateFrameBuffers()
+	{
+		swapChainFramebuffers.resize(swapChainImageViews.size());
+		for (size_t i = 0; i < swapChainImageViews.size(); i++)
+		{
+			VkImageView attachments[] = {
+				swapChainImageViews[i]
+			};
+
+			VkFramebufferCreateInfo framebufferInfo{};
+			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+			framebufferInfo.renderPass = renderPass;
+			framebufferInfo.attachmentCount = 1;
+			framebufferInfo.pAttachments = attachments;
+			framebufferInfo.width = swapChainExtent.width;
+			framebufferInfo.height = swapChainExtent.height;
+			framebufferInfo.layers = 1;
+
+			if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapChainFramebuffers[i]) != VK_SUCCESS)
+			{
+				std::cout << "[Renderer] Failed to create framebuffer\n";
+				return false;
+			}
+		}
+	}
+
 	bool CreateShaderModule(const std::vector<char>& shaderCode, VkShaderModule& outShaderModule)
 	{
 		VkShaderModuleCreateInfo createInfo{};
@@ -480,12 +622,9 @@ bool sf::Renderer::Initialize(void* process)
 	}
 
 	// Pick gpu
-	VkPhysicalDevice physicalDeviceToUse;
 	if (!PickPhysicalDevice(physicalDeviceToUse))
 		return false;
 
-	uint32_t graphicsQueueFamilyIndex;
-	uint32_t presentQueueFamilyIndex;
 	// Create logical device
 	{
 		// Find graphics queue that can be used to render to our target surface
@@ -552,120 +691,12 @@ bool sf::Renderer::Initialize(void* process)
 		vkGetDeviceQueue(device, graphicsQueueFamilyIndex, 0, &graphicsQueue);
 		vkGetDeviceQueue(device, presentQueueFamilyIndex, 0, &presentQueue);
 	}
-
+	
 	// Create swap chain
-	{
-		SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(physicalDeviceToUse, surface);
-		if (swapChainSupport.formats.empty() || swapChainSupport.presentModes.empty())
-		{
-			std::cout << "[Renderer] No swap chain support for device\n";
-			return false;
-		}
-
-		// Choose format
-		VkSurfaceFormatKHR formatToUse = swapChainSupport.formats[0]; // in case none meet condition below
-		for (const auto& availableFormat : swapChainSupport.formats)
-		{
-			if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
-			{
-				formatToUse = availableFormat;
-				break;
-			}
-		}
-
-		// Choose presentation mode
-		VkPresentModeKHR presentModeToUse = VK_PRESENT_MODE_FIFO_KHR;
-
-		// Choose swap extent
-		VkExtent2D swapExtentToUse;
-		uint32_t maxint = (std::numeric_limits<uint32_t>::max)();
-		if (swapChainSupport.capabilities.currentExtent.width != maxint)
-			swapExtentToUse = swapChainSupport.capabilities.currentExtent;
-		else
-		{
-			int width, height;
-			glfwGetFramebufferSize(Config::GetWindow(), &width, &height);
-			swapExtentToUse = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
-			swapExtentToUse.width = std::clamp(swapExtentToUse.width, swapChainSupport.capabilities.minImageExtent.width, swapChainSupport.capabilities.maxImageExtent.width);
-			swapExtentToUse.height = std::clamp(swapExtentToUse.height, swapChainSupport.capabilities.minImageExtent.height, swapChainSupport.capabilities.maxImageExtent.height);
-		}
-
-		// Choose image count
-		uint32_t imageCount = swapChainSupport.capabilities.minImageCount;
-
-		VkSwapchainCreateInfoKHR createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-		createInfo.surface = surface;
-
-		createInfo.minImageCount = imageCount;
-		createInfo.imageFormat = formatToUse.format;
-		createInfo.imageColorSpace = formatToUse.colorSpace;
-		createInfo.imageExtent = swapExtentToUse;
-		createInfo.imageArrayLayers = 1;
-		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-
-		uint32_t queueFamilyIndices[] = { graphicsQueueFamilyIndex, presentQueueFamilyIndex };
-		if (graphicsQueueFamilyIndex != presentQueueFamilyIndex)
-		{
-			createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-			createInfo.queueFamilyIndexCount = 2;
-			createInfo.pQueueFamilyIndices = queueFamilyIndices;
-		}
-		else
-		{
-			createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-			createInfo.queueFamilyIndexCount = 0; // Optional
-			createInfo.pQueueFamilyIndices = nullptr; // Optional
-		}
-
-		createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
-		createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-		createInfo.presentMode = presentModeToUse;
-		createInfo.clipped = VK_TRUE; // don't care about pixels behind other windows
-		createInfo.oldSwapchain = VK_NULL_HANDLE;
-
-		VkResult swapchainCreationResult = vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain);
-		if (swapchainCreationResult != VK_SUCCESS)
-		{
-			// can fail if glfwCreateWindowSurface is called multiple times
-			std::cout << "[Renderer] Failed to create swap chain\n";
-			return false;
-		}
-		vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr);
-		swapChainImages.resize(imageCount);
-		vkGetSwapchainImagesKHR(device, swapChain, &imageCount, swapChainImages.data());
-		swapChainImageFormat = formatToUse.format;
-		swapChainExtent = swapExtentToUse;
-	}
+	CreateSwapChain();
 
 	// Create image views
-	{
-		swapChainImageViews.resize(swapChainImages.size());
-		for (size_t i = 0; i < swapChainImages.size(); i++)
-		{
-			VkImageViewCreateInfo createInfo{};
-			createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-			createInfo.image = swapChainImages[i];
-			createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-			createInfo.format = swapChainImageFormat;
-			createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-			createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-			createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-			createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-			createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			createInfo.subresourceRange.baseMipLevel = 0;
-			createInfo.subresourceRange.levelCount = 1;
-			createInfo.subresourceRange.baseArrayLayer = 0;
-			createInfo.subresourceRange.layerCount = 1;
-
-			VkResult imageViewCreationResult = vkCreateImageView(device, &createInfo, nullptr, &swapChainImageViews[i]);
-			if (imageViewCreationResult != VK_SUCCESS)
-			{
-				std::cout << "[Renderer] Failed to create image view\n";
-				return false;
-			}
-		}
-	}
+	CreateImageViews();
 
 	// Create render pass
 	{
@@ -864,31 +895,8 @@ bool sf::Renderer::Initialize(void* process)
 		vkDestroyShaderModule(device, vertexShaderModule, nullptr);
 	}
 
-	// Create framebuffers
-	{
-		swapChainFramebuffers.resize(swapChainImageViews.size());
-		for (size_t i = 0; i < swapChainImageViews.size(); i++)
-		{
-			VkImageView attachments[] = {
-				swapChainImageViews[i]
-			};
-
-			VkFramebufferCreateInfo framebufferInfo{};
-			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			framebufferInfo.renderPass = renderPass;
-			framebufferInfo.attachmentCount = 1;
-			framebufferInfo.pAttachments = attachments;
-			framebufferInfo.width = swapChainExtent.width;
-			framebufferInfo.height = swapChainExtent.height;
-			framebufferInfo.layers = 1;
-
-			if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapChainFramebuffers[i]) != VK_SUCCESS)
-			{
-				std::cout << "[Renderer] Failed to create framebuffer\n";
-				return false;
-			}
-		}
-	}
+	// Create frame buffers
+	CreateFrameBuffers();
 
 	// Create command pool
 	{

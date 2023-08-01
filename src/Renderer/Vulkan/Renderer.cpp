@@ -2,13 +2,8 @@
 
 #include "../Renderer.h"
 
-#define VK_USE_PLATFORM_WIN32_KHR
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include <GLFW/glfw3native.h>
-
 #include <vulkan/vulkan.h>
+
 #include <limits>
 #include <assert.h>
 #include <cstdint>
@@ -33,6 +28,8 @@
 
 namespace sf::Renderer
 {
+	const Window* window;
+
 	float aspectRatio = 1.7777777777;
 	Entity activeCameraEntity;
 	bool drawSkybox = false;
@@ -129,8 +126,7 @@ namespace sf::Renderer
 	void GetRequiredExtensionsForInstance(std::vector<const char*>& out)
 	{
 		uint32_t glfwExtensionCount = 0;
-		const char** glfwExtensions;
-		glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+		const char** glfwExtensions = window->GetVulkanExtensions(glfwExtensionCount);
 		out = std::vector<const char*>(glfwExtensions, glfwExtensions + glfwExtensionCount);
 #ifdef SF_DEBUG
 		out.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
@@ -471,9 +467,7 @@ namespace sf::Renderer
 			swapExtentToUse = swapChainSupport.capabilities.currentExtent;
 		else
 		{
-			int width, height;
-			glfwGetFramebufferSize(Config::GetWindow(), &width, &height);
-			swapExtentToUse = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
+			swapExtentToUse = { static_cast<uint32_t>(window->GetWidth()), static_cast<uint32_t>(window->GetHeight()) };
 			swapExtentToUse.width = std::clamp(swapExtentToUse.width, swapChainSupport.capabilities.minImageExtent.width, swapChainSupport.capabilities.maxImageExtent.width);
 			swapExtentToUse.height = std::clamp(swapExtentToUse.height, swapChainSupport.capabilities.minImageExtent.height, swapChainSupport.capabilities.maxImageExtent.height);
 		}
@@ -649,9 +643,14 @@ namespace sf::Renderer
 	}
 }
 
-bool sf::Renderer::Initialize(void* process)
+bool sf::Renderer::Initialize(const Window& windowArg)
 {
+	window = &windowArg;
 	std::cout << "[Renderer] Initializing vulkan renderer" << std::endl;
+
+#ifdef SF_DEBUG
+	system("python assets/compileShaders.py");
+#endif
 
 	// Create instance
 	{
@@ -703,27 +702,7 @@ bool sf::Renderer::Initialize(void* process)
 #endif
 
 	// Create surface
-	{
-		GLFWwindow* window = Config::GetWindow();
-		VkWin32SurfaceCreateInfoKHR createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-		createInfo.hwnd = glfwGetWin32Window(window);
-		createInfo.hinstance = GetModuleHandle(nullptr);
-
-		VkResult surfaceCreationResult = vkCreateWin32SurfaceKHR(instance, &createInfo, nullptr, &surface);
-		if (surfaceCreationResult != VK_SUCCESS)
-		{
-			std::cout << "[Renderer] Failed to create win32 surface\n";
-			return false;
-		}
-
-		surfaceCreationResult = glfwCreateWindowSurface(instance, window, nullptr, &surface);
-		if (surfaceCreationResult != VK_SUCCESS)
-		{
-			std::cout << "[Renderer] Failed to create surface on glfw window\n";
-			return false;
-		}
-	}
+	window->CreateVulkanSurface(instance, surface);
 
 	// Pick gpu
 	if (!PickPhysicalDevice(physicalDeviceToUse))
@@ -1077,6 +1056,7 @@ bool sf::Renderer::Initialize(void* process)
 		}
 	}
 
+	window->AddOnResizeCallback(OnResize);
 	return true;
 }
 

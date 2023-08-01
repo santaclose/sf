@@ -1,10 +1,10 @@
 #pragma once
 
-#include <GLFW/glfw3.h>
+#include <Window.h>
 
 namespace sf::ImGuiController
 {
-	void Initialize(GLFWwindow* window);
+	void Initialize(Window& window);
 	void Terminate();
 	bool HasControl();
 	void Tick(float deltaTime);

@@ -15,7 +15,7 @@ namespace sf::ImGuiController
 	Renderer::ImGuiBind imGuiBind;
 }
 
-void sf::ImGuiController::Initialize(GLFWwindow* window)
+void sf::ImGuiController::Initialize(Window& window)
 {
 	//imGuiBind.Initialize(window);
 

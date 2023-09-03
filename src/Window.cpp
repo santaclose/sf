@@ -1,5 +1,6 @@
 #include "Window.h"
 
+#include "Config.h"
 
 #ifdef SF_PLATFORM_WINDOWS
 #include <windows.h>

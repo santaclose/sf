@@ -24,6 +24,8 @@
 
 namespace sf::Renderer
 {
+	const Window* window;
+
 	GlShader defaultShader;
 	GlMaterial defaultMaterial;
 	GlShader defaultSkinningShader;
@@ -269,13 +271,17 @@ namespace sf::Renderer
 }
 
 
-bool sf::Renderer::Initialize(void* process)
+bool sf::Renderer::Initialize(const Window& windowArg)
 {
-	if (!gladLoadGLLoader((GLADloadproc)process))
+	window = &windowArg;
+
+	if (!gladLoadGLLoader((GLADloadproc)window->GetOpenGlFunctionAddress()))
 	{
 		std::cout << "[Renderer] Failed to initialize OpenGL context (GLAD)" << std::endl;
 		return false;
 	}
+
+	window->AddOnResizeCallback(OnResize);
 
 #ifdef SF_DEBUG
 	int flags;
@@ -363,8 +369,8 @@ bool sf::Renderer::Initialize(void* process)
 
 void sf::Renderer::OnResize()
 {
-	glViewport(0, 0, sf::Config::GetWindowSize().x, sf::Config::GetWindowSize().y);
-	aspectRatio = (float)sf::Config::GetWindowSize().x / (float)sf::Config::GetWindowSize().y;
+	glViewport(0, 0, window->GetWidth(), window->GetHeight());
+	aspectRatio = (float)window->GetWidth() / (float)window->GetHeight();
 }
 
 void sf::Renderer::Predraw()

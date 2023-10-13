@@ -13,7 +13,7 @@ bool sf::Renderer::VulkanDisplay::Initialize(const Window& windowArg, bool (*cre
 	auto instance_builder_return = instance_builder.request_validation_layers().use_default_debug_messenger().build();
 	if (!instance_builder_return)
 	{
-		std::cout << "[Renderer] Vulkan instance creation error: " << instance_builder_return.error().message() << std::endl;
+		std::cout << "[VulkanDisplay] Vulkan instance creation error: " << instance_builder_return.error().message() << std::endl;
 		return false;
 	}
 	this->instance = instance_builder_return.value();
@@ -28,7 +28,7 @@ bool sf::Renderer::VulkanDisplay::Initialize(const Window& windowArg, bool (*cre
 		.select();
 	if (!physical_device_selector_return)
 	{
-		std::cout << "[Renderer] Failed to get vulkan physical device\n";
+		std::cout << "[VulkanDisplay] Failed to get vulkan physical device\n";
 		return false;
 	}
 	vkb::PhysicalDevice vkb_physicalDevice = physical_device_selector_return.value();
@@ -36,7 +36,7 @@ bool sf::Renderer::VulkanDisplay::Initialize(const Window& windowArg, bool (*cre
 	auto dev_ret = device_builder.build();
 	if (!dev_ret)
 	{
-		std::cout << "[Renderer] Failed to create vulkan device\n";
+		std::cout << "[VulkanDisplay] Failed to create vulkan device\n";
 		return false;
 	}
 	this->device = dev_ret.value();
@@ -44,7 +44,7 @@ bool sf::Renderer::VulkanDisplay::Initialize(const Window& windowArg, bool (*cre
 
 	std::cout << "[VulkanDisplay] Vulkan API version: " <<
 		VK_API_VERSION_MAJOR(vkb_physicalDevice.properties.apiVersion) << '.' <<
-		VK_API_VERSION_MINOR(vkb_physicalDevice.properties.apiVersion)  << std::endl;
+		VK_API_VERSION_MINOR(vkb_physicalDevice.properties.apiVersion) << std::endl;
 	std::cout << "[VulkanDisplay] Vulkan driver version: " << vkb_physicalDevice.properties.driverVersion << std::endl;
 
 	// Swapchain
@@ -55,7 +55,7 @@ bool sf::Renderer::VulkanDisplay::Initialize(const Window& windowArg, bool (*cre
 		auto queue_ret = this->device.get_queue(vkb::QueueType::graphics);
 		if (!queue_ret)
 		{
-			std::cout << "[Renderer] Failed to get graphics queue\n";
+			std::cout << "[VulkanDisplay] Failed to get graphics queue\n";
 			return false;
 		}
 		this->graphics_queue = queue_ret.value();
@@ -64,7 +64,7 @@ bool sf::Renderer::VulkanDisplay::Initialize(const Window& windowArg, bool (*cre
 		auto queue_ret = this->device.get_queue(vkb::QueueType::present);
 		if (!queue_ret)
 		{
-			std::cout << "[Renderer] Failed to get present queue\n";
+			std::cout << "[VulkanDisplay] Failed to get present queue\n";
 			return false;
 		}
 		this->present_queue = queue_ret.value();
@@ -109,7 +109,7 @@ bool sf::Renderer::VulkanDisplay::Initialize(const Window& windowArg, bool (*cre
 
 	if (this->disp.createRenderPass(&render_pass_info, nullptr, &this->render_pass) != VK_SUCCESS)
 	{
-		std::cout << "failed to create render pass\n";
+		std::cout << "[VulkanDisplay] Failed to create render pass\n";
 		return false; // failed to create render pass!
 	}
 
@@ -165,7 +165,8 @@ bool sf::Renderer::VulkanDisplay::CreateFramebuffers()
 
 	this->framebuffers.resize(this->swapchain_image_views.size());
 
-	for (size_t i = 0; i < this->swapchain_image_views.size(); i++) {
+	for (size_t i = 0; i < this->swapchain_image_views.size(); i++)
+	{
 		VkImageView attachments[] = { this->swapchain_image_views[i] };
 
 		VkFramebufferCreateInfo framebuffer_info = {};
@@ -177,9 +178,8 @@ bool sf::Renderer::VulkanDisplay::CreateFramebuffers()
 		framebuffer_info.height = this->swapchain.extent.height;
 		framebuffer_info.layers = 1;
 
-		if (this->disp.createFramebuffer(&framebuffer_info, nullptr, &this->framebuffers[i]) != VK_SUCCESS) {
-			return false; // failed to create framebuffer
-		}
+		if (this->disp.createFramebuffer(&framebuffer_info, nullptr, &this->framebuffers[i]) != VK_SUCCESS)
+			return false;
 	}
 	return true;
 }
@@ -192,7 +192,7 @@ bool sf::Renderer::VulkanDisplay::CreateCommandPool()
 
 	if (this->disp.createCommandPool(&pool_info, nullptr, &this->command_pool) != VK_SUCCESS)
 	{
-		std::cout << "failed to create command pool\n";
+		std::cout << "[VulkanDisplay] Failed to create command pool\n";
 		return false;
 	}
 	return true;
@@ -250,7 +250,7 @@ bool sf::Renderer::VulkanDisplay::CreateCommandBuffers()
 
 		if (this->disp.endCommandBuffer(this->command_buffers[i]) != VK_SUCCESS)
 		{
-			std::cout << "failed to record command buffer\n";
+			std::cout << "[VulkanDisplay] Failed to record command buffer\n";
 			return false;
 		}
 	}
@@ -259,7 +259,6 @@ bool sf::Renderer::VulkanDisplay::CreateCommandBuffers()
 
 bool sf::Renderer::VulkanDisplay::CreateSyncObjects()
 {
-
 	this->available_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
 	this->finished_semaphore.resize(MAX_FRAMES_IN_FLIGHT);
 	this->in_flight_fences.resize(MAX_FRAMES_IN_FLIGHT);
@@ -278,7 +277,7 @@ bool sf::Renderer::VulkanDisplay::CreateSyncObjects()
 			this->disp.createSemaphore(&semaphore_info, nullptr, &this->finished_semaphore[i]) != VK_SUCCESS ||
 			this->disp.createFence(&fence_info, nullptr, &this->in_flight_fences[i]) != VK_SUCCESS)
 		{
-			std::cout << "failed to create sync objects\n";
+			std::cout << "[VulkanDisplay] Failed to create sync objects\n";
 			return false;
 		}
 	}
@@ -298,7 +297,7 @@ bool sf::Renderer::VulkanDisplay::Display()
 
 	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
 	{
-		std::cout << "failed to acquire swapchain image. Error " << result << "\n";
+		std::cout << "[VulkanDisplay] Failed to acquire swapchain image. Error " << result << "\n";
 		return false;
 	}
 
@@ -326,8 +325,8 @@ bool sf::Renderer::VulkanDisplay::Display()
 
 	if (this->disp.queueSubmit(this->graphics_queue, 1, &submitInfo, this->in_flight_fences[this->current_frame]) != VK_SUCCESS)
 	{
-		std::cout << "failed to submit draw command buffer\n";
-		return -1; //"failed to submit draw command buffer
+		std::cout << "[VulkanDisplay] Failed to submit draw command buffer\n";
+		return -1;
 	}
 
 	VkPresentInfoKHR present_info = {};
@@ -347,13 +346,12 @@ bool sf::Renderer::VulkanDisplay::Display()
 		return RecreateSwapchain();
 	else if (result != VK_SUCCESS)
 	{
-		std::cout << "failed to present swapchain image\n";
+		std::cout << "[VulkanDisplay] Failed to present swapchain image\n";
 		return -1;
 	}
 
 	this->current_frame = (this->current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
 	return 0;
-
 }
 
 bool sf::Renderer::VulkanDisplay::CreateSwapchain()
@@ -387,4 +385,3 @@ bool sf::Renderer::VulkanDisplay::RecreateSwapchain()
 	if (!CreateCommandBuffers()) return false;
 	return true;
 }
-

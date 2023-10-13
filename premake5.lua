@@ -49,6 +49,7 @@ project "sf"
 		"vendor/aobaker/*.cpp",
 		"vendor/nanosvg/*.cpp",
 		"vendor/load.cpp",
+		"vendor/vk-bootstrap/src/VkBootstrap.cpp",
 
 		"examples/pbr/*.cpp"
 	}
@@ -72,6 +73,7 @@ project "sf"
 		"vendor/entt",
 		"vendor/nanosvg",
 		"vendor/imgui",
+		"vendor/vk-bootstrap/src",
 		"%{VULKAN_SDK}/Include"
 	}
 

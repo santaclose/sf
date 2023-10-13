@@ -206,14 +206,7 @@ VkResult sf::Window::CreateVulkanSurface(VkInstance instance, VkSurfaceKHR& surf
 	createInfo.hwnd = glfwGetWin32Window(windowHandle);
 	createInfo.hinstance = GetModuleHandle(nullptr);
 
-	VkResult surfaceCreationResult = vkCreateWin32SurfaceKHR(instance, &createInfo, nullptr, &surfaceOut);
-	if (surfaceCreationResult != VK_SUCCESS)
-	{
-		std::cout << "[Window] Failed to create win32 surface\n";
-		return surfaceCreationResult;
-	}
-
-	surfaceCreationResult = glfwCreateWindowSurface(instance, windowHandle, nullptr, &surfaceOut);
+	VkResult surfaceCreationResult = glfwCreateWindowSurface(instance, windowHandle, nullptr, &surfaceOut);
 	if (surfaceCreationResult != VK_SUCCESS)
 	{
 		std::cout << "[Window] Failed to create surface on glfw window\n";

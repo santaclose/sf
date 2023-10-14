@@ -155,7 +155,7 @@ namespace sf::Renderer
 
 		if (vkdd.disp.createPipelineLayout(&pipeline_layout_info, nullptr, &vkdd.pipeline_layout) != VK_SUCCESS)
 		{
-			std::cout << "failed to create pipeline layout\n";
+			std::cout << "[Renderer] Failed to create pipeline layout\n";
 			return false;
 		}
 
@@ -168,23 +168,25 @@ namespace sf::Renderer
 
 		VkGraphicsPipelineCreateInfo pipeline_info = {};
 		pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-		pipeline_info.stageCount = 2;
-		pipeline_info.pStages = shader_stages;
-		pipeline_info.pVertexInputState = &vertex_input_info;
-		pipeline_info.pInputAssemblyState = &input_assembly;
-		pipeline_info.pViewportState = &viewport_state;
-		pipeline_info.pRasterizationState = &rasterizer;
-		pipeline_info.pMultisampleState = &multisampling;
-		pipeline_info.pColorBlendState = &color_blending;
-		pipeline_info.pDynamicState = &dynamic_info;
 		pipeline_info.layout = vkdd.pipeline_layout;
-		pipeline_info.renderPass = vkdd.render_pass;
-		pipeline_info.subpass = 0;
-		pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
+		pipeline_info.pInputAssemblyState = &input_assembly;
+		pipeline_info.pRasterizationState = &rasterizer;
+		pipeline_info.pColorBlendState = &color_blending;
+		pipeline_info.pMultisampleState = &multisampling;
+		pipeline_info.pViewportState = &viewport_state;
+		pipeline_info.pDynamicState = &dynamic_info;
+		pipeline_info.pStages = shader_stages;
+		pipeline_info.stageCount = 2;
+		pipeline_info.pVertexInputState = &vertex_input_info;
+		VkPipelineRenderingCreateInfo pipelineRenderingCreateInfo{};
+		pipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+		pipelineRenderingCreateInfo.colorAttachmentCount = 1;
+		pipelineRenderingCreateInfo.pColorAttachmentFormats = &vkDisplayData.swapchain.image_format;
+		pipeline_info.pNext = &pipelineRenderingCreateInfo;
 
 		if (vkdd.disp.createGraphicsPipelines(VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &vkdd.graphics_pipeline) != VK_SUCCESS)
 		{
-			std::cout << "failed to create pipline\n";
+			std::cout << "[Renderer] Failed to create pipline\n";
 			return false;
 		}
 

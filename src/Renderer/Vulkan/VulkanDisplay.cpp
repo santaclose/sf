@@ -1,8 +1,9 @@
 #include "VulkanDisplay.h"
 
+#include "VulkanUtils.h"
 #include <iostream>
 
-#define MAX_FRAMES_IN_FLIGHT 2
+#define MAX_FRAMES_IN_FLIGHT 3
 
 bool sf::Renderer::VulkanDisplay::Initialize(const Window& windowArg, bool (*createPipelineFunc)(VulkanDisplay&))
 {
@@ -10,7 +11,7 @@ bool sf::Renderer::VulkanDisplay::Initialize(const Window& windowArg, bool (*cre
 
 	// Instance
 	vkb::InstanceBuilder instance_builder;
-	auto instance_builder_return = instance_builder.request_validation_layers().use_default_debug_messenger().build();
+	auto instance_builder_return = instance_builder.request_validation_layers().desire_api_version(1, 3).use_default_debug_messenger().build();
 	if (!instance_builder_return)
 	{
 		std::cout << "[VulkanDisplay] Vulkan instance creation error: " << instance_builder_return.error().message() << std::endl;
@@ -33,7 +34,11 @@ bool sf::Renderer::VulkanDisplay::Initialize(const Window& windowArg, bool (*cre
 	}
 	vkb::PhysicalDevice vkb_physicalDevice = physical_device_selector_return.value();
 	vkb::DeviceBuilder device_builder { vkb_physicalDevice };
-	auto dev_ret = device_builder.build();
+
+	VkPhysicalDeviceVulkan13Features vk13features{};
+	vk13features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+	vk13features.dynamicRendering = true;
+	auto dev_ret = device_builder.add_pNext(&vk13features).build();
 	if (!dev_ret)
 	{
 		std::cout << "[VulkanDisplay] Failed to create vulkan device\n";
@@ -70,60 +75,16 @@ bool sf::Renderer::VulkanDisplay::Initialize(const Window& windowArg, bool (*cre
 		this->present_queue = queue_ret.value();
 	}
 
-	// Render pass
-	VkAttachmentDescription color_attachment = {};
-	color_attachment.format = this->swapchain.image_format;
-	color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-	color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-	VkAttachmentReference color_attachment_ref = {};
-	color_attachment_ref.attachment = 0;
-	color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-	VkSubpassDescription subpass = {};
-	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-	subpass.colorAttachmentCount = 1;
-	subpass.pColorAttachments = &color_attachment_ref;
-
-	VkSubpassDependency dependency = {};
-	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-	dependency.dstSubpass = 0;
-	dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	dependency.srcAccessMask = 0;
-	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-	VkRenderPassCreateInfo render_pass_info = {};
-	render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	render_pass_info.attachmentCount = 1;
-	render_pass_info.pAttachments = &color_attachment;
-	render_pass_info.subpassCount = 1;
-	render_pass_info.pSubpasses = &subpass;
-	render_pass_info.dependencyCount = 1;
-	render_pass_info.pDependencies = &dependency;
-
-	if (this->disp.createRenderPass(&render_pass_info, nullptr, &this->render_pass) != VK_SUCCESS)
-	{
-		std::cout << "[VulkanDisplay] Failed to create render pass\n";
-		return false; // failed to create render pass!
-	}
-
 	// Pipeline
 	createPipelineFunc(*this);
 
 	// Frame buffers
-	CreateFramebuffers();
+	this->command_buffers.resize(this->swapchain.image_count);
+	this->swapchain_images = this->swapchain.get_images().value();
+	this->swapchain_image_views = this->swapchain.get_image_views().value();
 
 	// Command pool
 	CreateCommandPool();
-
-	// Command buffers
-	CreateCommandBuffers();
 
 	// Sync objects
 	CreateSyncObjects();
@@ -142,13 +103,8 @@ void sf::Renderer::VulkanDisplay::Terminate()
 	}
 
 	this->disp.destroyCommandPool(this->command_pool, nullptr);
-
-	for (auto framebuffer : this->framebuffers)
-		this->disp.destroyFramebuffer(framebuffer, nullptr);
-
 	this->disp.destroyPipeline(this->graphics_pipeline, nullptr);
 	this->disp.destroyPipelineLayout(this->pipeline_layout, nullptr);
-	this->disp.destroyRenderPass(this->render_pass, nullptr);
 
 	this->swapchain.destroy_image_views(this->swapchain_image_views);
 
@@ -158,36 +114,11 @@ void sf::Renderer::VulkanDisplay::Terminate()
 	vkb::destroy_instance(this->instance);
 }
 
-bool sf::Renderer::VulkanDisplay::CreateFramebuffers()
-{
-	this->swapchain_images = this->swapchain.get_images().value();
-	this->swapchain_image_views = this->swapchain.get_image_views().value();
-
-	this->framebuffers.resize(this->swapchain_image_views.size());
-
-	for (size_t i = 0; i < this->swapchain_image_views.size(); i++)
-	{
-		VkImageView attachments[] = { this->swapchain_image_views[i] };
-
-		VkFramebufferCreateInfo framebuffer_info = {};
-		framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebuffer_info.renderPass = this->render_pass;
-		framebuffer_info.attachmentCount = 1;
-		framebuffer_info.pAttachments = attachments;
-		framebuffer_info.width = this->swapchain.extent.width;
-		framebuffer_info.height = this->swapchain.extent.height;
-		framebuffer_info.layers = 1;
-
-		if (this->disp.createFramebuffer(&framebuffer_info, nullptr, &this->framebuffers[i]) != VK_SUCCESS)
-			return false;
-	}
-	return true;
-}
-
 bool sf::Renderer::VulkanDisplay::CreateCommandPool()
 {
 	VkCommandPoolCreateInfo pool_info = {};
 	pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 	pool_info.queueFamilyIndex = this->device.get_queue_index(vkb::QueueType::graphics).value();
 
 	if (this->disp.createCommandPool(&pool_info, nullptr, &this->command_pool) != VK_SUCCESS)
@@ -195,64 +126,88 @@ bool sf::Renderer::VulkanDisplay::CreateCommandPool()
 		std::cout << "[VulkanDisplay] Failed to create command pool\n";
 		return false;
 	}
-	return true;
-}
 
-bool sf::Renderer::VulkanDisplay::CreateCommandBuffers()
-{
-	this->command_buffers.resize(this->framebuffers.size());
-
+	// Command buffers
 	VkCommandBufferAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.commandPool = this->command_pool;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = (uint32_t)this->command_buffers.size();
+	allocInfo.commandBufferCount = this->swapchain.image_count;
 
 	if (this->disp.allocateCommandBuffers(&allocInfo, this->command_buffers.data()) != VK_SUCCESS)
 		return false;
 
-	for (size_t i = 0; i < this->command_buffers.size(); i++)
+	return true;
+}
+
+bool sf::Renderer::VulkanDisplay::FillCommandBuffers(uint32_t imageIndex)
+{
+	VkCommandBufferBeginInfo begin_info = {};
+	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+	if (this->disp.beginCommandBuffer(this->command_buffers[imageIndex], &begin_info) != VK_SUCCESS)
+		return false;
+
+	VulkanUtils::InsertImageMemoryBarrier(
+		this->command_buffers[imageIndex],
+		this->swapchain_images[imageIndex],
+		0,
+		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+		VK_IMAGE_LAYOUT_UNDEFINED,
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+		VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+	VkRenderingAttachmentInfo colorInfo{};
+	colorInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+	colorInfo.imageView = this->swapchain_image_views[current_frame];
+	colorInfo.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+	colorInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	colorInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	colorInfo.clearValue.color = { 0.0f,0.2f,0.0f,0.0f };
+
+	VkRenderingInfo renderInfo{};
+	renderInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+	renderInfo.renderArea = { 0, 0, this->swapchain.extent.width, this->swapchain.extent.height };
+	renderInfo.layerCount = 1;
+	renderInfo.colorAttachmentCount = 1;
+	renderInfo.pColorAttachments = &colorInfo;
+
+	VkViewport viewport = {};
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = (float)this->swapchain.extent.width;
+	viewport.height = (float)this->swapchain.extent.height;
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+
+	VkRect2D scissor = {};
+	scissor.offset = { 0, 0 };
+	scissor.extent = this->swapchain.extent;
+
+	this->disp.cmdBeginRendering(this->command_buffers[imageIndex], &renderInfo);
+	this->disp.cmdSetViewport(this->command_buffers[imageIndex], 0, 1, &viewport);
+	this->disp.cmdSetScissor(this->command_buffers[imageIndex], 0, 1, &scissor);
+	this->disp.cmdBindPipeline(this->command_buffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, this->graphics_pipeline);
+	this->disp.cmdDraw(this->command_buffers[imageIndex], 3, 1, 0, 0);
+	this->disp.cmdEndRendering(this->command_buffers[imageIndex]);
+
+	VulkanUtils::InsertImageMemoryBarrier(
+		this->command_buffers[imageIndex],
+		this->swapchain_images[imageIndex],
+		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+		0,
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+		VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+		VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+	if (this->disp.endCommandBuffer(this->command_buffers[imageIndex]) != VK_SUCCESS)
 	{
-		VkCommandBufferBeginInfo begin_info = {};
-		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-		if (this->disp.beginCommandBuffer(this->command_buffers[i], &begin_info) != VK_SUCCESS)
-			return false;
-
-		VkRenderPassBeginInfo render_pass_info = {};
-		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		render_pass_info.renderPass = this->render_pass;
-		render_pass_info.framebuffer = this->framebuffers[i];
-		render_pass_info.renderArea.offset = { 0, 0 };
-		render_pass_info.renderArea.extent = this->swapchain.extent;
-		VkClearValue clearColor{ { { 0.0f, 0.0f, 0.0f, 1.0f } } };
-		render_pass_info.clearValueCount = 1;
-		render_pass_info.pClearValues = &clearColor;
-
-		VkViewport viewport = {};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = (float)this->swapchain.extent.width;
-		viewport.height = (float)this->swapchain.extent.height;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-
-		VkRect2D scissor = {};
-		scissor.offset = { 0, 0 };
-		scissor.extent = this->swapchain.extent;
-
-		this->disp.cmdSetViewport(this->command_buffers[i], 0, 1, &viewport);
-		this->disp.cmdSetScissor(this->command_buffers[i], 0, 1, &scissor);
-		this->disp.cmdBeginRenderPass(this->command_buffers[i], &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
-		this->disp.cmdBindPipeline(this->command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, this->graphics_pipeline);
-		this->disp.cmdDraw(this->command_buffers[i], 3, 1, 0, 0);
-		this->disp.cmdEndRenderPass(this->command_buffers[i]);
-
-		if (this->disp.endCommandBuffer(this->command_buffers[i]) != VK_SUCCESS)
-		{
-			std::cout << "[VulkanDisplay] Failed to record command buffer\n";
-			return false;
-		}
+		std::cout << "[VulkanDisplay] Failed to record command buffer\n";
+		return false;
 	}
 	return true;
 }
@@ -294,7 +249,6 @@ bool sf::Renderer::VulkanDisplay::Display()
 
 	if (result == VK_ERROR_OUT_OF_DATE_KHR)
 		return RecreateSwapchain();
-
 	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
 	{
 		std::cout << "[VulkanDisplay] Failed to acquire swapchain image. Error " << result << "\n";
@@ -305,15 +259,15 @@ bool sf::Renderer::VulkanDisplay::Display()
 		this->disp.waitForFences(1, &this->image_in_flight[image_index], VK_TRUE, UINT64_MAX);
 	this->image_in_flight[image_index] = this->in_flight_fences[this->current_frame];
 
-	VkSubmitInfo submitInfo = {};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
+	bool createCommandBufferResult = FillCommandBuffers(image_index);
+	assert(createCommandBufferResult);
 	VkSemaphore wait_semaphores[] = { this->available_semaphores[this->current_frame] };
 	VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+	VkSubmitInfo submitInfo = {};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.waitSemaphoreCount = 1;
 	submitInfo.pWaitSemaphores = wait_semaphores;
 	submitInfo.pWaitDstStageMask = wait_stages;
-
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &this->command_buffers[image_index];
 
@@ -329,16 +283,13 @@ bool sf::Renderer::VulkanDisplay::Display()
 		return -1;
 	}
 
+	VkSwapchainKHR swapChains[] = { this->swapchain };
 	VkPresentInfoKHR present_info = {};
 	present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
 	present_info.waitSemaphoreCount = 1;
 	present_info.pWaitSemaphores = signal_semaphores;
-
-	VkSwapchainKHR swapChains[] = { this->swapchain };
 	present_info.swapchainCount = 1;
 	present_info.pSwapchains = swapChains;
-
 	present_info.pImageIndices = &image_index;
 
 	result = this->disp.queuePresentKHR(this->present_queue, &present_info);
@@ -371,17 +322,16 @@ bool sf::Renderer::VulkanDisplay::CreateSwapchain()
 bool sf::Renderer::VulkanDisplay::RecreateSwapchain()
 {
 	this->disp.deviceWaitIdle();
-
 	this->disp.destroyCommandPool(this->command_pool, nullptr);
-
-	for (auto framebuffer : this->framebuffers)
-		this->disp.destroyFramebuffer(framebuffer, nullptr);
-
 	this->swapchain.destroy_image_views(this->swapchain_image_views);
 
 	if (!CreateSwapchain()) return false;
-	if (!CreateFramebuffers()) return false;
+
+	this->command_buffers.resize(this->swapchain.image_count);
+	this->swapchain_images = this->swapchain.get_images().value();
+	this->swapchain_image_views = this->swapchain.get_image_views().value();
+
 	if (!CreateCommandPool()) return false;
-	if (!CreateCommandBuffers()) return false;
+
 	return true;
 }

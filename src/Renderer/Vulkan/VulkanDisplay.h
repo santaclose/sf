@@ -21,9 +21,7 @@ namespace sf::Renderer
 
 		std::vector<VkImage> swapchain_images;
 		std::vector<VkImageView> swapchain_image_views;
-		std::vector<VkFramebuffer> framebuffers;
 
-		VkRenderPass render_pass;
 		VkPipelineLayout pipeline_layout;
 		VkPipeline graphics_pipeline;
 
@@ -39,9 +37,8 @@ namespace sf::Renderer
 		bool Initialize(const Window& windowArg, bool (*createPipelineFunc)(VulkanDisplay&));
 		void Terminate();
 
-		bool CreateFramebuffers();
 		bool CreateCommandPool();
-		bool CreateCommandBuffers();
+		bool FillCommandBuffers(uint32_t imageIndex);
 		bool CreateSyncObjects();
 
 		bool Display();

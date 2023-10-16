@@ -47,6 +47,7 @@ bool sf::Renderer::VulkanDisplay::Initialize(const Window& windowArg, bool (*cre
 	this->device = dev_ret.value();
 	this->disp = this->device.make_table();
 
+	std::cout << "[VulkanDisplay] Using GPU: " << vkb_physicalDevice.name << std::endl;
 	std::cout << "[VulkanDisplay] Vulkan API version: " <<
 		VK_API_VERSION_MAJOR(vkb_physicalDevice.properties.apiVersion) << '.' <<
 		VK_API_VERSION_MINOR(vkb_physicalDevice.properties.apiVersion) << std::endl;

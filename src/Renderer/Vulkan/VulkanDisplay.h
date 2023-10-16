@@ -33,17 +33,23 @@ namespace sf::Renderer
 		std::vector<VkFence> in_flight_fences;
 		std::vector<VkFence> image_in_flight;
 		uint32_t current_frame = 0;
+		uint32_t image_index = 0;
 
 		bool Initialize(const Window& windowArg, bool (*createPipelineFunc)(VulkanDisplay&));
 		void Terminate(void (*destroyBuffersFunc)(void) = nullptr);
 
 		bool CreateCommandPool();
-		bool FillCommandBuffers(uint32_t imageIndex, VkBuffer vertexBuffer, int vertexCount);
 		bool CreateSyncObjects();
 
-		bool Display(VkBuffer vertexBuffer, int vertexCount);
+		bool PreDraw();
+		bool PostDraw();
 
 		bool CreateSwapchain();
 		bool RecreateSwapchain();
+
+		inline VkCommandBuffer GetCurrentCommandBuffer()
+		{
+			return command_buffers[image_index];
+		}
 	};
 }

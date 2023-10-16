@@ -262,12 +262,19 @@ void sf::Renderer::OnResize()
 {
 	vkDeviceWaitIdle(vkDisplayData.device.device);
 	vkDisplayData.RecreateSwapchain();
+	aspectRatio = (float)window->GetWidth() / (float)window->GetHeight();
 }
 
 void sf::Renderer::Predraw()
 {
-	vertices[0].color.r = rand() / (RAND_MAX + 1.0);
-	vkDisplayData.Display(vertexBuffer, vertices.size());
+	vkDisplayData.PreDraw();
+
+	VkBuffer vertexBuffers[] = { vertexBuffer };
+	VkDeviceSize offsets[] = { 0 };
+	vkCmdBindVertexBuffers(vkDisplayData.GetCurrentCommandBuffer(), 0, 1, vertexBuffers, offsets);
+	vkCmdDraw(vkDisplayData.GetCurrentCommandBuffer(), (uint32_t)vertices.size(), 1, 0, 0);
+
+	vkDisplayData.PostDraw();
 }
 
 void sf::Renderer::SetMeshMaterial(const Mesh& mesh, uint32_t materialId, int piece)

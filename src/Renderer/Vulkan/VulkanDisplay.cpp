@@ -144,17 +144,61 @@ bool sf::Renderer::VulkanDisplay::CreateCommandPool()
 	return true;
 }
 
-bool sf::Renderer::VulkanDisplay::FillCommandBuffers(uint32_t imageIndex, VkBuffer vertexBuffer, int vertexCount)
+bool sf::Renderer::VulkanDisplay::CreateSyncObjects()
 {
+	this->available_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
+	this->finished_semaphore.resize(MAX_FRAMES_IN_FLIGHT);
+	this->in_flight_fences.resize(MAX_FRAMES_IN_FLIGHT);
+	this->image_in_flight.resize(this->swapchain.image_count, VK_NULL_HANDLE);
+
+	VkSemaphoreCreateInfo semaphore_info = {};
+	semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+	VkFenceCreateInfo fence_info = {};
+	fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	{
+		if (this->disp.createSemaphore(&semaphore_info, nullptr, &this->available_semaphores[i]) != VK_SUCCESS ||
+			this->disp.createSemaphore(&semaphore_info, nullptr, &this->finished_semaphore[i]) != VK_SUCCESS ||
+			this->disp.createFence(&fence_info, nullptr, &this->in_flight_fences[i]) != VK_SUCCESS)
+		{
+			std::cout << "[VulkanDisplay] Failed to create sync objects\n";
+			return false;
+		}
+	}
+	return true;
+}
+
+bool sf::Renderer::VulkanDisplay::PreDraw()
+{
+	this->disp.waitForFences(1, &this->in_flight_fences[this->current_frame], VK_TRUE, UINT64_MAX);
+
+	VkResult result = this->disp.acquireNextImageKHR(
+		this->swapchain, UINT64_MAX, this->available_semaphores[this->current_frame], VK_NULL_HANDLE, &image_index);
+
+	if (result == VK_ERROR_OUT_OF_DATE_KHR)
+		return RecreateSwapchain();
+	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+	{
+		std::cout << "[VulkanDisplay] Failed to acquire swapchain image. Error " << result << "\n";
+		return false;
+	}
+
+	if (this->image_in_flight[image_index] != VK_NULL_HANDLE)
+		this->disp.waitForFences(1, &this->image_in_flight[image_index], VK_TRUE, UINT64_MAX);
+	this->image_in_flight[image_index] = this->in_flight_fences[this->current_frame];
+
 	VkCommandBufferBeginInfo begin_info = {};
 	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-	if (this->disp.beginCommandBuffer(this->command_buffers[imageIndex], &begin_info) != VK_SUCCESS)
+	if (this->disp.beginCommandBuffer(this->command_buffers[image_index], &begin_info) != VK_SUCCESS)
 		return false;
 
 	VulkanUtils::InsertImageMemoryBarrier(
-		this->command_buffers[imageIndex],
-		this->swapchain_images[imageIndex],
+		this->command_buffers[image_index],
+		this->swapchain_images[image_index],
 		0,
 		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
 		VK_IMAGE_LAYOUT_UNDEFINED,
@@ -190,22 +234,21 @@ bool sf::Renderer::VulkanDisplay::FillCommandBuffers(uint32_t imageIndex, VkBuff
 	scissor.offset = { 0, 0 };
 	scissor.extent = this->swapchain.extent;
 
-	this->disp.cmdBeginRendering(this->command_buffers[imageIndex], &renderInfo);
-	this->disp.cmdSetViewport(this->command_buffers[imageIndex], 0, 1, &viewport);
-	this->disp.cmdSetScissor(this->command_buffers[imageIndex], 0, 1, &scissor);
-	this->disp.cmdBindPipeline(this->command_buffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, this->graphics_pipeline);
-	//this->disp.cmdDraw(this->command_buffers[imageIndex], 3, 1, 0, 0);
+	this->disp.cmdBeginRendering(this->command_buffers[image_index], &renderInfo);
+	this->disp.cmdSetViewport(this->command_buffers[image_index], 0, 1, &viewport);
+	this->disp.cmdSetScissor(this->command_buffers[image_index], 0, 1, &scissor);
+	this->disp.cmdBindPipeline(this->command_buffers[image_index], VK_PIPELINE_BIND_POINT_GRAPHICS, this->graphics_pipeline);
 
-	VkBuffer vertexBuffers[] = { vertexBuffer };
-	VkDeviceSize offsets[] = { 0 };
-	vkCmdBindVertexBuffers(this->command_buffers[imageIndex], 0, 1, vertexBuffers, offsets);
-	vkCmdDraw(this->command_buffers[imageIndex], (uint32_t)vertexCount, 1, 0, 0);
+	return true;
+}
 
-	this->disp.cmdEndRendering(this->command_buffers[imageIndex]);
+bool sf::Renderer::VulkanDisplay::PostDraw()
+{
+	this->disp.cmdEndRendering(this->command_buffers[image_index]);
 
 	VulkanUtils::InsertImageMemoryBarrier(
-		this->command_buffers[imageIndex],
-		this->swapchain_images[imageIndex],
+		this->command_buffers[image_index],
+		this->swapchain_images[image_index],
 		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
 		0,
 		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -214,63 +257,12 @@ bool sf::Renderer::VulkanDisplay::FillCommandBuffers(uint32_t imageIndex, VkBuff
 		VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
 		VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
 
-	if (this->disp.endCommandBuffer(this->command_buffers[imageIndex]) != VK_SUCCESS)
+	if (this->disp.endCommandBuffer(this->command_buffers[image_index]) != VK_SUCCESS)
 	{
 		std::cout << "[VulkanDisplay] Failed to record command buffer\n";
 		return false;
 	}
-	return true;
-}
 
-bool sf::Renderer::VulkanDisplay::CreateSyncObjects()
-{
-	this->available_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
-	this->finished_semaphore.resize(MAX_FRAMES_IN_FLIGHT);
-	this->in_flight_fences.resize(MAX_FRAMES_IN_FLIGHT);
-	this->image_in_flight.resize(this->swapchain.image_count, VK_NULL_HANDLE);
-
-	VkSemaphoreCreateInfo semaphore_info = {};
-	semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-	VkFenceCreateInfo fence_info = {};
-	fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-	{
-		if (this->disp.createSemaphore(&semaphore_info, nullptr, &this->available_semaphores[i]) != VK_SUCCESS ||
-			this->disp.createSemaphore(&semaphore_info, nullptr, &this->finished_semaphore[i]) != VK_SUCCESS ||
-			this->disp.createFence(&fence_info, nullptr, &this->in_flight_fences[i]) != VK_SUCCESS)
-		{
-			std::cout << "[VulkanDisplay] Failed to create sync objects\n";
-			return false;
-		}
-	}
-	return true;
-}
-
-bool sf::Renderer::VulkanDisplay::Display(VkBuffer vertexBuffer, int vertexCount)
-{
-	this->disp.waitForFences(1, &this->in_flight_fences[this->current_frame], VK_TRUE, UINT64_MAX);
-
-	uint32_t image_index = 0;
-	VkResult result = this->disp.acquireNextImageKHR(
-		this->swapchain, UINT64_MAX, this->available_semaphores[this->current_frame], VK_NULL_HANDLE, &image_index);
-
-	if (result == VK_ERROR_OUT_OF_DATE_KHR)
-		return RecreateSwapchain();
-	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
-	{
-		std::cout << "[VulkanDisplay] Failed to acquire swapchain image. Error " << result << "\n";
-		return false;
-	}
-
-	if (this->image_in_flight[image_index] != VK_NULL_HANDLE)
-		this->disp.waitForFences(1, &this->image_in_flight[image_index], VK_TRUE, UINT64_MAX);
-	this->image_in_flight[image_index] = this->in_flight_fences[this->current_frame];
-
-	bool createCommandBufferResult = FillCommandBuffers(image_index, vertexBuffer, vertexCount);
-	assert(createCommandBufferResult);
 	VkSemaphore wait_semaphores[] = { this->available_semaphores[this->current_frame] };
 	VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 	VkSubmitInfo submitInfo = {};
@@ -290,7 +282,7 @@ bool sf::Renderer::VulkanDisplay::Display(VkBuffer vertexBuffer, int vertexCount
 	if (this->disp.queueSubmit(this->graphics_queue, 1, &submitInfo, this->in_flight_fences[this->current_frame]) != VK_SUCCESS)
 	{
 		std::cout << "[VulkanDisplay] Failed to submit draw command buffer\n";
-		return -1;
+		return false;
 	}
 
 	VkSwapchainKHR swapChains[] = { this->swapchain };
@@ -302,17 +294,18 @@ bool sf::Renderer::VulkanDisplay::Display(VkBuffer vertexBuffer, int vertexCount
 	present_info.pSwapchains = swapChains;
 	present_info.pImageIndices = &image_index;
 
-	result = this->disp.queuePresentKHR(this->present_queue, &present_info);
+	VkResult result = this->disp.queuePresentKHR(this->present_queue, &present_info);
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
 		return RecreateSwapchain();
 	else if (result != VK_SUCCESS)
 	{
 		std::cout << "[VulkanDisplay] Failed to present swapchain image\n";
-		return -1;
+		return false;
 	}
 
 	this->current_frame = (this->current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
-	return 0;
+
+	return true;
 }
 
 bool sf::Renderer::VulkanDisplay::CreateSwapchain()

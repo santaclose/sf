@@ -93,7 +93,7 @@ bool sf::Renderer::VulkanDisplay::Initialize(const Window& windowArg, bool (*cre
 	return true;
 }
 
-void sf::Renderer::VulkanDisplay::Terminate()
+void sf::Renderer::VulkanDisplay::Terminate(void (*destroyBuffersFunc)(void))
 {
 	vkDeviceWaitIdle(this->device.device);
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -108,6 +108,9 @@ void sf::Renderer::VulkanDisplay::Terminate()
 	this->disp.destroyPipelineLayout(this->pipeline_layout, nullptr);
 
 	this->swapchain.destroy_image_views(this->swapchain_image_views);
+
+	if (destroyBuffersFunc != nullptr)
+		destroyBuffersFunc();
 
 	vkb::destroy_swapchain(this->swapchain);
 	vkb::destroy_device(this->device);
@@ -141,7 +144,7 @@ bool sf::Renderer::VulkanDisplay::CreateCommandPool()
 	return true;
 }
 
-bool sf::Renderer::VulkanDisplay::FillCommandBuffers(uint32_t imageIndex)
+bool sf::Renderer::VulkanDisplay::FillCommandBuffers(uint32_t imageIndex, VkBuffer vertexBuffer, int vertexCount)
 {
 	VkCommandBufferBeginInfo begin_info = {};
 	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -191,7 +194,13 @@ bool sf::Renderer::VulkanDisplay::FillCommandBuffers(uint32_t imageIndex)
 	this->disp.cmdSetViewport(this->command_buffers[imageIndex], 0, 1, &viewport);
 	this->disp.cmdSetScissor(this->command_buffers[imageIndex], 0, 1, &scissor);
 	this->disp.cmdBindPipeline(this->command_buffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, this->graphics_pipeline);
-	this->disp.cmdDraw(this->command_buffers[imageIndex], 3, 1, 0, 0);
+	//this->disp.cmdDraw(this->command_buffers[imageIndex], 3, 1, 0, 0);
+
+	VkBuffer vertexBuffers[] = { vertexBuffer };
+	VkDeviceSize offsets[] = { 0 };
+	vkCmdBindVertexBuffers(this->command_buffers[imageIndex], 0, 1, vertexBuffers, offsets);
+	vkCmdDraw(this->command_buffers[imageIndex], (uint32_t)vertexCount, 1, 0, 0);
+
 	this->disp.cmdEndRendering(this->command_buffers[imageIndex]);
 
 	VulkanUtils::InsertImageMemoryBarrier(
@@ -240,7 +249,7 @@ bool sf::Renderer::VulkanDisplay::CreateSyncObjects()
 	return true;
 }
 
-bool sf::Renderer::VulkanDisplay::Display()
+bool sf::Renderer::VulkanDisplay::Display(VkBuffer vertexBuffer, int vertexCount)
 {
 	this->disp.waitForFences(1, &this->in_flight_fences[this->current_frame], VK_TRUE, UINT64_MAX);
 
@@ -260,7 +269,7 @@ bool sf::Renderer::VulkanDisplay::Display()
 		this->disp.waitForFences(1, &this->image_in_flight[image_index], VK_TRUE, UINT64_MAX);
 	this->image_in_flight[image_index] = this->in_flight_fences[this->current_frame];
 
-	bool createCommandBufferResult = FillCommandBuffers(image_index);
+	bool createCommandBufferResult = FillCommandBuffers(image_index, vertexBuffer, vertexCount);
 	assert(createCommandBufferResult);
 	VkSemaphore wait_semaphores[] = { this->available_semaphores[this->current_frame] };
 	VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };

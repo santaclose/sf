@@ -18,4 +18,5 @@ namespace VulkanUtils
 
 	bool CreateShaderModuleFromBytes(const VkDevice& device, const std::vector<char>& shaderCode, VkShaderModule& outShaderModule);
 	bool CreateShaderModule(const VkDevice& device, const std::string& shaderFilePath, VkShaderModule& outShaderModule);
+	uint32_t FindMemoryType(const VkPhysicalDevice& physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties);
 }

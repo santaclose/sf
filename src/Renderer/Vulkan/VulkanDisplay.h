@@ -35,13 +35,13 @@ namespace sf::Renderer
 		uint32_t current_frame = 0;
 
 		bool Initialize(const Window& windowArg, bool (*createPipelineFunc)(VulkanDisplay&));
-		void Terminate();
+		void Terminate(void (*destroyBuffersFunc)(void) = nullptr);
 
 		bool CreateCommandPool();
-		bool FillCommandBuffers(uint32_t imageIndex);
+		bool FillCommandBuffers(uint32_t imageIndex, VkBuffer vertexBuffer, int vertexCount);
 		bool CreateSyncObjects();
 
-		bool Display();
+		bool Display(VkBuffer vertexBuffer, int vertexCount);
 
 		bool CreateSwapchain();
 		bool RecreateSwapchain();

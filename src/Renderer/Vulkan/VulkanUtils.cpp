@@ -46,8 +46,22 @@ bool VulkanUtils::CreateShaderModule(const VkDevice& device, const std::string& 
 	std::vector<char> shaderBytes;
 	if (!sf::FileUtils::ReadFileAsBytes(shaderFilePath, shaderBytes))
 	{
-		std::cout << "[Renderer] Could not read shader file: " << shaderFilePath << std::endl;
+		std::cout << "[VulkanUtils] Could not read shader file: " << shaderFilePath << std::endl;
 		return false;
 	}
 	return CreateShaderModuleFromBytes(device, shaderBytes, outShaderModule);
+}
+
+uint32_t VulkanUtils::FindMemoryType(const VkPhysicalDevice& physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties)
+{
+	VkPhysicalDeviceMemoryProperties memProperties;
+	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+
+	for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+	{
+		if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
+			return i;
+	}
+
+	std::cout << "[VulkanUtils] Failed to find suitable memory type\n";
 }

@@ -25,6 +25,7 @@
 #include <FileUtils.h>
 
 #include "VulkanDisplay.h"
+#include "VulkanUtils.h"
 
 namespace sf::Renderer
 {
@@ -38,41 +39,12 @@ namespace sf::Renderer
 	glm::mat4 cameraView;
 	glm::mat4 cameraProjection;
 
-	bool CreateShaderModule(const std::vector<char>& shaderCode, VkShaderModule& outShaderModule)
-	{
-		VkShaderModuleCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		createInfo.codeSize = shaderCode.size();
-		createInfo.pCode = reinterpret_cast<const uint32_t*>(shaderCode.data());
-		return vkCreateShaderModule(vkDisplayData.device.device, &createInfo, nullptr, &outShaderModule) == VK_SUCCESS;
-	}
 
 	bool CreatePipeline(VulkanDisplay& vkdd)
 	{
-		std::string vertexShaderPath = "assets/shaders/vulkan/testV.spv";
-		std::string fragmentShaderPath = "assets/shaders/vulkan/testF.spv";
-		std::vector<char> vertexShaderCode, fragmentShaderCode;
-		if (!FileUtils::ReadFileAsBytes(vertexShaderPath, vertexShaderCode))
-		{
-			std::cout << "[Renderer] Could not read vertex shader file: " << vertexShaderPath << std::endl;
-			return false;
-		}
-		if (!FileUtils::ReadFileAsBytes(fragmentShaderPath, fragmentShaderCode))
-		{
-			std::cout << "[Renderer] Could not read fragment shader file: " << fragmentShaderPath << std::endl;
-			return false;
-		}
 		VkShaderModule vertexShaderModule, fragmentShaderModule;
-		if (!CreateShaderModule(vertexShaderCode, vertexShaderModule))
-		{
-			std::cout << "[Renderer] Could not create shader module for shader: " << vertexShaderPath << std::endl;
-			return false;
-		}
-		if (!CreateShaderModule(fragmentShaderCode, fragmentShaderModule))
-		{
-			std::cout << "[Renderer] Could not create shader module for shader: " << fragmentShaderPath << std::endl;
-			return false;
-		}
+		assert(VulkanUtils::CreateShaderModule(vkDisplayData.disp.device, "assets/shaders/vulkan/testV.spv", vertexShaderModule));
+		assert(VulkanUtils::CreateShaderModule(vkDisplayData.disp.device, "assets/shaders/vulkan/testF.spv", fragmentShaderModule));
 
 		VkPipelineShaderStageCreateInfo vert_stage_info = {};
 		vert_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;

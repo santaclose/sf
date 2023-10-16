@@ -74,17 +74,6 @@ namespace sf::Renderer
 	};
 	VkBuffer vertexBuffer;
 	VkDeviceMemory vertexBufferMemory;
-	void createVertexBuffer() {
-		VkBufferCreateInfo bufferInfo{};
-		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		bufferInfo.size = sizeof(vertices[0]) * vertices.size();
-		bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		if (vkCreateBuffer(vkDisplayData.disp.device, &bufferInfo, nullptr, &vertexBuffer) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create vertex buffer!");
-		}
-	}
 
 	void DestroyMeshBuffers()
 	{
@@ -95,8 +84,8 @@ namespace sf::Renderer
 	bool CreatePipeline(VulkanDisplay& vkdd)
 	{
 		VkShaderModule vertexShaderModule, fragmentShaderModule;
-		assert(VulkanUtils::CreateShaderModule(vkDisplayData.disp.device, "assets/shaders/vulkan/testV.spv", vertexShaderModule));
-		assert(VulkanUtils::CreateShaderModule(vkDisplayData.disp.device, "assets/shaders/vulkan/testF.spv", fragmentShaderModule));
+		assert(VulkanUtils::CreateShaderModule(vkDisplayData, "assets/shaders/vulkan/testV.spv", vertexShaderModule));
+		assert(VulkanUtils::CreateShaderModule(vkDisplayData, "assets/shaders/vulkan/testF.spv", fragmentShaderModule));
 
 		VkPipelineShaderStageCreateInfo vert_stage_info = {};
 		vert_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -234,26 +223,7 @@ bool sf::Renderer::Initialize(const Window& windowArg)
 	vkDisplayData.Initialize(windowArg, CreatePipeline);
 	window->AddOnResizeCallback(OnResize);
 
-	createVertexBuffer();
-
-	VkMemoryRequirements memRequirements;
-	vkGetBufferMemoryRequirements(vkDisplayData.disp.device, vertexBuffer, &memRequirements);
-	VkPhysicalDeviceMemoryProperties memProperties;
-	vkGetPhysicalDeviceMemoryProperties(vkDisplayData.device.physical_device, &memProperties);
-
-	VkMemoryAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	allocInfo.allocationSize = memRequirements.size;
-	allocInfo.memoryTypeIndex = VulkanUtils::FindMemoryType(vkDisplayData.device.physical_device, memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-	if (vkAllocateMemory(vkDisplayData.disp.device, &allocInfo, nullptr, &vertexBufferMemory) != VK_SUCCESS) {
-		throw std::runtime_error("failed to allocate vertex buffer memory!");
-	}
-	vkBindBufferMemory(vkDisplayData.disp.device, vertexBuffer, vertexBufferMemory, 0);
-
-	void* data;
-	vkMapMemory(vkDisplayData.disp.device, vertexBufferMemory, 0, sizeof(Vertex) * vertices.size(), 0, &data);
-	memcpy(data, vertices.data(), (size_t)sizeof(Vertex) * vertices.size());
-	vkUnmapMemory(vkDisplayData.disp.device, vertexBufferMemory);
+	VulkanUtils::CreateVertexBuffer(vkDisplayData, vertices.size() * sizeof(vertices[0]), vertices.data(), vertexBuffer, vertexBufferMemory);
 
 	return true;
 }

@@ -4,7 +4,15 @@
 
 #include <FileUtils.h>
 
-void VulkanUtils::InsertImageMemoryBarrier(VkCommandBuffer cmdbuffer, VkImage image, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkImageLayout oldImageLayout, VkImageLayout newImageLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageSubresourceRange subresourceRange)
+void sf::Renderer::VulkanUtils::InsertImageMemoryBarrier(
+	VkCommandBuffer cmdbuffer,
+	VkImage image,
+	VkAccessFlags srcAccessMask,
+	VkAccessFlags dstAccessMask,
+	VkImageLayout oldImageLayout,
+	VkImageLayout newImageLayout,
+	VkPipelineStageFlags srcStageMask,
+	VkPipelineStageFlags dstStageMask, VkImageSubresourceRange subresourceRange)
 {
 	VkImageMemoryBarrier imageMemoryBarrier{};
 	imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -27,13 +35,13 @@ void VulkanUtils::InsertImageMemoryBarrier(VkCommandBuffer cmdbuffer, VkImage im
 		1, &imageMemoryBarrier);
 }
 
-bool VulkanUtils::CreateShaderModuleFromBytes(const VkDevice& device, const std::vector<char>& shaderBytes, VkShaderModule& outShaderModule)
+bool sf::Renderer::VulkanUtils::CreateShaderModuleFromBytes(const VulkanDisplay& vkDisplayData, const std::vector<char>& shaderBytes, VkShaderModule& outShaderModule)
 {
 	VkShaderModuleCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 	createInfo.codeSize = shaderBytes.size();
 	createInfo.pCode = reinterpret_cast<const uint32_t*>(shaderBytes.data());
-	if (vkCreateShaderModule(device, &createInfo, nullptr, &outShaderModule) != VK_SUCCESS)
+	if (vkCreateShaderModule(vkDisplayData.device.device, &createInfo, nullptr, &outShaderModule) != VK_SUCCESS)
 	{
 		std::cout << "[VulkanUtils] Could not create shader module from source:\n" << shaderBytes.data() << std::endl;
 		return false;
@@ -41,7 +49,7 @@ bool VulkanUtils::CreateShaderModuleFromBytes(const VkDevice& device, const std:
 	return true;
 }
 
-bool VulkanUtils::CreateShaderModule(const VkDevice& device, const std::string& shaderFilePath, VkShaderModule& outShaderModule)
+bool sf::Renderer::VulkanUtils::CreateShaderModule(const VulkanDisplay& vkDisplayData, const std::string& shaderFilePath, VkShaderModule& outShaderModule)
 {
 	std::vector<char> shaderBytes;
 	if (!sf::FileUtils::ReadFileAsBytes(shaderFilePath, shaderBytes))
@@ -49,10 +57,113 @@ bool VulkanUtils::CreateShaderModule(const VkDevice& device, const std::string& 
 		std::cout << "[VulkanUtils] Could not read shader file: " << shaderFilePath << std::endl;
 		return false;
 	}
-	return CreateShaderModuleFromBytes(device, shaderBytes, outShaderModule);
+	return CreateShaderModuleFromBytes(vkDisplayData, shaderBytes, outShaderModule);
 }
 
-uint32_t VulkanUtils::FindMemoryType(const VkPhysicalDevice& physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties)
+bool sf::Renderer::VulkanUtils::CreateBuffer(
+	const VulkanDisplay& vkDisplayData,
+	VkDeviceSize size,
+	VkBufferUsageFlags usage,
+	VkMemoryPropertyFlags properties,
+	VkBuffer& buffer,
+	VkDeviceMemory& bufferMemory)
+{
+	VkBufferCreateInfo bufferInfo{};
+	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bufferInfo.size = size;
+	bufferInfo.usage = usage;
+	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	if (vkCreateBuffer(vkDisplayData.device.device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS)
+	{
+		std::cout << "[VulkanUtils] Failed to create buffer" << std::endl;
+		return false;
+	}
+
+	VkMemoryRequirements memRequirements;
+	vkGetBufferMemoryRequirements(vkDisplayData.device.device, buffer, &memRequirements);
+
+	VkMemoryAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	allocInfo.allocationSize = memRequirements.size;
+	allocInfo.memoryTypeIndex = FindMemoryType(vkDisplayData.device.physical_device, memRequirements.memoryTypeBits, properties);
+
+	if (vkAllocateMemory(vkDisplayData.device.device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS)
+	{
+		std::cout << "[VulkanUtils] Failed to allocate buffer memory" << std::endl;
+		return false;
+	}
+
+	vkBindBufferMemory(vkDisplayData.device.device, buffer, bufferMemory, 0);
+	return true;
+}
+
+bool sf::Renderer::VulkanUtils::CreateVertexBuffer(
+	const VulkanDisplay& vkDisplayData,
+	VkDeviceSize size,
+	const void* source,
+	VkBuffer& buffer, 
+	VkDeviceMemory& bufferMemory)
+{
+	VkBuffer stagingBuffer;
+	VkDeviceMemory stagingBufferMemory;
+	if (!CreateBuffer(vkDisplayData, size,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		stagingBuffer, stagingBufferMemory))
+		return false;
+
+	void* data;
+	vkMapMemory(vkDisplayData.device.device, stagingBufferMemory, 0, size, 0, &data);
+	memcpy(data, source, (size_t)size);
+	vkUnmapMemory(vkDisplayData.device.device, stagingBufferMemory);
+
+	if (!CreateBuffer(vkDisplayData, size,
+		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		buffer, bufferMemory))
+		return false;
+
+	CopyBuffer(vkDisplayData, stagingBuffer, buffer, size);
+
+	vkDestroyBuffer(vkDisplayData.device.device, stagingBuffer, nullptr);
+	vkFreeMemory(vkDisplayData.device.device, stagingBufferMemory, nullptr);
+	return true;
+}
+
+void sf::Renderer::VulkanUtils::CopyBuffer(const VulkanDisplay& vkDisplayData, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
+{
+	VkCommandBufferAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandPool = vkDisplayData.command_pool;
+	allocInfo.commandBufferCount = 1;
+
+	VkCommandBuffer commandBuffer;
+	vkAllocateCommandBuffers(vkDisplayData.device.device, &allocInfo, &commandBuffer);
+
+	VkCommandBufferBeginInfo beginInfo{};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+	vkBeginCommandBuffer(commandBuffer, &beginInfo);
+	VkBufferCopy copyRegion{};
+	copyRegion.size = size;
+	vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+	vkEndCommandBuffer(commandBuffer);
+
+	VkSubmitInfo submitInfo{};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &commandBuffer;
+
+	vkQueueSubmit(vkDisplayData.graphics_queue, 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(vkDisplayData.graphics_queue);
+
+	vkFreeCommandBuffers(vkDisplayData.device.device, vkDisplayData.command_pool, 1, &commandBuffer);
+}
+
+uint32_t sf::Renderer::VulkanUtils::FindMemoryType(const VkPhysicalDevice& physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties)
 {
 	VkPhysicalDeviceMemoryProperties memProperties;
 	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);

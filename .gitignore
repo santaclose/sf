@@ -15,3 +15,11 @@
 **.jpg
 **.hdr
 **.mtl
+**.dll
+**.exp
+**.pdb
+**.lib
+**.exe
+**.spv
+
+imgui.ini

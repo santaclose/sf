@@ -34,6 +34,12 @@ namespace sf::Renderer::VulkanUtils
 		const void* source,
 		VkBuffer& buffer,
 		VkDeviceMemory& bufferMemory);
+	bool CreateIndexBuffer(
+		const VulkanDisplay& vkDisplayData,
+		VkDeviceSize size,
+		const void* source,
+		VkBuffer& buffer,
+		VkDeviceMemory& bufferMemory);
 	void CopyBuffer(const VulkanDisplay& vkDisplayData, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
 	uint32_t FindMemoryType(const VkPhysicalDevice& physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties);

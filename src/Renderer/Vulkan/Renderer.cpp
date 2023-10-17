@@ -66,17 +66,24 @@ namespace sf::Renderer
 		}
 	};
 
-	std::vector<Vertex> vertices = {
-		{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-		{{0.5f, 0.5f},{1.0f, 0.0f, 0.0f}},
-		{{-0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}}
-
+	const std::vector<Vertex> vertices = {
+	{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+	{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+	{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+	{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+	};
+	const std::vector<uint16_t> indices = {
+	0, 1, 2, 2, 3, 0
 	};
 	VkBuffer vertexBuffer;
 	VkDeviceMemory vertexBufferMemory;
+	VkBuffer indexBuffer;
+	VkDeviceMemory indexBufferMemory;
 
 	void DestroyMeshBuffers()
 	{
+		vkDestroyBuffer(vkDisplayData.disp.device, indexBuffer, nullptr);
+		vkFreeMemory(vkDisplayData.disp.device, indexBufferMemory, nullptr);
 		vkDestroyBuffer(vkDisplayData.disp.device, vertexBuffer, nullptr);
 		vkFreeMemory(vkDisplayData.disp.device, vertexBufferMemory, nullptr);
 	}
@@ -224,6 +231,7 @@ bool sf::Renderer::Initialize(const Window& windowArg)
 	window->AddOnResizeCallback(OnResize);
 
 	VulkanUtils::CreateVertexBuffer(vkDisplayData, vertices.size() * sizeof(vertices[0]), vertices.data(), vertexBuffer, vertexBufferMemory);
+	VulkanUtils::CreateIndexBuffer(vkDisplayData, indices.size() * sizeof(indices[0]), indices.data(), indexBuffer, indexBufferMemory);
 
 	return true;
 }
@@ -242,7 +250,8 @@ void sf::Renderer::Predraw()
 	VkBuffer vertexBuffers[] = { vertexBuffer };
 	VkDeviceSize offsets[] = { 0 };
 	vkCmdBindVertexBuffers(vkDisplayData.GetCurrentCommandBuffer(), 0, 1, vertexBuffers, offsets);
-	vkCmdDraw(vkDisplayData.GetCurrentCommandBuffer(), (uint32_t)vertices.size(), 1, 0, 0);
+	vkCmdBindIndexBuffer(vkDisplayData.GetCurrentCommandBuffer(), indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+	vkCmdDrawIndexed(vkDisplayData.GetCurrentCommandBuffer(), static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
 	vkDisplayData.PostDraw();
 }

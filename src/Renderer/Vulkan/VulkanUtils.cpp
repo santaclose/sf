@@ -131,6 +131,38 @@ bool sf::Renderer::VulkanUtils::CreateVertexBuffer(
 	return true;
 }
 
+bool sf::Renderer::VulkanUtils::CreateIndexBuffer(
+	const VulkanDisplay& vkDisplayData,
+	VkDeviceSize size,
+	const void* source,
+	VkBuffer& buffer,
+	VkDeviceMemory& bufferMemory)
+{
+	VkBuffer stagingBuffer;
+	VkDeviceMemory stagingBufferMemory;
+	if (!CreateBuffer(vkDisplayData, size,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		stagingBuffer, stagingBufferMemory))
+		return false;
+
+	void* data;
+	vkMapMemory(vkDisplayData.device.device, stagingBufferMemory, 0, size, 0, &data);
+	memcpy(data, source, (size_t)size);
+	vkUnmapMemory(vkDisplayData.device.device, stagingBufferMemory);
+
+	if (!CreateBuffer(vkDisplayData, size,
+		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		buffer, bufferMemory))
+		return false;
+
+	CopyBuffer(vkDisplayData, stagingBuffer, buffer, size);
+
+	vkDestroyBuffer(vkDisplayData.device.device, stagingBuffer, nullptr);
+	vkFreeMemory(vkDisplayData.device.device, stagingBufferMemory, nullptr);
+}
+
 void sf::Renderer::VulkanUtils::CopyBuffer(const VulkanDisplay& vkDisplayData, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
 {
 	VkCommandBufferAllocateInfo allocInfo{};

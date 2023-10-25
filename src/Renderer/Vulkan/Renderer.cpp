@@ -30,7 +30,7 @@
 namespace sf::Renderer
 {
 	const Window* window;
-	VulkanDisplay vkDisplayData;
+	VulkanDisplay vkdd;
 
 	float aspectRatio = 16.0f / 9.0f;
 	Entity activeCameraEntity;
@@ -80,19 +80,43 @@ namespace sf::Renderer
 	VkBuffer indexBuffer;
 	VkDeviceMemory indexBufferMemory;
 
+
+	struct SharedGpuData
+	{
+		glm::mat4 modelMatrix;
+		glm::mat4 cameraMatrix;
+		glm::mat4 screenSpaceMatrix;
+		glm::vec3 cameraPosition;
+	};
+	SharedGpuData sharedGpuData;
+	std::vector<VkBuffer> uniformBuffers;
+	std::vector<VkDeviceMemory> uniformBuffersMemory;
+	std::vector<void*> uniformBuffersMapped;
+
+	VkDescriptorSetLayout descriptorSetLayout;
+	VkDescriptorPool descriptorPool;
+	std::vector<VkDescriptorSet> descriptorSets;
+
 	void DestroyMeshBuffers()
 	{
-		vkDestroyBuffer(vkDisplayData.disp.device, indexBuffer, nullptr);
-		vkFreeMemory(vkDisplayData.disp.device, indexBufferMemory, nullptr);
-		vkDestroyBuffer(vkDisplayData.disp.device, vertexBuffer, nullptr);
-		vkFreeMemory(vkDisplayData.disp.device, vertexBufferMemory, nullptr);
+		for (size_t i = 0; i < vkdd.GetMaxFramesInFlight(); i++)
+		{
+			vkDestroyBuffer(vkdd.disp.device, uniformBuffers[i], nullptr);
+			vkFreeMemory(vkdd.disp.device, uniformBuffersMemory[i], nullptr);
+		}
+		vkDestroyDescriptorPool(vkdd.disp.device, descriptorPool, nullptr);
+		vkDestroyDescriptorSetLayout(vkdd.disp.device, descriptorSetLayout, nullptr);
+		vkDestroyBuffer(vkdd.disp.device, indexBuffer, nullptr);
+		vkFreeMemory(vkdd.disp.device, indexBufferMemory, nullptr);
+		vkDestroyBuffer(vkdd.disp.device, vertexBuffer, nullptr);
+		vkFreeMemory(vkdd.disp.device, vertexBufferMemory, nullptr);
 	}
 
-	bool CreatePipeline(VulkanDisplay& vkdd)
+	bool CreatePipeline()
 	{
 		VkShaderModule vertexShaderModule, fragmentShaderModule;
-		assert(VulkanUtils::CreateShaderModule(vkDisplayData, "assets/shaders/vulkan/testV.spv", vertexShaderModule));
-		assert(VulkanUtils::CreateShaderModule(vkDisplayData, "assets/shaders/vulkan/testF.spv", fragmentShaderModule));
+		assert(VulkanUtils::CreateShaderModule(vkdd, "assets/shaders/vulkan/testV.spv", vertexShaderModule));
+		assert(VulkanUtils::CreateShaderModule(vkdd, "assets/shaders/vulkan/testF.spv", fragmentShaderModule));
 
 		VkPipelineShaderStageCreateInfo vert_stage_info = {};
 		vert_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -172,9 +196,84 @@ namespace sf::Renderer
 		color_blending.blendConstants[2] = 0.0f;
 		color_blending.blendConstants[3] = 0.0f;
 
+		// Descriptor set
+		{
+			VkDeviceSize bufferSize = sizeof(SharedGpuData);
+			uniformBuffers.resize(vkdd.GetMaxFramesInFlight());
+			uniformBuffersMemory.resize(vkdd.GetMaxFramesInFlight());
+			uniformBuffersMapped.resize(vkdd.GetMaxFramesInFlight());
+			for (size_t i = 0; i < vkdd.GetMaxFramesInFlight(); i++)
+			{
+				VulkanUtils::CreateBuffer(vkdd, bufferSize,
+					VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+					VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+					uniformBuffers[i], uniformBuffersMemory[i]);
+				vkMapMemory(vkdd.device.device, uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffersMapped[i]);
+			}
+
+			VkDescriptorPoolSize poolSize{};
+			poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			poolSize.descriptorCount = static_cast<uint32_t>(vkdd.GetMaxFramesInFlight());
+			VkDescriptorPoolCreateInfo poolInfo{};
+			poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+			poolInfo.poolSizeCount = 1;
+			poolInfo.pPoolSizes = &poolSize;
+			poolInfo.maxSets = static_cast<uint32_t>(vkdd.GetMaxFramesInFlight());
+			if (vkCreateDescriptorPool(vkdd.device.device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
+			{
+				std::cout << "[Renderer] Failed to create descriptor pool\n";
+				return false;
+			}
+
+			VkDescriptorSetLayoutBinding uboLayoutBinding{};
+			uboLayoutBinding.binding = 0;
+			uboLayoutBinding.descriptorCount = 1;
+			uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+			VkDescriptorSetLayoutCreateInfo layoutInfo{};
+			layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+			layoutInfo.bindingCount = 1;
+			layoutInfo.pBindings = &uboLayoutBinding;
+
+			if (vkCreateDescriptorSetLayout(vkdd.device.device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
+			{
+				std::cout << "[Renderer] Failed to create descriptor set layout\n";
+				return false;
+			}
+			std::vector<VkDescriptorSetLayout> layouts(vkdd.GetMaxFramesInFlight(), descriptorSetLayout);
+			VkDescriptorSetAllocateInfo allocInfo{};
+			allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+			allocInfo.descriptorPool = descriptorPool;
+			allocInfo.descriptorSetCount = static_cast<uint32_t>(vkdd.GetMaxFramesInFlight());
+			allocInfo.pSetLayouts = layouts.data();
+			descriptorSets.resize(vkdd.GetMaxFramesInFlight());
+			if (vkAllocateDescriptorSets(vkdd.device.device, &allocInfo, descriptorSets.data()) != VK_SUCCESS)
+			{
+				std::cout << "[Renderer] Failed to allocate descriptor sets\n";
+				return false;
+			}
+			for (size_t i = 0; i < vkdd.GetMaxFramesInFlight(); i++)
+			{
+				VkDescriptorBufferInfo bufferInfo{};
+				bufferInfo.buffer = uniformBuffers[i];
+				bufferInfo.offset = 0;
+				bufferInfo.range = sizeof(SharedGpuData);
+				VkWriteDescriptorSet descriptorWrite{};
+				descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				descriptorWrite.dstSet = descriptorSets[i];
+				descriptorWrite.dstBinding = 0;
+				descriptorWrite.dstArrayElement = 0;
+				descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+				descriptorWrite.descriptorCount = 1;
+				descriptorWrite.pBufferInfo = &bufferInfo;
+				vkUpdateDescriptorSets(vkdd.device.device, 1, &descriptorWrite, 0, nullptr);
+			}
+		}
+
 		VkPipelineLayoutCreateInfo pipeline_layout_info = {};
 		pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipeline_layout_info.setLayoutCount = 0;
+		pipeline_layout_info.setLayoutCount = 1;
+		pipeline_layout_info.pSetLayouts = &descriptorSetLayout;
 		pipeline_layout_info.pushConstantRangeCount = 0;
 
 		if (vkdd.disp.createPipelineLayout(&pipeline_layout_info, nullptr, &vkdd.pipeline_layout) != VK_SUCCESS)
@@ -205,7 +304,7 @@ namespace sf::Renderer
 		VkPipelineRenderingCreateInfo pipelineRenderingCreateInfo{};
 		pipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
 		pipelineRenderingCreateInfo.colorAttachmentCount = 1;
-		pipelineRenderingCreateInfo.pColorAttachmentFormats = &vkDisplayData.swapchain.image_format;
+		pipelineRenderingCreateInfo.pColorAttachmentFormats = &vkdd.swapchain.image_format;
 		pipeline_info.pNext = &pipelineRenderingCreateInfo;
 
 		if (vkdd.disp.createGraphicsPipelines(VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &vkdd.graphics_pipeline) != VK_SUCCESS)
@@ -227,33 +326,80 @@ bool sf::Renderer::Initialize(const Window& windowArg)
 #ifdef SF_DEBUG
 	system("python assets/compileShaders.py");
 #endif
-	vkDisplayData.Initialize(windowArg, CreatePipeline);
+	vkdd.Initialize(windowArg, CreatePipeline);
 	window->AddOnResizeCallback(OnResize);
 
-	VulkanUtils::CreateVertexBuffer(vkDisplayData, vertices.size() * sizeof(vertices[0]), vertices.data(), vertexBuffer, vertexBufferMemory);
-	VulkanUtils::CreateIndexBuffer(vkDisplayData, indices.size() * sizeof(indices[0]), indices.data(), indexBuffer, indexBufferMemory);
+	VulkanUtils::CreateVertexBuffer(vkdd, vertices.size() * sizeof(vertices[0]), vertices.data(), vertexBuffer, vertexBufferMemory);
+	VulkanUtils::CreateIndexBuffer(vkdd, indices.size() * sizeof(indices[0]), indices.data(), indexBuffer, indexBufferMemory);
 
 	return true;
 }
 
 void sf::Renderer::OnResize()
 {
-	vkDeviceWaitIdle(vkDisplayData.device.device);
-	vkDisplayData.RecreateSwapchain();
+	vkDeviceWaitIdle(vkdd.device.device);
+	vkdd.RecreateSwapchain();
 	aspectRatio = (float)window->GetWidth() / (float)window->GetHeight();
 }
 
 void sf::Renderer::Predraw()
 {
-	vkDisplayData.PreDraw();
+	// screen space matrix
+	sharedGpuData.screenSpaceMatrix = glm::ortho(0.0f, (float)sf::Config::GetWindowSize().x, (float)sf::Config::GetWindowSize().y, 0.0f);
+
+	// camera matrices
+	assert(activeCameraEntity);
+
+	const Transform& transformComponent = activeCameraEntity.GetComponent<Transform>();
+	const Camera& cameraComponent = activeCameraEntity.GetComponent<Camera>();
+	if (cameraComponent.perspective)
+	{
+		if (aspectRatio == aspectRatio) // only if aspectRatio is not nan, it is nan when fullscreen and not visible
+			cameraProjection = glm::perspective(
+				cameraComponent.fieldOfView,
+				aspectRatio,
+				cameraComponent.nearClippingPlane,
+				cameraComponent.farClippingPlane);
+	}
+	else
+	{
+		if (aspectRatio >= 1.0)
+			cameraProjection = glm::ortho(
+				-aspectRatio / 2.0f * cameraComponent.orthographicScale,
+				aspectRatio / 2.0f * cameraComponent.orthographicScale,
+				-0.5f * cameraComponent.orthographicScale,
+				0.5f * cameraComponent.orthographicScale,
+				cameraComponent.nearClippingPlane,
+				cameraComponent.farClippingPlane);
+		else
+			cameraProjection = glm::ortho(
+				-0.5f * cameraComponent.orthographicScale,
+				0.5f * cameraComponent.orthographicScale,
+				-1.0f / aspectRatio / 2.0f * cameraComponent.orthographicScale,
+				1.0f / aspectRatio / 2.0f * cameraComponent.orthographicScale,
+				cameraComponent.nearClippingPlane,
+				cameraComponent.farClippingPlane);
+	}
+
+	cameraView = (glm::mat4)glm::conjugate(transformComponent.rotation);
+	cameraView = glm::translate(cameraView, -transformComponent.position);
+
+	sharedGpuData.cameraMatrix = cameraProjection * cameraView;
+	Transform& cameraTransform = activeCameraEntity.GetComponent<Transform>();
+	sharedGpuData.cameraPosition = cameraTransform.position;
+	sharedGpuData.modelMatrix = glm::mat4(1.0f);
+	memcpy(uniformBuffersMapped[vkdd.image_index], &sharedGpuData, sizeof(sharedGpuData));
+
+	vkdd.PreDraw();
 
 	VkBuffer vertexBuffers[] = { vertexBuffer };
 	VkDeviceSize offsets[] = { 0 };
-	vkCmdBindVertexBuffers(vkDisplayData.GetCurrentCommandBuffer(), 0, 1, vertexBuffers, offsets);
-	vkCmdBindIndexBuffer(vkDisplayData.GetCurrentCommandBuffer(), indexBuffer, 0, VK_INDEX_TYPE_UINT16);
-	vkCmdDrawIndexed(vkDisplayData.GetCurrentCommandBuffer(), static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+	vkCmdBindVertexBuffers(vkdd.GetCurrentCommandBuffer(), 0, 1, vertexBuffers, offsets);
+	vkCmdBindIndexBuffer(vkdd.GetCurrentCommandBuffer(), indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+	vkCmdBindDescriptorSets(vkdd.GetCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, vkdd.pipeline_layout, 0, 1, &descriptorSets[vkdd.current_frame], 0, nullptr);
+	vkCmdDrawIndexed(vkdd.GetCurrentCommandBuffer(), static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
-	vkDisplayData.PostDraw();
+	vkdd.PostDraw();
 }
 
 void sf::Renderer::SetMeshMaterial(const Mesh& mesh, uint32_t materialId, int piece)
@@ -295,7 +441,7 @@ void sf::Renderer::DrawSprite(Sprite& sprite, ScreenCoordinates& screenCoordinat
 
 void sf::Renderer::Terminate()
 {
-	vkDisplayData.Terminate(DestroyMeshBuffers);
+	vkdd.Terminate(DestroyMeshBuffers);
 }
 
 #endif

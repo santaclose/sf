@@ -1,5 +1,7 @@
 #pragma once
 
+#define MAX_FRAMES_IN_FLIGHT 3
+
 #include <VkBootstrap.h>
 #include <Window.h>
 
@@ -35,7 +37,7 @@ namespace sf::Renderer
 		uint32_t current_frame = 0;
 		uint32_t image_index = 0;
 
-		bool Initialize(const Window& windowArg, bool (*createPipelineFunc)(VulkanDisplay&));
+		bool Initialize(const Window& windowArg, bool (*createPipelineFunc)(void));
 		void Terminate(void (*destroyBuffersFunc)(void) = nullptr);
 
 		bool CreateCommandPool();
@@ -47,9 +49,7 @@ namespace sf::Renderer
 		bool CreateSwapchain();
 		bool RecreateSwapchain();
 
-		inline VkCommandBuffer GetCurrentCommandBuffer()
-		{
-			return command_buffers[image_index];
-		}
+		inline VkCommandBuffer GetCurrentCommandBuffer() { return command_buffers[image_index]; }
+		inline uint32_t GetMaxFramesInFlight() { return MAX_FRAMES_IN_FLIGHT; }
 	};
 }

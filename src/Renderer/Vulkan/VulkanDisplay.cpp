@@ -3,9 +3,7 @@
 #include "VulkanUtils.h"
 #include <iostream>
 
-#define MAX_FRAMES_IN_FLIGHT 3
-
-bool sf::Renderer::VulkanDisplay::Initialize(const Window& windowArg, bool (*createPipelineFunc)(VulkanDisplay&))
+bool sf::Renderer::VulkanDisplay::Initialize(const Window& windowArg, bool (*createPipelineFunc)(void))
 {
 	window = &windowArg;
 
@@ -77,7 +75,7 @@ bool sf::Renderer::VulkanDisplay::Initialize(const Window& windowArg, bool (*cre
 	}
 
 	// Pipeline
-	createPipelineFunc(*this);
+	createPipelineFunc();
 
 	// Frame buffers
 	this->command_buffers.resize(this->swapchain.image_count);

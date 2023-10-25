@@ -169,7 +169,7 @@ bool sf::Renderer::VulkanDisplay::CreateSyncObjects()
 	return true;
 }
 
-bool sf::Renderer::VulkanDisplay::PreDraw()
+bool sf::Renderer::VulkanDisplay::Predraw()
 {
 	this->disp.waitForFences(1, &this->in_flight_fences[this->current_frame], VK_TRUE, UINT64_MAX);
 
@@ -240,7 +240,7 @@ bool sf::Renderer::VulkanDisplay::PreDraw()
 	return true;
 }
 
-bool sf::Renderer::VulkanDisplay::PostDraw()
+bool sf::Renderer::VulkanDisplay::Postdraw()
 {
 	this->disp.cmdEndRendering(this->command_buffers[image_index]);
 

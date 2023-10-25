@@ -335,11 +335,29 @@ bool sf::Renderer::Initialize(const Window& windowArg)
 	return true;
 }
 
+void sf::Renderer::Terminate()
+{
+	vkdd.Terminate(DestroyMeshBuffers);
+}
+
 void sf::Renderer::OnResize()
 {
 	vkDeviceWaitIdle(vkdd.device.device);
 	vkdd.RecreateSwapchain();
 	aspectRatio = (float)window->GetWidth() / (float)window->GetHeight();
+}
+
+uint32_t sf::Renderer::CreateMaterial(const Material& material)
+{
+	return 0;
+}
+
+void sf::Renderer::SetMeshMaterial(const Mesh& mesh, uint32_t materialId, int piece)
+{
+}
+
+void sf::Renderer::SetEnvironment(const std::string& hdrFilePath, DataType hdrDataType)
+{
 }
 
 void sf::Renderer::Predraw()
@@ -390,7 +408,11 @@ void sf::Renderer::Predraw()
 	sharedGpuData.modelMatrix = glm::mat4(1.0f);
 	memcpy(uniformBuffersMapped[vkdd.image_index], &sharedGpuData, sizeof(sharedGpuData));
 
-	vkdd.PreDraw();
+	vkdd.Predraw();
+}
+
+void sf::Renderer::Postdraw()
+{
 
 	VkBuffer vertexBuffers[] = { vertexBuffer };
 	VkDeviceSize offsets[] = { 0 };
@@ -399,20 +421,7 @@ void sf::Renderer::Predraw()
 	vkCmdBindDescriptorSets(vkdd.GetCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, vkdd.pipeline_layout, 0, 1, &descriptorSets[vkdd.current_frame], 0, nullptr);
 	vkCmdDrawIndexed(vkdd.GetCurrentCommandBuffer(), static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
-	vkdd.PostDraw();
-}
-
-void sf::Renderer::SetMeshMaterial(const Mesh& mesh, uint32_t materialId, int piece)
-{
-}
-
-uint32_t sf::Renderer::CreateMaterial(const Material& material)
-{
-	return 0;
-}
-
-void sf::Renderer::SetEnvironment(const std::string& hdrFilePath, DataType hdrDataType)
-{
+	vkdd.Postdraw();
 }
 
 void sf::Renderer::DrawSkybox()
@@ -437,11 +446,6 @@ void sf::Renderer::DrawSkeleton(Skeleton& skeleton, Transform& transform)
 
 void sf::Renderer::DrawSprite(Sprite& sprite, ScreenCoordinates& screenCoordinates)
 {
-}
-
-void sf::Renderer::Terminate()
-{
-	vkdd.Terminate(DestroyMeshBuffers);
 }
 
 #endif

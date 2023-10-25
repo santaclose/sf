@@ -20,15 +20,15 @@ namespace sf::Renderer {
 	extern bool drawSkybox;
 
 	bool Initialize(const Window& window);
+	void Terminate();
 	void OnResize();
 
-	void Predraw();
-
 	uint32_t CreateMaterial(const Material& material);
-
 	void SetMeshMaterial(const Mesh& mesh, uint32_t materialId, int piece = -1);
-
 	void SetEnvironment(const std::string& hdrFilePath, DataType hdrDataType = DataType::f16);
+
+	void Predraw();
+	void Postdraw();
 
 	void DrawSkybox();
 	void DrawMesh(Mesh& mesh, Transform& transform);
@@ -36,6 +36,4 @@ namespace sf::Renderer {
 	void DrawVoxelBox(VoxelBox& voxelBox, Transform& transform);
 	void DrawSkeleton(Skeleton& skeleton, Transform& transform);
 	void DrawSprite(Sprite& sprite, ScreenCoordinates& screenCoordinates);
-
-	void Terminate();
 }

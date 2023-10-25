@@ -43,8 +43,8 @@ namespace sf::Renderer
 		bool CreateCommandPool();
 		bool CreateSyncObjects();
 
-		bool PreDraw();
-		bool PostDraw();
+		bool Predraw();
+		bool Postdraw();
 
 		bool CreateSwapchain();
 		bool RecreateSwapchain();

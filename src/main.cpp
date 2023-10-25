@@ -109,6 +109,7 @@ int main(int argc, char** argv)
 			if (base.isEntityEnabled)
 				sf::Renderer::DrawSprite(sprite, screenCooordinates);
 		}
+		sf::Renderer::Postdraw();
 
 		sf::ImGuiController::Tick(deltaTime);
 		window.SwapBuffers();

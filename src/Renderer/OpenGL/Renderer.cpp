@@ -32,7 +32,7 @@ namespace sf::Renderer
 	GlMaterial defaultSkinningMaterial;
 	GlShader voxelBoxShader;
 
-	float aspectRatio = 1.7777777777;
+	float aspectRatio = 16.0f / 9.0f;
 	Entity activeCameraEntity;
 	bool drawSkybox = false;
 
@@ -367,10 +367,53 @@ bool sf::Renderer::Initialize(const Window& windowArg)
 	return true;
 }
 
+void sf::Renderer::Terminate()
+{
+	for (auto& pair : meshGpuData)
+	{
+		glDeleteVertexArrays(1, &(pair.second.gl_vao));
+		glDeleteBuffers(1, &(pair.second.gl_indexBuffer));
+		glDeleteBuffers(1, &(pair.second.gl_vertexBuffer));
+	}
+
+	for (GlMaterial* material : materials)
+	{
+		delete material;
+	}
+}
+
 void sf::Renderer::OnResize()
 {
 	glViewport(0, 0, window->GetWidth(), window->GetHeight());
 	aspectRatio = (float)window->GetWidth() / (float)window->GetHeight();
+}
+
+uint32_t sf::Renderer::CreateMaterial(const Material& material)
+{
+	GlMaterial* newMaterial = new GlMaterial();
+	newMaterial->Create(material, rendererUniformVector);
+	materials.push_back(newMaterial);
+	return materials.size() - 1;
+}
+
+void sf::Renderer::SetMeshMaterial(const Mesh& mesh, uint32_t materialId, int piece)
+{
+	assert(materialId < materials.size());
+	SetMeshMaterial(mesh, materials[materialId]);
+}
+
+void sf::Renderer::SetEnvironment(const std::string& hdrFilePath, DataType hdrDataType)
+{
+	std::cout << "[Renderer] Loading environment: " << hdrFilePath << std::endl;
+	assert(hdrDataType == DataType::f16 || hdrDataType == DataType::f32);
+
+	if (!environmentData.lookupTexture.isInitialized)
+		IblHelper::GenerateLUT(environmentData.lookupTexture, hdrDataType);
+	IblHelper::CubemapFromHdr(hdrFilePath, environmentData.envCubemap, hdrDataType);
+	IblHelper::SpecularFromEnv(environmentData.envCubemap, environmentData.prefilterCubemap, hdrDataType);
+	IblHelper::IrradianceFromEnv(environmentData.envCubemap, environmentData.irradianceCubemap, hdrDataType);
+
+	GlSkybox::SetCubemap(&(environmentData.envCubemap));
 }
 
 void sf::Renderer::Predraw()
@@ -423,32 +466,8 @@ void sf::Renderer::Predraw()
 	sharedGpuData.cameraPosition = cameraTransform.position;
 }
 
-void sf::Renderer::SetMeshMaterial(const Mesh& mesh, uint32_t materialId, int piece)
+void sf::Renderer::Postdraw()
 {
-	assert(materialId < materials.size());
-	SetMeshMaterial(mesh, materials[materialId]);
-}
-
-uint32_t sf::Renderer::CreateMaterial(const Material& material)
-{
-	GlMaterial* newMaterial = new GlMaterial();
-	newMaterial->Create(material, rendererUniformVector);
-	materials.push_back(newMaterial);
-	return materials.size() - 1;
-}
-
-void sf::Renderer::SetEnvironment(const std::string& hdrFilePath, DataType hdrDataType)
-{
-	std::cout << "[Renderer] Loading environment: " << hdrFilePath << std::endl;
-	assert(hdrDataType == DataType::f16 || hdrDataType == DataType::f32);
-
-	if (!environmentData.lookupTexture.isInitialized)
-		IblHelper::GenerateLUT(environmentData.lookupTexture, hdrDataType);
-	IblHelper::CubemapFromHdr(hdrFilePath, environmentData.envCubemap, hdrDataType);
-	IblHelper::SpecularFromEnv(environmentData.envCubemap, environmentData.prefilterCubemap, hdrDataType);
-	IblHelper::IrradianceFromEnv(environmentData.envCubemap, environmentData.irradianceCubemap, hdrDataType);
-
-	GlSkybox::SetCubemap(&(environmentData.envCubemap));
 }
 
 void sf::Renderer::DrawSkybox()
@@ -621,21 +640,6 @@ void sf::Renderer::DrawSprite(Sprite& sprite, ScreenCoordinates& screenCoordinat
 
 	glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-}
-
-void sf::Renderer::Terminate()
-{
-	for (auto& pair : meshGpuData)
-	{
-		glDeleteVertexArrays(1, &(pair.second.gl_vao));
-		glDeleteBuffers(1, &(pair.second.gl_indexBuffer));
-		glDeleteBuffers(1, &(pair.second.gl_vertexBuffer));
-	}
-
-	for (GlMaterial* material : materials)
-	{
-		delete material;
-	}
 }
 
 #endif

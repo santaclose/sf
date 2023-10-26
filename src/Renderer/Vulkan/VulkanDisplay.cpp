@@ -222,9 +222,9 @@ bool sf::Renderer::VulkanDisplay::Predraw()
 
 	VkViewport viewport = {};
 	viewport.x = 0.0f;
-	viewport.y = 0.0f;
+	viewport.y = (float)this->swapchain.extent.height;
 	viewport.width = (float)this->swapchain.extent.width;
-	viewport.height = (float)this->swapchain.extent.height;
+	viewport.height = -(float)this->swapchain.extent.height;
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 

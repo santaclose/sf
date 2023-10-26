@@ -40,8 +40,13 @@ namespace sf::Renderer
 	glm::mat4 cameraProjection;
 
 	struct Vertex {
-		glm::vec2 pos;
+		glm::vec3 pos;
+		glm::vec3 normal;
+		glm::vec3 tan;
+		glm::vec3 bitan;
 		glm::vec3 color;
+		glm::vec2 uv;
+		float ao;
 
 		static VkVertexInputBindingDescription getBindingDescription()
 		{
@@ -56,29 +61,24 @@ namespace sf::Renderer
 			std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
 			attributeDescriptions[0].binding = 0;
 			attributeDescriptions[0].location = 0;
-			attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+			attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
 			attributeDescriptions[0].offset = offsetof(Vertex, pos);
 			attributeDescriptions[1].binding = 0;
 			attributeDescriptions[1].location = 1;
 			attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-			attributeDescriptions[1].offset = offsetof(Vertex, color);
+			attributeDescriptions[1].offset = offsetof(Vertex, normal);
 			return attributeDescriptions;
 		}
 	};
 
-	const std::vector<Vertex> vertices = {
-	{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-	{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-	{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-	{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+	struct MeshGpuData
+	{
+		VkBuffer vertexBuffer;
+		VkDeviceMemory vertexBufferMemory;
+		VkBuffer indexBuffer;
+		VkDeviceMemory indexBufferMemory;
 	};
-	const std::vector<uint16_t> indices = {
-	0, 1, 2, 2, 3, 0
-	};
-	VkBuffer vertexBuffer;
-	VkDeviceMemory vertexBufferMemory;
-	VkBuffer indexBuffer;
-	VkDeviceMemory indexBufferMemory;
+	std::unordered_map<const sf::MeshData*, MeshGpuData> meshGpuData;
 
 
 	struct SharedGpuData
@@ -106,10 +106,13 @@ namespace sf::Renderer
 		}
 		vkDestroyDescriptorPool(vkdd.disp.device, descriptorPool, nullptr);
 		vkDestroyDescriptorSetLayout(vkdd.disp.device, descriptorSetLayout, nullptr);
-		vkDestroyBuffer(vkdd.disp.device, indexBuffer, nullptr);
-		vkFreeMemory(vkdd.disp.device, indexBufferMemory, nullptr);
-		vkDestroyBuffer(vkdd.disp.device, vertexBuffer, nullptr);
-		vkFreeMemory(vkdd.disp.device, vertexBufferMemory, nullptr);
+		for (auto pair : meshGpuData)
+		{
+			vkDestroyBuffer(vkdd.disp.device, pair.second.vertexBuffer, nullptr);
+			vkFreeMemory(vkdd.disp.device, pair.second.vertexBufferMemory, nullptr);
+			vkDestroyBuffer(vkdd.disp.device, pair.second.indexBuffer, nullptr);
+			vkFreeMemory(vkdd.disp.device, pair.second.indexBufferMemory, nullptr);
+		}
 	}
 
 	bool CreatePipeline()
@@ -316,6 +319,15 @@ namespace sf::Renderer
 		vkdd.disp.destroyShaderModule(fragmentShaderModule, nullptr);
 		vkdd.disp.destroyShaderModule(vertexShaderModule, nullptr);
 	}
+
+	void CreateMeshGpuData(const sf::MeshData* mesh)
+	{
+		meshGpuData[mesh] = MeshGpuData();
+		VulkanUtils::CreateVertexBuffer(vkdd, mesh->vertexCount * mesh->vertexLayout.GetSize(),
+			mesh->vertexBuffer, meshGpuData[mesh].vertexBuffer, meshGpuData[mesh].vertexBufferMemory);
+		VulkanUtils::CreateIndexBuffer(vkdd, mesh->indexVector.size() * sizeof(mesh->indexVector[0]),
+			mesh->indexVector.data(), meshGpuData[mesh].indexBuffer, meshGpuData[mesh].indexBufferMemory);
+	}
 }
 
 bool sf::Renderer::Initialize(const Window& windowArg)
@@ -328,9 +340,6 @@ bool sf::Renderer::Initialize(const Window& windowArg)
 #endif
 	vkdd.Initialize(windowArg, CreatePipeline);
 	window->AddOnResizeCallback(OnResize);
-
-	VulkanUtils::CreateVertexBuffer(vkdd, vertices.size() * sizeof(vertices[0]), vertices.data(), vertexBuffer, vertexBufferMemory);
-	VulkanUtils::CreateIndexBuffer(vkdd, indices.size() * sizeof(indices[0]), indices.data(), indexBuffer, indexBufferMemory);
 
 	return true;
 }
@@ -409,18 +418,12 @@ void sf::Renderer::Predraw()
 	memcpy(uniformBuffersMapped[vkdd.image_index], &sharedGpuData, sizeof(sharedGpuData));
 
 	vkdd.Predraw();
+
+	vkCmdBindDescriptorSets(vkdd.GetCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, vkdd.pipeline_layout, 0, 1, &descriptorSets[vkdd.current_frame], 0, nullptr);
 }
 
 void sf::Renderer::Postdraw()
 {
-
-	VkBuffer vertexBuffers[] = { vertexBuffer };
-	VkDeviceSize offsets[] = { 0 };
-	vkCmdBindVertexBuffers(vkdd.GetCurrentCommandBuffer(), 0, 1, vertexBuffers, offsets);
-	vkCmdBindIndexBuffer(vkdd.GetCurrentCommandBuffer(), indexBuffer, 0, VK_INDEX_TYPE_UINT16);
-	vkCmdBindDescriptorSets(vkdd.GetCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, vkdd.pipeline_layout, 0, 1, &descriptorSets[vkdd.current_frame], 0, nullptr);
-	vkCmdDrawIndexed(vkdd.GetCurrentCommandBuffer(), static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
-
 	vkdd.Postdraw();
 }
 
@@ -430,6 +433,22 @@ void sf::Renderer::DrawSkybox()
 
 void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 {
+	if (mesh.meshData->vertexCount == 0)
+		return;
+
+	assert(activeCameraEntity);
+
+	if (meshGpuData.find(mesh.meshData) == meshGpuData.end()) // create mesh data if not there
+		CreateMeshGpuData(mesh.meshData);
+
+	sharedGpuData.modelMatrix = transform.ComputeMatrix();
+	memcpy(uniformBuffersMapped[vkdd.image_index], &sharedGpuData, sizeof(sharedGpuData));
+
+	VkBuffer vertexBuffers[] = { meshGpuData[mesh.meshData].vertexBuffer };
+	VkDeviceSize offsets[] = { 0 };
+	vkCmdBindVertexBuffers(vkdd.GetCurrentCommandBuffer(), 0, 1, vertexBuffers, offsets);
+	vkCmdBindIndexBuffer(vkdd.GetCurrentCommandBuffer(), meshGpuData[mesh.meshData].indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+	vkCmdDrawIndexed(vkdd.GetCurrentCommandBuffer(), static_cast<uint32_t>(mesh.meshData->indexVector.size()), 1, 0, 0, 0);
 }
 
 void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)

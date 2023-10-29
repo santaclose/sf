@@ -35,6 +35,87 @@ void sf::Renderer::VulkanUtils::InsertImageMemoryBarrier(
 		1, &imageMemoryBarrier);
 }
 
+VkFormat sf::Renderer::VulkanUtils::FindSupportedFormat(const VulkanDisplay& vkDisplayData, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
+{
+	for (VkFormat format : candidates)
+	{
+		VkFormatProperties props;
+		vkGetPhysicalDeviceFormatProperties(vkDisplayData.device.physical_device, format, &props);
+
+		if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features)
+			return format;
+		if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features)
+			return format;
+	}
+
+	std::cout << "[VulkanUtils] Failed to find supported format\n";
+	return (VkFormat)0;
+}
+
+VkFormat sf::Renderer::VulkanUtils::FindDepthFormat(const VulkanDisplay& vkDisplayData)
+{
+	return FindSupportedFormat(
+		vkDisplayData,
+		{ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
+		VK_IMAGE_TILING_OPTIMAL,
+		VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+	);
+}
+
+VkImageView sf::Renderer::VulkanUtils::CreateImageView(const VulkanDisplay& vkDisplayData, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
+{
+	VkImageViewCreateInfo viewInfo{};
+	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	viewInfo.image = image;
+	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	viewInfo.format = format;
+	viewInfo.subresourceRange.aspectMask = aspectFlags;
+	viewInfo.subresourceRange.baseMipLevel = 0;
+	viewInfo.subresourceRange.levelCount = 1;
+	viewInfo.subresourceRange.baseArrayLayer = 0;
+	viewInfo.subresourceRange.layerCount = 1;
+
+	VkImageView imageView;
+	if (vkCreateImageView(vkDisplayData.device.device, &viewInfo, nullptr, &imageView) != VK_SUCCESS)
+		std::cout << "[VulkanUtils] Failed to create texture image view\n";
+
+	return imageView;
+}
+
+void sf::Renderer::VulkanUtils::CreateImage(const VulkanDisplay& vkDisplayData, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
+{
+	VkImageCreateInfo imageInfo{};
+	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	imageInfo.imageType = VK_IMAGE_TYPE_2D;
+	imageInfo.extent.width = width;
+	imageInfo.extent.height = height;
+	imageInfo.extent.depth = 1;
+	imageInfo.mipLevels = 1;
+	imageInfo.arrayLayers = 1;
+	imageInfo.format = format;
+	imageInfo.tiling = tiling;
+	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	imageInfo.usage = usage;
+	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	if (vkCreateImage(vkDisplayData.device.device, &imageInfo, nullptr, &image) != VK_SUCCESS)
+		std::cout << "[VulkanUtils] Failed to create image\n";
+
+	VkMemoryRequirements memRequirements;
+	vkGetImageMemoryRequirements(vkDisplayData.device.device, image, &memRequirements);
+
+	VkMemoryAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	allocInfo.allocationSize = memRequirements.size;
+	allocInfo.memoryTypeIndex = FindMemoryType(vkDisplayData.device.physical_device, memRequirements.memoryTypeBits, properties);
+
+	if (vkAllocateMemory(vkDisplayData.device.device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
+		std::cout << "[VulkanUtils] Failed to allocate image memory\n";
+
+	vkBindImageMemory(vkDisplayData.device.device, image, imageMemory, 0);
+}
+
 bool sf::Renderer::VulkanUtils::CreateShaderModuleFromBytes(const VulkanDisplay& vkDisplayData, const std::vector<char>& shaderBytes, VkShaderModule& outShaderModule)
 {
 	VkShaderModuleCreateInfo createInfo{};

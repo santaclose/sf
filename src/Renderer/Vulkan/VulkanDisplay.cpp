@@ -110,6 +110,10 @@ void sf::Renderer::VulkanDisplay::Terminate(void (*destroyBuffersFunc)(void))
 	if (destroyBuffersFunc != nullptr)
 		destroyBuffersFunc();
 
+	vkDestroyImageView(this->device, depthImageView, nullptr);
+	vkDestroyImage(this->device, depthImage, nullptr);
+	vkFreeMemory(this->device, depthImageMemory, nullptr);
+
 	vkb::destroy_swapchain(this->swapchain);
 	vkb::destroy_device(this->device);
 	vkb::destroy_surface(this->instance, this->surface);
@@ -212,11 +216,19 @@ bool sf::Renderer::VulkanDisplay::Predraw(const glm::vec4& clearColor)
 	colorInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	colorInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	colorInfo.clearValue.color = { clearColor.r, clearColor.g, clearColor.b, clearColor.a };
+	VkRenderingAttachmentInfo depthInfo{};
+	depthInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+	depthInfo.imageView = depthImageView;
+	depthInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+	depthInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	depthInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	depthInfo.clearValue.depthStencil.depth = 1.0f;
 	VkRenderingInfo renderInfo{};
 	renderInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
 	renderInfo.renderArea = { 0, 0, this->swapchain.extent.width, this->swapchain.extent.height };
 	renderInfo.layerCount = 1;
 	renderInfo.colorAttachmentCount = 1;
+	renderInfo.pDepthAttachment = &depthInfo;
 	renderInfo.pColorAttachments = &colorInfo;
 
 	VkViewport viewport = {};
@@ -305,7 +317,20 @@ bool sf::Renderer::VulkanDisplay::Postdraw()
 	return true;
 }
 
-bool sf::Renderer::VulkanDisplay::CreateSwapchain()
+void sf::Renderer::VulkanDisplay::CreateDepthResources(bool recreate)
+{
+	depthFormat = VulkanUtils::FindDepthFormat(*this);
+	if (recreate)
+	{
+		vkDestroyImageView(this->device, depthImageView, nullptr);
+		vkDestroyImage(this->device, depthImage, nullptr);
+		vkFreeMemory(this->device, depthImageMemory, nullptr);
+	}
+	VulkanUtils::CreateImage(*this, this->swapchain.extent.width, this->swapchain.extent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory);
+	depthImageView = VulkanUtils::CreateImageView(*this, depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+}
+
+bool sf::Renderer::VulkanDisplay::CreateSwapchain(bool recreate)
 {
 	vkb::SwapchainBuilder swapchain_builder{ this->device };
 	auto swap_ret = swapchain_builder.set_old_swapchain(this->swapchain).build();
@@ -316,6 +341,8 @@ bool sf::Renderer::VulkanDisplay::CreateSwapchain()
 	}
 	vkb::destroy_swapchain(this->swapchain);
 	this->swapchain = swap_ret.value();
+
+	CreateDepthResources(recreate);
 	return true;
 }
 
@@ -325,7 +352,7 @@ bool sf::Renderer::VulkanDisplay::RecreateSwapchain()
 	this->disp.destroyCommandPool(this->command_pool, nullptr);
 	this->swapchain.destroy_image_views(this->swapchain_image_views);
 
-	if (!CreateSwapchain()) return false;
+	if (!CreateSwapchain(true)) return false;
 
 	this->command_buffers.resize(this->swapchain.image_count);
 	this->swapchain_images = this->swapchain.get_images().value();

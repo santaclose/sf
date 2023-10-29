@@ -11,6 +11,8 @@
 #include <algorithm> 
 #include <unordered_map>
 #include <unordered_set>
+
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 
@@ -187,6 +189,14 @@ namespace sf::Renderer
 		multisampling.sampleShadingEnable = VK_FALSE;
 		multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
+		VkPipelineDepthStencilStateCreateInfo depthStencil{};
+		depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+		depthStencil.depthTestEnable = VK_TRUE;
+		depthStencil.depthWriteEnable = VK_TRUE;
+		depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+		depthStencil.depthBoundsTestEnable = VK_FALSE;
+		depthStencil.stencilTestEnable = VK_FALSE;
+
 		VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
 		colorBlendAttachment.colorWriteMask =
 			VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -309,6 +319,7 @@ namespace sf::Renderer
 		pipeline_info.pRasterizationState = &rasterizer;
 		pipeline_info.pColorBlendState = &color_blending;
 		pipeline_info.pMultisampleState = &multisampling;
+		pipeline_info.pDepthStencilState = &depthStencil;
 		pipeline_info.pViewportState = &viewport_state;
 		pipeline_info.pDynamicState = &dynamic_info;
 		pipeline_info.pStages = shader_stages;
@@ -318,6 +329,7 @@ namespace sf::Renderer
 		pipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
 		pipelineRenderingCreateInfo.colorAttachmentCount = 1;
 		pipelineRenderingCreateInfo.pColorAttachmentFormats = &vkdd.swapchain.image_format;
+		pipelineRenderingCreateInfo.depthAttachmentFormat = vkdd.depthFormat;
 		pipeline_info.pNext = &pipelineRenderingCreateInfo;
 
 		if (vkdd.disp.createGraphicsPipelines(VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &vkdd.graphics_pipeline) != VK_SUCCESS)

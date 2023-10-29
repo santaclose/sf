@@ -24,6 +24,11 @@ namespace sf::Renderer
 		std::vector<VkImage> swapchain_images;
 		std::vector<VkImageView> swapchain_image_views;
 
+		VkFormat depthFormat;
+		VkImage depthImage;
+		VkDeviceMemory depthImageMemory;
+		VkImageView depthImageView;
+
 		VkPipelineLayout pipeline_layout;
 		VkPipeline graphics_pipeline;
 
@@ -46,7 +51,8 @@ namespace sf::Renderer
 		bool Predraw(const glm::vec4& clearColor);
 		bool Postdraw();
 
-		bool CreateSwapchain();
+		void CreateDepthResources(bool recreate = false);
+		bool CreateSwapchain(bool recreate = false);
 		bool RecreateSwapchain();
 
 		inline VkCommandBuffer GetCurrentCommandBuffer() { return command_buffers[image_index]; }

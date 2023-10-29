@@ -43,7 +43,7 @@ namespace sf::Renderer
 		bool CreateCommandPool();
 		bool CreateSyncObjects();
 
-		bool Predraw();
+		bool Predraw(const glm::vec4& clearColor);
 		bool Postdraw();
 
 		bool CreateSwapchain();

@@ -169,7 +169,7 @@ bool sf::Renderer::VulkanDisplay::CreateSyncObjects()
 	return true;
 }
 
-bool sf::Renderer::VulkanDisplay::Predraw()
+bool sf::Renderer::VulkanDisplay::Predraw(const glm::vec4& clearColor)
 {
 	this->disp.waitForFences(1, &this->in_flight_fences[this->current_frame], VK_TRUE, UINT64_MAX);
 
@@ -211,8 +211,7 @@ bool sf::Renderer::VulkanDisplay::Predraw()
 	colorInfo.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
 	colorInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	colorInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	colorInfo.clearValue.color = { 0.0f,0.2f,0.0f,0.0f };
-
+	colorInfo.clearValue.color = { clearColor.r, clearColor.g, clearColor.b, clearColor.a };
 	VkRenderingInfo renderInfo{};
 	renderInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
 	renderInfo.renderArea = { 0, 0, this->swapchain.extent.width, this->swapchain.extent.height };

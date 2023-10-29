@@ -179,7 +179,7 @@ namespace sf::Renderer
 		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 		rasterizer.lineWidth = 1.0f;
 		rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-		rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+		rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 		rasterizer.depthBiasEnable = VK_FALSE;
 
 		VkPipelineMultisampleStateCreateInfo multisampling = {};
@@ -426,7 +426,7 @@ void sf::Renderer::Predraw()
 	uniformBufferData.cameraPosition = cameraTransform.position;
 	memcpy(uniformBuffersMapped[vkdd.image_index], &uniformBufferData, sizeof(uniformBufferData));
 
-	vkdd.Predraw();
+	vkdd.Predraw(Config::GetClearColor());
 
 	vkCmdBindDescriptorSets(vkdd.GetCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, vkdd.pipeline_layout, 0, 1, &descriptorSets[vkdd.current_frame], 0, nullptr);
 }

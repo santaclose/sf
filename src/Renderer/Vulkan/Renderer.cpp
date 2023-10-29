@@ -81,14 +81,18 @@ namespace sf::Renderer
 	std::unordered_map<const sf::MeshData*, MeshGpuData> meshGpuData;
 
 
-	struct SharedGpuData
+	struct PushConstantData
 	{
 		glm::mat4 modelMatrix;
+	};
+	struct UniformBufferData
+	{
 		glm::mat4 cameraMatrix;
 		glm::mat4 screenSpaceMatrix;
 		glm::vec3 cameraPosition;
 	};
-	SharedGpuData sharedGpuData;
+	PushConstantData pushConstantData;
+	UniformBufferData uniformBufferData;
 	std::vector<VkBuffer> uniformBuffers;
 	std::vector<VkDeviceMemory> uniformBuffersMemory;
 	std::vector<void*> uniformBuffersMapped;
@@ -201,7 +205,7 @@ namespace sf::Renderer
 
 		// Descriptor set
 		{
-			VkDeviceSize bufferSize = sizeof(SharedGpuData);
+			VkDeviceSize bufferSize = sizeof(UniformBufferData);
 			uniformBuffers.resize(vkdd.GetMaxFramesInFlight());
 			uniformBuffersMemory.resize(vkdd.GetMaxFramesInFlight());
 			uniformBuffersMapped.resize(vkdd.GetMaxFramesInFlight());
@@ -260,7 +264,7 @@ namespace sf::Renderer
 				VkDescriptorBufferInfo bufferInfo{};
 				bufferInfo.buffer = uniformBuffers[i];
 				bufferInfo.offset = 0;
-				bufferInfo.range = sizeof(SharedGpuData);
+				bufferInfo.range = sizeof(UniformBufferData);
 				VkWriteDescriptorSet descriptorWrite{};
 				descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 				descriptorWrite.dstSet = descriptorSets[i];
@@ -273,11 +277,17 @@ namespace sf::Renderer
 			}
 		}
 
+		VkPushConstantRange push_constant;
+		push_constant.offset = 0;
+		push_constant.size = sizeof(PushConstantData);
+		push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
 		VkPipelineLayoutCreateInfo pipeline_layout_info = {};
 		pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipeline_layout_info.setLayoutCount = 1;
 		pipeline_layout_info.pSetLayouts = &descriptorSetLayout;
-		pipeline_layout_info.pushConstantRangeCount = 0;
+		pipeline_layout_info.pushConstantRangeCount = 1;
+		pipeline_layout_info.pPushConstantRanges = &push_constant;
 
 		if (vkdd.disp.createPipelineLayout(&pipeline_layout_info, nullptr, &vkdd.pipeline_layout) != VK_SUCCESS)
 		{
@@ -372,7 +382,7 @@ void sf::Renderer::SetEnvironment(const std::string& hdrFilePath, DataType hdrDa
 void sf::Renderer::Predraw()
 {
 	// screen space matrix
-	sharedGpuData.screenSpaceMatrix = glm::ortho(0.0f, (float)sf::Config::GetWindowSize().x, (float)sf::Config::GetWindowSize().y, 0.0f);
+	uniformBufferData.screenSpaceMatrix = glm::ortho(0.0f, (float)sf::Config::GetWindowSize().x, (float)sf::Config::GetWindowSize().y, 0.0f);
 
 	// camera matrices
 	assert(activeCameraEntity);
@@ -411,11 +421,10 @@ void sf::Renderer::Predraw()
 	cameraView = (glm::mat4)glm::conjugate(transformComponent.rotation);
 	cameraView = glm::translate(cameraView, -transformComponent.position);
 
-	sharedGpuData.cameraMatrix = cameraProjection * cameraView;
+	uniformBufferData.cameraMatrix = cameraProjection * cameraView;
 	Transform& cameraTransform = activeCameraEntity.GetComponent<Transform>();
-	sharedGpuData.cameraPosition = cameraTransform.position;
-	sharedGpuData.modelMatrix = glm::mat4(1.0f);
-	memcpy(uniformBuffersMapped[vkdd.image_index], &sharedGpuData, sizeof(sharedGpuData));
+	uniformBufferData.cameraPosition = cameraTransform.position;
+	memcpy(uniformBuffersMapped[vkdd.image_index], &uniformBufferData, sizeof(uniformBufferData));
 
 	vkdd.Predraw();
 
@@ -441,8 +450,8 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 	if (meshGpuData.find(mesh.meshData) == meshGpuData.end()) // create mesh data if not there
 		CreateMeshGpuData(mesh.meshData);
 
-	sharedGpuData.modelMatrix = transform.ComputeMatrix();
-	memcpy(uniformBuffersMapped[vkdd.image_index], &sharedGpuData, sizeof(sharedGpuData));
+	pushConstantData.modelMatrix = transform.ComputeMatrix();
+	vkCmdPushConstants(vkdd.GetCurrentCommandBuffer(), vkdd.pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstantData), &pushConstantData);
 
 	VkBuffer vertexBuffers[] = { meshGpuData[mesh.meshData].vertexBuffer };
 	VkDeviceSize offsets[] = { 0 };

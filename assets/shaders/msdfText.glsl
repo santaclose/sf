@@ -1,4 +1,3 @@
-#version 430 core
 
 uniform sampler2D atlas;
 

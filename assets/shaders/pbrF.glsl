@@ -1,4 +1,3 @@
-#version 430 core
 
 #define MAX_DIR_LIGHTS 10
 #define MAX_POINT_LIGHTS 10
@@ -9,14 +8,6 @@ in mat3 fTBN;
 in vec3 fWorldPos;
 in vec2 fTexCoords;
 in float fVertexAo;
-
-layout(std140, binding = 0) uniform SharedGpuData
-{
-	mat4 modelMatrix;
-	mat4 cameraMatrix;
-	mat4 screenSpaceMatrix;
-	vec3 cameraPosition;
-};
 
 uniform bool useVertexAo = false;
 
@@ -133,7 +124,7 @@ void main()
 	N = 2.0 * normalPixel - 1.0;
 	N = normalize(fTBN * N);
 
-	V = normalize(cameraPosition - fWorldPos);
+	V = normalize(CAMERA_POSITION - fWorldPos);
 	R = reflect(-V, N);
 
 	F0 = vec3(0.04);

@@ -1,27 +1,3 @@
-#version 430 core
-
-layout(location = 0) in vec4 vBoneIndices;
-layout(location = 1) in vec4 vBoneWeights;
-layout(location = 2) in vec3 vPosition;
-layout(location = 3) in vec3 vNormal;
-layout(location = 4) in vec3 vTangent;
-layout(location = 5) in vec3 vBitangent;
-layout(location = 6) in vec3 vColor;
-layout(location = 7) in vec2 vTexCoords;
-layout(location = 8) in float vAo;
-
-layout(std140, binding = 0) uniform SharedGpuData
-{
-	mat4 modelMatrix;
-	mat4 cameraMatrix;
-	mat4 screenSpaceMatrix;
-	vec3 cameraPosition;
-};
-
-layout (std430, binding = 1) buffer SkinningMatricesBuffer
-{
-	mat4 skinningMatrices[];
-};
 
 out mat3 fTBN;
 out vec3 fWorldPos;
@@ -32,25 +8,25 @@ uniform bool animate = false;
 
 void main()
 {
-	fTexCoords = vTexCoords;
-	fVertexAo = vAo;
+	fTexCoords = VA_TEX_COORDS;
+	fVertexAo = VA_AMBIENT_OCCLUSION;
 
 	mat4 skinMat = animate ?
-		vBoneWeights.x * skinningMatrices[int(vBoneIndices.x)] +
-		vBoneWeights.y * skinningMatrices[int(vBoneIndices.y)] +
-		vBoneWeights.z * skinningMatrices[int(vBoneIndices.z)] +
-		vBoneWeights.w * skinningMatrices[int(vBoneIndices.w)] : mat4(1.0);
+		VA_BONE_WEIGHTS.x * SKINNING_MATRICES[int(VA_BONE_INDICES.x)] +
+		VA_BONE_WEIGHTS.y * SKINNING_MATRICES[int(VA_BONE_INDICES.y)] +
+		VA_BONE_WEIGHTS.z * SKINNING_MATRICES[int(VA_BONE_INDICES.z)] +
+		VA_BONE_WEIGHTS.w * SKINNING_MATRICES[int(VA_BONE_INDICES.w)] : mat4(1.0);
 
-	vec3 T = normalize(vec3(modelMatrix * skinMat * vec4(vTangent, 0.0)));
-	vec3 B = normalize(vec3(modelMatrix * skinMat * vec4(vBitangent, 0.0)));
-	vec3 N = normalize(vec3(modelMatrix * skinMat * vec4(vNormal, 0.0)));
+	vec3 T = normalize(vec3(OBJECT_MATRIX * skinMat * vec4(VA_TANGENT, 0.0)));
+	vec3 B = normalize(vec3(OBJECT_MATRIX * skinMat * vec4(VA_BITANGENT, 0.0)));
+	vec3 N = normalize(vec3(OBJECT_MATRIX * skinMat * vec4(VA_NORMAL, 0.0)));
 	fTBN = mat3(T, B, N);
 
 	// standard normal passing
-	//normal = (modelMatrix * vec4(vNormal, 0.0)).xyz;
+	//normal = (OBJECT_MATRIX * vec4(VA_NORMAL, 0.0)).xyz;
 	// for allowing non uniform scaling
-	//normal = (transpose(inverse(modelMatrix))* vNormal).xyz;
+	//normal = (transpose(inverse(OBJECT_MATRIX))* VA_NORMAL).xyz;
 
-	fWorldPos = (modelMatrix * skinMat * vec4(vPosition, 1.0)).rgb;
-	gl_Position = cameraMatrix * modelMatrix * skinMat * vec4(vPosition, 1.0);
+	fWorldPos = (OBJECT_MATRIX * skinMat * vec4(VA_POSITION, 1.0)).rgb;
+	gl_Position = CAMERA_MATRIX * OBJECT_MATRIX * skinMat * vec4(VA_POSITION, 1.0);
 }

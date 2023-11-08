@@ -103,8 +103,8 @@ void sf::GlSkybox::Draw(const glm::mat4& viewMatrix, const glm::mat4& projection
 	shader.Bind();
 
 	glm::mat4 fixedViewMat = glm::mat4(glm::mat3(viewMatrix));
-	shader.SetUniformMatrix4fv("view", &(fixedViewMat[0][0]));
-	shader.SetUniformMatrix4fv("projection", &(projectionMatrix[0][0]));
+	glm::mat4 skyboxMatrix = projectionMatrix * fixedViewMat;
+	shader.SetUniformMatrix4fv("SKYBOX_MATRIX", &(skyboxMatrix[0][0]));
 	glBindVertexArray(gl_VAO);
 	cubemap->Bind();
 	glDrawArrays(GL_TRIANGLES, 0, 36);

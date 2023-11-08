@@ -1,4 +1,3 @@
-#version 430 core
 
 in vec2 fTexCoords;
 out vec4 outColor;

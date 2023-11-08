@@ -55,11 +55,17 @@ void sf::GlShader::CreateFromFiles(const std::string& vertexShaderPath, const st
 
 	Delete();
 
+	static std::string shaderHeader;
+	if (shaderHeader.length() == 0)
+		FileUtils::ReadFileAsString("assets/shaders/z_opengl.glsl", shaderHeader);
+
 	std::string vertexShaderSource, fragmentShaderSource;
 	if (!FileUtils::ReadFileAsString(vertexShaderPath, vertexShaderSource))
 		std::cout << "[GlShader] Could not read vertex shader file: " << vertexShaderPath << std::endl;
 	if (!FileUtils::ReadFileAsString(fragmentShaderPath, fragmentShaderSource))
 		std::cout << "[GlShader] Could not read fragment shader file: " << fragmentShaderPath << std::endl;
+	vertexShaderSource = "#version 430 core\n#define VERTEX\n" + shaderHeader + "\n" + vertexShaderSource;
+	fragmentShaderSource = "#version 430 core\n#define FRAGMENT\n" + shaderHeader + "\n" + fragmentShaderSource;
 
 	gl_id = glCreateProgram();
 	std::cout << "[GlShader] Created program with id " << gl_id << std::endl;

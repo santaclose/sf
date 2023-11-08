@@ -25,14 +25,14 @@ void sf::Defaults::Initialize()
 			{MeshData::VertexAttribute::AO, DataType::f32}
 		});
 	defaultSkinningVertexLayout = DataLayout({
-			{MeshData::VertexAttribute::BoneIndices, DataType::vec4f32},
-			{MeshData::VertexAttribute::BoneWeights, DataType::vec4f32},
 			{MeshData::VertexAttribute::Position, DataType::vec3f32},
 			{MeshData::VertexAttribute::Normal, DataType::vec3f32},
 			{MeshData::VertexAttribute::Tangent, DataType::vec3f32},
 			{MeshData::VertexAttribute::Bitangent, DataType::vec3f32},
 			{MeshData::VertexAttribute::Color, DataType::vec3f32},
 			{MeshData::VertexAttribute::UV, DataType::vec2f32},
-			{MeshData::VertexAttribute::AO, DataType::f32}
+			{MeshData::VertexAttribute::AO, DataType::f32},
+			{MeshData::VertexAttribute::BoneIndices, DataType::vec4f32},
+			{MeshData::VertexAttribute::BoneWeights, DataType::vec4f32}
 		});
 }

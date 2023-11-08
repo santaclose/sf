@@ -1,3 +1,5 @@
+#ifdef SF_USE_VULKAN
+
 #include "VulkanUtils.h"
 
 #include <iostream>
@@ -289,3 +291,5 @@ uint32_t sf::Renderer::VulkanUtils::FindMemoryType(const VkPhysicalDevice& physi
 
 	std::cout << "[VulkanUtils] Failed to find suitable memory type\n";
 }
+
+#endif

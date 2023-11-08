@@ -1,3 +1,5 @@
+#ifdef SF_USE_VULKAN
+
 #include "VulkanDisplay.h"
 
 #include "VulkanUtils.h"
@@ -362,3 +364,5 @@ bool sf::Renderer::VulkanDisplay::RecreateSwapchain()
 
 	return true;
 }
+
+#endif

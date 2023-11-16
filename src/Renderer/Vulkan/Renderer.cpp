@@ -124,8 +124,8 @@ namespace sf::Renderer
 	bool CreatePipeline()
 	{
 		VkShaderModule vertexShaderModule, fragmentShaderModule;
-		assert(VulkanUtils::CreateShaderModule(vkdd, "assets/shaders/vulkan/testV.spv", vertexShaderModule));
-		assert(VulkanUtils::CreateShaderModule(vkdd, "assets/shaders/vulkan/testF.spv", fragmentShaderModule));
+		assert(VulkanUtils::CreateShaderModule(vkdd, "assets/vulkanV.spv", vertexShaderModule));
+		assert(VulkanUtils::CreateShaderModule(vkdd, "assets/vulkanF.spv", fragmentShaderModule));
 
 		VkPipelineShaderStageCreateInfo vert_stage_info = {};
 		vert_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -358,7 +358,7 @@ bool sf::Renderer::Initialize(const Window& windowArg)
 	std::cout << "[Renderer] Initializing vulkan renderer" << std::endl;
 
 #ifdef SF_DEBUG
-	system("python assets/compileShaders.py");
+	system("python assets/vulkanCompileShaders.py");
 #endif
 	vkdd.Initialize(windowArg, CreatePipeline);
 	window->AddOnResizeCallback(OnResize);

@@ -105,7 +105,7 @@ namespace sf::Renderer
 
 	void DestroyMeshBuffers()
 	{
-		for (size_t i = 0; i < vkdd.GetMaxFramesInFlight(); i++)
+		for (size_t i = 0; i < vkdd.MaxFramesInFlight(); i++)
 		{
 			vkDestroyBuffer(vkdd.disp.device, uniformBuffers[i], nullptr);
 			vkFreeMemory(vkdd.disp.device, uniformBuffersMemory[i], nullptr);
@@ -216,10 +216,10 @@ namespace sf::Renderer
 		// Descriptor set
 		{
 			VkDeviceSize bufferSize = sizeof(UniformBufferData);
-			uniformBuffers.resize(vkdd.GetMaxFramesInFlight());
-			uniformBuffersMemory.resize(vkdd.GetMaxFramesInFlight());
-			uniformBuffersMapped.resize(vkdd.GetMaxFramesInFlight());
-			for (size_t i = 0; i < vkdd.GetMaxFramesInFlight(); i++)
+			uniformBuffers.resize(vkdd.MaxFramesInFlight());
+			uniformBuffersMemory.resize(vkdd.MaxFramesInFlight());
+			uniformBuffersMapped.resize(vkdd.MaxFramesInFlight());
+			for (size_t i = 0; i < vkdd.MaxFramesInFlight(); i++)
 			{
 				VulkanUtils::CreateBuffer(vkdd, bufferSize,
 					VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -230,12 +230,12 @@ namespace sf::Renderer
 
 			VkDescriptorPoolSize poolSize{};
 			poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			poolSize.descriptorCount = static_cast<uint32_t>(vkdd.GetMaxFramesInFlight());
+			poolSize.descriptorCount = static_cast<uint32_t>(vkdd.MaxFramesInFlight());
 			VkDescriptorPoolCreateInfo poolInfo{};
 			poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 			poolInfo.poolSizeCount = 1;
 			poolInfo.pPoolSizes = &poolSize;
-			poolInfo.maxSets = static_cast<uint32_t>(vkdd.GetMaxFramesInFlight());
+			poolInfo.maxSets = static_cast<uint32_t>(vkdd.MaxFramesInFlight());
 			if (vkCreateDescriptorPool(vkdd.device.device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
 			{
 				std::cout << "[Renderer] Failed to create descriptor pool\n";
@@ -257,19 +257,19 @@ namespace sf::Renderer
 				std::cout << "[Renderer] Failed to create descriptor set layout\n";
 				return false;
 			}
-			std::vector<VkDescriptorSetLayout> layouts(vkdd.GetMaxFramesInFlight(), descriptorSetLayout);
+			std::vector<VkDescriptorSetLayout> layouts(vkdd.MaxFramesInFlight(), descriptorSetLayout);
 			VkDescriptorSetAllocateInfo allocInfo{};
 			allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 			allocInfo.descriptorPool = descriptorPool;
-			allocInfo.descriptorSetCount = static_cast<uint32_t>(vkdd.GetMaxFramesInFlight());
+			allocInfo.descriptorSetCount = static_cast<uint32_t>(vkdd.MaxFramesInFlight());
 			allocInfo.pSetLayouts = layouts.data();
-			descriptorSets.resize(vkdd.GetMaxFramesInFlight());
+			descriptorSets.resize(vkdd.MaxFramesInFlight());
 			if (vkAllocateDescriptorSets(vkdd.device.device, &allocInfo, descriptorSets.data()) != VK_SUCCESS)
 			{
 				std::cout << "[Renderer] Failed to allocate descriptor sets\n";
 				return false;
 			}
-			for (size_t i = 0; i < vkdd.GetMaxFramesInFlight(); i++)
+			for (size_t i = 0; i < vkdd.MaxFramesInFlight(); i++)
 			{
 				VkDescriptorBufferInfo bufferInfo{};
 				bufferInfo.buffer = uniformBuffers[i];
@@ -299,7 +299,7 @@ namespace sf::Renderer
 		pipeline_layout_info.pushConstantRangeCount = 1;
 		pipeline_layout_info.pPushConstantRanges = &push_constant;
 
-		if (vkdd.disp.createPipelineLayout(&pipeline_layout_info, nullptr, &vkdd.pipeline_layout) != VK_SUCCESS)
+		if (vkdd.disp.createPipelineLayout(&pipeline_layout_info, nullptr, &vkdd.pipelineLayout) != VK_SUCCESS)
 		{
 			std::cout << "[Renderer] Failed to create pipeline layout\n";
 			return false;
@@ -314,7 +314,7 @@ namespace sf::Renderer
 
 		VkGraphicsPipelineCreateInfo pipeline_info = {};
 		pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-		pipeline_info.layout = vkdd.pipeline_layout;
+		pipeline_info.layout = vkdd.pipelineLayout;
 		pipeline_info.pInputAssemblyState = &input_assembly;
 		pipeline_info.pRasterizationState = &rasterizer;
 		pipeline_info.pColorBlendState = &color_blending;
@@ -332,7 +332,7 @@ namespace sf::Renderer
 		pipelineRenderingCreateInfo.depthAttachmentFormat = vkdd.depthFormat;
 		pipeline_info.pNext = &pipelineRenderingCreateInfo;
 
-		if (vkdd.disp.createGraphicsPipelines(VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &vkdd.graphics_pipeline) != VK_SUCCESS)
+		if (vkdd.disp.createGraphicsPipelines(VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &vkdd.graphicsPipeline) != VK_SUCCESS)
 		{
 			std::cout << "[Renderer] Failed to create pipline\n";
 			return false;
@@ -436,11 +436,11 @@ void sf::Renderer::Predraw()
 	uniformBufferData.cameraMatrix = cameraProjection * cameraView;
 	Transform& cameraTransform = activeCameraEntity.GetComponent<Transform>();
 	uniformBufferData.cameraPosition = cameraTransform.position;
-	memcpy(uniformBuffersMapped[vkdd.image_index], &uniformBufferData, sizeof(uniformBufferData));
+	memcpy(uniformBuffersMapped[vkdd.currentFrameInFlight], &uniformBufferData, sizeof(uniformBufferData));
 
 	vkdd.Predraw(Config::GetClearColor());
 
-	vkCmdBindDescriptorSets(vkdd.GetCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, vkdd.pipeline_layout, 0, 1, &descriptorSets[vkdd.current_frame], 0, nullptr);
+	vkCmdBindDescriptorSets(vkdd.CommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, vkdd.pipelineLayout, 0, 1, &descriptorSets[vkdd.currentFrameInFlight], 0, nullptr);
 }
 
 void sf::Renderer::Postdraw()
@@ -463,13 +463,13 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 		CreateMeshGpuData(mesh.meshData);
 
 	pushConstantData.modelMatrix = transform.ComputeMatrix();
-	vkCmdPushConstants(vkdd.GetCurrentCommandBuffer(), vkdd.pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstantData), &pushConstantData);
+	vkCmdPushConstants(vkdd.CommandBuffer(), vkdd.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstantData), &pushConstantData);
 
 	VkBuffer vertexBuffers[] = { meshGpuData[mesh.meshData].vertexBuffer };
 	VkDeviceSize offsets[] = { 0 };
-	vkCmdBindVertexBuffers(vkdd.GetCurrentCommandBuffer(), 0, 1, vertexBuffers, offsets);
-	vkCmdBindIndexBuffer(vkdd.GetCurrentCommandBuffer(), meshGpuData[mesh.meshData].indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-	vkCmdDrawIndexed(vkdd.GetCurrentCommandBuffer(), static_cast<uint32_t>(mesh.meshData->indexVector.size()), 1, 0, 0, 0);
+	vkCmdBindVertexBuffers(vkdd.CommandBuffer(), 0, 1, vertexBuffers, offsets);
+	vkCmdBindIndexBuffer(vkdd.CommandBuffer(), meshGpuData[mesh.meshData].indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+	vkCmdDrawIndexed(vkdd.CommandBuffer(), static_cast<uint32_t>(mesh.meshData->indexVector.size()), 1, 0, 0, 0);
 }
 
 void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)

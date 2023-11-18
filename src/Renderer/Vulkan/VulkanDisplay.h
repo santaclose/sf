@@ -1,6 +1,6 @@
 #pragma once
 
-#define MAX_FRAMES_IN_FLIGHT 3
+#define MAX_FRAMES_IN_FLIGHT 2
 
 #include <VkBootstrap.h>
 #include <Window.h>
@@ -12,35 +12,34 @@ namespace sf::Renderer
 		const Window* window;
 
 		vkb::Instance instance;
-		vkb::InstanceDispatchTable inst_disp;
 		VkSurfaceKHR surface;
 		vkb::Device device;
 		vkb::DispatchTable disp;
 		vkb::Swapchain swapchain;
 
-		VkQueue graphics_queue;
-		VkQueue present_queue;
+		VkQueue graphicsQueue;
+		VkQueue presentQueue;
 
-		std::vector<VkImage> swapchain_images;
-		std::vector<VkImageView> swapchain_image_views;
+		std::vector<VkImage> swapchainImages;
+		std::vector<VkImageView> swapchainImageViews;
 
 		VkFormat depthFormat;
 		VkImage depthImage;
 		VkDeviceMemory depthImageMemory;
 		VkImageView depthImageView;
 
-		VkPipelineLayout pipeline_layout;
-		VkPipeline graphics_pipeline;
+		VkPipelineLayout pipelineLayout;
+		VkPipeline graphicsPipeline;
 
-		VkCommandPool command_pool;
-		std::vector<VkCommandBuffer> command_buffers;
+		VkCommandPool commandPool;
+		std::vector<VkCommandBuffer> commandBuffers;
 
-		std::vector<VkSemaphore> available_semaphores;
-		std::vector<VkSemaphore> finished_semaphore;
-		std::vector<VkFence> in_flight_fences;
-		std::vector<VkFence> image_in_flight;
-		uint32_t current_frame = 0;
-		uint32_t image_index = 0;
+		std::vector<VkSemaphore> imageAvailableSemaphores;
+		std::vector<VkSemaphore> renderFinishedSemaphores;
+		std::vector<VkFence> inFlightFences;
+
+		uint32_t currentFrameInFlight = 0;
+		uint32_t swapchainImageIndex = 0;
 
 		bool Initialize(const Window& windowArg, bool (*createPipelineFunc)(void));
 		void Terminate(void (*destroyBuffersFunc)(void) = nullptr);
@@ -55,7 +54,13 @@ namespace sf::Renderer
 		bool CreateSwapchain(bool recreate = false);
 		bool RecreateSwapchain();
 
-		inline VkCommandBuffer GetCurrentCommandBuffer() { return command_buffers[image_index]; }
-		inline uint32_t GetMaxFramesInFlight() { return MAX_FRAMES_IN_FLIGHT; }
+		inline VkImage SwapchainImage() { return swapchainImages[swapchainImageIndex]; }
+		inline VkImageView SwapchainImageView() { return swapchainImageViews[swapchainImageIndex]; }
+
+		inline uint32_t MaxFramesInFlight() { return MAX_FRAMES_IN_FLIGHT; }
+		inline VkCommandBuffer CommandBuffer() { return commandBuffers[currentFrameInFlight]; }
+		inline VkSemaphore ImageAvailableSemaphore() { return imageAvailableSemaphores[currentFrameInFlight]; }
+		inline VkSemaphore RenderFinishedSemaphore() { return renderFinishedSemaphores[currentFrameInFlight]; }
+		inline VkFence InFlightFence() { return inFlightFences[currentFrameInFlight]; }
 	};
 }

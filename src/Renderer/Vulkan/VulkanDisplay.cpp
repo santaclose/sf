@@ -64,7 +64,7 @@ bool sf::Renderer::VulkanDisplay::Initialize(const Window& windowArg, bool (*cre
 			std::cout << "[VulkanDisplay] Failed to get graphics queue\n";
 			return false;
 		}
-		this->graphics_queue = queue_ret.value();
+		this->graphicsQueue = queue_ret.value();
 	}
 	{
 		auto queue_ret = this->device.get_queue(vkb::QueueType::present);
@@ -73,16 +73,16 @@ bool sf::Renderer::VulkanDisplay::Initialize(const Window& windowArg, bool (*cre
 			std::cout << "[VulkanDisplay] Failed to get present queue\n";
 			return false;
 		}
-		this->present_queue = queue_ret.value();
+		this->presentQueue = queue_ret.value();
 	}
 
 	// Pipeline
 	createPipelineFunc();
 
 	// Frame buffers
-	this->command_buffers.resize(this->swapchain.image_count);
-	this->swapchain_images = this->swapchain.get_images().value();
-	this->swapchain_image_views = this->swapchain.get_image_views().value();
+	this->commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+	this->swapchainImages = this->swapchain.get_images().value();
+	this->swapchainImageViews = this->swapchain.get_image_views().value();
 
 	// Command pool
 	CreateCommandPool();
@@ -98,16 +98,16 @@ void sf::Renderer::VulkanDisplay::Terminate(void (*destroyBuffersFunc)(void))
 	vkDeviceWaitIdle(this->device.device);
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{
-		this->disp.destroySemaphore(this->finished_semaphore[i], nullptr);
-		this->disp.destroySemaphore(this->available_semaphores[i], nullptr);
-		this->disp.destroyFence(this->in_flight_fences[i], nullptr);
+		this->disp.destroySemaphore(this->renderFinishedSemaphores[i], nullptr);
+		this->disp.destroySemaphore(this->imageAvailableSemaphores[i], nullptr);
+		this->disp.destroyFence(this->inFlightFences[i], nullptr);
 	}
 
-	this->disp.destroyCommandPool(this->command_pool, nullptr);
-	this->disp.destroyPipeline(this->graphics_pipeline, nullptr);
-	this->disp.destroyPipelineLayout(this->pipeline_layout, nullptr);
+	this->disp.destroyCommandPool(this->commandPool, nullptr);
+	this->disp.destroyPipeline(this->graphicsPipeline, nullptr);
+	this->disp.destroyPipelineLayout(this->pipelineLayout, nullptr);
 
-	this->swapchain.destroy_image_views(this->swapchain_image_views);
+	this->swapchain.destroy_image_views(this->swapchainImageViews);
 
 	if (destroyBuffersFunc != nullptr)
 		destroyBuffersFunc();
@@ -129,7 +129,7 @@ bool sf::Renderer::VulkanDisplay::CreateCommandPool()
 	pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 	pool_info.queueFamilyIndex = this->device.get_queue_index(vkb::QueueType::graphics).value();
 
-	if (this->disp.createCommandPool(&pool_info, nullptr, &this->command_pool) != VK_SUCCESS)
+	if (this->disp.createCommandPool(&pool_info, nullptr, &this->commandPool) != VK_SUCCESS)
 	{
 		std::cout << "[VulkanDisplay] Failed to create command pool\n";
 		return false;
@@ -138,11 +138,11 @@ bool sf::Renderer::VulkanDisplay::CreateCommandPool()
 	// Command buffers
 	VkCommandBufferAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = this->command_pool;
+	allocInfo.commandPool = this->commandPool;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = this->swapchain.image_count;
+	allocInfo.commandBufferCount = MAX_FRAMES_IN_FLIGHT;
 
-	if (this->disp.allocateCommandBuffers(&allocInfo, this->command_buffers.data()) != VK_SUCCESS)
+	if (this->disp.allocateCommandBuffers(&allocInfo, this->commandBuffers.data()) != VK_SUCCESS)
 		return false;
 
 	return true;
@@ -150,10 +150,9 @@ bool sf::Renderer::VulkanDisplay::CreateCommandPool()
 
 bool sf::Renderer::VulkanDisplay::CreateSyncObjects()
 {
-	this->available_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
-	this->finished_semaphore.resize(MAX_FRAMES_IN_FLIGHT);
-	this->in_flight_fences.resize(MAX_FRAMES_IN_FLIGHT);
-	this->image_in_flight.resize(this->swapchain.image_count, VK_NULL_HANDLE);
+	this->imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+	this->renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+	this->inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
 
 	VkSemaphoreCreateInfo semaphore_info = {};
 	semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -164,9 +163,9 @@ bool sf::Renderer::VulkanDisplay::CreateSyncObjects()
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{
-		if (this->disp.createSemaphore(&semaphore_info, nullptr, &this->available_semaphores[i]) != VK_SUCCESS ||
-			this->disp.createSemaphore(&semaphore_info, nullptr, &this->finished_semaphore[i]) != VK_SUCCESS ||
-			this->disp.createFence(&fence_info, nullptr, &this->in_flight_fences[i]) != VK_SUCCESS)
+		if (this->disp.createSemaphore(&semaphore_info, nullptr, &this->imageAvailableSemaphores[i]) != VK_SUCCESS ||
+			this->disp.createSemaphore(&semaphore_info, nullptr, &this->renderFinishedSemaphores[i]) != VK_SUCCESS ||
+			this->disp.createFence(&fence_info, nullptr, &this->inFlightFences[i]) != VK_SUCCESS)
 		{
 			std::cout << "[VulkanDisplay] Failed to create sync objects\n";
 			return false;
@@ -177,10 +176,12 @@ bool sf::Renderer::VulkanDisplay::CreateSyncObjects()
 
 bool sf::Renderer::VulkanDisplay::Predraw(const glm::vec4& clearColor)
 {
-	this->disp.waitForFences(1, &this->in_flight_fences[this->current_frame], VK_TRUE, UINT64_MAX);
+	VkFence fenceToAwait = InFlightFence();
+	this->disp.waitForFences(1, &fenceToAwait, VK_TRUE, UINT64_MAX);
+	this->disp.resetFences(1, &fenceToAwait);
 
 	VkResult result = this->disp.acquireNextImageKHR(
-		this->swapchain, UINT64_MAX, this->available_semaphores[this->current_frame], VK_NULL_HANDLE, &image_index);
+		this->swapchain, UINT64_MAX, ImageAvailableSemaphore(), VK_NULL_HANDLE, &swapchainImageIndex);
 
 	if (result == VK_ERROR_OUT_OF_DATE_KHR)
 		return RecreateSwapchain();
@@ -190,19 +191,15 @@ bool sf::Renderer::VulkanDisplay::Predraw(const glm::vec4& clearColor)
 		return false;
 	}
 
-	if (this->image_in_flight[image_index] != VK_NULL_HANDLE)
-		this->disp.waitForFences(1, &this->image_in_flight[image_index], VK_TRUE, UINT64_MAX);
-	this->image_in_flight[image_index] = this->in_flight_fences[this->current_frame];
-
 	VkCommandBufferBeginInfo begin_info = {};
 	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-	if (this->disp.beginCommandBuffer(this->command_buffers[image_index], &begin_info) != VK_SUCCESS)
+	if (this->disp.beginCommandBuffer(CommandBuffer(), &begin_info) != VK_SUCCESS)
 		return false;
 
 	VulkanUtils::InsertImageMemoryBarrier(
-		this->command_buffers[image_index],
-		this->swapchain_images[image_index],
+		CommandBuffer(),
+		SwapchainImage(),
 		0,
 		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
 		VK_IMAGE_LAYOUT_UNDEFINED,
@@ -213,7 +210,7 @@ bool sf::Renderer::VulkanDisplay::Predraw(const glm::vec4& clearColor)
 
 	VkRenderingAttachmentInfo colorInfo{};
 	colorInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-	colorInfo.imageView = this->swapchain_image_views[current_frame];
+	colorInfo.imageView = SwapchainImageView();
 	colorInfo.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
 	colorInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	colorInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -245,21 +242,21 @@ bool sf::Renderer::VulkanDisplay::Predraw(const glm::vec4& clearColor)
 	scissor.offset = { 0, 0 };
 	scissor.extent = this->swapchain.extent;
 
-	this->disp.cmdBeginRendering(this->command_buffers[image_index], &renderInfo);
-	this->disp.cmdSetViewport(this->command_buffers[image_index], 0, 1, &viewport);
-	this->disp.cmdSetScissor(this->command_buffers[image_index], 0, 1, &scissor);
-	this->disp.cmdBindPipeline(this->command_buffers[image_index], VK_PIPELINE_BIND_POINT_GRAPHICS, this->graphics_pipeline);
+	this->disp.cmdBeginRendering(CommandBuffer(), &renderInfo);
+	this->disp.cmdSetViewport(CommandBuffer(), 0, 1, &viewport);
+	this->disp.cmdSetScissor(CommandBuffer(), 0, 1, &scissor);
+	this->disp.cmdBindPipeline(CommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, this->graphicsPipeline);
 
 	return true;
 }
 
 bool sf::Renderer::VulkanDisplay::Postdraw()
 {
-	this->disp.cmdEndRendering(this->command_buffers[image_index]);
+	this->disp.cmdEndRendering(CommandBuffer());
 
 	VulkanUtils::InsertImageMemoryBarrier(
-		this->command_buffers[image_index],
-		this->swapchain_images[image_index],
+		CommandBuffer(),
+		SwapchainImage(),
 		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
 		0,
 		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -268,29 +265,28 @@ bool sf::Renderer::VulkanDisplay::Postdraw()
 		VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
 		VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
 
-	if (this->disp.endCommandBuffer(this->command_buffers[image_index]) != VK_SUCCESS)
+	if (this->disp.endCommandBuffer(CommandBuffer()) != VK_SUCCESS)
 	{
 		std::cout << "[VulkanDisplay] Failed to record command buffer\n";
 		return false;
 	}
 
-	VkSemaphore wait_semaphores[] = { this->available_semaphores[this->current_frame] };
+	VkSemaphore wait_semaphores[] = { ImageAvailableSemaphore() };
 	VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 	VkSubmitInfo submitInfo = {};
+	VkCommandBuffer cmdBuffer = CommandBuffer();
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.waitSemaphoreCount = 1;
 	submitInfo.pWaitSemaphores = wait_semaphores;
 	submitInfo.pWaitDstStageMask = wait_stages;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &this->command_buffers[image_index];
+	submitInfo.pCommandBuffers = &cmdBuffer;
 
-	VkSemaphore signal_semaphores[] = { this->finished_semaphore[this->current_frame] };
+	VkSemaphore signal_semaphores[] = { RenderFinishedSemaphore() };
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signal_semaphores;
 
-	this->disp.resetFences(1, &this->in_flight_fences[this->current_frame]);
-
-	if (this->disp.queueSubmit(this->graphics_queue, 1, &submitInfo, this->in_flight_fences[this->current_frame]) != VK_SUCCESS)
+	if (this->disp.queueSubmit(this->graphicsQueue, 1, &submitInfo, InFlightFence()) != VK_SUCCESS)
 	{
 		std::cout << "[VulkanDisplay] Failed to submit draw command buffer\n";
 		return false;
@@ -303,9 +299,9 @@ bool sf::Renderer::VulkanDisplay::Postdraw()
 	present_info.pWaitSemaphores = signal_semaphores;
 	present_info.swapchainCount = 1;
 	present_info.pSwapchains = swapChains;
-	present_info.pImageIndices = &image_index;
+	present_info.pImageIndices = &swapchainImageIndex;
 
-	VkResult result = this->disp.queuePresentKHR(this->present_queue, &present_info);
+	VkResult result = this->disp.queuePresentKHR(this->presentQueue, &present_info);
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
 		return RecreateSwapchain();
 	else if (result != VK_SUCCESS)
@@ -314,8 +310,7 @@ bool sf::Renderer::VulkanDisplay::Postdraw()
 		return false;
 	}
 
-	this->current_frame = (this->current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
-
+	this->currentFrameInFlight = (this->currentFrameInFlight + 1) % MAX_FRAMES_IN_FLIGHT;
 	return true;
 }
 
@@ -335,7 +330,9 @@ void sf::Renderer::VulkanDisplay::CreateDepthResources(bool recreate)
 bool sf::Renderer::VulkanDisplay::CreateSwapchain(bool recreate)
 {
 	vkb::SwapchainBuilder swapchain_builder{ this->device };
-	auto swap_ret = swapchain_builder.set_old_swapchain(this->swapchain).build();
+	auto swap_ret = swapchain_builder.set_old_swapchain(this->swapchain)
+		.set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
+		.build();
 	if (!swap_ret)
 	{
 		std::cout << swap_ret.error().message() << " " << swap_ret.vk_result() << std::endl;
@@ -345,20 +342,20 @@ bool sf::Renderer::VulkanDisplay::CreateSwapchain(bool recreate)
 	this->swapchain = swap_ret.value();
 
 	CreateDepthResources(recreate);
+	std::cout << "[VulkanDisplay] Created swapchain with " << this->swapchain.image_count << " images\n";
 	return true;
 }
 
 bool sf::Renderer::VulkanDisplay::RecreateSwapchain()
 {
 	this->disp.deviceWaitIdle();
-	this->disp.destroyCommandPool(this->command_pool, nullptr);
-	this->swapchain.destroy_image_views(this->swapchain_image_views);
+	this->disp.destroyCommandPool(this->commandPool, nullptr);
+	this->swapchain.destroy_image_views(this->swapchainImageViews);
 
 	if (!CreateSwapchain(true)) return false;
 
-	this->command_buffers.resize(this->swapchain.image_count);
-	this->swapchain_images = this->swapchain.get_images().value();
-	this->swapchain_image_views = this->swapchain.get_image_views().value();
+	this->swapchainImages = this->swapchain.get_images().value();
+	this->swapchainImageViews = this->swapchain.get_image_views().value();
 
 	if (!CreateCommandPool()) return false;
 

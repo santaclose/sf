@@ -251,7 +251,7 @@ void sf::Renderer::VulkanUtils::CopyBuffer(const VulkanDisplay& vkDisplayData, V
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandPool = vkDisplayData.command_pool;
+	allocInfo.commandPool = vkDisplayData.commandPool;
 	allocInfo.commandBufferCount = 1;
 
 	VkCommandBuffer commandBuffer;
@@ -272,10 +272,10 @@ void sf::Renderer::VulkanUtils::CopyBuffer(const VulkanDisplay& vkDisplayData, V
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &commandBuffer;
 
-	vkQueueSubmit(vkDisplayData.graphics_queue, 1, &submitInfo, VK_NULL_HANDLE);
-	vkQueueWaitIdle(vkDisplayData.graphics_queue);
+	vkQueueSubmit(vkDisplayData.graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(vkDisplayData.graphicsQueue);
 
-	vkFreeCommandBuffers(vkDisplayData.device.device, vkDisplayData.command_pool, 1, &commandBuffer);
+	vkFreeCommandBuffers(vkDisplayData.device.device, vkDisplayData.commandPool, 1, &commandBuffer);
 }
 
 uint32_t sf::Renderer::VulkanUtils::FindMemoryType(const VkPhysicalDevice& physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties)

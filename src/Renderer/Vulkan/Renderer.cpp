@@ -86,11 +86,14 @@ namespace sf::Renderer
 	struct PushConstantData
 	{
 		glm::mat4 modelMatrix;
+		int vertexShaderId;
+		int fragmentShaderId;
 	};
 	struct UniformBufferData
 	{
 		glm::mat4 cameraMatrix;
 		glm::mat4 screenSpaceMatrix;
+		glm::mat4 skyboxMatrix;
 		glm::vec3 cameraPosition;
 	};
 	PushConstantData pushConstantData;
@@ -358,6 +361,7 @@ bool sf::Renderer::Initialize(const Window& windowArg)
 	std::cout << "[Renderer] Initializing vulkan renderer" << std::endl;
 
 #ifdef SF_DEBUG
+	system("python assets/vulkanCombineShaders.py");
 	system("python assets/vulkanCompileShaders.py");
 #endif
 	vkdd.Initialize(windowArg, CreatePipeline);
@@ -436,6 +440,7 @@ void sf::Renderer::Predraw()
 	uniformBufferData.cameraMatrix = cameraProjection * cameraView;
 	Transform& cameraTransform = activeCameraEntity.GetComponent<Transform>();
 	uniformBufferData.cameraPosition = cameraTransform.position;
+	uniformBufferData.skyboxMatrix = cameraProjection * glm::mat4(glm::mat3(cameraView));
 	memcpy(uniformBuffersMapped[vkdd.currentFrameInFlight], &uniformBufferData, sizeof(uniformBufferData));
 
 	vkdd.Predraw(Config::GetClearColor());

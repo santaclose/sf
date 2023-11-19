@@ -14,10 +14,11 @@ layout(binding = 0) uniform SharedGpuData
 {
 	mat4 cameraMatrix;
 	mat4 screenSpaceMatrix;
+	mat4 skyboxMatrix;
 	vec3 cameraPosition;
 } sgd;
 
-layout(binding = 1) uniform ParticleMatrices
+layout(std140, set = 1, binding = 0) readonly buffer ParticleMatrices
 {
 	mat4 particleMatrices[];
 } pm;
@@ -25,6 +26,8 @@ layout(binding = 1) uniform ParticleMatrices
 layout( push_constant ) uniform constants
 {
 	mat4 modelMatrix;
+	int vertexShaderId;
+	int fragmentShaderId;
 } pc;
 
 #define VA_POSITION vPosition
@@ -41,8 +44,16 @@ layout( push_constant ) uniform constants
 #define CAMERA_MATRIX sgd.cameraMatrix
 #define CAMERA_POSITION sgd.cameraPosition
 #define SCREEN_SPACE_MATRIX sgd.screenSpaceMatrix
-uniform mat4 SKYBOX_MATRIX;
-uniform int SHADER_ID;
+#define SKYBOX_MATRIX sgd.skyboxMatrix
+
+#define VERTEX_SHADER_ID pc.vertexShaderId
+#define FRAGMENT_SHADER_ID pc.fragmentShaderId
 
 #define PARTICLE_MATRICES pm.particleMatrices
 #define SKINNING_MATRICES pm.particleMatrices
+
+#define INSTANCE_INDEX gl_InstanceIndex
+
+#define MAX_DIR_LIGHTS 10
+#define MAX_POINT_LIGHTS 10
+#define PI 3.14159265359

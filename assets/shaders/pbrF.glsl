@@ -1,8 +1,4 @@
 
-#define MAX_DIR_LIGHTS 10
-#define MAX_POINT_LIGHTS 10
-#define PI 3.14159265359
-
 out vec4 outColor;
 in mat3 fTBN;
 in vec3 fWorldPos;

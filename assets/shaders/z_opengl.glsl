@@ -41,3 +41,9 @@ uniform mat4 SKYBOX_MATRIX;
 
 #define PARTICLE_MATRICES particleMatrices
 #define SKINNING_MATRICES particleMatrices
+
+#define INSTANCE_INDEX gl_InstanceID
+
+#define MAX_DIR_LIGHTS 10
+#define MAX_POINT_LIGHTS 10
+#define PI 3.14159265359

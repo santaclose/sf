@@ -84,23 +84,23 @@ namespace sf::Renderer
 	std::unordered_map<const sf::MeshData*, MeshGpuData> meshGpuData;
 
 
-	struct PushConstantData
+	struct PerObjectData
 	{
 		glm::mat4 modelMatrix;
 		int vertexShaderId;
 		int fragmentShaderId;
 	};
-	struct UniformBufferData
+	struct PerFrameData
 	{
 		glm::mat4 cameraMatrix;
 		glm::mat4 screenSpaceMatrix;
 		glm::mat4 skyboxMatrix;
 		glm::vec3 cameraPosition;
 	};
-	PushConstantData pushConstantData;
-	UniformBufferData uniformBufferData;
+	PerObjectData perObjectData;
+	VulkanUniformBuffer perFrameUniformBuffer;
+	PerFrameData perFrameUniformData;
 
-	VulkanUniformBuffer uniformBuffer;
 
 	VkDescriptorSetLayout descriptorSetLayout;
 	VkDescriptorPool descriptorPool;
@@ -108,7 +108,7 @@ namespace sf::Renderer
 
 	void DestroyMeshBuffers()
 	{
-		uniformBuffer.Destroy();
+		perFrameUniformBuffer.Destroy();
 		vkDestroyDescriptorPool(vkdd.disp.device, descriptorPool, nullptr);
 		vkDestroyDescriptorSetLayout(vkdd.disp.device, descriptorSetLayout, nullptr);
 		for (auto pair : meshGpuData)
@@ -214,7 +214,7 @@ namespace sf::Renderer
 
 		// Descriptor set
 		{
-			uniformBuffer.Create(sizeof(UniformBufferData));
+			perFrameUniformBuffer.Create(sizeof(PerFrameData));
 
 			VkDescriptorPoolSize poolSize{};
 			poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -260,9 +260,9 @@ namespace sf::Renderer
 			for (size_t i = 0; i < VulkanDisplay::MaxFramesInFlight(); i++)
 			{
 				VkDescriptorBufferInfo bufferInfo{};
-				bufferInfo.buffer = uniformBuffer.GetVkBuffer(i);
+				bufferInfo.buffer = perFrameUniformBuffer.GetVkBuffer(i);
 				bufferInfo.offset = 0;
-				bufferInfo.range = sizeof(UniformBufferData);
+				bufferInfo.range = sizeof(PerFrameData);
 				VkWriteDescriptorSet descriptorWrite{};
 				descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 				descriptorWrite.dstSet = descriptorSets[i];
@@ -277,7 +277,7 @@ namespace sf::Renderer
 
 		VkPushConstantRange push_constant;
 		push_constant.offset = 0;
-		push_constant.size = sizeof(PushConstantData);
+		push_constant.size = sizeof(PerObjectData);
 		push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
 		VkPipelineLayoutCreateInfo pipeline_layout_info = {};
@@ -383,7 +383,7 @@ void sf::Renderer::SetEnvironment(const std::string& hdrFilePath, DataType hdrDa
 void sf::Renderer::Predraw()
 {
 	// screen space matrix
-	uniformBufferData.screenSpaceMatrix = glm::ortho(0.0f, (float)sf::Config::GetWindowSize().x, (float)sf::Config::GetWindowSize().y, 0.0f);
+	perFrameUniformData.screenSpaceMatrix = glm::ortho(0.0f, (float)sf::Config::GetWindowSize().x, (float)sf::Config::GetWindowSize().y, 0.0f);
 
 	// camera matrices
 	assert(activeCameraEntity);
@@ -422,11 +422,11 @@ void sf::Renderer::Predraw()
 	cameraView = (glm::mat4)glm::conjugate(transformComponent.rotation);
 	cameraView = glm::translate(cameraView, -transformComponent.position);
 
-	uniformBufferData.cameraMatrix = cameraProjection * cameraView;
+	perFrameUniformData.cameraMatrix = cameraProjection * cameraView;
 	Transform& cameraTransform = activeCameraEntity.GetComponent<Transform>();
-	uniformBufferData.cameraPosition = cameraTransform.position;
-	uniformBufferData.skyboxMatrix = cameraProjection * glm::mat4(glm::mat3(cameraView));
-	uniformBuffer.Update(uniformBufferData);
+	perFrameUniformData.cameraPosition = cameraTransform.position;
+	perFrameUniformData.skyboxMatrix = cameraProjection * glm::mat4(glm::mat3(cameraView));
+	perFrameUniformBuffer.Update(perFrameUniformData);
 
 	vkdd.Predraw(Config::GetClearColor());
 
@@ -452,8 +452,8 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 	if (meshGpuData.find(mesh.meshData) == meshGpuData.end()) // create mesh data if not there
 		CreateMeshGpuData(mesh.meshData);
 
-	pushConstantData.modelMatrix = transform.ComputeMatrix();
-	vkCmdPushConstants(vkdd.CommandBuffer(), vkdd.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstantData), &pushConstantData);
+	perObjectData.modelMatrix = transform.ComputeMatrix();
+	vkCmdPushConstants(vkdd.CommandBuffer(), vkdd.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PerObjectData), &perObjectData);
 
 	VkBuffer vertexBuffers[] = { meshGpuData[mesh.meshData].vertexBuffer };
 	VkDeviceSize offsets[] = { 0 };

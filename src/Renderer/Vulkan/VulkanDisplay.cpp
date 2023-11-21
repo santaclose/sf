@@ -321,15 +321,15 @@ bool sf::Renderer::VulkanDisplay::Postdraw()
 
 void sf::Renderer::VulkanDisplay::CreateDepthResources(bool recreate)
 {
-	depthFormat = VulkanUtils::FindDepthFormat(*this);
+	depthFormat = VulkanUtils::FindDepthFormat();
 	if (recreate)
 	{
 		vkDestroyImageView(this->device, depthImageView, nullptr);
 		vkDestroyImage(this->device, depthImage, nullptr);
 		vkFreeMemory(this->device, depthImageMemory, nullptr);
 	}
-	VulkanUtils::CreateImage(*this, this->swapchain.extent.width, this->swapchain.extent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory);
-	depthImageView = VulkanUtils::CreateImageView(*this, depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+	VulkanUtils::CreateImage(this->swapchain.extent.width, this->swapchain.extent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory);
+	depthImageView = VulkanUtils::CreateImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 }
 
 bool sf::Renderer::VulkanDisplay::CreateSwapchain(bool recreate)

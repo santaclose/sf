@@ -59,6 +59,10 @@ namespace sf::Renderer
 		inline VkImage SwapchainImage() { return swapchainImages[swapchainImageIndex]; }
 		inline VkImageView SwapchainImageView() { return swapchainImageViews[swapchainImageIndex]; }
 
+		static inline VkDevice Device() { return Instance->device.device; }
+		static inline VkPhysicalDevice PhysicalDevice() { return Instance->device.physical_device; }
+		static inline VkCommandPool CommandPool() { return Instance->commandPool; }
+		static inline VkQueue GraphicsQueue() { return Instance->graphicsQueue; }
 		static inline uint32_t MaxFramesInFlight() { return MAX_FRAMES_IN_FLIGHT; }
 		static inline uint32_t CurrentFrameInFlight() { return Instance->currentFrameInFlight; }
 		inline VkCommandBuffer CommandBuffer() { return commandBuffers[currentFrameInFlight]; }

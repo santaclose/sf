@@ -109,22 +109,22 @@ namespace sf::Renderer
 	void DestroyMeshBuffers()
 	{
 		perFrameUniformBuffer.Destroy();
-		vkDestroyDescriptorPool(vkdd.disp.device, descriptorPool, nullptr);
-		vkDestroyDescriptorSetLayout(vkdd.disp.device, descriptorSetLayout, nullptr);
+		vkDestroyDescriptorPool(VulkanDisplay::Device(), descriptorPool, nullptr);
+		vkDestroyDescriptorSetLayout(VulkanDisplay::Device(), descriptorSetLayout, nullptr);
 		for (auto pair : meshGpuData)
 		{
-			vkDestroyBuffer(vkdd.disp.device, pair.second.vertexBuffer, nullptr);
-			vkFreeMemory(vkdd.disp.device, pair.second.vertexBufferMemory, nullptr);
-			vkDestroyBuffer(vkdd.disp.device, pair.second.indexBuffer, nullptr);
-			vkFreeMemory(vkdd.disp.device, pair.second.indexBufferMemory, nullptr);
+			vkDestroyBuffer(VulkanDisplay::Device(), pair.second.vertexBuffer, nullptr);
+			vkFreeMemory(VulkanDisplay::Device(), pair.second.vertexBufferMemory, nullptr);
+			vkDestroyBuffer(VulkanDisplay::Device(), pair.second.indexBuffer, nullptr);
+			vkFreeMemory(VulkanDisplay::Device(), pair.second.indexBufferMemory, nullptr);
 		}
 	}
 
 	bool CreatePipeline()
 	{
 		VkShaderModule vertexShaderModule, fragmentShaderModule;
-		assert(VulkanUtils::CreateShaderModule(vkdd, "assets/vulkan/testV.spv", vertexShaderModule));
-		assert(VulkanUtils::CreateShaderModule(vkdd, "assets/vulkan/testF.spv", fragmentShaderModule));
+		assert(VulkanUtils::CreateShaderModule("assets/vulkan/testV.spv", vertexShaderModule));
+		assert(VulkanUtils::CreateShaderModule("assets/vulkan/testF.spv", fragmentShaderModule));
 
 		VkPipelineShaderStageCreateInfo vert_stage_info = {};
 		vert_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -224,7 +224,7 @@ namespace sf::Renderer
 			poolInfo.poolSizeCount = 1;
 			poolInfo.pPoolSizes = &poolSize;
 			poolInfo.maxSets = static_cast<uint32_t>(VulkanDisplay::MaxFramesInFlight());
-			if (vkCreateDescriptorPool(vkdd.device.device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
+			if (vkCreateDescriptorPool(VulkanDisplay::Device(), &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
 			{
 				std::cout << "[Renderer] Failed to create descriptor pool\n";
 				return false;
@@ -240,7 +240,7 @@ namespace sf::Renderer
 			layoutInfo.bindingCount = 1;
 			layoutInfo.pBindings = &uboLayoutBinding;
 
-			if (vkCreateDescriptorSetLayout(vkdd.device.device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
+			if (vkCreateDescriptorSetLayout(VulkanDisplay::Device(), &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
 			{
 				std::cout << "[Renderer] Failed to create descriptor set layout\n";
 				return false;
@@ -252,7 +252,7 @@ namespace sf::Renderer
 			allocInfo.descriptorSetCount = static_cast<uint32_t>(VulkanDisplay::MaxFramesInFlight());
 			allocInfo.pSetLayouts = layouts.data();
 			descriptorSets.resize(VulkanDisplay::MaxFramesInFlight());
-			if (vkAllocateDescriptorSets(vkdd.device.device, &allocInfo, descriptorSets.data()) != VK_SUCCESS)
+			if (vkAllocateDescriptorSets(VulkanDisplay::Device(), &allocInfo, descriptorSets.data()) != VK_SUCCESS)
 			{
 				std::cout << "[Renderer] Failed to allocate descriptor sets\n";
 				return false;
@@ -271,7 +271,7 @@ namespace sf::Renderer
 				descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 				descriptorWrite.descriptorCount = 1;
 				descriptorWrite.pBufferInfo = &bufferInfo;
-				vkUpdateDescriptorSets(vkdd.device.device, 1, &descriptorWrite, 0, nullptr);
+				vkUpdateDescriptorSets(VulkanDisplay::Device(), 1, &descriptorWrite, 0, nullptr);
 			}
 		}
 
@@ -333,9 +333,9 @@ namespace sf::Renderer
 	void CreateMeshGpuData(const sf::MeshData* mesh)
 	{
 		meshGpuData[mesh] = MeshGpuData();
-		VulkanUtils::CreateVertexBuffer(vkdd, mesh->vertexCount * mesh->vertexLayout.GetSize(),
+		VulkanUtils::CreateVertexBuffer(mesh->vertexCount * mesh->vertexLayout.GetSize(),
 			mesh->vertexBuffer, meshGpuData[mesh].vertexBuffer, meshGpuData[mesh].vertexBufferMemory);
-		VulkanUtils::CreateIndexBuffer(vkdd, mesh->indexVector.size() * sizeof(mesh->indexVector[0]),
+		VulkanUtils::CreateIndexBuffer(mesh->indexVector.size() * sizeof(mesh->indexVector[0]),
 			mesh->indexVector.data(), meshGpuData[mesh].indexBuffer, meshGpuData[mesh].indexBufferMemory);
 	}
 }
@@ -362,7 +362,7 @@ void sf::Renderer::Terminate()
 
 void sf::Renderer::OnResize()
 {
-	vkDeviceWaitIdle(vkdd.device.device);
+	vkDeviceWaitIdle(VulkanDisplay::Device());
 	vkdd.RecreateSwapchain();
 	aspectRatio = (float)window->GetWidth() / (float)window->GetHeight();
 }

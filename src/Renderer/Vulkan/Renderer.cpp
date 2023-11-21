@@ -127,8 +127,8 @@ namespace sf::Renderer
 	bool CreatePipeline()
 	{
 		VkShaderModule vertexShaderModule, fragmentShaderModule;
-		assert(VulkanUtils::CreateShaderModule(vkdd, "assets/vulkanV.spv", vertexShaderModule));
-		assert(VulkanUtils::CreateShaderModule(vkdd, "assets/vulkanF.spv", fragmentShaderModule));
+		assert(VulkanUtils::CreateShaderModule(vkdd, "assets/vulkan/testV.spv", vertexShaderModule));
+		assert(VulkanUtils::CreateShaderModule(vkdd, "assets/vulkan/testF.spv", fragmentShaderModule));
 
 		VkPipelineShaderStageCreateInfo vert_stage_info = {};
 		vert_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;

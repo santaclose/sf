@@ -5,8 +5,13 @@
 #include "VulkanUtils.h"
 #include <iostream>
 
+sf::Renderer::VulkanDisplay* sf::Renderer::VulkanDisplay::Instance = nullptr;
+
 bool sf::Renderer::VulkanDisplay::Initialize(const Window& windowArg, bool (*createPipelineFunc)(void))
 {
+	assert(Instance == nullptr);
+	Instance = this;
+
 	window = &windowArg;
 
 	// Instance

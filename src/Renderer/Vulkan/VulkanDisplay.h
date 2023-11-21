@@ -9,6 +9,8 @@ namespace sf::Renderer
 {
 	struct VulkanDisplay
 	{
+		static VulkanDisplay* Instance;
+
 		const Window* window;
 
 		vkb::Instance instance;
@@ -57,7 +59,8 @@ namespace sf::Renderer
 		inline VkImage SwapchainImage() { return swapchainImages[swapchainImageIndex]; }
 		inline VkImageView SwapchainImageView() { return swapchainImageViews[swapchainImageIndex]; }
 
-		inline uint32_t MaxFramesInFlight() { return MAX_FRAMES_IN_FLIGHT; }
+		static inline uint32_t MaxFramesInFlight() { return MAX_FRAMES_IN_FLIGHT; }
+		static inline uint32_t CurrentFrameInFlight() { return Instance->currentFrameInFlight; }
 		inline VkCommandBuffer CommandBuffer() { return commandBuffers[currentFrameInFlight]; }
 		inline VkSemaphore ImageAvailableSemaphore() { return imageAvailableSemaphores[currentFrameInFlight]; }
 		inline VkSemaphore RenderFinishedSemaphore() { return renderFinishedSemaphores[currentFrameInFlight]; }

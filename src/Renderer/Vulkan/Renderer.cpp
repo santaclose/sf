@@ -28,6 +28,7 @@
 
 #include "VulkanDisplay.h"
 #include "VulkanUtils.h"
+#include "VulkanUniformBuffer.h"
 
 namespace sf::Renderer
 {
@@ -98,9 +99,8 @@ namespace sf::Renderer
 	};
 	PushConstantData pushConstantData;
 	UniformBufferData uniformBufferData;
-	std::vector<VkBuffer> uniformBuffers;
-	std::vector<VkDeviceMemory> uniformBuffersMemory;
-	std::vector<void*> uniformBuffersMapped;
+
+	VulkanUniformBuffer uniformBuffer;
 
 	VkDescriptorSetLayout descriptorSetLayout;
 	VkDescriptorPool descriptorPool;
@@ -108,11 +108,7 @@ namespace sf::Renderer
 
 	void DestroyMeshBuffers()
 	{
-		for (size_t i = 0; i < vkdd.MaxFramesInFlight(); i++)
-		{
-			vkDestroyBuffer(vkdd.disp.device, uniformBuffers[i], nullptr);
-			vkFreeMemory(vkdd.disp.device, uniformBuffersMemory[i], nullptr);
-		}
+		uniformBuffer.Destroy();
 		vkDestroyDescriptorPool(vkdd.disp.device, descriptorPool, nullptr);
 		vkDestroyDescriptorSetLayout(vkdd.disp.device, descriptorSetLayout, nullptr);
 		for (auto pair : meshGpuData)
@@ -218,27 +214,16 @@ namespace sf::Renderer
 
 		// Descriptor set
 		{
-			VkDeviceSize bufferSize = sizeof(UniformBufferData);
-			uniformBuffers.resize(vkdd.MaxFramesInFlight());
-			uniformBuffersMemory.resize(vkdd.MaxFramesInFlight());
-			uniformBuffersMapped.resize(vkdd.MaxFramesInFlight());
-			for (size_t i = 0; i < vkdd.MaxFramesInFlight(); i++)
-			{
-				VulkanUtils::CreateBuffer(vkdd, bufferSize,
-					VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-					VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-					uniformBuffers[i], uniformBuffersMemory[i]);
-				vkMapMemory(vkdd.device.device, uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffersMapped[i]);
-			}
+			uniformBuffer.Create(sizeof(UniformBufferData));
 
 			VkDescriptorPoolSize poolSize{};
 			poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			poolSize.descriptorCount = static_cast<uint32_t>(vkdd.MaxFramesInFlight());
+			poolSize.descriptorCount = static_cast<uint32_t>(VulkanDisplay::MaxFramesInFlight());
 			VkDescriptorPoolCreateInfo poolInfo{};
 			poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 			poolInfo.poolSizeCount = 1;
 			poolInfo.pPoolSizes = &poolSize;
-			poolInfo.maxSets = static_cast<uint32_t>(vkdd.MaxFramesInFlight());
+			poolInfo.maxSets = static_cast<uint32_t>(VulkanDisplay::MaxFramesInFlight());
 			if (vkCreateDescriptorPool(vkdd.device.device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
 			{
 				std::cout << "[Renderer] Failed to create descriptor pool\n";
@@ -260,22 +245,22 @@ namespace sf::Renderer
 				std::cout << "[Renderer] Failed to create descriptor set layout\n";
 				return false;
 			}
-			std::vector<VkDescriptorSetLayout> layouts(vkdd.MaxFramesInFlight(), descriptorSetLayout);
+			std::vector<VkDescriptorSetLayout> layouts(VulkanDisplay::MaxFramesInFlight(), descriptorSetLayout);
 			VkDescriptorSetAllocateInfo allocInfo{};
 			allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 			allocInfo.descriptorPool = descriptorPool;
-			allocInfo.descriptorSetCount = static_cast<uint32_t>(vkdd.MaxFramesInFlight());
+			allocInfo.descriptorSetCount = static_cast<uint32_t>(VulkanDisplay::MaxFramesInFlight());
 			allocInfo.pSetLayouts = layouts.data();
-			descriptorSets.resize(vkdd.MaxFramesInFlight());
+			descriptorSets.resize(VulkanDisplay::MaxFramesInFlight());
 			if (vkAllocateDescriptorSets(vkdd.device.device, &allocInfo, descriptorSets.data()) != VK_SUCCESS)
 			{
 				std::cout << "[Renderer] Failed to allocate descriptor sets\n";
 				return false;
 			}
-			for (size_t i = 0; i < vkdd.MaxFramesInFlight(); i++)
+			for (size_t i = 0; i < VulkanDisplay::MaxFramesInFlight(); i++)
 			{
 				VkDescriptorBufferInfo bufferInfo{};
-				bufferInfo.buffer = uniformBuffers[i];
+				bufferInfo.buffer = uniformBuffer.GetVkBuffer(i);
 				bufferInfo.offset = 0;
 				bufferInfo.range = sizeof(UniformBufferData);
 				VkWriteDescriptorSet descriptorWrite{};
@@ -441,7 +426,7 @@ void sf::Renderer::Predraw()
 	Transform& cameraTransform = activeCameraEntity.GetComponent<Transform>();
 	uniformBufferData.cameraPosition = cameraTransform.position;
 	uniformBufferData.skyboxMatrix = cameraProjection * glm::mat4(glm::mat3(cameraView));
-	memcpy(uniformBuffersMapped[vkdd.currentFrameInFlight], &uniformBufferData, sizeof(uniformBufferData));
+	uniformBuffer.Update(uniformBufferData);
 
 	vkdd.Predraw(Config::GetClearColor());
 

@@ -3,6 +3,7 @@
 
 void sf::Renderer::VulkanUniformBuffer::Create(size_t bufferSize)
 {
+	this->bufferSize = bufferSize;
 	for (size_t i = 0; i < VulkanDisplay::MaxFramesInFlight(); i++)
 	{
 		VulkanUtils::CreateBuffer(bufferSize,

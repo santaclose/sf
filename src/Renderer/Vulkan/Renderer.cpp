@@ -99,6 +99,8 @@ namespace sf::Renderer
 	};
 	PerObjectData perObjectData;
 	VulkanUniformBuffer perFrameUniformBuffer;
+	VulkanUniformBuffer userUniformBuffer;
+	float time = 0.0f;
 	PerFrameData perFrameUniformData;
 
 
@@ -109,6 +111,7 @@ namespace sf::Renderer
 	void DestroyMeshBuffers()
 	{
 		perFrameUniformBuffer.Destroy();
+		userUniformBuffer.Destroy();
 		vkDestroyDescriptorPool(VulkanDisplay::Device(), descriptorPool, nullptr);
 		vkDestroyDescriptorSetLayout(VulkanDisplay::Device(), descriptorSetLayout, nullptr);
 		for (auto pair : meshGpuData)
@@ -215,6 +218,7 @@ namespace sf::Renderer
 		// Descriptor set
 		{
 			perFrameUniformBuffer.Create(sizeof(PerFrameData));
+			userUniformBuffer.Create(sizeof(float));
 
 			VkDescriptorPoolSize poolSize{};
 			poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -230,15 +234,14 @@ namespace sf::Renderer
 				return false;
 			}
 
-			VkDescriptorSetLayoutBinding uboLayoutBinding{};
-			uboLayoutBinding.binding = 0;
-			uboLayoutBinding.descriptorCount = 1;
-			uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+			VkDescriptorSetLayoutBinding uboLayoutBinding[] = {
+				{ 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
+				{ 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
+			};
 			VkDescriptorSetLayoutCreateInfo layoutInfo{};
 			layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-			layoutInfo.bindingCount = 1;
-			layoutInfo.pBindings = &uboLayoutBinding;
+			layoutInfo.bindingCount = 2;
+			layoutInfo.pBindings = uboLayoutBinding;
 
 			if (vkCreateDescriptorSetLayout(VulkanDisplay::Device(), &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
 			{
@@ -257,22 +260,9 @@ namespace sf::Renderer
 				std::cout << "[Renderer] Failed to allocate descriptor sets\n";
 				return false;
 			}
-			for (size_t i = 0; i < VulkanDisplay::MaxFramesInFlight(); i++)
-			{
-				VkDescriptorBufferInfo bufferInfo{};
-				bufferInfo.buffer = perFrameUniformBuffer.GetVkBuffer(i);
-				bufferInfo.offset = 0;
-				bufferInfo.range = sizeof(PerFrameData);
-				VkWriteDescriptorSet descriptorWrite{};
-				descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-				descriptorWrite.dstSet = descriptorSets[i];
-				descriptorWrite.dstBinding = 0;
-				descriptorWrite.dstArrayElement = 0;
-				descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-				descriptorWrite.descriptorCount = 1;
-				descriptorWrite.pBufferInfo = &bufferInfo;
-				vkUpdateDescriptorSets(VulkanDisplay::Device(), 1, &descriptorWrite, 0, nullptr);
-			}
+
+			perFrameUniformBuffer.Write(descriptorSets.data(), 0);
+			userUniformBuffer.Write(descriptorSets.data(), 1);
 		}
 
 		VkPushConstantRange push_constant;
@@ -427,6 +417,8 @@ void sf::Renderer::Predraw()
 	perFrameUniformData.cameraPosition = cameraTransform.position;
 	perFrameUniformData.skyboxMatrix = cameraProjection * glm::mat4(glm::mat3(cameraView));
 	perFrameUniformBuffer.Update(perFrameUniformData);
+	time += 1.0f / 60.0f;
+	userUniformBuffer.Update(time);
 
 	vkdd.Predraw(Config::GetClearColor());
 

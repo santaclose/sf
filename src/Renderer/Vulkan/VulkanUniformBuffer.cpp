@@ -1,3 +1,5 @@
+#ifdef SF_USE_VULKAN
+
 #include "VulkanUniformBuffer.h"
 #include "VulkanDisplay.h"
 
@@ -22,3 +24,5 @@ void sf::Renderer::VulkanUniformBuffer::Destroy()
 		vkFreeMemory(VulkanDisplay::Instance->disp.device, buffersMemory[i], nullptr);
 	}
 }
+
+#endif

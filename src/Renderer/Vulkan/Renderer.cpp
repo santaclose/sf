@@ -28,7 +28,7 @@
 
 #include "VulkanDisplay.h"
 #include "VulkanUtils.h"
-#include "VulkanUniformBuffer.h"
+#include "VulkanShaderBuffer.h"
 
 namespace sf::Renderer
 {
@@ -98,10 +98,12 @@ namespace sf::Renderer
 		glm::vec3 cameraPosition;
 	};
 	PerObjectData perObjectData;
-	VulkanUniformBuffer perFrameUniformBuffer;
-	VulkanUniformBuffer userUniformBuffer;
-	float time = 0.0f;
+	VulkanShaderBuffer perFrameUniformBuffer;
+	VulkanShaderBuffer userUniformBuffer;
+	VulkanShaderBuffer particleMatrixBuffer;
 	PerFrameData perFrameUniformData;
+	float time = 0.0f;
+	std::vector<glm::mat4> particleMatrices;
 
 
 	VkDescriptorSetLayout descriptorSetLayout;
@@ -112,6 +114,7 @@ namespace sf::Renderer
 	{
 		perFrameUniformBuffer.Destroy();
 		userUniformBuffer.Destroy();
+		particleMatrixBuffer.Destroy();
 		vkDestroyDescriptorPool(VulkanDisplay::Device(), descriptorPool, nullptr);
 		vkDestroyDescriptorSetLayout(VulkanDisplay::Device(), descriptorSetLayout, nullptr);
 		for (auto pair : meshGpuData)
@@ -217,8 +220,9 @@ namespace sf::Renderer
 
 		// Descriptor set
 		{
-			perFrameUniformBuffer.Create(sizeof(PerFrameData));
-			userUniformBuffer.Create(sizeof(float));
+			perFrameUniformBuffer.Create(VulkanShaderBufferType::UniformBuffer, true, sizeof(PerFrameData));
+			userUniformBuffer.Create(VulkanShaderBufferType::UniformBuffer, true, sizeof(float));
+			particleMatrixBuffer.Create(VulkanShaderBufferType::StorageBuffer, false, sizeof(glm::mat4) * 1000);
 
 			VkDescriptorPoolSize poolSize{};
 			poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -237,10 +241,11 @@ namespace sf::Renderer
 			VkDescriptorSetLayoutBinding uboLayoutBinding[] = {
 				{ 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
 				{ 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
+				{ 2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr },
 			};
 			VkDescriptorSetLayoutCreateInfo layoutInfo{};
 			layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-			layoutInfo.bindingCount = 2;
+			layoutInfo.bindingCount = 3;
 			layoutInfo.pBindings = uboLayoutBinding;
 
 			if (vkCreateDescriptorSetLayout(VulkanDisplay::Device(), &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
@@ -263,6 +268,7 @@ namespace sf::Renderer
 
 			perFrameUniformBuffer.Write(descriptorSets.data(), 0);
 			userUniformBuffer.Write(descriptorSets.data(), 1);
+			particleMatrixBuffer.Write(descriptorSets.data(), 2);
 		}
 
 		VkPushConstantRange push_constant;
@@ -342,6 +348,10 @@ bool sf::Renderer::Initialize(const Window& windowArg)
 	vkdd.Initialize(windowArg, CreatePipeline);
 	window->AddOnResizeCallback(OnResize);
 
+	particleMatrices.reserve(1000);
+	particleMatrices.push_back(glm::mat4(1.0f));
+	for (int i = 1; i < 1000; i++, particleMatrices.push_back(glm::translate(glm::mat4(1.0f), glm::vec3((i%20) * 1.0f, 0.0f, (i/20) * 1.0f)) * glm::rotate(glm::mat4(1.0f), i * 1.0f, glm::vec3(0.0f, 1.0f, 0.0f))));
+	particleMatrixBuffer.Update(particleMatrices.data(), sizeof(glm::mat4) * 1000);
 	return true;
 }
 
@@ -451,7 +461,7 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 	VkDeviceSize offsets[] = { 0 };
 	vkCmdBindVertexBuffers(vkdd.CommandBuffer(), 0, 1, vertexBuffers, offsets);
 	vkCmdBindIndexBuffer(vkdd.CommandBuffer(), meshGpuData[mesh.meshData].indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-	vkCmdDrawIndexed(vkdd.CommandBuffer(), static_cast<uint32_t>(mesh.meshData->indexVector.size()), 1, 0, 0, 0);
+	vkCmdDrawIndexed(vkdd.CommandBuffer(), static_cast<uint32_t>(mesh.meshData->indexVector.size()), 1000, 0, 0, 0);
 }
 
 void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)

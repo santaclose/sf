@@ -28,9 +28,12 @@ bool sf::Renderer::VulkanDisplay::Initialize(const Window& windowArg, bool (*cre
 	window->CreateVulkanSurface(this->instance.instance, this->surface);
 
 	// Device
+	VkPhysicalDeviceFeatures vkfeatures{};
+	vkfeatures.multiViewport = true;
 	vkb::PhysicalDeviceSelector phys_device_selector(this->instance);
 	auto physical_device_selector_return = phys_device_selector
 		.set_surface(this->surface)
+		.set_required_features(vkfeatures)
 		.select();
 	if (!physical_device_selector_return)
 	{

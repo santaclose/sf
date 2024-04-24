@@ -42,6 +42,20 @@ namespace sf::Renderer
 	glm::mat4 cameraView;
 	glm::mat4 cameraProjection;
 
+	inline VkRect2D rect2D(
+		int32_t width,
+		int32_t height,
+		int32_t offsetX,
+		int32_t offsetY)
+	{
+		VkRect2D rect2D{};
+		rect2D.extent.width = width;
+		rect2D.extent.height = height;
+		rect2D.offset.x = offsetX;
+		rect2D.offset.y = offsetY;
+		return rect2D;
+	}
+
 	struct Vertex {
 		glm::vec3 pos;
 		glm::vec3 normal;
@@ -97,6 +111,8 @@ namespace sf::Renderer
 		glm::mat4 skyboxMatrix;
 		glm::vec3 cameraPosition;
 	};
+	//VkViewport viewport[2];
+	//VkRect2D scissor[2];
 	PerObjectData perObjectData;
 	VulkanShaderBuffer perFrameUniformBuffer;
 	VulkanShaderBuffer userUniformBuffer;
@@ -160,24 +176,30 @@ namespace sf::Renderer
 		input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		input_assembly.primitiveRestartEnable = VK_FALSE;
 
-		VkViewport viewport = {};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = (float)vkdd.swapchain.extent.width;
-		viewport.height = (float)vkdd.swapchain.extent.height;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
+		//viewport[0].x = 0.0f;
+		//viewport[0].y = 0.0f;
+		//viewport[0].width = ((float)vkdd.swapchain.extent.width) / 2.0f;
+		//viewport[0].height = (float)vkdd.swapchain.extent.height;
+		//viewport[0].minDepth = 0.0f;
+		//viewport[0].maxDepth = 1.0f;
+		//viewport[1].x = ((float)vkdd.swapchain.extent.width) / 2.0f;
+		//viewport[1].y = 0.0f;
+		//viewport[1].width = ((float)vkdd.swapchain.extent.width) / 2.0f;
+		//viewport[1].height = (float)vkdd.swapchain.extent.height;
+		//viewport[1].minDepth = 0.0f;
+		//viewport[1].maxDepth = 1.0f;
 
-		VkRect2D scissor = {};
-		scissor.offset = { 0, 0 };
-		scissor.extent = vkdd.swapchain.extent;
+		//scissor[0].offset = { 0, 0 };
+		//scissor[0].extent = vkdd.swapchain.extent;
+		//scissor[1].offset = { 0, 0 };
+		//scissor[1].extent = vkdd.swapchain.extent;
 
 		VkPipelineViewportStateCreateInfo viewport_state = {};
 		viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 		viewport_state.viewportCount = 1;
-		viewport_state.pViewports = &viewport;
+		viewport_state.pViewports = nullptr;
 		viewport_state.scissorCount = 1;
-		viewport_state.pScissors = &scissor;
+		viewport_state.pScissors = nullptr;
 
 		VkPipelineRasterizationStateCreateInfo rasterizer = {};
 		rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
@@ -461,6 +483,21 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 	VkDeviceSize offsets[] = { 0 };
 	vkCmdBindVertexBuffers(vkdd.CommandBuffer(), 0, 1, vertexBuffers, offsets);
 	vkCmdBindIndexBuffer(vkdd.CommandBuffer(), meshGpuData[mesh.meshData].indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+
+	VkViewport viewports[2] = {
+		{ 0,										 (float)vkdd.swapchain.extent.height, (float)vkdd.swapchain.extent.width / 2.0f, -(float)vkdd.swapchain.extent.height, 0.0, 1.0f },
+		{ (float)vkdd.swapchain.extent.width / 2.0f, (float)vkdd.swapchain.extent.height, (float)vkdd.swapchain.extent.width / 2.0f, -(float)vkdd.swapchain.extent.height, 0.0, 1.0f },
+	};
+	vkCmdSetViewport(vkdd.CommandBuffer(), 1, 1, viewports);
+
+	VkRect2D scissorRects[2] = {
+		rect2D(vkdd.swapchain.extent.width / 2, vkdd.swapchain.extent.height, 0, 0),
+		rect2D(vkdd.swapchain.extent.width / 2, vkdd.swapchain.extent.height, vkdd.swapchain.extent.width / 2, 0),
+	};
+	vkCmdSetScissor(vkdd.CommandBuffer(), 1, 1, scissorRects);
+	//vkCmdSetViewport(vkdd.CommandBuffer(), 0, 2, viewport);
+	//vkCmdSetScissor(vkdd.CommandBuffer(), 0, 2, scissor);
 	vkCmdDrawIndexed(vkdd.CommandBuffer(), static_cast<uint32_t>(mesh.meshData->indexVector.size()), 1000, 0, 0, 0);
 }
 

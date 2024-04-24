@@ -2,11 +2,11 @@
 #include <imgui.h>
 #include <iostream>
 
-#include <Config.h>
 #include <Game.h>
 #include <Math.hpp>
 #include <Random.h>
 #include <Input.h>
+#include <GameInitializationData.h>
 
 #include <Components/Transform.h>
 #include <Components/Mesh.h>
@@ -154,25 +154,22 @@ namespace sf
 
 	void Game::ImGuiCall()
 	{
-		if (Config::GetImGuiBarEnabled())
+		if (ImGui::BeginMainMenuBar())
 		{
-			if (ImGui::BeginMainMenuBar())
+			if (ImGui::BeginMenu("Animation"))
 			{
-				if (ImGui::BeginMenu("Animation"))
+				ImGui::DragFloat("Frequency", &tFreq, 0.00012);
+				ImGui::DragFloat("Strength", &tStrength, 0.07);
+				ImGui::DragFloat("Speed", &tSpeed, 0.00007);
+				if (ImGui::Button("Reset"))
 				{
-					ImGui::DragFloat("Frequency", &tFreq, 0.00012);
-					ImGui::DragFloat("Strength", &tStrength, 0.07);
-					ImGui::DragFloat("Speed", &tSpeed, 0.00007);
-					if (ImGui::Button("Reset"))
-					{
-						tFreq = INITIAL_FREQUENCY;
-						tStrength = INITIAL_STRENGTH;
-						tSpeed = INITIAL_SPEED;
-					}
-					ImGui::EndMenu();
+					tFreq = INITIAL_FREQUENCY;
+					tStrength = INITIAL_STRENGTH;
+					tSpeed = INITIAL_SPEED;
 				}
-				ImGui::EndMainMenuBar();
+				ImGui::EndMenu();
 			}
+			ImGui::EndMainMenuBar();
 		}
 	}
 }

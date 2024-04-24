@@ -7,7 +7,6 @@
 #include <stb_image_write.h>
 #include <iostream>
 
-#include <Config.h>
 #include <Renderer/GlShader.h>
 #include <Bitmap.h>
 

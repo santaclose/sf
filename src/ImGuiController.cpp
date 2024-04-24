@@ -7,16 +7,18 @@
 #include <imgui.h>
 
 #include <Game.h>
-#include <Config.h>
 #include <Input.h>
 
 namespace sf::ImGuiController
 {
 	bool statsEnabled;
+	Window* window;
 }
 
-void sf::ImGuiController::Setup(GLFWwindow* window)
+void sf::ImGuiController::Initialize(Window& window)
 {
+	ImGuiController::window = &window;
+
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -26,12 +28,16 @@ void sf::ImGuiController::Setup(GLFWwindow* window)
 	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
 
 	// Setup Platform/Renderer bindings
-	ImGui_ImplGlfw_InitForOpenGL(window, true);
+	window.ImGuiInitForOpenGL(ImGui_ImplGlfw_InitForOpenGL);
 	ImGui_ImplOpenGL3_Init();
 
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
 	auto f = io.Fonts->AddFontFromFileTTF("assets/fonts/FiraCode/FiraCode-Regular.ttf", 15.0f);
+}
+
+void sf::ImGuiController::Terminate()
+{
 }
 
 bool sf::ImGuiController::HasControl()
@@ -42,32 +48,32 @@ bool sf::ImGuiController::HasControl()
 void sf::ImGuiController::Tick(float deltaTime)
 {
 	if (Input::KeyDown(Input::F1))
-		Config::SetImGuiBarEnabled(!Config::GetImGuiBarEnabled());
+		window->SetToolBarEnabled(!window->GetToolBarEnabled());
 	if (Input::KeyDown(Input::F2))
-		Config::SetCursorEnabled(!Config::GetCursorEnabled());
+		window->SetCursorEnabled(!window->GetCursorEnabled());
 	if (Input::KeyDown(Input::F3))
-		Config::SetVsyncEnabled(!Config::GetVsyncEnabled());
+		window->SetVsyncEnabled(!window->GetVsyncEnabled());
 	if (Input::KeyDown(Input::Enter) && Input::Key(Input::RightAlt))
-		Config::SetFullscreen(!Config::GetFullscreen());
+		window->SetFullScreenEnabled(!window->GetFullScreenEnabled());
 
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
-	if (Config::GetImGuiBarEnabled())
+	if (window->GetToolBarEnabled())
 	{
 		if (ImGui::BeginMainMenuBar())
 		{
 			if (ImGui::BeginMenu("sf"))
 			{
 				ImGui::MenuItem("Stats", NULL, &statsEnabled);
-				if (ImGui::MenuItem("Fullscreen", "Alt+Enter", Config::GetFullscreen()))
-					Config::SetFullscreen(!Config::GetFullscreen());
-				if (ImGui::MenuItem("Menu bar", "F1", Config::GetImGuiBarEnabled()))
-					Config::SetImGuiBarEnabled(false);
-				if (ImGui::MenuItem("Cursor enabled", "F2", Config::GetCursorEnabled()))
-					Config::SetCursorEnabled(!Config::GetCursorEnabled());
-				if (ImGui::MenuItem("Vsync enabled", "F3", Config::GetVsyncEnabled()))
-					Config::SetVsyncEnabled(!Config::GetVsyncEnabled());
+				if (ImGui::MenuItem("Menu bar", "F1", window->GetToolBarEnabled()))
+					window->SetToolBarEnabled(false);
+				if (ImGui::MenuItem("Cursor enabled", "F2", window->GetCursorEnabled()))
+					window->SetCursorEnabled(!window->GetCursorEnabled());
+				if (ImGui::MenuItem("Vsync enabled", "F3", window->GetVsyncEnabled()))
+					window->SetVsyncEnabled(!window->GetVsyncEnabled());
+				if (ImGui::MenuItem("Fullscreen", "Alt+Enter", window->GetFullScreenEnabled()))
+					window->SetFullScreenEnabled(!window->GetFullScreenEnabled());
 				ImGui::EndMenu();
 			}
 			ImGui::EndMainMenuBar();
@@ -82,17 +88,13 @@ void sf::ImGuiController::Tick(float deltaTime)
 	}
 
 	//-------------------//
-	sf::Game::ImGuiCall();
+	if (window->GetToolBarEnabled())
+		sf::Game::ImGuiCall();
 	//-------------------//
 
 	// Render dear imgui into screen
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-	{
-		GLFWwindow* backup_current_context = glfwGetCurrentContext();
-		ImGui::UpdatePlatformWindows();
-		ImGui::RenderPlatformWindowsDefault();
-		glfwMakeContextCurrent(backup_current_context);
-	}
+		window->HandleImGuiViewports(ImGui::UpdatePlatformWindows, ImGui::RenderPlatformWindowsDefault);
 }

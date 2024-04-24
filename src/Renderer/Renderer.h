@@ -10,6 +10,7 @@
 #include <Components/Sprite.h>
 
 #include <Renderer/GlMaterial.h>
+#include <Window.h>
 #include <Material.h>
 
 #include <Bitmap.h>
@@ -19,7 +20,7 @@ namespace sf::Renderer {
 	extern Entity activeCameraEntity;
 	extern bool drawSkybox;
 
-	bool Initialize(void* process);
+	bool Initialize(const Window& window);
 	void OnResize();
 
 	void Predraw();

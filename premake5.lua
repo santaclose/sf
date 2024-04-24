@@ -85,7 +85,8 @@ project "sf"
 		defines
 		{
 			"SF_PLATFORM_WINDOWS",
-			"GLFW_INCLUDE_NONE"
+			"GLFW_INCLUDE_NONE",
+			"SF_USE_OPENGL"
 		}
 
 	filter "configurations:Debug"

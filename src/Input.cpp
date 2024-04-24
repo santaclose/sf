@@ -3,10 +3,11 @@
 #include <unordered_map>
 #include <iostream>
 
-#include <Config.h>
 #include <ImGuiController.h>
 
 namespace sf::Input {
+
+	bool cursorEnabled = false;
 
 	bool mouseButtonsReleasing[3] = { false, false, false };
 	bool mouseButtonsPressing[3] = { false, false, false };
@@ -29,10 +30,15 @@ namespace sf::Input {
 	std::unordered_map<int, KeyState> keyStates;
 
 	bool charInput = false;
-	uint32_t character;
+	unsigned int character;
 
 	bool cursorCollisionDetected = false;
 	void* currentlyHandling = nullptr;
+}
+
+void sf::Input::UpdateCursorEnabled(bool value)
+{
+	cursorEnabled = value;
 }
 
 void sf::Input::UpdateMouseButtons(int button, int action)
@@ -81,7 +87,7 @@ void sf::Input::UpdateKeyboard(int key, int action)
 	}
 }
 
-void sf::Input::UpdateCharacter(uint32_t character)
+void sf::Input::UpdateCharacter(unsigned int character)
 {
 	Input::character = character;
 	Input::charInput = true;
@@ -121,49 +127,49 @@ void sf::Input::FrameEnd()
 
 float sf::Input::MousePosDeltaX()
 {
-	if (Config::GetCursorEnabled() && ImGuiController::HasControl()) return 0.0f;
+	if (cursorEnabled && ImGuiController::HasControl()) return 0.0f;
 	return mousePos[0] - lastMousePos[0];
 }
 
 float sf::Input::MousePosDeltaY()
 {
-	if (Config::GetCursorEnabled() && ImGuiController::HasControl()) return 0.0f;
+	if (cursorEnabled && ImGuiController::HasControl()) return 0.0f;
 	return mousePos[1] - lastMousePos[1];
 }
 
 bool sf::Input::MouseButtonDown(int buttonID)
 {
-	if (Config::GetCursorEnabled() && ImGuiController::HasControl()) return false;
+	if (cursorEnabled && ImGuiController::HasControl()) return false;
 	return mouseButtonsPressing[buttonID];
 }
 
 bool sf::Input::MouseButtonUp(int buttonID)
 {
-	if (Config::GetCursorEnabled() && ImGuiController::HasControl()) return false;
+	if (cursorEnabled && ImGuiController::HasControl()) return false;
 	return mouseButtonsReleasing[buttonID];
 }
 
 bool sf::Input::MouseButton(int buttonID)
 {
-	if (Config::GetCursorEnabled() && ImGuiController::HasControl()) return false;
+	if (cursorEnabled && ImGuiController::HasControl()) return false;
 	return mouseButtons[buttonID];
 }
 
 bool sf::Input::MouseScrollUp()
 {
-	if (Config::GetCursorEnabled() && ImGuiController::HasControl()) return false;
+	if (cursorEnabled && ImGuiController::HasControl()) return false;
 	return mouseScroll[1] == 1.0f;
 }
 
 bool sf::Input::MouseScrollDown()
 {
-	if (Config::GetCursorEnabled() && ImGuiController::HasControl()) return false;
+	if (cursorEnabled && ImGuiController::HasControl()) return false;
 	return mouseScroll[1] == -1.0f;
 }
 
 bool sf::Input::KeyDown(int key)
 {
-	if (Config::GetCursorEnabled() && ImGuiController::HasControl()) return false;
+	if (cursorEnabled && ImGuiController::HasControl()) return false;
 	if (keyStates.find(key) == keyStates.end())
 		return false;
 	return keyStates[key].pressing;
@@ -171,7 +177,7 @@ bool sf::Input::KeyDown(int key)
 
 bool sf::Input::KeyUp(int key)
 {
-	if (Config::GetCursorEnabled() && ImGuiController::HasControl()) return false;
+	if (cursorEnabled && ImGuiController::HasControl()) return false;
 	if (keyStates.find(key) == keyStates.end())
 		return false;
 	return keyStates[key].releasing;
@@ -179,7 +185,7 @@ bool sf::Input::KeyUp(int key)
 
 bool sf::Input::Key(int key)
 {
-	if (Config::GetCursorEnabled() && ImGuiController::HasControl()) return false;
+	if (cursorEnabled && ImGuiController::HasControl()) return false;
 	if (keyStates.find(key) == keyStates.end())
 		return false;
 	return keyStates[key].isDown;
@@ -187,15 +193,15 @@ bool sf::Input::Key(int key)
 
 bool sf::Input::KeyRepeat(int key)
 {
-	if (Config::GetCursorEnabled() && ImGuiController::HasControl()) return false;
+	if (cursorEnabled && ImGuiController::HasControl()) return false;
 	if (keyStates.find(key) == keyStates.end())
 		return false;
 	return keyStates[key].repeating;
 }
 
-bool sf::Input::CharacterInput(uint32_t & character)
+bool sf::Input::CharacterInput(unsigned int& character)
 {
-	if (Config::GetCursorEnabled() && ImGuiController::HasControl()) return false;
+	if (cursorEnabled && ImGuiController::HasControl()) return false;
 	character = Input::character;
 	return charInput;
 }

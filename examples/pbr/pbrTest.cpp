@@ -1,5 +1,4 @@
-﻿#include <GLFW/glfw3.h>
-#include <imgui.h>
+﻿#include <imgui.h>
 #include <iostream>
 #include <fstream>
 
@@ -233,36 +232,33 @@ namespace sf
 	}
 	void Game::ImGuiCall()
 	{
-		if (Config::GetImGuiBarEnabled())
+		if (ImGui::BeginMainMenuBar())
 		{
-			if (ImGui::BeginMainMenuBar())
+			if (ImGui::BeginMenu("Gallery"))
 			{
-				if (ImGui::BeginMenu("Gallery"))
-				{
-					if (ImGui::MenuItem("Previous", "Left arrow")) { GalleryChange(false); }
-					if (ImGui::MenuItem("Next", "Right arrow")) { GalleryChange(true); }
-					if (ImGui::MenuItem("Toggle rotation", "Space")) { rotationEnabled = !rotationEnabled; }
-					ImGui::EndMenu();
-				}
-				if (ImGui::BeginMenu("Camera"))
-				{
-					if (ImGui::MenuItem("Center", "F"))
-						gimbal.GetComponent<Transform>().position = glm::vec3(0.0f);
-					ImGui::EndMenu();
-				}
-				if (ImGui::BeginMenu("Environment"))
-				{
-					if (ImGui::MenuItem("Change", "H")) { ChangeEnvironment(); }
-					ImGui::Separator();
-					ImGui::Text("From file");
-					static char environmentTextFieldBuffer[256];
-					ImGui::InputText("Path", environmentTextFieldBuffer, 256);
-					if (ImGui::Button("Load"))
-						Renderer::SetEnvironment(std::string(environmentTextFieldBuffer));
-					ImGui::EndMenu();
-				}
-				ImGui::EndMainMenuBar();
+				if (ImGui::MenuItem("Previous", "Left arrow")) { GalleryChange(false); }
+				if (ImGui::MenuItem("Next", "Right arrow")) { GalleryChange(true); }
+				if (ImGui::MenuItem("Toggle rotation", "Space")) { rotationEnabled = !rotationEnabled; }
+				ImGui::EndMenu();
 			}
+			if (ImGui::BeginMenu("Camera"))
+			{
+				if (ImGui::MenuItem("Center", "F"))
+					gimbal.GetComponent<Transform>().position = glm::vec3(0.0f);
+				ImGui::EndMenu();
+			}
+			if (ImGui::BeginMenu("Environment"))
+			{
+				if (ImGui::MenuItem("Change", "H")) { ChangeEnvironment(); }
+				ImGui::Separator();
+				ImGui::Text("From file");
+				static char environmentTextFieldBuffer[256];
+				ImGui::InputText("Path", environmentTextFieldBuffer, 256);
+				if (ImGui::Button("Load"))
+					Renderer::SetEnvironment(std::string(environmentTextFieldBuffer));
+				ImGui::EndMenu();
+			}
+			ImGui::EndMainMenuBar();
 		}
 	}
 	void Game::Terminate()

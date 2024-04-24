@@ -4,11 +4,11 @@
 #include <fstream>
 
 #include <Defaults.h>
-#include <Config.h>
 #include <Game.h>
 #include <MeshProcessor.h>
 #include <Math.hpp>
 #include <Input.h>
+#include <GameInitializationData.h>
 
 #include <Renderer/Renderer.h>
 
@@ -214,32 +214,29 @@ namespace sf
 	}
 	void Game::ImGuiCall()
 	{
-		if (Config::GetImGuiBarEnabled())
+		if (ImGui::BeginMainMenuBar())
 		{
-			if (ImGui::BeginMainMenuBar())
+			if (ImGui::BeginMenu("Gallery"))
 			{
-				if (ImGui::BeginMenu("Gallery"))
-				{
-					if (ImGui::MenuItem("Previous", "Left arrow")) { GalleryChange(false); }
-					if (ImGui::MenuItem("Next", "Right arrow")) { GalleryChange(true); }
-					if (ImGui::MenuItem("Toggle rotation", "Space")) { rotationEnabled = !rotationEnabled; }
-					ImGui::EndMenu();
-				}
-				if (ImGui::BeginMenu("Camera"))
-				{
-					if (ImGui::MenuItem("Center", "F"))
-						gimbal.GetComponent<Transform>().position = glm::vec3(0.0f);
-					ImGui::EndMenu();
-				}
-				if (ImGui::BeginMenu("Animation"))
-				{
-					if (ImGui::MenuItem("Animate", "NumPad5")) { skeletons[selectedModel].animate = !skeletons[selectedModel].animate; }
-					if (ImGui::MenuItem("Previous", "NumPad4")) { AnimationChange(false); }
-					if (ImGui::MenuItem("Next", "NumPad6")) { AnimationChange(true); }
-					ImGui::EndMenu();
-				}
-				ImGui::EndMainMenuBar();
+				if (ImGui::MenuItem("Previous", "Left arrow")) { GalleryChange(false); }
+				if (ImGui::MenuItem("Next", "Right arrow")) { GalleryChange(true); }
+				if (ImGui::MenuItem("Toggle rotation", "Space")) { rotationEnabled = !rotationEnabled; }
+				ImGui::EndMenu();
 			}
+			if (ImGui::BeginMenu("Camera"))
+			{
+				if (ImGui::MenuItem("Center", "F"))
+					gimbal.GetComponent<Transform>().position = glm::vec3(0.0f);
+				ImGui::EndMenu();
+			}
+			if (ImGui::BeginMenu("Animation"))
+			{
+				if (ImGui::MenuItem("Animate", "NumPad5")) { skeletons[selectedModel].animate = !skeletons[selectedModel].animate; }
+				if (ImGui::MenuItem("Previous", "NumPad4")) { AnimationChange(false); }
+				if (ImGui::MenuItem("Next", "NumPad6")) { AnimationChange(true); }
+				ImGui::EndMenu();
+			}
+			ImGui::EndMainMenuBar();
 		}
 	}
 	void Game::Terminate()

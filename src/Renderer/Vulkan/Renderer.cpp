@@ -168,9 +168,9 @@ namespace sf::Renderer
 
 		VkViewport viewport = {};
 		viewport.x = 0.0f;
-		viewport.y = 0.0f;
+		viewport.y = (float)vkdd.swapchain.extent.height;
 		viewport.width = (float)vkdd.swapchain.extent.width;
-		viewport.height = (float)vkdd.swapchain.extent.height;
+		viewport.height = -(float)vkdd.swapchain.extent.height;
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 
@@ -299,13 +299,6 @@ namespace sf::Renderer
 			return false;
 		}
 
-		std::vector<VkDynamicState> dynamic_states = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
-
-		VkPipelineDynamicStateCreateInfo dynamic_info = {};
-		dynamic_info.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-		dynamic_info.dynamicStateCount = static_cast<uint32_t>(dynamic_states.size());
-		dynamic_info.pDynamicStates = dynamic_states.data();
-
 		VkGraphicsPipelineCreateInfo pipeline_info = {};
 		pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 		pipeline_info.layout = vkdd.pipelineLayout;
@@ -315,7 +308,7 @@ namespace sf::Renderer
 		pipeline_info.pMultisampleState = &multisampling;
 		pipeline_info.pDepthStencilState = &depthStencil;
 		pipeline_info.pViewportState = &viewport_state;
-		pipeline_info.pDynamicState = &dynamic_info;
+		pipeline_info.pDynamicState = nullptr;
 		pipeline_info.pStages = shader_stages;
 		pipeline_info.stageCount = 2;
 		pipeline_info.pVertexInputState = &vertex_input_info;

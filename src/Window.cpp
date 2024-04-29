@@ -182,23 +182,6 @@ void sf::Window::AddOnResizeCallback(void(*newCallback)(void)) const
 	onResizeCallbacks.push_back(newCallback);
 }
 
-glm::uvec2 sf::Window::GetSize() const
-{
-	int width, height;
-	glfwGetFramebufferSize(windowHandle, &width, &height);
-	return glm::uvec2(width, height);
-}
-
-uint32_t sf::Window::GetWidth() const
-{
-	return size.x;
-}
-
-uint32_t sf::Window::GetHeight() const
-{
-	return size.y;
-}
-
 void sf::Window::HandleImGuiViewports(void(*updatePlatformWindows)(), void(*renderPlatformWindows)(void*, void*))
 {
 	contextBackup = glfwGetCurrentContext();

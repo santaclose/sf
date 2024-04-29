@@ -48,9 +48,9 @@ namespace sf
 
 		void AddOnResizeCallback(void (*newCallback)(void)) const;
 
-		glm::uvec2 GetSize() const;
-		uint32_t GetWidth() const;
-		uint32_t GetHeight() const;
+		inline glm::uvec2 GetSize() const { return size; };
+		inline uint32_t GetWidth() const { return size.x; };
+		inline uint32_t GetHeight() const { return size.y; };
 
 		void HandleImGuiViewports(void (*updatePlatformWindows)(), void (*renderPlatformWindows)(void*, void*));
 

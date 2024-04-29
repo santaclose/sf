@@ -40,14 +40,13 @@ project "sf"
 		"user/**.h",
 		"user/**.hpp",
 		"user/**.cpp",
-		"vendor/stb_image/**.h",
-		"vendor/stb_image/**.cpp",
+		"vendor/stb/**.h",
 		"vendor/glm/glm/**.hpp",
 		"vendor/glm/glm/**.inl",
 		"vendor/sfmg/*.cpp",
 		"vendor/aobaker/*.cpp",
 		"vendor/nanosvg/*.cpp",
-		"vendor/load.cpp"
+		"vendor/vendor.cpp"
 	}
 
 	defines
@@ -61,7 +60,7 @@ project "sf"
 		"vendor/GLFW/include",
 		"vendor/Glad/include",
 		"vendor/glm",
-		"vendor/stb_image",
+		"vendor/stb",
 		"vendor/sfmg",
 		"vendor/tinygltf",
 		"vendor/gli/gli",

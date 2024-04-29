@@ -24,8 +24,6 @@
 
 #include <ImGuiController.h>
 
-#define BACKGROUND_COLOR 0.1
-
 float gameTime = 0.0;
 double lastFrameTime = 0.0;
 double currentFrameTime = 0.0;

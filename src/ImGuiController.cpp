@@ -53,7 +53,7 @@ void sf::ImGuiController::Tick(float deltaTime)
 		window->SetCursorEnabled(!window->GetCursorEnabled());
 	if (Input::KeyDown(Input::F3))
 		window->SetVsyncEnabled(!window->GetVsyncEnabled());
-	if (Input::KeyDown(Input::Enter) && Input::Key(Input::RightAlt))
+	if (Input::KeyDown(Input::Enter) && (Input::Key(Input::LeftAlt) || Input::Key(Input::RightAlt)))
 		window->SetFullScreenEnabled(!window->GetFullScreenEnabled());
 
 	ImGui_ImplOpenGL3_NewFrame();

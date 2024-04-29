@@ -1,13 +1,7 @@
 #pragma once
 
-namespace sf::Input {
-
-	extern bool mouseButtons[3];
-	extern float mousePos[2];
-	extern float mousePosDelta[2];
-	extern bool cursorCollisionDetected;
-	extern void* currentlyHandling;
-
+namespace sf::Input
+{
 	void UpdateCursorEnabled(bool value);
 
 	void UpdateMouseButtons(int button, int action);

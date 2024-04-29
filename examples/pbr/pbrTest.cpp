@@ -2,7 +2,6 @@
 #include <iostream>
 #include <fstream>
 
-#include <Config.h>
 #include <Game.h>
 #include <MeshProcessor.h>
 #include <Math.hpp>

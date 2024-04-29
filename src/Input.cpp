@@ -7,6 +7,7 @@
 
 namespace sf::Input {
 
+	int shouldIgnoreMouseDeltaNextFrame = 0;
 	bool cursorEnabled = false;
 
 	bool mouseButtonsReleasing[3] = { false, false, false };
@@ -31,14 +32,20 @@ namespace sf::Input {
 
 	bool charInput = false;
 	unsigned int character;
+}
 
-	bool cursorCollisionDetected = false;
-	void* currentlyHandling = nullptr;
+void sf::Input::UpdateFullScreenEnabled()
+{
+	// there is a frame end before the next frame
+	shouldIgnoreMouseDeltaNextFrame = 2;
 }
 
 void sf::Input::UpdateCursorEnabled(bool value)
 {
 	cursorEnabled = value;
+	// there is a frame end before the next frame
+	// and enabling the cursor takes one more frame when in fullscreen
+	shouldIgnoreMouseDeltaNextFrame = value ? 3 : 2;
 }
 
 void sf::Input::UpdateMouseButtons(int button, int action)
@@ -122,17 +129,19 @@ void sf::Input::FrameEnd()
 
 	charInput = false;
 
-	cursorCollisionDetected = false;
+	shouldIgnoreMouseDeltaNextFrame--;
 }
 
 float sf::Input::MousePosDeltaX()
 {
+	if (shouldIgnoreMouseDeltaNextFrame > 0) return 0.0f;
 	if (cursorEnabled && ImGuiController::HasControl()) return 0.0f;
 	return mousePos[0] - lastMousePos[0];
 }
 
 float sf::Input::MousePosDeltaY()
 {
+	if (shouldIgnoreMouseDeltaNextFrame > 0) return 0.0f;
 	if (cursorEnabled && ImGuiController::HasControl()) return 0.0f;
 	return mousePos[1] - lastMousePos[1];
 }

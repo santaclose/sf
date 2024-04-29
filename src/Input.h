@@ -2,6 +2,7 @@
 
 namespace sf::Input
 {
+	void UpdateFullScreenEnabled();
 	void UpdateCursorEnabled(bool value);
 
 	void UpdateMouseButtons(int button, int action);

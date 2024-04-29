@@ -155,6 +155,7 @@ void sf::Window::SetFullScreenEnabled(bool enabled)
 		// restore last window size and position
 		glfwSetWindowMonitor(windowHandle, nullptr, xpos, ypos, width, height, 0);
 	}
+	Input::UpdateFullScreenEnabled();
 }
 
 void sf::Window::SetCursorEnabled(bool enabled)

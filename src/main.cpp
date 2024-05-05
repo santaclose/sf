@@ -41,13 +41,11 @@ int main(int argc, char** argv)
 	sf::GameInitializationData gameInitData(sf::Game::ConfigFilePath);
 	sf::Window window = sf::Window(gameInitData);
 
-	if (!sf::Renderer::Initialize(window))
-		std::cout << "[main] Failed to initialize renderer\n";
-
 	sf::ImGuiController::Initialize(window);
 
 	if (!sf::Renderer::Initialize(window))
 		std::cout << "Failed to initialize renderer\n";
+
 	sf::Defaults::Initialize();
 	//-------------------//
 	sf::Game::Initialize(argc, argv);

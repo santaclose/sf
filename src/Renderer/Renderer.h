@@ -8,6 +8,7 @@
 #include <Components/Skeleton.h>
 #include <Components/ScreenCoordinates.h>
 #include <Components/Sprite.h>
+#include <Components/Text.h>
 
 #include <Renderer/GlMaterial.h>
 #include <Window.h>
@@ -38,6 +39,7 @@ namespace sf::Renderer {
 	void DrawVoxelBox(VoxelBox& voxelBox, Transform& transform);
 	void DrawSkeleton(Skeleton& skeleton, Transform& transform);
 	void DrawSprite(Sprite& sprite, ScreenCoordinates& screenCoordinates);
+	void DrawText(Text& text, ScreenCoordinates& screenCoordinates);
 
 	void Terminate();
 }

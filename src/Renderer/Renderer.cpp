@@ -17,6 +17,10 @@
 #include <Renderer/GlSkybox.h>
 #include <Renderer/IblHelper.h>
 
+#include <FontData.h>
+#include <TextData.h>
+#include <RenderData.h>
+
 namespace sf::Renderer
 {
 	const Window* window;
@@ -33,8 +37,6 @@ namespace sf::Renderer
 
 	glm::mat4 cameraView;
 	glm::mat4 cameraProjection;
-
-	GlShader spriteShader;
 
 	struct MeshGpuData
 	{
@@ -60,6 +62,22 @@ namespace sf::Renderer
 	};
 	SpriteQuad spriteQuad;
 	std::unordered_map<const sf::Bitmap*, GlTexture> spriteTextures;
+	GlShader spriteShader;
+
+	struct TextGpuData
+	{
+		SebText::TextData textData;
+		uint32_t gl_ssbo_perInstanceData;
+		uint32_t gl_ssbo_bezierData;
+		uint32_t gl_ssbo_glyphMetaData;
+		TextGpuData(const std::string& text, const SebText::FontData& fontData) : textData(text, fontData) {}
+	};
+	MeshGpuData textMeshGpuData = { ~0U, ~0U, ~0U };
+	std::unordered_map<const char*, SebText::FontData> fontPathToFontData;
+	std::unordered_map<const char*, std::unordered_map<const char*, TextGpuData>> fontPathAndStringToTextData;
+	std::vector<SebText::GlyphRenderData> prevGlyphRenderData;
+	SebText::LayoutSettings textLayoutSettings;
+	GlShader textShader;
 
 	struct SharedGpuData
 	{
@@ -192,8 +210,24 @@ namespace sf::Renderer
 		glGenBuffers(1, &(voxelBoxGpuData[voxelBox].gl_ssbo));
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, voxelBoxGpuData[voxelBox].gl_ssbo);
 		glBufferData(GL_SHADER_STORAGE_BUFFER, voxelBoxGpuData[voxelBox].cubeModelMatrices.size() * sizeof(glm::mat4), &(voxelBoxGpuData[voxelBox].cubeModelMatrices[0][0][0]), GL_STATIC_DRAW);
+	}
 
-		return;
+	void CreateTextGpuData(const char* fontPath, const char* string, const SebText::TextRenderData& trd)
+	{
+		std::vector<SebText::InstanceData> instanceData;
+		SebText::CreateInstanceData(instanceData, fontPathAndStringToTextData[fontPath].at(string).textData, textLayoutSettings, prevGlyphRenderData);
+
+		glGenBuffers(1, &(fontPathAndStringToTextData[fontPath].at(string).gl_ssbo_perInstanceData));
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, fontPathAndStringToTextData[fontPath].at(string).gl_ssbo_perInstanceData);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, instanceData.size() * sizeof(SebText::InstanceData), instanceData.data(), GL_STATIC_DRAW);
+
+		glGenBuffers(1, &(fontPathAndStringToTextData[fontPath].at(string).gl_ssbo_bezierData));
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, fontPathAndStringToTextData[fontPath].at(string).gl_ssbo_bezierData);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, trd.BezierPoints.size() * sizeof(glm::vec2), trd.BezierPoints.data(), GL_STATIC_DRAW);
+
+		glGenBuffers(1, &(fontPathAndStringToTextData[fontPath].at(string).gl_ssbo_glyphMetaData));
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, fontPathAndStringToTextData[fontPath].at(string).gl_ssbo_glyphMetaData);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, trd.GlyphMetaData.size() * sizeof(int), trd.GlyphMetaData.data(), GL_STATIC_DRAW);
 	}
 
 #ifdef SF_DEBUG
@@ -306,6 +340,9 @@ bool sf::Renderer::Initialize(const Window& windowArg)
 
 	// sprites
 	spriteShader.CreateFromFiles("assets/shaders/spriteV.glsl", "assets/shaders/spriteF.glsl");
+
+	// text
+	textShader.CreateFromFiles("vendor/sebtext/shader.vert.glsl", "vendor/sebtext/shader.frag.glsl");
 
 	// quad uvs and indices won't change
 	spriteQuad.vertices[1] = { 0.0f, 0.0f };
@@ -615,6 +652,67 @@ void sf::Renderer::DrawSprite(Sprite& sprite, ScreenCoordinates& screenCoordinat
 
 	glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+}
+
+void sf::Renderer::DrawText(Text& text, ScreenCoordinates& screenCoordinates)
+{
+	glDisable(GL_DEPTH_TEST);
+
+	if (fontPathToFontData.find(text.fontPath) == fontPathToFontData.end())
+		fontPathToFontData.insert({ text.fontPath, SebText::FontData(text.fontPath) });
+	if (fontPathAndStringToTextData.find(text.fontPath) == fontPathAndStringToTextData.end() || fontPathAndStringToTextData[text.fontPath].find(text.string) == fontPathAndStringToTextData[text.fontPath].end())
+	{
+		fontPathAndStringToTextData.insert({ text.fontPath, std::unordered_map<const char*, TextGpuData>() });
+		fontPathAndStringToTextData[text.fontPath].insert({ text.string, TextGpuData(text.string, fontPathToFontData.at(text.fontPath)) });
+		SebText::TextData& td = fontPathAndStringToTextData[text.fontPath].at(text.string).textData;
+		if (td.PrintableCharacters.size() > 0)
+		{
+			SebText::TextRenderData trd = SebText::CreateRenderData(td.UniquePrintableCharacters, fontPathToFontData.at(text.fontPath));
+			prevGlyphRenderData = trd.AllGlyphData;
+			CreateTextGpuData(text.fontPath, text.string, trd);
+		}
+	}
+	if (textMeshGpuData.gl_indexBuffer == ~0U)
+	{
+		glGenVertexArrays(1, &textMeshGpuData.gl_vao);
+		glGenBuffers(1, &textMeshGpuData.gl_vertexBuffer);
+		glGenBuffers(1, &textMeshGpuData.gl_indexBuffer);
+
+		glBindVertexArray(textMeshGpuData.gl_vao);
+		glBindBuffer(GL_ARRAY_BUFFER, textMeshGpuData.gl_vertexBuffer);
+
+		// update vertices
+		glBufferData(GL_ARRAY_BUFFER, 4 * sizeof(SebText::Vertex), SebText::MeshVertices, GL_STATIC_DRAW);
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, textMeshGpuData.gl_indexBuffer);
+		// update indices to draw
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(unsigned int), SebText::MeshIndices, GL_STATIC_DRAW);
+
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(SebText::Vertex), (void*)0);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(SebText::Vertex), (void*)(sizeof(glm::vec3)));
+
+		glBindBuffer(GL_ARRAY_BUFFER, textMeshGpuData.gl_vertexBuffer);
+		glBufferData(GL_ARRAY_BUFFER, 4 * sizeof(SebText::Vertex), SebText::MeshVertices, GL_STATIC_DRAW);
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, textMeshGpuData.gl_indexBuffer);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(unsigned int), SebText::MeshIndices, GL_STATIC_DRAW);
+
+		glBindVertexArray(0);
+	}
+
+	GlShader* shaderToUse = &textShader;
+	shaderToUse->Bind();
+	shaderToUse->SetUniform4fv("textCol", &text.color.r);
+	shaderToUse->SetUniform2fv("globalOffset", &text.pos.x);
+
+	glBindVertexArray(textMeshGpuData.gl_vao);
+	glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, fontPathAndStringToTextData[text.fontPath].at(text.string).gl_ssbo_perInstanceData);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, fontPathAndStringToTextData[text.fontPath].at(text.string).gl_ssbo_bezierData);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, fontPathAndStringToTextData[text.fontPath].at(text.string).gl_ssbo_glyphMetaData);
+	glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)0, fontPathAndStringToTextData[text.fontPath].at(text.string).textData.PrintableCharacters.size());
 }
 
 void sf::Renderer::Terminate()

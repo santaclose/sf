@@ -107,6 +107,13 @@ int main(int argc, char** argv)
 			if (base.isEntityEnabled)
 				sf::Renderer::DrawSprite(sprite, screenCooordinates);
 		}
+		auto textRenderView = sf::Scene::activeScene->GetRegistry().view<sf::Base, sf::Text, sf::ScreenCoordinates>();
+		for (auto entity : textRenderView)
+		{
+			auto [base, text, screenCooordinates] = textRenderView.get<sf::Base, sf::Text, sf::ScreenCoordinates>(entity);
+			if (base.isEntityEnabled)
+				sf::Renderer::DrawText(text, screenCooordinates);
+		}
 
 		sf::ImGuiController::Tick(deltaTime);
 		window.SwapBuffers();

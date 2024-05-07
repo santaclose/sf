@@ -46,6 +46,7 @@ project "sf"
 		"vendor/sfmg/*.cpp",
 		"vendor/aobaker/*.cpp",
 		"vendor/nanosvg/*.cpp",
+		"vendor/sebtext/*.cpp",
 		"vendor/vendor.cpp"
 	}
 
@@ -67,7 +68,8 @@ project "sf"
 		"vendor/aobaker",
 		"vendor/entt",
 		"vendor/nanosvg",
-		"vendor/imgui"
+		"vendor/imgui",
+		"vendor/sebtext"
 	}
 
 	links 

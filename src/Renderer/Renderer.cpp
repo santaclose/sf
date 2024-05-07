@@ -70,6 +70,7 @@ namespace sf::Renderer
 		uint32_t gl_ssbo_perInstanceData;
 		uint32_t gl_ssbo_bezierData;
 		uint32_t gl_ssbo_glyphMetaData;
+		uint32_t gl_ubo_layoutData;
 		TextGpuData(const std::string& text, const SebText::FontData& fontData) : textData(text, fontData) {}
 	};
 	MeshGpuData textMeshGpuData = { ~0U, ~0U, ~0U };
@@ -215,7 +216,7 @@ namespace sf::Renderer
 	void CreateTextGpuData(const char* fontPath, const char* string, const SebText::TextRenderData& trd)
 	{
 		std::vector<SebText::InstanceData> instanceData;
-		SebText::CreateInstanceData(instanceData, fontPathAndStringToTextData[fontPath].at(string).textData, textLayoutSettings, prevGlyphRenderData);
+		SebText::CreateInstanceData(instanceData, fontPathAndStringToTextData[fontPath].at(string).textData, prevGlyphRenderData);
 
 		glGenBuffers(1, &(fontPathAndStringToTextData[fontPath].at(string).gl_ssbo_perInstanceData));
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, fontPathAndStringToTextData[fontPath].at(string).gl_ssbo_perInstanceData);
@@ -228,6 +229,10 @@ namespace sf::Renderer
 		glGenBuffers(1, &(fontPathAndStringToTextData[fontPath].at(string).gl_ssbo_glyphMetaData));
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, fontPathAndStringToTextData[fontPath].at(string).gl_ssbo_glyphMetaData);
 		glBufferData(GL_SHADER_STORAGE_BUFFER, trd.GlyphMetaData.size() * sizeof(int), trd.GlyphMetaData.data(), GL_STATIC_DRAW);
+
+		glGenBuffers(1, &(fontPathAndStringToTextData[fontPath].at(string).gl_ubo_layoutData));
+		glBindBuffer(GL_UNIFORM_BUFFER, fontPathAndStringToTextData[fontPath].at(string).gl_ubo_layoutData);
+		glBufferData(GL_UNIFORM_BUFFER, sizeof(SebText::LayoutSettings), &textLayoutSettings, GL_DYNAMIC_DRAW);
 	}
 
 #ifdef SF_DEBUG
@@ -702,16 +707,22 @@ void sf::Renderer::DrawText(Text& text, ScreenCoordinates& screenCoordinates)
 		glBindVertexArray(0);
 	}
 
+	textLayoutSettings.FontSize = text.size;
+	glBindBuffer(GL_UNIFORM_BUFFER, fontPathAndStringToTextData[text.fontPath].at(text.string).gl_ubo_layoutData);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(SebText::LayoutSettings), &textLayoutSettings, GL_DYNAMIC_DRAW);
+
 	GlShader* shaderToUse = &textShader;
 	shaderToUse->Bind();
 	shaderToUse->SetUniform4fv("textCol", &text.color.r);
-	shaderToUse->SetUniform2fv("globalOffset", &text.pos.x);
+	glm::vec2 targetOffset = screenCoordinates.origin * glm::vec2(window->GetWidth(), window->GetHeight()) + (glm::vec2)screenCoordinates.offset;
+	shaderToUse->SetUniform2fv("globalOffset", &targetOffset.x);
 
 	glBindVertexArray(textMeshGpuData.gl_vao);
 	glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, fontPathAndStringToTextData[text.fontPath].at(text.string).gl_ssbo_perInstanceData);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, fontPathAndStringToTextData[text.fontPath].at(text.string).gl_ssbo_bezierData);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, fontPathAndStringToTextData[text.fontPath].at(text.string).gl_ssbo_glyphMetaData);
+	glBindBufferBase(GL_UNIFORM_BUFFER, 4, fontPathAndStringToTextData[text.fontPath].at(text.string).gl_ubo_layoutData);
 	glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)0, fontPathAndStringToTextData[text.fontPath].at(text.string).textData.PrintableCharacters.size());
 }
 

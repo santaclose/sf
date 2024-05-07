@@ -58,22 +58,14 @@ namespace SebText
 
     struct InstanceData
     {
-        glm::vec2 pos;
-        glm::vec2 size;
-        float fontSize;
-        int dataOffset;
-
-        InstanceData() = default;
-        inline InstanceData(const glm::vec2& pos, const glm::vec2& size, float fontSize, int dataOffset)
-        {
-            this->pos = pos;
-            this->size = size;
-            this->fontSize = fontSize;
-            this->dataOffset = dataOffset;
-        }
+        glm::vec2 boundsSize;
+        glm::vec2 offset;
+        float lineAdvance;
+        float letterAdvance;
+        float wordAdvance;
+        int contourDataOffset;
     };
 
-
     TextRenderData CreateRenderData(const std::vector<const GlyphData*>& uniqueCharacters, const FontData& fontData);
-    void CreateInstanceData(std::vector<InstanceData>& instanceData, const TextData& textData, const LayoutSettings& layoutSettings, const std::vector<GlyphRenderData>& prevGlyphRenderData);
+    void CreateInstanceData(std::vector<InstanceData>& instanceData, const TextData& textData, const std::vector<GlyphRenderData>& prevGlyphRenderData);
 }

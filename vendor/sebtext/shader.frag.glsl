@@ -5,17 +5,6 @@ flat in int fragInDataOffset;
 
 out vec4 outColor;
 
-struct InstanceData
-{
-	vec2 pos;
-	vec2 size;
-	float fontSize;
-	int dataOffset;
-};
-layout (std430, binding = 1) buffer instanceSSBO
-{
-	InstanceData PerInstanceData[];
-};
 layout (std430, binding = 2) buffer bezierSSBO
 {
 	vec2 BezierData[];

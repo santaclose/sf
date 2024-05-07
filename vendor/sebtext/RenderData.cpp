@@ -170,17 +170,14 @@ SebText::TextRenderData SebText::CreateRenderData(const std::vector<const GlyphD
     return renderData;
 }
 
-void SebText::CreateInstanceData(std::vector<InstanceData>& instanceData, const TextData& textData, const LayoutSettings& layoutSettings, const std::vector<GlyphRenderData>& prevGlyphRenderData)
+void SebText::CreateInstanceData(std::vector<InstanceData>& instanceData, const TextData& textData, const std::vector<GlyphRenderData>& prevGlyphRenderData)
 {
     instanceData.resize(textData.PrintableCharacters.size());
 
     for (int i = 0; i < textData.PrintableCharacters.size(); i++)
     {
         const PrintableCharacter& layout = textData.PrintableCharacters[i];
-        float posX = layout.GetAdvanceX(layoutSettings.FontSize, layoutSettings.LetterSpacing, layoutSettings.WordSpacing);
-        float posY = layout.GetAdvanceY(layoutSettings.FontSize, layoutSettings.LineSpacing);
-
         const GlyphRenderData& info = prevGlyphRenderData[layout.GlyphIndex];
-        instanceData[i] = InstanceData({ posX, posY }, info.Size, layoutSettings.FontSize, info.ContourDataOffset);
+        instanceData[i] = { info.Size, {layout.offsetX, layout.offsetY }, layout.lineAdvance, layout.letterAdvance, layout.wordAdvance, info.ContourDataOffset };
     }
 }

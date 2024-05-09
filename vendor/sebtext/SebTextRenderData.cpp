@@ -1,6 +1,6 @@
-#include "RenderData.h"
+#include "SebTextRenderData.h"
 
-#include "FontData.h"
+#include "SebTextFontData.h"
 
 #define MAX(a, b) (a > b ? a : b)
 #define MIN(a, b) (a < b ? a : b)

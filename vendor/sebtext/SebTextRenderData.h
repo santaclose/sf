@@ -2,7 +2,7 @@
 
 #include <glm/glm.hpp>
 #include <vector>
-#include <TextData.h>
+#include <SebTextTextData.h>
 
 #define ALIGNMENT_LEFT 0
 #define ALIGNMENT_TOP 0

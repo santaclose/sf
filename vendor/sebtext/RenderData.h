@@ -4,6 +4,12 @@
 #include <vector>
 #include <TextData.h>
 
+#define ALIGNMENT_LEFT 0
+#define ALIGNMENT_TOP 0
+#define ALIGNMENT_CENTER 1
+#define ALIGNMENT_RIGHT 2
+#define ALIGNMENT_BOTTOM 2
+
 namespace SebText
 {
     struct Vertex
@@ -32,10 +38,12 @@ namespace SebText
 
     struct LayoutSettings
     {
-        float FontSize = 0.06f;
+        float FontSize = 1.0f;
         float LineSpacing = 1.0f;
         float LetterSpacing = 1.0f;
         float WordSpacing = 1.0f;
+        int AlignmentH = ALIGNMENT_LEFT;
+        int AlignmentV = ALIGNMENT_TOP;
 
         LayoutSettings() = default;
         inline LayoutSettings(float fontSize, float lineSpacing, float letterSpacing, float wordSpacing)
@@ -60,12 +68,12 @@ namespace SebText
     {
         glm::vec2 boundsSize;
         glm::vec2 offset;
-        float lineAdvance;
         float letterAdvance;
         float wordAdvance;
         int contourDataOffset;
+        int line;
     };
 
     TextRenderData CreateRenderData(const std::vector<const GlyphData*>& uniqueCharacters, const FontData& fontData);
-    void CreateInstanceData(std::vector<InstanceData>& instanceData, const TextData& textData, const std::vector<GlyphRenderData>& prevGlyphRenderData);
+    void CreateInstanceData(std::vector<InstanceData>& instanceData, const TextData& textData, const std::vector<GlyphRenderData>& prevGlyphRenderData, const LayoutSettings& layoutSettings);
 }

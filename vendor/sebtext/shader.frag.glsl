@@ -128,7 +128,6 @@ float CalculateHorizontalCoverage(vec2 pixelPos, int dataOffset, float pixelSize
 // Run for every pixel in the glyph's quad mesh
 void main()
 {
-	// outColor = vec4(1, 0, 0, 1);
 	// Size of pixel in glyph space
 	float pixelSize = dFdx(fragInPos.x);
 	float alphaSum = 0;

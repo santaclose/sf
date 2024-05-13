@@ -258,7 +258,7 @@ void sf::Window::ScrollCallback(double xoffset, double yoffset)
 
 void sf::Window::WindowResizeCallback(int width, int height)
 {
-	assert(width > 0 && height > 0);
+	// height can be zero
 	size.x = width;
 	size.y = height;
 

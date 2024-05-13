@@ -33,7 +33,6 @@ namespace sf::Renderer
 
 	float aspectRatio;
 	Entity activeCameraEntity;
-	bool drawSkybox = false;
 
 	glm::mat4 cameraView;
 	glm::mat4 cameraProjection;
@@ -406,9 +405,10 @@ void sf::Renderer::Predraw()
 	// screen space matrix
 	sharedGpuData.screenSpaceMatrix = glm::ortho(0.0f, (float)(window->GetWidth()), (float)(window->GetHeight()), 0.0f);
 
-	// camera matrices
-	assert(activeCameraEntity);
+	if (!activeCameraEntity)
+		return;
 
+	// camera matrices
 	const Transform& transformComponent = activeCameraEntity.GetComponent<Transform>();
 	const Camera& cameraComponent = activeCameraEntity.GetComponent<Camera>();
 	if (cameraComponent.perspective)
@@ -473,6 +473,22 @@ void sf::Renderer::SetMeshMaterial(Mesh mesh, uint32_t materialId, int piece)
 	SetMeshMaterial(mesh, materials[materialId]);
 }
 
+void sf::Renderer::OnComponentAddedToEntity(Entity entity)
+{
+	if (entity.HasComponent<Camera>() && !activeCameraEntity)
+		activeCameraEntity = entity;
+}
+
+void sf::Renderer::SetActiveCameraEntity(Entity cameraEntity)
+{
+	activeCameraEntity = cameraEntity;
+}
+
+sf::Entity sf::Renderer::GetActiveCameraEntity()
+{
+	return activeCameraEntity;
+}
+
 uint32_t sf::Renderer::CreateMaterial(const Material& material)
 {
 	GlMaterial* newMaterial = new GlMaterial();
@@ -497,8 +513,7 @@ void sf::Renderer::SetEnvironment(const std::string& hdrFilePath, DataType hdrDa
 
 void sf::Renderer::DrawSkybox()
 {
-	if (drawSkybox)
-		GlSkybox::Draw(cameraView, cameraProjection);
+	GlSkybox::Draw(cameraView, cameraProjection);
 }
 
 void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
@@ -507,7 +522,8 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 	if (mesh.meshData->vertexCount == 0)
 		return;
 
-	assert(activeCameraEntity);
+	if (!activeCameraEntity)
+		return;
 
 	if (meshGpuData.find(mesh.meshData) == meshGpuData.end()) // create mesh data if not there
 		CreateMeshGpuData(mesh.meshData);
@@ -547,7 +563,8 @@ void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 	if (mesh.meshData->vertexCount == 0)
 		return;
 
-	assert(activeCameraEntity);
+	if (!activeCameraEntity)
+		return;
 
 	if (meshGpuData.find(mesh.meshData) == meshGpuData.end()) // create mesh data if not there
 		CreateMeshGpuData(mesh.meshData);
@@ -582,7 +599,8 @@ void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 void sf::Renderer::DrawVoxelBox(VoxelBox& voxelBox, Transform& transform)
 {
 	glEnable(GL_DEPTH_TEST);
-	assert(activeCameraEntity);
+	if (!activeCameraEntity)
+		return;
 
 	if (meshGpuData.find(&Defaults::cubeMeshData) == meshGpuData.end()) // create mesh data if not there
 		CreateMeshGpuData(&Defaults::cubeMeshData);
@@ -608,7 +626,8 @@ void sf::Renderer::DrawSkeleton(Skeleton& skeleton, Transform& transform)
 {
 	glEnable(GL_DEPTH_TEST);
 
-	assert(activeCameraEntity);
+	if (!activeCameraEntity)
+		return;
 
 	if (meshGpuData.find(&Defaults::cubeMeshData) == meshGpuData.end()) // create mesh data if not there
 		CreateMeshGpuData(&Defaults::cubeMeshData);

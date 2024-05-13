@@ -74,7 +74,6 @@ namespace sf
 		Transform& t_camera = e_camera.AddComponent<Transform>();
 		t_camera.position = { -15.0f, 15.0f, 5.0f };
 		t_camera.rotation = glm::quat(glm::vec3(-0.1f, -0.4f, 0.0f));
-		Renderer::activeCameraEntity = e_camera;
 
 
 		uint32_t whiteMaterial, blackMaterial;

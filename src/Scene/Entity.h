@@ -6,6 +6,8 @@
 
 #include "Scene.h"
 
+#include <Renderer/Renderer.h>
+
 namespace sf {
 
 	class Entity
@@ -26,6 +28,7 @@ namespace sf {
 		{
 			assert(!HasComponent<T>());
 			T& component = m_Scene->GetRegistry().emplace<T>(m_EntityHandle, std::forward<Args>(args)...);
+			Renderer::OnComponentAddedToEntity(*this); // so the camera can be detected
 			return component;
 		}
 

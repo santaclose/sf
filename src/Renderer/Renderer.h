@@ -18,9 +18,6 @@
 
 namespace sf::Renderer {
 
-	extern Entity activeCameraEntity;
-	extern bool drawSkybox;
-
 	bool Initialize(const Window& window);
 	void OnResize();
 
@@ -30,6 +27,11 @@ namespace sf::Renderer {
 
 	void SetMeshMaterial(Mesh mesh, GlMaterial* material, int piece = -1);
 	void SetMeshMaterial(Mesh mesh, uint32_t materialId, int piece = -1);
+
+	void OnComponentAddedToEntity(Entity entity);
+
+	void SetActiveCameraEntity(Entity cameraEntity);
+	Entity GetActiveCameraEntity();
 
 	void SetEnvironment(const std::string& hdrFilePath, DataType hdrDataType = DataType::f16);
 

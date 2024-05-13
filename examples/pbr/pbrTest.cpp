@@ -82,7 +82,6 @@ namespace sf
 
 		gimbal = scene.CreateEntity();
 		cameraObject = scene.CreateEntity();
-		Renderer::activeCameraEntity = cameraObject;
 
 		gimbal.AddComponent<Transform>();
 
@@ -90,7 +89,6 @@ namespace sf
 		cameraObject.AddComponent<Transform>();
 
 		Renderer::SetEnvironment(environments[selectedEnvironment]);
-		Renderer::drawSkybox = true;
 
 		int gltfid;
 

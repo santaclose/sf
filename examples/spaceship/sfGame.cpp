@@ -60,7 +60,6 @@ namespace sf
 		Transform& t_ship = e_ship.AddComponent<Transform>();
 
 		e_mainCamera = scene.CreateEntity();
-		Renderer::activeCameraEntity = e_mainCamera;
 		e_lookBackCamera = scene.CreateEntity();
 
 		Camera& c_mainCamera = e_mainCamera.AddComponent<Camera>();
@@ -124,10 +123,10 @@ namespace sf
 	{
 		if (Input::KeyDown(Input::KeyCode::Space))
 		{
-			if (Renderer::activeCameraEntity.GetComponent<Camera>().id == e_mainCamera.GetComponent<Camera>().id)
-				Renderer::activeCameraEntity = e_lookBackCamera;
+			if (Renderer::GetActiveCameraEntity() == e_mainCamera)
+				Renderer::SetActiveCameraEntity(e_lookBackCamera);
 			else
-				Renderer::activeCameraEntity = e_mainCamera;
+				Renderer::SetActiveCameraEntity(e_mainCamera);
 		}
 		shipSpeed += Input::MouseScrollUp() ? 1.0f : 0.0f;
 		shipSpeed -= Input::MouseScrollDown() ? 1.0f : 0.0f;

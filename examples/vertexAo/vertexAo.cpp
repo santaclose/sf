@@ -64,7 +64,6 @@ namespace sf
 
 		gimbal = scene.CreateEntity();
 		cameraObject = scene.CreateEntity();
-		Renderer::activeCameraEntity = cameraObject;
 
 		gimbal.AddComponent<Transform>();
 

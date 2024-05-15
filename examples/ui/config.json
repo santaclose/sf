@@ -1,0 +1,11 @@
+{
+	"name": "ui",
+	"windowWidth": 720,
+	"windowHeight": 1000,
+	"msaaCount": 8,
+	"clearColorR": 0.0,
+	"clearColorG": 0.0,
+	"clearColorB": 0.0,
+	"imguiBarEnabled": true,
+	"cursorEnabled": true
+}

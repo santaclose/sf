@@ -1,5 +1,8 @@
-#define IMGUI_IMPL_OPENGL_LOADER_GLAD
+#define TINYGLTF_IMPLEMENTATION
+#define TINYGLTF_USE_CPP14
+#include <tiny_gltf.h>
 
+#define IMGUI_IMPL_OPENGL_LOADER_GLAD
 #include <backends/imgui_impl_opengl3.cpp>
 #include <backends/imgui_impl_glfw.cpp>
 

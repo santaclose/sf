@@ -66,7 +66,7 @@ project "sf"
 		"vendor/tinygltf",
 		"vendor/gli/gli",
 		"vendor/aobaker",
-		"vendor/entt",
+		"vendor/entt/src/entt",
 		"vendor/nanosvg",
 		"vendor/imgui",
 		"vendor/sebtext"

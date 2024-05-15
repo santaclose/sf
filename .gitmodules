@@ -13,3 +13,6 @@
 [submodule "vendor/imgui"]
 	path = vendor/imgui
 	url = git@github.com:santaclose/imgui.git
+[submodule "vendor/entt"]
+	path = vendor/entt
+	url = https://github.com/skypjack/entt.git

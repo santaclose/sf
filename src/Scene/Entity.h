@@ -42,7 +42,7 @@ namespace sf {
 		template<typename T>
 		bool HasComponent()
 		{
-			return m_Scene->GetRegistry().has<T>(m_EntityHandle);
+			return m_Scene->GetRegistry().try_get<T>(m_EntityHandle);
 		}
 
 		template<typename T>

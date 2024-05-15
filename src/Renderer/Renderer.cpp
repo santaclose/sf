@@ -668,10 +668,10 @@ void sf::Renderer::DrawSprite(Sprite& sprite, ScreenCoordinates& screenCoordinat
 	if (sprite.alignmentH != ALIGNMENT_LEFT) spriteTopLeft.x -= ((float)sprite.bitmap->width) * (sprite.alignmentH * 0.5f);
 	if (sprite.alignmentV != ALIGNMENT_LEFT) spriteTopLeft.y -= ((float)sprite.bitmap->height) * (sprite.alignmentV * 0.5f);
 	spriteTopLeft = glm::vec2(glm::round(spriteTopLeft.x), glm::round(spriteTopLeft.y));
-	spriteQuad.vertices[0] = spriteTopLeft;
-	spriteQuad.vertices[2] = spriteTopLeft + glm::vec2(0.0f, (float)(sprite.bitmap->height));
-	spriteQuad.vertices[4] = spriteTopLeft + glm::vec2((float)(sprite.bitmap->width), (float)(sprite.bitmap->height));
-	spriteQuad.vertices[6] = spriteTopLeft + glm::vec2((float)(sprite.bitmap->width), 0.0f);
+	spriteQuad.vertices[2] = spriteTopLeft;
+	spriteQuad.vertices[0] = spriteTopLeft + glm::vec2(0.0f, (float)(sprite.bitmap->height));
+	spriteQuad.vertices[6] = spriteTopLeft + glm::vec2((float)(sprite.bitmap->width), (float)(sprite.bitmap->height));
+	spriteQuad.vertices[4] = spriteTopLeft + glm::vec2((float)(sprite.bitmap->width), 0.0f);
 
 	glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);

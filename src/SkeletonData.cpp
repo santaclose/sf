@@ -41,8 +41,8 @@ void sf::SkeletonData::UpdateAnimation()
 					}
 					case AnimationChannel::PathType::SCALE:
 					{
-						glm::vec4 trans = glm::mix(sampler.outputsVec4[i], sampler.outputsVec4[i + 1], u);
-						bones[channel.bone].scale= glm::max(glm::max(trans.x, trans.y), trans.z);
+						glm::vec4 scale = glm::mix(sampler.outputsVec4[i], sampler.outputsVec4[i + 1], u);
+						bones[channel.bone].scale = glm::max(glm::max(scale.x, scale.y), scale.z);
 						break;
 					}
 					case AnimationChannel::PathType::ROTATION:

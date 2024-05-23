@@ -12,7 +12,7 @@
 	url = https://github.com/santaclose/aobaker
 [submodule "vendor/imgui"]
 	path = vendor/imgui
-	url = git@github.com:santaclose/imgui.git
+	url = https://github.com/santaclose/imgui
 [submodule "vendor/entt"]
 	path = vendor/entt
 	url = https://github.com/skypjack/entt.git

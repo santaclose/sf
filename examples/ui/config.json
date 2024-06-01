@@ -6,6 +6,6 @@
 	"clearColorR": 0.0,
 	"clearColorG": 0.0,
 	"clearColorB": 0.0,
-	"imguiBarEnabled": true,
+	"toolBarEnabled": true,
 	"cursorEnabled": true
 }

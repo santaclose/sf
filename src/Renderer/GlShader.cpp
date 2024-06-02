@@ -4,6 +4,37 @@
 #include <string>
 #include <fstream>
 
+uint32_t sf::GlShader::CheckLinkStatusAndReturnProgram(uint32_t program, bool outputErrorMessages)
+{
+	if (glGetError() != GL_NO_ERROR)
+		return 0;
+
+	GLint linkStatus;
+	glGetProgramiv(program, GL_LINK_STATUS, &linkStatus);
+	if (linkStatus != 0)
+		return program;
+	if (outputErrorMessages)
+	{
+		GLint infoLogLength;
+		glGetProgramiv(program, GL_INFO_LOG_LENGTH, &infoLogLength);
+
+		// Info log length includes the null terminator, so 1 means that the info log is an
+		// empty string.
+		if (infoLogLength > 1)
+		{
+			std::vector<GLchar> infoLog(infoLogLength);
+			glGetProgramInfoLog(program, static_cast<GLsizei>(infoLog.size()), nullptr,
+				&infoLog[0]);
+			std::cout << "[GlShader] Program link failed: " << &infoLog[0];
+		}
+		else
+			std::cout << "[GlShader] Program link failed. <Empty log message>";
+	}
+
+	glDeleteProgram(program);
+	return 0;
+}
+
 uint32_t sf::GlShader::CompileShader(uint32_t type, const std::string& source)
 {
 	std::string messageType;
@@ -74,6 +105,7 @@ void sf::GlShader::CreateFromFiles(const std::string& vertexShaderPath, const st
 	glAttachShader(gl_id, vs);
 	glAttachShader(gl_id, fs);
 	glLinkProgram(gl_id);
+	CheckLinkStatusAndReturnProgram(gl_id, true);
 	glValidateProgram(gl_id);
 
 	glDeleteShader(vs);

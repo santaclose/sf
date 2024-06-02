@@ -26,6 +26,7 @@ namespace sf {
 	public:
 		uint32_t gl_id;
 	private:
+		static uint32_t CheckLinkStatusAndReturnProgram(uint32_t program, bool outputErrorMessages);
 		static uint32_t CompileShader(uint32_t type, const std::string& source);
 		int GetUniformLocation(const std::string& name);
 		void AssignTextureNumberToUniform(const std::string& name);

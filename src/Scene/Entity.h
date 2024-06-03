@@ -21,6 +21,7 @@ namespace sf {
 		Entity(entt::entity handle, Scene * scene);
 		Entity(const Entity & other) = default;
 
+		bool IsEnabled();
 		void SetEnabled(bool value);
 
 		template<typename T, typename... Args>

@@ -300,8 +300,8 @@ namespace sf::GltfImporter
 			return;
 		}
 
-		skeleton.bones.emplace_back();
-		Bone& currentBone = skeleton.bones.back();
+		skeleton.m_bones.emplace_back();
+		Bone& currentBone = skeleton.m_bones.back();
 
 		if (model.nodes[node].scale.size() == 3)
 			currentBone.scale = glm::max(glm::max(model.nodes[node].scale[0], model.nodes[node].scale[1]), model.nodes[node].scale[2]);
@@ -314,7 +314,7 @@ namespace sf::GltfImporter
 		else
 			currentBone.localMatrix = glm::translate(glm::mat4(1.0f), currentBone.translation) * glm::mat4(currentBone.rotation) * glm::scale(glm::mat4(1.0f), glm::vec3(currentBone.scale));
 
-		int currentBoneIndex = skeleton.bones.size() - 1;
+		int currentBoneIndex = skeleton.m_bones.size() - 1;
 		nodeToBone[node] = currentBoneIndex;
 		currentBone.parent = parentBone;
 
@@ -325,7 +325,7 @@ namespace sf::GltfImporter
 
 void sf::GltfImporter::GenerateSkeleton(int id, SkeletonData& skeleton, int index)
 {
-	skeleton.bones.clear();
+	skeleton.m_bones.clear();
 
 	tinygltf::Model& model = *(models[id]);
 
@@ -342,18 +342,20 @@ void sf::GltfImporter::GenerateSkeleton(int id, SkeletonData& skeleton, int inde
 	invModelMatricesTemp.resize(accessor.count);
 	memcpy(invModelMatricesTemp.data(), &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(glm::mat4));
 	for (size_t i = 0; i < model.skins[index].joints.size(); i++)
-		skeleton.bones[nodeToBonePerModel[id][model.skins[index].joints[i]]].invModelMatrix = invModelMatricesTemp[i];
+		skeleton.m_bones[nodeToBonePerModel[id][model.skins[index].joints[i]]].invModelMatrix = invModelMatricesTemp[i];
 
-	std::cout << "[GltfImporter] Generated skeleton with " << skeleton.bones.size() << " bones\n";
+	std::cout << "[GltfImporter] Generated skeleton with " << skeleton.m_bones.size() << " bones\n";
 
 	// reserve space for skinning matrices
-	skeleton.skinningMatrices.resize(skeleton.bones.size());
+	skeleton.m_skinningMatrices.resize(skeleton.m_bones.size());
 
 	// load animations
 	for (tinygltf::Animation& anim : model.animations)
 	{
-		skeleton.animations.emplace_back();
-		SkeletalAnimation& skeletonAnimation = skeleton.animations.back();
+		skeleton.m_animations.emplace_back();
+		SkeletalAnimation& skeletonAnimation = skeleton.m_animations.back();
+		skeletonAnimation.name = anim.name.c_str();
+		std::cout << "[GltfImporter] Importing animation " << skeletonAnimation.name << std::endl;
 		for (auto& samp : anim.samplers)
 		{
 			skeletonAnimation.samplers.emplace_back();
@@ -449,5 +451,5 @@ void sf::GltfImporter::GenerateSkeleton(int id, SkeletonData& skeleton, int inde
 		std::cout << "[GltfImporter] Imported " << skeletonAnimation.samplers.size() << " samplers and " << skeletonAnimation.channels.size() << " channels\n";
 	}
 
-	std::cout << "[GltfImporter] Imported " << skeleton.animations.size() << " animations\n";
+	std::cout << "[GltfImporter] Imported " << skeleton.m_animations.size() << " animations\n";
 }

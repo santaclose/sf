@@ -74,7 +74,8 @@ project "sf"
 		"vendor/entt/src/entt",
 		"vendor/nanosvg",
 		"vendor/imgui",
-		"vendor/sebtext"
+		"vendor/sebtext",
+		"vendor/orangeduck"
 	}
 
 	links 

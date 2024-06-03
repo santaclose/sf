@@ -576,14 +576,14 @@ void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
 
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, skeletonSsbos[mesh.skeletonData]);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, mesh.skeletonData->skinningMatrices.size() * sizeof(glm::mat4), &(mesh.skeletonData->skinningMatrices[0][0][0]), GL_DYNAMIC_DRAW);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, mesh.skeletonData->m_skinningMatrices.size() * sizeof(glm::mat4), &(mesh.skeletonData->m_skinningMatrices[0][0][0]), GL_DYNAMIC_DRAW);
 
 	for (uint32_t i = 0; i < mesh.meshData->pieces.size(); i++)
 	{
 		GlMaterial* materialToUse = meshMaterials[mesh.id][i];
 
 		materialToUse->Bind();
-		materialToUse->m_shader->SetUniform1i("animate", mesh.skeletonData->animate);
+		materialToUse->m_shader->SetUniform1i("animate", mesh.skeletonData->m_animate);
 
 		uint32_t drawEnd, drawStart;
 		drawStart = mesh.meshData->pieces[i];
@@ -636,11 +636,11 @@ void sf::Renderer::DrawSkeleton(Skeleton& skeleton, Transform& transform)
 	shaderToUse->Bind();
 
 	glm::mat4 worldMatrix = transform.ComputeMatrix();
-	glm::mat4* boneMatrices = (glm::mat4*)alloca(sizeof(glm::mat4) * skeleton.skeletonData->bones.size());
+	glm::mat4* boneMatrices = (glm::mat4*)alloca(sizeof(glm::mat4) * skeleton.skeletonData->m_bones.size());
 
-	for (uint32_t i = 0; i < skeleton.skeletonData->bones.size(); i++)
+	for (uint32_t i = 0; i < skeleton.skeletonData->m_bones.size(); i++)
 	{
-		const Bone* currentBone = &(skeleton.skeletonData->bones[i]);
+		const Bone* currentBone = &(skeleton.skeletonData->m_bones[i]);
 		if (currentBone->parent < 0)
 			boneMatrices[i] = worldMatrix * currentBone->localMatrix;
 		else

@@ -174,8 +174,9 @@ namespace sf
 
 	void AnimationChange(bool next)
 	{
-		skeletons[selectedModel].animationIndex += next ? 1 : -1;
-		skeletons[selectedModel].animationIndex = Math::Mod(skeletons[selectedModel].animationIndex, skeletons[selectedModel].animations.size());
+		skeletons[selectedModel].SetAnimationIndex(Math::Mod(
+			skeletons[selectedModel].GetAnimationIndex() + (next ? 1 : -1),
+			skeletons[selectedModel].GetAnimationCount()));
 	}
 
 	void Game::OnUpdate(float deltaTime, float time)
@@ -187,18 +188,14 @@ namespace sf
 		else if (Input::KeyDown(Input::KeyCode::Left))
 			GalleryChange(false);
 		else if (Input::KeyDown(Input::KeyCode::KP5))
-			skeletons[selectedModel].animate = !skeletons[selectedModel].animate;
+			skeletons[selectedModel].SetAnimate(!skeletons[selectedModel].GetAnimate());
 		else if (Input::KeyDown(Input::KeyCode::KP6))
 			AnimationChange(true);
 		else if (Input::KeyDown(Input::KeyCode::KP4))
 			AnimationChange(false);
 
-		if (skeletons[selectedModel].animate)
-		{
-			skeletons[selectedModel].animationTime += deltaTime;
-			skeletons[selectedModel].ClampAnimationTime();
-			skeletons[selectedModel].UpdateAnimation();
-		}
+		if (skeletons[selectedModel].GetAnimate())
+			skeletons[selectedModel].UpdateAnimation(deltaTime);
 
 		UpdateCamera(deltaTime);
 
@@ -230,7 +227,7 @@ namespace sf
 			}
 			if (ImGui::BeginMenu("Animation"))
 			{
-				if (ImGui::MenuItem("Animate", "NumPad5")) { skeletons[selectedModel].animate = !skeletons[selectedModel].animate; }
+				if (ImGui::MenuItem("Animate", "NumPad5")) { skeletons[selectedModel].SetAnimate(!skeletons[selectedModel].GetAnimate()); }
 				if (ImGui::MenuItem("Previous", "NumPad4")) { AnimationChange(false); }
 				if (ImGui::MenuItem("Next", "NumPad6")) { AnimationChange(true); }
 				ImGui::EndMenu();

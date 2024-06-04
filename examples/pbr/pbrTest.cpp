@@ -6,6 +6,7 @@
 #include <MeshProcessor.h>
 #include <Math.hpp>
 #include <Input.h>
+#include <FileUtils.h>
 
 #include <Renderer/Renderer.h>
 
@@ -52,23 +53,9 @@ namespace sf
 
 	int selectedModel = 0;
 
-	void DownloadAssetDependencies(const std::vector<std::string>& urls, const std::string& targetPath)
-	{
-		for (const std::string& url : urls)
-		{
-			const std::string fileName = url.substr(url.find_last_of('/') + 1);
-			std::ifstream f(targetPath + fileName);
-			if (!f.good()) // download if file doesn't exist
-			{
-				std::string commandString = "curl " + url + " --output " + targetPath + fileName;
-				system(commandString.c_str());
-			}
-		}
-	}
-
 	void Game::Initialize(int argc, char** argv)
 	{
-		DownloadAssetDependencies({
+		FileUtils::DownloadFiles({
 			"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb",
 			"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/SciFiHelmet/glTF/SciFiHelmet.gltf",
 			"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/SciFiHelmet/glTF/SciFiHelmet.bin",

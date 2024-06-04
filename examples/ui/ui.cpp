@@ -9,6 +9,7 @@
 #include <Input.h>
 #include <MeshProcessor.h>
 #include <GameInitializationData.h>
+#include <FileUtils.h>
 
 #include <Renderer/Renderer.h>
 
@@ -49,7 +50,7 @@ namespace sf
 
 	void Game::Initialize(int argc, char** argv)
 	{
-		DownloadAssetDependencies({
+		FileUtils::DownloadFiles({
 			"https://www.wikipedia.org/portal/wikipedia.org/assets/img/Wikipedia-logo-v2.png",
 			"http://fonts.gstatic.com/s/abeezee/v11/mE5BOuZKGln_Ex0uYKpIaw.ttf",
 			"https://fonts.gstatic.com/s/comicneue/v3/4UaHrEJDsxBrF37olUeDx63j5pN1MwI.ttf",

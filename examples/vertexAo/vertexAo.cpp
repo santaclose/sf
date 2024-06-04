@@ -9,6 +9,7 @@
 #include <Input.h>
 #include <MeshProcessor.h>
 #include <GameInitializationData.h>
+#include <FileUtils.h>
 
 #include <Renderer/Renderer.h>
 
@@ -54,13 +55,7 @@ namespace sf
 
 	void Game::Initialize(int argc, char** argv)
 	{
-		std::ifstream f("examples/vertexAo/bunny/bunny.obj");
-		if (!f.good()) // download file if not there
-		{
-			system("curl https://casual-effects.com/g3d/data10/research/model/bunny/bunny.zip --output examples/vertexAo/bunny.zip");
-			system("powershell -Command \"Expand-Archive examples\\vertexAo\\bunny.zip -DestinationPath examples\\vertexAo\\bunny\"");
-			system("del examples\\vertexAo\\bunny.zip");
-		}
+		FileUtils::DownloadFiles({ "https://casual-effects.com/g3d/data10/research/model/bunny/bunny.zip" }, "examples/vertexAo/");
 
 		gimbal = scene.CreateEntity();
 		cameraObject = scene.CreateEntity();

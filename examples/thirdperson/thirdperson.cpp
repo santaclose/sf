@@ -9,6 +9,7 @@
 #include <Math.hpp>
 #include <Input.h>
 #include <GameInitializationData.h>
+#include <FileUtils.h>
 
 #include <Renderer/Renderer.h>
 
@@ -79,7 +80,7 @@ namespace sf
 
 	void Game::Initialize(int argc, char** argv)
 	{
-		DownloadAssetDependencies({
+		FileUtils::DownloadFiles({
 			"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Fox/glTF-Binary/Fox.glb",
 			"https://us.v-cdn.net/5021068/uploads/editor/ha/7frj09nru4zu.png",
 			"https://github.com/santaclose/sample_models/raw/master/shanyung_blendspace2d.glb"

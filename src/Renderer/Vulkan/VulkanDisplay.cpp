@@ -7,7 +7,7 @@
 
 sf::Renderer::VulkanDisplay* sf::Renderer::VulkanDisplay::Instance = nullptr;
 
-bool sf::Renderer::VulkanDisplay::Initialize(const Window& windowArg, bool (*createPipelineFunc)(void))
+bool sf::Renderer::VulkanDisplay::Initialize(const Window& windowArg)
 {
 	assert(Instance == nullptr);
 	Instance = this;
@@ -61,6 +61,8 @@ bool sf::Renderer::VulkanDisplay::Initialize(const Window& windowArg, bool (*cre
 	// Swapchain
 	CreateSwapchain();
 
+	swapchainFences.resize(swapchain.image_count, VK_NULL_HANDLE);
+
 	// Get queues
 	{
 		auto queue_ret = this->device.get_queue(vkb::QueueType::graphics);
@@ -81,11 +83,7 @@ bool sf::Renderer::VulkanDisplay::Initialize(const Window& windowArg, bool (*cre
 		this->presentQueue = queue_ret.value();
 	}
 
-	// Pipeline
-	createPipelineFunc();
-
 	// Frame buffers
-	this->commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 	this->swapchainImages = this->swapchain.get_images().value();
 	this->swapchainImageViews = this->swapchain.get_image_views().value();
 
@@ -98,19 +96,19 @@ bool sf::Renderer::VulkanDisplay::Initialize(const Window& windowArg, bool (*cre
 	return true;
 }
 
-void sf::Renderer::VulkanDisplay::Terminate(void (*destroyBuffersFunc)(void))
+void sf::Renderer::VulkanDisplay::Terminate(void (*destroyBuffersFunc)(void), void (*destroyPipelinesFunc)(void))
 {
 	vkDeviceWaitIdle(this->device.device);
-	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	for (int i = 0; i < ARRAY_LEN(frameData); i++)
 	{
-		this->disp.destroySemaphore(this->renderFinishedSemaphores[i], nullptr);
-		this->disp.destroySemaphore(this->imageAvailableSemaphores[i], nullptr);
-		this->disp.destroyFence(this->inFlightFences[i], nullptr);
+		this->disp.destroySemaphore(this->frameData[i].renderFinishedSemaphore, nullptr);
+		this->disp.destroySemaphore(this->frameData[i].imageAvailableSemaphore, nullptr);
+		this->disp.destroyFence(this->frameData[i].fence, nullptr);
+		this->disp.destroyCommandPool(this->frameData[i].commandPool, nullptr);
 	}
 
-	this->disp.destroyCommandPool(this->commandPool, nullptr);
-	this->disp.destroyPipeline(this->graphicsPipeline, nullptr);
-	this->disp.destroyPipelineLayout(this->pipelineLayout, nullptr);
+	if (destroyPipelinesFunc != nullptr)
+		destroyPipelinesFunc();
 
 	this->swapchain.destroy_image_views(this->swapchainImageViews);
 
@@ -134,31 +132,27 @@ bool sf::Renderer::VulkanDisplay::CreateCommandPool()
 	pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 	pool_info.queueFamilyIndex = this->device.get_queue_index(vkb::QueueType::graphics).value();
 
-	if (this->disp.createCommandPool(&pool_info, nullptr, &this->commandPool) != VK_SUCCESS)
+	for (int i = 0; i < ARRAY_LEN(frameData); i++)
 	{
-		std::cout << "[VulkanDisplay] Failed to create command pool\n";
-		return false;
+		if (this->disp.createCommandPool(&pool_info, nullptr, &this->frameData[i].commandPool) != VK_SUCCESS)
+		{
+			std::cout << "[VulkanDisplay] Failed to create command pool\n";
+			return false;
+		}
+		VkCommandBufferAllocateInfo allocInfo = {};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.commandPool = this->frameData[i].commandPool;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandBufferCount = 1;
+
+		if (this->disp.allocateCommandBuffers(&allocInfo, &(this->frameData[i].commandBuffer)) != VK_SUCCESS)
+			return false;
 	}
-
-	// Command buffers
-	VkCommandBufferAllocateInfo allocInfo = {};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = this->commandPool;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = MAX_FRAMES_IN_FLIGHT;
-
-	if (this->disp.allocateCommandBuffers(&allocInfo, this->commandBuffers.data()) != VK_SUCCESS)
-		return false;
-
 	return true;
 }
 
 bool sf::Renderer::VulkanDisplay::CreateSyncObjects()
 {
-	this->imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-	this->renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-	this->inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
-
 	VkSemaphoreCreateInfo semaphore_info = {};
 	semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
@@ -166,11 +160,11 @@ bool sf::Renderer::VulkanDisplay::CreateSyncObjects()
 	fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 	fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	for (int i = 0; i < ARRAY_LEN(frameData); i++)
 	{
-		if (this->disp.createSemaphore(&semaphore_info, nullptr, &this->imageAvailableSemaphores[i]) != VK_SUCCESS ||
-			this->disp.createSemaphore(&semaphore_info, nullptr, &this->renderFinishedSemaphores[i]) != VK_SUCCESS ||
-			this->disp.createFence(&fence_info, nullptr, &this->inFlightFences[i]) != VK_SUCCESS)
+		if (this->disp.createSemaphore(&semaphore_info, nullptr, &this->frameData[i].imageAvailableSemaphore) != VK_SUCCESS ||
+			this->disp.createSemaphore(&semaphore_info, nullptr, &this->frameData[i].renderFinishedSemaphore) != VK_SUCCESS ||
+			this->disp.createFence(&fence_info, nullptr, &this->frameData[i].fence) != VK_SUCCESS)
 		{
 			std::cout << "[VulkanDisplay] Failed to create sync objects\n";
 			return false;
@@ -181,10 +175,8 @@ bool sf::Renderer::VulkanDisplay::CreateSyncObjects()
 
 bool sf::Renderer::VulkanDisplay::Predraw(const glm::vec4& clearColor)
 {
-	VkFence fenceToAwait = InFlightFence();
-	this->disp.waitForFences(1, &fenceToAwait, VK_TRUE, UINT64_MAX);
-	this->disp.resetFences(1, &fenceToAwait);
-
+	VkFence currentInFlightFence = InFlightFence();
+	this->disp.waitForFences(1, &currentInFlightFence, VK_TRUE, UINT64_MAX);
 	VkResult result = this->disp.acquireNextImageKHR(
 		this->swapchain, UINT64_MAX, ImageAvailableSemaphore(), VK_NULL_HANDLE, &swapchainImageIndex);
 
@@ -195,6 +187,10 @@ bool sf::Renderer::VulkanDisplay::Predraw(const glm::vec4& clearColor)
 		std::cout << "[VulkanDisplay] Failed to acquire swapchain image. Error " << result << "\n";
 		return false;
 	}
+
+	if (swapchainFences[swapchainImageIndex] != VK_NULL_HANDLE)
+		this->disp.waitForFences(1, &swapchainFences[swapchainImageIndex], VK_TRUE, UINT64_MAX);
+	swapchainFences[swapchainImageIndex] = currentInFlightFence;
 
 	VkCommandBufferBeginInfo begin_info = {};
 	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -250,7 +246,8 @@ bool sf::Renderer::VulkanDisplay::Predraw(const glm::vec4& clearColor)
 	this->disp.cmdBeginRendering(CommandBuffer(), &renderInfo);
 	this->disp.cmdSetViewport(CommandBuffer(), 0, 1, &viewport);
 	this->disp.cmdSetScissor(CommandBuffer(), 0, 1, &scissor);
-	this->disp.cmdBindPipeline(CommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, this->graphicsPipeline);
+
+	this->disp.resetFences(1, &currentInFlightFence);
 
 	return true;
 }
@@ -297,13 +294,12 @@ bool sf::Renderer::VulkanDisplay::Postdraw()
 		return false;
 	}
 
-	VkSwapchainKHR swapChains[] = { this->swapchain };
 	VkPresentInfoKHR present_info = {};
 	present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	present_info.waitSemaphoreCount = 1;
 	present_info.pWaitSemaphores = signal_semaphores;
 	present_info.swapchainCount = 1;
-	present_info.pSwapchains = swapChains;
+	present_info.pSwapchains = &this->swapchain.swapchain;
 	present_info.pImageIndices = &swapchainImageIndex;
 
 	VkResult result = this->disp.queuePresentKHR(this->presentQueue, &present_info);
@@ -315,19 +311,25 @@ bool sf::Renderer::VulkanDisplay::Postdraw()
 		return false;
 	}
 
-	this->currentFrameInFlight = (this->currentFrameInFlight + 1) % MAX_FRAMES_IN_FLIGHT;
+	currentFrameInFlight = (currentFrameInFlight + 1) % MAX_FRAMES_IN_FLIGHT;
+	currentFrame++;
 	return true;
 }
 
 void sf::Renderer::VulkanDisplay::CreateDepthResources(bool recreate)
 {
-	depthFormat = VulkanUtils::FindDepthFormat();
+	depthFormat = VulkanUtils::FindSupportedFormat(
+		{ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
+		VK_IMAGE_TILING_OPTIMAL,
+		VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+	);
 	if (recreate)
 	{
 		vkDestroyImageView(this->device, depthImageView, nullptr);
 		vkDestroyImage(this->device, depthImage, nullptr);
 		vkFreeMemory(this->device, depthImageMemory, nullptr);
 	}
+
 	VulkanUtils::CreateImage(this->swapchain.extent.width, this->swapchain.extent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory);
 	depthImageView = VulkanUtils::CreateImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 }
@@ -354,15 +356,18 @@ bool sf::Renderer::VulkanDisplay::CreateSwapchain(bool recreate)
 bool sf::Renderer::VulkanDisplay::RecreateSwapchain()
 {
 	this->disp.deviceWaitIdle();
-	this->disp.destroyCommandPool(this->commandPool, nullptr);
+	for (int i = 0; i < ARRAY_LEN(frameData); i++)
+		this->disp.destroyCommandPool(this->frameData[i].commandPool, nullptr);
 	this->swapchain.destroy_image_views(this->swapchainImageViews);
 
-	if (!CreateSwapchain(true)) return false;
+	if (!CreateSwapchain(true))
+		return false;
 
 	this->swapchainImages = this->swapchain.get_images().value();
 	this->swapchainImageViews = this->swapchain.get_image_views().value();
 
-	if (!CreateCommandPool()) return false;
+	if (!CreateCommandPool())
+		return false;
 
 	return true;
 }

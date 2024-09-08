@@ -32,8 +32,26 @@
 
 namespace sf::Renderer
 {
+	struct Pipeline
+	{
+		VkPipelineLayout layout;
+		VkPipeline pipeline;
+		std::string vertexShaderPath;
+		std::string fragmentShaderPath;
+	};
+
+	struct FrameData
+	{
+		VkDescriptorSet descriptorSet;
+		VulkanShaderBuffer perFrameUniformBuffer;
+		VulkanShaderBuffer userUniformBuffer;
+	};
+	FrameData frameData[MAX_FRAMES_IN_FLIGHT];
+
 	const Window* window;
 	VulkanDisplay vkdd;
+
+	std::vector<Pipeline> pipelines;
 
 	float aspectRatio = 16.0f / 9.0f;
 	Entity activeCameraEntity;
@@ -80,7 +98,6 @@ namespace sf::Renderer
 		VkDeviceMemory vertexBufferMemory;
 		VkBuffer indexBuffer;
 		VkDeviceMemory indexBufferMemory;
-		size_t vertexAttributeArrayOffset;
 	};
 	std::unordered_map<const sf::MeshData*, MeshGpuData> meshGpuData;
 
@@ -88,10 +105,6 @@ namespace sf::Renderer
 	struct PerObjectData
 	{
 		glm::mat4 modelMatrix;
-		int vertexAttributeArrayOffset;
-		int vertexAttributeArrayStride;
-		//int vertexShaderId;
-		//int fragmentShaderId;
 	};
 	struct PerFrameData
 	{
@@ -100,27 +113,30 @@ namespace sf::Renderer
 		glm::mat4 skyboxMatrix;
 		glm::vec3 cameraPosition;
 	};
+
 	PerObjectData perObjectData;
-	VulkanShaderBuffer perFrameUniformBuffer;
-	VulkanShaderBuffer userUniformBuffer;
-	VulkanShaderBuffer vertexAttributeBuffer;
-	VulkanShaderBuffer particleMatrixBuffer;
 	PerFrameData perFrameUniformData;
 	float time = 0.0f;
-	std::vector<float> vertexAttributeData;
-	std::vector<glm::mat4> particleMatrices;
-
 
 	VkDescriptorSetLayout descriptorSetLayout;
 	VkDescriptorPool descriptorPool;
-	std::vector<VkDescriptorSet> descriptorSets;
 
+	void DestroyPipelines()
+	{
+		for (int i = 0; i < pipelines.size(); i++)
+		{
+			vkdd.disp.destroyPipeline(pipelines[i].pipeline, nullptr);
+			vkdd.disp.destroyPipelineLayout(pipelines[i].layout, nullptr);
+		}
+	}
 	void DestroyMeshBuffers()
 	{
-		perFrameUniformBuffer.Destroy();
-		userUniformBuffer.Destroy();
-		particleMatrixBuffer.Destroy();
-		vertexAttributeBuffer.Destroy();
+		for (int i = 0; i < ARRAY_LEN(frameData); i++)
+		{
+			frameData[i].perFrameUniformBuffer.Destroy();
+			frameData[i].userUniformBuffer.Destroy();
+		}
+
 		vkDestroyDescriptorPool(VulkanDisplay::Device(), descriptorPool, nullptr);
 		vkDestroyDescriptorSetLayout(VulkanDisplay::Device(), descriptorSetLayout, nullptr);
 		for (auto pair : meshGpuData)
@@ -132,11 +148,14 @@ namespace sf::Renderer
 		}
 	}
 
-	bool CreatePipeline()
+	bool CreatePipeline(const std::string& vertexShaderPath, const std::string& fragmentShaderPath, Pipeline& newPipeline)
 	{
+		newPipeline.fragmentShaderPath = fragmentShaderPath;
+		newPipeline.vertexShaderPath = vertexShaderPath;
+
 		VkShaderModule vertexShaderModule, fragmentShaderModule;
-		assert(VulkanUtils::CreateShaderModule("assets/vulkan/testV.spv", vertexShaderModule));
-		assert(VulkanUtils::CreateShaderModule("assets/vulkan/testF.spv", fragmentShaderModule));
+		assert(VulkanUtils::CreateShaderModule(vertexShaderPath + ".spv", vertexShaderModule));
+		assert(VulkanUtils::CreateShaderModule(fragmentShaderPath + ".spv", fragmentShaderModule));
 
 		VkPipelineShaderStageCreateInfo vert_stage_info = {};
 		vert_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -165,25 +184,6 @@ namespace sf::Renderer
 		input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 		input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		input_assembly.primitiveRestartEnable = VK_FALSE;
-
-		VkViewport viewport = {};
-		viewport.x = 0.0f;
-		viewport.y = (float)vkdd.swapchain.extent.height;
-		viewport.width = (float)vkdd.swapchain.extent.width;
-		viewport.height = -(float)vkdd.swapchain.extent.height;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-
-		VkRect2D scissor = {};
-		scissor.offset = { 0, 0 };
-		scissor.extent = vkdd.swapchain.extent;
-
-		VkPipelineViewportStateCreateInfo viewport_state = {};
-		viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-		viewport_state.viewportCount = 1;
-		viewport_state.pViewports = &viewport;
-		viewport_state.scissorCount = 1;
-		viewport_state.pScissors = &scissor;
 
 		VkPipelineRasterizationStateCreateInfo rasterizer = {};
 		rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
@@ -226,19 +226,20 @@ namespace sf::Renderer
 
 		// Descriptor set
 		{
-			perFrameUniformBuffer.Create(VulkanShaderBufferType::UniformBuffer, true, sizeof(PerFrameData));
-			userUniformBuffer.Create(VulkanShaderBufferType::UniformBuffer, true, sizeof(float));
-			particleMatrixBuffer.Create(VulkanShaderBufferType::StorageBuffer, false, sizeof(glm::mat4) * 1000);
-			vertexAttributeBuffer.Create(VulkanShaderBufferType::StorageBuffer, false, 3000000);
+			for (int i = 0; i < ARRAY_LEN(frameData); i++)
+			{
+				frameData[i].perFrameUniformBuffer.Create(VulkanShaderBufferType::UniformBuffer, sizeof(PerFrameData));
+				frameData[i].userUniformBuffer.Create(VulkanShaderBufferType::UniformBuffer, sizeof(float));
+			}
 
 			VkDescriptorPoolSize poolSize{};
 			poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			poolSize.descriptorCount = static_cast<uint32_t>(VulkanDisplay::MaxFramesInFlight());
+			poolSize.descriptorCount = MAX_FRAMES_IN_FLIGHT;
 			VkDescriptorPoolCreateInfo poolInfo{};
 			poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 			poolInfo.poolSizeCount = 1;
 			poolInfo.pPoolSizes = &poolSize;
-			poolInfo.maxSets = static_cast<uint32_t>(VulkanDisplay::MaxFramesInFlight());
+			poolInfo.maxSets = MAX_FRAMES_IN_FLIGHT;
 			if (vkCreateDescriptorPool(VulkanDisplay::Device(), &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
 			{
 				std::cout << "[Renderer] Failed to create descriptor pool\n";
@@ -248,13 +249,11 @@ namespace sf::Renderer
 			VkDescriptorSetLayoutBinding descriptorSetLayoutBindings[] = {
 				{ 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
 				{ 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
-				{ 2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr },
-				{ 3, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr },
 			};
 
 			VkDescriptorSetLayoutCreateInfo layoutInfo{};
 			layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-			layoutInfo.bindingCount = 4;
+			layoutInfo.bindingCount = ARRAY_LEN(descriptorSetLayoutBindings);
 			layoutInfo.pBindings = descriptorSetLayoutBindings;
 
 			if (vkCreateDescriptorSetLayout(VulkanDisplay::Device(), &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
@@ -262,23 +261,22 @@ namespace sf::Renderer
 				std::cout << "[Renderer] Failed to create descriptor set layout\n";
 				return false;
 			}
-			std::vector<VkDescriptorSetLayout> layouts(VulkanDisplay::MaxFramesInFlight(), descriptorSetLayout);
 			VkDescriptorSetAllocateInfo allocInfo{};
 			allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 			allocInfo.descriptorPool = descriptorPool;
-			allocInfo.descriptorSetCount = static_cast<uint32_t>(VulkanDisplay::MaxFramesInFlight());
-			allocInfo.pSetLayouts = layouts.data();
-			descriptorSets.resize(VulkanDisplay::MaxFramesInFlight());
-			if (vkAllocateDescriptorSets(VulkanDisplay::Device(), &allocInfo, descriptorSets.data()) != VK_SUCCESS)
-			{
-				std::cout << "[Renderer] Failed to allocate descriptor sets\n";
-				return false;
-			}
+			allocInfo.descriptorSetCount = 1;
+			allocInfo.pSetLayouts = &descriptorSetLayout;
 
-			perFrameUniformBuffer.Write(descriptorSets.data(), 0);
-			userUniformBuffer.Write(descriptorSets.data(), 1);
-			particleMatrixBuffer.Write(descriptorSets.data(), 2);
-			vertexAttributeBuffer.Write(descriptorSets.data(), 3);
+			for (int i = 0; i < ARRAY_LEN(frameData); i++)
+			{
+				if (vkAllocateDescriptorSets(VulkanDisplay::Device(), &allocInfo, &(frameData[i].descriptorSet)) != VK_SUCCESS)
+				{
+					std::cout << "[Renderer] Failed to allocate descriptor sets\n";
+					return false;
+				}
+				frameData[i].perFrameUniformBuffer.Write(frameData[i].descriptorSet, 0);
+				frameData[i].userUniformBuffer.Write(frameData[i].descriptorSet, 1);
+			}
 		}
 
 		VkPushConstantRange push_constant;
@@ -293,24 +291,35 @@ namespace sf::Renderer
 		pipeline_layout_info.pushConstantRangeCount = 1;
 		pipeline_layout_info.pPushConstantRanges = &push_constant;
 
-		if (vkdd.disp.createPipelineLayout(&pipeline_layout_info, nullptr, &vkdd.pipelineLayout) != VK_SUCCESS)
+		if (vkdd.disp.createPipelineLayout(&pipeline_layout_info, nullptr, &newPipeline.layout) != VK_SUCCESS)
 		{
 			std::cout << "[Renderer] Failed to create pipeline layout\n";
 			return false;
 		}
 
+		// Need dynamic viewport and scissor for window resize
+		VkPipelineViewportStateCreateInfo viewport_state = {};
+		viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+		viewport_state.viewportCount = 1;
+		viewport_state.scissorCount = 1;
+		std::vector<VkDynamicState> dynamic_states = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+		VkPipelineDynamicStateCreateInfo dynamic_info = {};
+		dynamic_info.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+		dynamic_info.dynamicStateCount = dynamic_states.size();
+		dynamic_info.pDynamicStates = dynamic_states.data();
+
 		VkGraphicsPipelineCreateInfo pipeline_info = {};
 		pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-		pipeline_info.layout = vkdd.pipelineLayout;
+		pipeline_info.layout = newPipeline.layout;
 		pipeline_info.pInputAssemblyState = &input_assembly;
 		pipeline_info.pRasterizationState = &rasterizer;
 		pipeline_info.pColorBlendState = &color_blending;
 		pipeline_info.pMultisampleState = &multisampling;
 		pipeline_info.pDepthStencilState = &depthStencil;
 		pipeline_info.pViewportState = &viewport_state;
-		pipeline_info.pDynamicState = nullptr;
+		pipeline_info.pDynamicState = &dynamic_info;
 		pipeline_info.pStages = shader_stages;
-		pipeline_info.stageCount = 2;
+		pipeline_info.stageCount = ARRAY_LEN(shader_stages);
 		pipeline_info.pVertexInputState = &vertex_input_info;
 		VkPipelineRenderingCreateInfo pipelineRenderingCreateInfo{};
 		pipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
@@ -319,7 +328,7 @@ namespace sf::Renderer
 		pipelineRenderingCreateInfo.depthAttachmentFormat = vkdd.depthFormat;
 		pipeline_info.pNext = &pipelineRenderingCreateInfo;
 
-		if (vkdd.disp.createGraphicsPipelines(VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &vkdd.graphicsPipeline) != VK_SUCCESS)
+		if (vkdd.disp.createGraphicsPipelines(VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &newPipeline.pipeline) != VK_SUCCESS)
 		{
 			std::cout << "[Renderer] Failed to create pipline\n";
 			return false;
@@ -331,14 +340,8 @@ namespace sf::Renderer
 
 	void CreateMeshGpuData(const sf::MeshData* mesh)
 	{
-		size_t previousSize = vertexAttributeData.size();
 		size_t vertexBufferSize = mesh->vertexCount * mesh->vertexLayout.GetSize();
-		vertexAttributeData.resize(previousSize + vertexBufferSize / sizeof(float));
-		memcpy(vertexAttributeData.data() + previousSize, mesh->vertexBuffer, vertexBufferSize);
-		vertexAttributeBuffer.Update(vertexAttributeData.data(), sizeof(float) * vertexAttributeData.size());
 		meshGpuData[mesh] = MeshGpuData();
-		meshGpuData[mesh].vertexAttributeArrayOffset = previousSize;
-		//vertexAttributeBuffer.Write(descriptorSets.data(), 3);
 
 		VulkanUtils::CreateVertexBuffer(vertexBufferSize,
 			mesh->vertexBuffer, meshGpuData[mesh].vertexBuffer, meshGpuData[mesh].vertexBufferMemory);
@@ -356,19 +359,18 @@ bool sf::Renderer::Initialize(const Window& windowArg)
 	system("python assets/vulkanCombineShaders.py");
 	system("python assets/vulkanCompileShaders.py");
 #endif
-	vkdd.Initialize(windowArg, CreatePipeline);
-	window->AddOnResizeCallback(OnResize);
+	vkdd.Initialize(windowArg);
 
-	particleMatrices.reserve(1000);
-	particleMatrices.push_back(glm::mat4(1.0f));
-	for (int i = 1; i < 1000; i++, particleMatrices.push_back(glm::translate(glm::mat4(1.0f), glm::vec3((i % 20) * 1.0f, 0.0f, (i / 20) * 1.0f)) * glm::rotate(glm::mat4(1.0f), i * 1.0f, glm::vec3(0.0f, 1.0f, 0.0f))));
-	particleMatrixBuffer.Update(particleMatrices.data(), sizeof(glm::mat4) * 1000);
+	pipelines.emplace_back();
+	CreatePipeline("assets/vulkan/testV", "assets/vulkan/testF", pipelines.back());
+
+	window->AddOnResizeCallback(OnResize);
 	return true;
 }
 
 void sf::Renderer::Terminate()
 {
-	vkdd.Terminate(DestroyMeshBuffers);
+	vkdd.Terminate(DestroyMeshBuffers, DestroyPipelines);
 }
 
 void sf::Renderer::OnResize()
@@ -393,6 +395,8 @@ void sf::Renderer::SetEnvironment(const std::string& hdrFilePath, DataType hdrDa
 
 void sf::Renderer::Predraw()
 {
+	FrameData& currentFrameData = frameData[VulkanDisplay::CurrentFrameInFlight()];
+
 	// screen space matrix
 	perFrameUniformData.screenSpaceMatrix = glm::ortho(0.0f, (float)sf::Config::GetWindowSize().x, (float)sf::Config::GetWindowSize().y, 0.0f);
 
@@ -437,12 +441,15 @@ void sf::Renderer::Predraw()
 	Transform& cameraTransform = activeCameraEntity.GetComponent<Transform>();
 	perFrameUniformData.cameraPosition = cameraTransform.position;
 	perFrameUniformData.skyboxMatrix = cameraProjection * glm::mat4(glm::mat3(cameraView));
-	perFrameUniformBuffer.Update(perFrameUniformData);
 	time += 1.0f / 60.0f;
-	userUniformBuffer.Update(time);
+
+	currentFrameData.perFrameUniformBuffer.Update(perFrameUniformData);
+	currentFrameData.userUniformBuffer.Update(time);
 
 	vkdd.Predraw(Config::GetClearColor());
-	vkCmdBindDescriptorSets(vkdd.CommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, vkdd.pipelineLayout, 0, 1, &descriptorSets[vkdd.currentFrameInFlight], 0, nullptr);
+
+	vkCmdBindPipeline(vkdd.CommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.back().pipeline);
+	vkCmdBindDescriptorSets(vkdd.CommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.back().layout, 0, 1, &currentFrameData.descriptorSet, 0, nullptr);
 }
 
 void sf::Renderer::Postdraw()
@@ -465,15 +472,14 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 		CreateMeshGpuData(mesh.meshData);
 
 	perObjectData.modelMatrix = transform.ComputeMatrix();
-	perObjectData.vertexAttributeArrayOffset = meshGpuData[mesh.meshData].vertexAttributeArrayOffset;
-	perObjectData.vertexAttributeArrayStride = mesh.meshData->vertexLayout.GetSize() / sizeof(float);
-	vkCmdPushConstants(vkdd.CommandBuffer(), vkdd.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PerObjectData), &perObjectData);
+
+	vkCmdPushConstants(vkdd.CommandBuffer(), pipelines.back().layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PerObjectData), &perObjectData);
 
 	VkBuffer vertexBuffers[] = { meshGpuData[mesh.meshData].vertexBuffer };
 	VkDeviceSize offsets[] = { 0 };
 	vkCmdBindVertexBuffers(vkdd.CommandBuffer(), 0, 1, vertexBuffers, offsets);
 	vkCmdBindIndexBuffer(vkdd.CommandBuffer(), meshGpuData[mesh.meshData].indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-	vkCmdDrawIndexed(vkdd.CommandBuffer(), static_cast<uint32_t>(mesh.meshData->indexVector.size()), 1000, 0, 0, 0);
+	vkCmdDrawIndexed(vkdd.CommandBuffer(), static_cast<uint32_t>(mesh.meshData->indexVector.size()), 1, 0, 0, 0);
 }
 
 void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)

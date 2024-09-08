@@ -85,7 +85,7 @@ namespace sf
 			errt::seed = i;
 			MeshProcessor::GenerateMeshWithFunction(generatedMeshes[i], errt::GenerateModel);
 			generatedMeshes[i].ChangeVertexLayout(Defaults::defaultVertexLayout);
-			MeshProcessor::BakeAoToVertices(generatedMeshes[i]);
+			//MeshProcessor::BakeAoToVertices(generatedMeshes[i]);
 		}
 
 		things = new Entity[COUNT];
@@ -93,7 +93,7 @@ namespace sf
 		{
 			things[i] = scene.CreateEntity();
 			Mesh& m_thing = things[i].AddComponent<Mesh>(&(generatedMeshes[Random::Int(UNIQUE_COUNT)]));
-			switch (Random::Int(3))
+			switch (Random::Int(2))
 			{
 			case 0:
 				Renderer::SetMeshMaterial(m_thing, colorsMaterial);
@@ -101,9 +101,9 @@ namespace sf
 			case 1:
 				Renderer::SetMeshMaterial(m_thing, noiseMaterial);
 				break;
-			case 2:
-				Renderer::SetMeshMaterial(m_thing, aoMaterial);
-				break;
+			//case 2:
+				//Renderer::SetMeshMaterial(m_thing, aoMaterial);
+				//break;
 			}
 
 			Transform& t_thing = things[i].AddComponent<Transform>();

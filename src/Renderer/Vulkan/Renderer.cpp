@@ -148,14 +148,13 @@ namespace sf::Renderer
 		}
 	}
 
-	bool CreatePipeline(const std::string& vertexShaderPath, const std::string& fragmentShaderPath, Pipeline& newPipeline)
+	bool CreatePipeline(Pipeline& newPipeline)
 	{
-		newPipeline.fragmentShaderPath = fragmentShaderPath;
-		newPipeline.vertexShaderPath = vertexShaderPath;
-
+		std::cout << "[Renderer] Creating pipeline for shaders: ";
+		std::cout << newPipeline.vertexShaderPath << ", " << newPipeline.fragmentShaderPath << std::endl;
 		VkShaderModule vertexShaderModule, fragmentShaderModule;
-		assert(VulkanUtils::CreateShaderModule(vertexShaderPath + ".spv", vertexShaderModule));
-		assert(VulkanUtils::CreateShaderModule(fragmentShaderPath + ".spv", fragmentShaderModule));
+		assert(VulkanUtils::CreateShaderModule(newPipeline.vertexShaderPath + ".spv", vertexShaderModule));
+		assert(VulkanUtils::CreateShaderModule(newPipeline.fragmentShaderPath + ".spv", fragmentShaderModule));
 
 		VkPipelineShaderStageCreateInfo vert_stage_info = {};
 		vert_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -246,15 +245,13 @@ namespace sf::Renderer
 				return false;
 			}
 
-			VkDescriptorSetLayoutBinding descriptorSetLayoutBindings[] = {
-				{ 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
-				{ 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
-			};
+			std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings;
+			VulkanUtils::DescriptorSetBindingsFromShader(newPipeline.vertexShaderPath.c_str(), newPipeline.fragmentShaderPath.c_str(), descriptorSetLayoutBindings);
 
 			VkDescriptorSetLayoutCreateInfo layoutInfo{};
 			layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-			layoutInfo.bindingCount = ARRAY_LEN(descriptorSetLayoutBindings);
-			layoutInfo.pBindings = descriptorSetLayoutBindings;
+			layoutInfo.bindingCount = descriptorSetLayoutBindings.size();
+			layoutInfo.pBindings = descriptorSetLayoutBindings.data();
 
 			if (vkCreateDescriptorSetLayout(VulkanDisplay::Device(), &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
 			{
@@ -361,8 +358,13 @@ bool sf::Renderer::Initialize(const Window& windowArg)
 #endif
 	vkdd.Initialize(windowArg);
 
+	pipelines.clear();
 	pipelines.emplace_back();
-	CreatePipeline("assets/vulkan/testV", "assets/vulkan/testF", pipelines.back());
+	pipelines.back().vertexShaderPath = "assets/vulkan/testV";
+	pipelines.back().fragmentShaderPath = "assets/vulkan/testF";
+
+	for (int i = 0; i < pipelines.size(); i++)
+		CreatePipeline(pipelines[i]);
 
 	window->AddOnResizeCallback(OnResize);
 	return true;
@@ -382,7 +384,10 @@ void sf::Renderer::OnResize()
 
 uint32_t sf::Renderer::CreateMaterial(const Material& material)
 {
-	return 0;
+	pipelines.emplace_back();
+	pipelines.back().vertexShaderPath = material.vertexShaderFilePath;
+	pipelines.back().fragmentShaderPath = material.fragmentShaderFilePath;
+	return pipelines.size() - 1;
 }
 
 void sf::Renderer::SetMeshMaterial(const Mesh& mesh, uint32_t materialId, int piece)

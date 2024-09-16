@@ -8,7 +8,7 @@ layout(binding = 0) uniform SharedGpuData
 	vec3 cameraPosition;
 } sgd;
 
-layout( push_constant ) uniform constants
+layout(push_constant) uniform constants
 {
 	mat4 modelMatrix;
 } pc;

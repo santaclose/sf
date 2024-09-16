@@ -22,7 +22,7 @@
 #include <Components/Sprite.h>
 #include <Components/Skeleton.h>
 
-#include <ImGuiController.h>
+//#include <ImGuiController.h>
 
 #define BACKGROUND_COLOR 0.1
 
@@ -43,15 +43,15 @@ int main(int argc, char** argv)
 	sf::Config::LoadFromFile(sf::Game::ConfigFilePath);
 	sf::Window window = sf::Window(sf::Config::GetName().c_str(), sf::Config::GetWindowSize(), sf::Config::GetFullscreen(), sf::Config::GetCursorEnabled(), sf::Config::GetVsyncEnabled());
 
-	if (!sf::Renderer::Initialize(window))
-		std::cout << "[main] Failed to initialize renderer\n";
-
-	sf::ImGuiController::Initialize(window);
-
 	sf::Defaults::Initialize();
 	//-------------------//
 	sf::Game::Initialize(argc, argv);
 	//-------------------//
+
+	if (!sf::Renderer::Initialize(window))
+		std::cout << "[main] Failed to initialize renderer\n";
+
+	//sf::ImGuiController::Initialize(window);
 
 	/* Loop until the user closes the window */
 	while (!window.ShouldClose())
@@ -111,7 +111,7 @@ int main(int argc, char** argv)
 		}
 		sf::Renderer::Postdraw();
 
-		sf::ImGuiController::Tick(deltaTime);
+		//sf::ImGuiController::Tick(deltaTime);
 		window.SwapBuffers();
 
 		sf::Input::FrameEnd();
@@ -124,7 +124,7 @@ int main(int argc, char** argv)
 	sf::Game::Terminate();
 	//-------------------//
 
-	sf::ImGuiController::Terminate();
+	//sf::ImGuiController::Terminate();
 	sf::Renderer::Terminate();
 	return 0;
 }

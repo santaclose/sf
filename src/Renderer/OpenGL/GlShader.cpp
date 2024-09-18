@@ -50,8 +50,8 @@ sf::GlShader::GlShader() : gl_id(-1) {}
 void sf::GlShader::CreateFromFiles(const std::string& vertexShaderPath, const std::string& fragmentShaderPath)
 {
 	std::cout << "[GlShader] Creating shader from files: " << vertexShaderPath << ", " << fragmentShaderPath << std::endl;
-	m_vertFileName = vertexShaderPath;
-	m_fragFileName = fragmentShaderPath;
+	m_vertFileName = vertexShaderPath + ".glsl";
+	m_fragFileName = fragmentShaderPath + ".glsl";
 
 	Delete();
 

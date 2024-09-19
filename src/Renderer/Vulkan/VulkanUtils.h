@@ -4,6 +4,7 @@
 #include <string>
 #include <vulkan/vulkan.h>
 #include "VulkanDisplay.h"
+#include "DataLayout.h"
 
 namespace sf::Renderer::VulkanUtils
 {
@@ -52,4 +53,5 @@ namespace sf::Renderer::VulkanUtils
 	uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
 	void DescriptorSetBindingsFromShader(const char* vertexShaderPath, const char* fragmentShaderPath, std::vector<VkDescriptorSetLayoutBinding>& out);
+	void VertexAttributeDescriptionsFromDataLayout(const DataLayout& dataLayout, VkVertexInputBindingDescription& bindingDescriptionOut, std::vector<VkVertexInputAttributeDescription>& attributeDescriptionOut);
 }

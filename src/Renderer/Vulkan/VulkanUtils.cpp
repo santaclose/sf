@@ -282,6 +282,8 @@ uint32_t sf::Renderer::VulkanUtils::FindMemoryType(uint32_t typeFilter, VkMemory
 void sf::Renderer::VulkanUtils::DescriptorSetBindingsFromShader(const char* vertexShaderPath, const char* fragmentShaderPath, std::vector<VkDescriptorSetLayoutBinding>& out)
 {
 	// Restricted to 10 descriptor sets
+	const static std::string uboString = "layout(binding = ";
+	const static std::string ssboString = "layout(std140, binding = ";
 	assert(out.size() == 0);
 	int vertexBindings[10] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
 	int fragmentBindings[10] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
@@ -290,20 +292,20 @@ void sf::Renderer::VulkanUtils::DescriptorSetBindingsFromShader(const char* vert
 	FileUtils::ReadFileAsString(std::string(vertexShaderPath) + ".glsl", shaderContents);
 	for (const char* c = shaderContents.data(); *c != '\0'; c++)
 	{
-		if (strncmp(c, "layout(binding = ", sizeof("layout(binding = ") - 1) == 0)
-			vertexBindings[c[17] - '0'] = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		else if (strncmp(c, "layout(std140, binding = ", sizeof("layout(std140, binding = ") - 1) == 0)
-			vertexBindings[c[25] - '0'] = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		if (strncmp(c, uboString.c_str(), uboString.size()) == 0)
+			vertexBindings[c[uboString.size()] - '0'] = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		else if (strncmp(c, ssboString.c_str(), ssboString.size()) == 0)
+			vertexBindings[c[ssboString.size()] - '0'] = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 
 	}
 	shaderContents.clear();
 	FileUtils::ReadFileAsString(std::string(fragmentShaderPath) + ".glsl", shaderContents);
 	for (const char* c = shaderContents.data(); *c != '\0'; c++)
 	{
-		if (strncmp(c, "layout(binding = ", sizeof("layout(binding = ") - 1) == 0)
-			fragmentBindings[c[sizeof("layout(binding = ") - 1] - '0'] = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		else if (strncmp(c, "layout(std140, binding = ", sizeof("layout(std140, binding = ") - 1) == 0)
-			fragmentBindings[c[sizeof("layout(std140, binding = ") - 1] - '0'] = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		if (strncmp(c, uboString.c_str(), uboString.size()) == 0)
+			fragmentBindings[c[uboString.size()] - '0'] = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		else if (strncmp(c, ssboString.c_str(), ssboString.size()) == 0)
+			fragmentBindings[c[ssboString.size()] - '0'] = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 	}
 
 	for (int i = 0; i < 10; i++)
@@ -327,6 +329,46 @@ void sf::Renderer::VulkanUtils::DescriptorSetBindingsFromShader(const char* vert
 			assert(vertexBindings[i] == -1 || fragmentBindings[i] == vertexBindings[i]);
 			out.back().descriptorType = (VkDescriptorType)fragmentBindings[i];
 			out.back().stageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
+		}
+	}
+}
+
+void sf::Renderer::VulkanUtils::VertexAttributeDescriptionsFromDataLayout(const DataLayout& dataLayout, VkVertexInputBindingDescription& bindingDescriptionOut, std::vector<VkVertexInputAttributeDescription>& attributeDescriptionOut)
+{
+	assert(attributeDescriptionOut.size() == 0);
+
+	bindingDescriptionOut.binding = 0;
+	bindingDescriptionOut.stride = dataLayout.GetSize();
+	bindingDescriptionOut.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+	for (int i = 0; i < dataLayout.GetComponents().size(); i++)
+	{
+		const DataComponent& dc = dataLayout.GetComponents()[i];
+		
+		attributeDescriptionOut.emplace_back();
+		attributeDescriptionOut.back().binding = 0;
+		attributeDescriptionOut.back().location = i;
+		attributeDescriptionOut.back().offset = dc.byteOffset;
+		switch (dc.dataType)
+		{
+		case DataType::vec3f32:
+			attributeDescriptionOut.back().format = VK_FORMAT_R32G32B32_SFLOAT;
+			break;
+		case DataType::vec2f32:
+			attributeDescriptionOut.back().format = VK_FORMAT_R32G32_SFLOAT;
+			break;
+		case DataType::vec4f32:
+			attributeDescriptionOut.back().format = VK_FORMAT_R32G32B32A32_SFLOAT;
+			break;
+		case DataType::f32:
+			attributeDescriptionOut.back().format = VK_FORMAT_R32_SFLOAT;
+			break;
+		case DataType::i32:
+			attributeDescriptionOut.back().format = VK_FORMAT_R32_SINT;
+			break;
+		default:
+			std::cout << "[VulkanUtils] Data type not supported as vertex attribute " << (unsigned int) dc.dataType << std::endl;
+			break;
 		}
 	}
 }

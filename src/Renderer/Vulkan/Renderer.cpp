@@ -34,6 +34,7 @@ namespace sf::Renderer
 {
 	struct Pipeline
 	{
+		DataLayout vertexAttributeDataLayout;
 		VkPipelineLayout layout;
 		VkPipeline pipeline;
 		VkDescriptorSetLayout descriptorSetLayout;
@@ -60,53 +61,6 @@ namespace sf::Renderer
 	glm::mat4 cameraView;
 	glm::mat4 cameraProjection;
 
-	struct Vertex {
-		glm::vec3 pos;
-		glm::vec3 normal;
-		glm::vec3 tan;
-		glm::vec3 bitan;
-		glm::vec3 color;
-		glm::vec2 uv;
-		float ao;
-
-		static VkVertexInputBindingDescription getBindingDescription()
-		{
-			VkVertexInputBindingDescription bindingDescription{};
-			bindingDescription.binding = 0;
-			bindingDescription.stride = sizeof(Vertex);
-			bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-			return bindingDescription;
-		}
-		static std::array<VkVertexInputAttributeDescription, 6> getAttributeDescriptions()
-		{
-			std::array<VkVertexInputAttributeDescription, 6> attributeDescriptions{};
-			attributeDescriptions[0].binding = 0;
-			attributeDescriptions[0].location = 0;
-			attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-			attributeDescriptions[0].offset = offsetof(Vertex, pos);
-			attributeDescriptions[1].binding = 0;
-			attributeDescriptions[1].location = 1;
-			attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-			attributeDescriptions[1].offset = offsetof(Vertex, normal);
-			attributeDescriptions[2].binding = 0;
-			attributeDescriptions[2].location = 2;
-			attributeDescriptions[2].format = VK_FORMAT_R32G32B32_SFLOAT;
-			attributeDescriptions[2].offset = offsetof(Vertex, tan);
-			attributeDescriptions[3].binding = 0;
-			attributeDescriptions[3].location = 3;
-			attributeDescriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
-			attributeDescriptions[3].offset = offsetof(Vertex, bitan);
-			attributeDescriptions[4].binding = 0;
-			attributeDescriptions[4].location = 4;
-			attributeDescriptions[4].format = VK_FORMAT_R32G32B32_SFLOAT;
-			attributeDescriptions[4].offset = offsetof(Vertex, color);
-			attributeDescriptions[5].binding = 0;
-			attributeDescriptions[5].location = 5;
-			attributeDescriptions[5].format = VK_FORMAT_R32G32_SFLOAT;
-			attributeDescriptions[5].offset = offsetof(Vertex, uv);
-			return attributeDescriptions;
-		}
-	};
 
 	struct MeshGpuData
 	{
@@ -164,6 +118,7 @@ namespace sf::Renderer
 	{
 		std::cout << "[Renderer] Creating pipeline for shaders: ";
 		std::cout << newPipeline.vertexShaderPath << ", " << newPipeline.fragmentShaderPath << std::endl;
+
 		VkShaderModule vertexShaderModule, fragmentShaderModule;
 		assert(VulkanUtils::CreateShaderModule(newPipeline.vertexShaderPath + ".spv", vertexShaderModule));
 		assert(VulkanUtils::CreateShaderModule(newPipeline.fragmentShaderPath + ".spv", fragmentShaderModule));
@@ -182,8 +137,10 @@ namespace sf::Renderer
 
 		VkPipelineShaderStageCreateInfo shader_stages[] = { vert_stage_info, frag_stage_info };
 
-		auto bindingDescription = Vertex::getBindingDescription();
-		auto attributeDescriptions = Vertex::getAttributeDescriptions();
+		VkVertexInputBindingDescription bindingDescription;
+		std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
+		VulkanUtils::VertexAttributeDescriptionsFromDataLayout(newPipeline.vertexAttributeDataLayout, bindingDescription, attributeDescriptions);
+
 		VkPipelineVertexInputStateCreateInfo vertex_input_info = {};
 		vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 		vertex_input_info.vertexBindingDescriptionCount = 1;
@@ -390,11 +347,13 @@ uint32_t sf::Renderer::CreateMaterial(const Material& material)
 	pipelines.emplace_back();
 	pipelines.back().vertexShaderPath = material.vertexShaderFilePath;
 	pipelines.back().fragmentShaderPath = material.fragmentShaderFilePath;
+	pipelines.back().vertexAttributeDataLayout = DataLayout(pipelines.back().vertexShaderPath.c_str());
 	return pipelines.size() - 1;
 }
 
 void sf::Renderer::SetMeshMaterial(const Mesh& mesh, uint32_t materialId, int piece)
 {
+	assert(mesh.meshData->vertexLayout == pipelines[materialId].vertexAttributeDataLayout);
 	if (piece < 0) // set for all pieces by default
 	{
 		for (int i = 0; i < mesh.meshData->pieces.size(); i++)

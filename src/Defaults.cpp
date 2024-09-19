@@ -16,23 +16,23 @@ void sf::Defaults::Initialize()
 	ObjImporter::GenerateMeshData(objId, monkeMeshData);
 
 	defaultVertexLayout = DataLayout({
-			{MeshData::VertexAttribute::Position, DataType::vec3f32},
-			{MeshData::VertexAttribute::Normal, DataType::vec3f32},
-			{MeshData::VertexAttribute::Tangent, DataType::vec3f32},
-			{MeshData::VertexAttribute::Bitangent, DataType::vec3f32},
-			{MeshData::VertexAttribute::Color, DataType::vec3f32},
-			{MeshData::VertexAttribute::UV, DataType::vec2f32},
-			{MeshData::VertexAttribute::AO, DataType::f32}
+			{VertexAttribute::Position, DataType::vec3f32},
+			{VertexAttribute::Normal, DataType::vec3f32},
+			{VertexAttribute::Tangent, DataType::vec3f32},
+			{VertexAttribute::Bitangent, DataType::vec3f32},
+			{VertexAttribute::Color, DataType::vec3f32},
+			{VertexAttribute::TexCoords, DataType::vec2f32},
+			{VertexAttribute::AmbientOcclusion, DataType::f32}
 		});
 	defaultSkinningVertexLayout = DataLayout({
-			{MeshData::VertexAttribute::Position, DataType::vec3f32},
-			{MeshData::VertexAttribute::Normal, DataType::vec3f32},
-			{MeshData::VertexAttribute::Tangent, DataType::vec3f32},
-			{MeshData::VertexAttribute::Bitangent, DataType::vec3f32},
-			{MeshData::VertexAttribute::Color, DataType::vec3f32},
-			{MeshData::VertexAttribute::UV, DataType::vec2f32},
-			{MeshData::VertexAttribute::AO, DataType::f32},
-			{MeshData::VertexAttribute::BoneIndices, DataType::vec4f32},
-			{MeshData::VertexAttribute::BoneWeights, DataType::vec4f32}
+			{VertexAttribute::Position, DataType::vec3f32},
+			{VertexAttribute::Normal, DataType::vec3f32},
+			{VertexAttribute::Tangent, DataType::vec3f32},
+			{VertexAttribute::Bitangent, DataType::vec3f32},
+			{VertexAttribute::Color, DataType::vec3f32},
+			{VertexAttribute::TexCoords, DataType::vec2f32},
+			{VertexAttribute::AmbientOcclusion, DataType::f32},
+			{VertexAttribute::BoneIndices, DataType::vec4f32},
+			{VertexAttribute::BoneWeights, DataType::vec4f32}
 		});
 }

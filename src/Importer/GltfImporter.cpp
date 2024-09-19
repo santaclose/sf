@@ -60,9 +60,9 @@ void sf::GltfImporter::Destroy(int id)
 // https://github.com/SaschaWillems/Vulkan/blob/master/examples/gltfloading/gltfloading.cpp
 void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 {
-	DataType positionDataType = mesh.vertexLayout.GetComponent(MeshData::VertexAttribute::Position)->dataType;
-	DataType normalDataType = mesh.vertexLayout.GetComponent(MeshData::VertexAttribute::Normal)->dataType;
-	DataType uvsDataType = mesh.vertexLayout.GetComponent(MeshData::VertexAttribute::UV)->dataType;
+	DataType positionDataType = mesh.vertexLayout.GetComponent(VertexAttribute::Position)->dataType;
+	DataType normalDataType = mesh.vertexLayout.GetComponent(VertexAttribute::Normal)->dataType;
+	DataType uvsDataType = mesh.vertexLayout.GetComponent(VertexAttribute::TexCoords)->dataType;
 
 	assert(positionDataType == DataType::vec3f32);
 	assert(normalDataType == DataType::vec3f32);
@@ -137,26 +137,26 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 				// Create Vertices
 				for (uint32_t i = 0; i < primitiveVertexCount; i++)
 				{
-					glm::vec3* posPtr = (glm::vec3*)mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Position, vertexStart + i);
+					glm::vec3* posPtr = (glm::vec3*)mesh.vertexLayout.Access(mesh.vertexBuffer, VertexAttribute::Position, vertexStart + i);
 					*posPtr = { positionBuffer[i * 3 + 0], positionBuffer[i * 3 + 1], positionBuffer[i * 3 + 2] };
 					if (normalsBuffer)
 					{
-						glm::vec3* normalPtr = (glm::vec3*)mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Normal, vertexStart + i);
+						glm::vec3* normalPtr = (glm::vec3*)mesh.vertexLayout.Access(mesh.vertexBuffer, VertexAttribute::Normal, vertexStart + i);
 						*normalPtr = glm::normalize(glm::vec3(normalsBuffer[i * 3 + 0], normalsBuffer[i * 3 + 1], normalsBuffer[i * 3 + 2]));
 					}
 					if (texCoordsBuffer)
 					{
-						glm::vec2* uvsPtr = (glm::vec2*)mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::UV, vertexStart + i);
+						glm::vec2* uvsPtr = (glm::vec2*)mesh.vertexLayout.Access(mesh.vertexBuffer, VertexAttribute::TexCoords, vertexStart + i);
 						*uvsPtr = { texCoordsBuffer[i * 2 + 0], 1.0 - texCoordsBuffer[i * 2 + 1] };
 					}
-					if (jointsBuffer && mesh.vertexLayout.GetComponent(MeshData::VertexAttribute::BoneIndices) != nullptr)
+					if (jointsBuffer && mesh.vertexLayout.GetComponent(VertexAttribute::BoneIndices) != nullptr)
 					{
-						DataType boneIndicesDataType = mesh.vertexLayout.GetComponent(MeshData::VertexAttribute::BoneIndices)->dataType;
+						DataType boneIndicesDataType = mesh.vertexLayout.GetComponent(VertexAttribute::BoneIndices)->dataType;
 						assert(nodeToBonePerModel.find(id) != nodeToBonePerModel.end()); // need mapping from gltf node to bone index to set vertex bone indices
 						if (jointComponentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE)
 						{
 							const uint8_t* buf = static_cast<const uint8_t*>(jointsBuffer);
-							glm::vec4* boneIndicesPtr = (glm::vec4*)mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::BoneIndices, vertexStart + i);
+							glm::vec4* boneIndicesPtr = (glm::vec4*)mesh.vertexLayout.Access(mesh.vertexBuffer, VertexAttribute::BoneIndices, vertexStart + i);
 							*boneIndicesPtr = {
 								(float)nodeToBonePerModel[id][model.skins[0].joints[buf[i * 4 + 0]]],
 								(float)nodeToBonePerModel[id][model.skins[0].joints[buf[i * 4 + 1]]],
@@ -166,7 +166,7 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 						else // unsigned short
 						{
 							const uint16_t* buf = static_cast<const uint16_t*>(jointsBuffer);
-							glm::vec4* boneIndicesPtr = (glm::vec4*)mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::BoneIndices, vertexStart + i);
+							glm::vec4* boneIndicesPtr = (glm::vec4*)mesh.vertexLayout.Access(mesh.vertexBuffer, VertexAttribute::BoneIndices, vertexStart + i);
 							*boneIndicesPtr = {
 								(float)nodeToBonePerModel[id][model.skins[0].joints[buf[i * 4 + 0]]],
 								(float)nodeToBonePerModel[id][model.skins[0].joints[buf[i * 4 + 1]]],
@@ -174,9 +174,9 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 								(float)nodeToBonePerModel[id][model.skins[0].joints[buf[i * 4 + 3]]] };
 						}
 					}
-					if (boneWeightsBuffer && mesh.vertexLayout.GetComponent(MeshData::VertexAttribute::BoneWeights) != nullptr)
+					if (boneWeightsBuffer && mesh.vertexLayout.GetComponent(VertexAttribute::BoneWeights) != nullptr)
 					{
-						glm::vec4* boneWeightsPtr = (glm::vec4*)mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::BoneWeights, vertexStart + i);
+						glm::vec4* boneWeightsPtr = (glm::vec4*)mesh.vertexLayout.Access(mesh.vertexBuffer, VertexAttribute::BoneWeights, vertexStart + i);
 						*boneWeightsPtr = { boneWeightsBuffer[i * 4 + 0], boneWeightsBuffer[i * 4 + 1], boneWeightsBuffer[i * 4 + 2], boneWeightsBuffer[i * 4 + 3] };
 					}
 				}

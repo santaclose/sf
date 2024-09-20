@@ -1,7 +1,8 @@
+#version 450
 
-out vec4 outColor;
+layout(location = 0) out vec4 outColor;
 
-in float fVertexAo;
+layout(location = 5) in float fVertexAo;
 
 void main()
 {

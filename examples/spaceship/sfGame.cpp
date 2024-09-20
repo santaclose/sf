@@ -46,10 +46,10 @@ namespace sf
 
 	void Game::Initialize(int argc, char** argv)
 	{
-		//uint32_t aoMaterial = Renderer::CreateMaterial(Material("assets/shaders/defaultV.glsl", "assets/shaders/vertexAoF.glsl", false));
-		//uint32_t colorsMaterial = Renderer::CreateMaterial(Material("examples/spaceship/randomColorsV.glsl", "examples/spaceship/randomColorsF.glsl", false));
-		uint32_t uvMaterial = Renderer::CreateMaterial(Material("assets/vulkan/testV", "assets/vulkan/testF", false));
-		uint32_t noiseMaterial = Renderer::CreateMaterial(Material("assets/vulkan/testnoiseV", "assets/vulkan/testnoiseF", false));
+		uint32_t aoMaterial = Renderer::CreateMaterial(Material("assets/shaders/defaultV", "assets/shaders/vertexAoF", false));
+		uint32_t colorsMaterial = Renderer::CreateMaterial(Material("examples/spaceship/randomColorsV", "examples/spaceship/randomColorsF", false));
+		uint32_t uvMaterial = Renderer::CreateMaterial(Material("assets/shaders/defaultV", "assets/shaders/uvF", false));
+		uint32_t noiseMaterial = Renderer::CreateMaterial(Material("examples/spaceship/noiseV", "examples/spaceship/noiseF", false));
 
 		e_ship = scene.CreateEntity();
 
@@ -85,7 +85,7 @@ namespace sf
 			errt::seed = i;
 			MeshProcessor::GenerateMeshWithFunction(generatedMeshes[i], errt::GenerateModel);
 			generatedMeshes[i].ChangeVertexLayout(Defaults::defaultVertexLayout);
-			//MeshProcessor::BakeAoToVertices(generatedMeshes[i]);
+			MeshProcessor::BakeAoToVertices(generatedMeshes[i]);
 		}
 
 		things = new Entity[COUNT];
@@ -93,18 +93,18 @@ namespace sf
 		{
 			things[i] = scene.CreateEntity();
 			Mesh& m_thing = things[i].AddComponent<Mesh>(&(generatedMeshes[Random::Int(UNIQUE_COUNT)]));
-			//switch (Random::Int(2))
-			//{
-			//case 0:
-				//Renderer::SetMeshMaterial(m_thing, colorsMaterial);
-				//break;
-			//case 1:
+			switch (Random::Int(3))
+			{
+			case 0:
+				Renderer::SetMeshMaterial(m_thing, colorsMaterial);
+				break;
+			case 1:
 				Renderer::SetMeshMaterial(m_thing, noiseMaterial);
-				//break;
-			//case 2:
-				//Renderer::SetMeshMaterial(m_thing, aoMaterial);
-				//break;
-			//}
+				break;
+			case 2:
+				Renderer::SetMeshMaterial(m_thing, aoMaterial);
+				break;
+			}
 
 			Transform& t_thing = things[i].AddComponent<Transform>();
 

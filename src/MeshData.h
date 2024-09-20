@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <DataLayout.h>
+#include <VertexAttributes.h>
 
 namespace sf {
 

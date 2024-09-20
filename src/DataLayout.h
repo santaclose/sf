@@ -8,22 +8,9 @@
 
 namespace sf
 {
-	// Vertex attribute meant to be used as data component id
-	enum VertexAttribute
-	{
-		Position = 0,
-		Normal = 1,
-		Tangent = 2,
-		Bitangent = 3,
-		Color = 4,
-		TexCoords = 5,
-		AmbientOcclusion = 6,
-		BoneWeights = 7,
-		BoneIndices = 8
-	};
-
 	struct DataComponent
 	{
+		// Vertex attribute meant to be used as id for vertex buffers
 		uint32_t id;
 		DataType dataType;
 		uint32_t byteOffset;

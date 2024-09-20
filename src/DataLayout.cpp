@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include <FileUtils.h>
+#include <VertexAttributes.h>
 
 sf::DataLayout::DataLayout(const std::vector<std::pair<uint32_t, DataType>>& components)
 {

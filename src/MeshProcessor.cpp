@@ -5,6 +5,7 @@
 #include <iostream>
 #include <fstream>
 
+#include <VertexAttributes.h>
 #include <Random.h>
 #include <Math.hpp>
 #include <aobaker.h>

@@ -22,9 +22,10 @@ sf::DataLayout::DataLayout(const std::vector<std::pair<uint32_t, DataType>>& com
 	}
 }
 
+// Creates data layout from vertex attributes in shader
 sf::DataLayout::DataLayout(const char* vertexShaderPath)
 {
-	// Restricted to 10 descriptor sets ID MISSIN
+	// Restricted to 10 descriptor sets
 	this->components.clear();
 	this->sizeInBytes = 0;
 	const static std::string vertexAttributeString = "layout(location = ";
@@ -72,6 +73,8 @@ sf::DataLayout::DataLayout(const char* vertexShaderPath)
 				this->components.back().id = VertexAttribute::BoneIndices;
 			else
 				assert(false); // failed to parse vertex attribute
+
+			this->componentsById[this->components.back().id] = this->components.size() - 1;
 
 			if (dataTypeSubstring.compare("vec3") == 0)
 				this->components.back().dataType = DataType::vec3f32;

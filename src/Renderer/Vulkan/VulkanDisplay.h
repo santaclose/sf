@@ -41,13 +41,18 @@ namespace sf::Renderer
 		VkDeviceMemory depthImageMemory;
 		VkImageView depthImageView;
 
+		unsigned int sampleCount;
+		VkImage multisampleImage;
+		VkDeviceMemory multisampleImageMemory;
+		VkImageView multisampleImageView;
+
 		FrameData frameData[MAX_FRAMES_IN_FLIGHT];
 
 		uint32_t currentFrameInFlight = 0;
 		uint32_t swapchainImageIndex = 0;
 		uint32_t currentFrame = 0;
 
-		bool Initialize(const Window& windowArg);
+		bool Initialize(const Window& windowArg, unsigned int sampleCountArg = 4);
 		void Terminate(void (*destroyBuffersFunc)(void) = nullptr, void (*destroyPipelinesFunc)(void) = nullptr);
 
 		bool CreateCommandPool();
@@ -56,6 +61,7 @@ namespace sf::Renderer
 		bool Predraw(const glm::vec4& clearColor);
 		bool Postdraw();
 
+		void CreateMultisampleResources(bool recreate = false);
 		void CreateDepthResources(bool recreate = false);
 		bool CreateSwapchain(bool recreate = false);
 		bool RecreateSwapchain();

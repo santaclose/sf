@@ -27,7 +27,9 @@ namespace sf::Renderer::VulkanUtils
 	}
 
 	VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
-	void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
+	void CreateImage(uint32_t width, uint32_t height,
+		VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory,
+		VkSampleCountFlagBits numSamples = VK_SAMPLE_COUNT_1_BIT);
 
 	bool CreateShaderModuleFromBytes(const std::vector<char>& shaderCode, VkShaderModule& outShaderModule);
 	bool CreateShaderModule(const std::string& shaderFilePath, VkShaderModule& outShaderModule);

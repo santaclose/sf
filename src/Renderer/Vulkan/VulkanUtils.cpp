@@ -74,7 +74,7 @@ VkImageView sf::Renderer::VulkanUtils::CreateImageView(VkImage image, VkFormat f
 	return imageView;
 }
 
-void sf::Renderer::VulkanUtils::CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
+void sf::Renderer::VulkanUtils::CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory, VkSampleCountFlagBits numSamples)
 {
 	VkImageCreateInfo imageInfo{};
 	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -88,7 +88,7 @@ void sf::Renderer::VulkanUtils::CreateImage(uint32_t width, uint32_t height, VkF
 	imageInfo.tiling = tiling;
 	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	imageInfo.usage = usage;
-	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	imageInfo.samples = numSamples;
 	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 	if (vkCreateImage(VulkanDisplay::Device(), &imageInfo, nullptr, &image) != VK_SUCCESS)

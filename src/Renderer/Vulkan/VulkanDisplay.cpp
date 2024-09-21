@@ -7,12 +7,13 @@
 
 sf::Renderer::VulkanDisplay* sf::Renderer::VulkanDisplay::Instance = nullptr;
 
-bool sf::Renderer::VulkanDisplay::Initialize(const Window& windowArg)
+bool sf::Renderer::VulkanDisplay::Initialize(const Window& windowArg, unsigned int sampleCountArg)
 {
 	assert(Instance == nullptr);
 	Instance = this;
 
 	window = &windowArg;
+	sampleCount = sampleCountArg;
 
 	// Instance
 	vkb::InstanceBuilder instance_builder;
@@ -119,6 +120,10 @@ void sf::Renderer::VulkanDisplay::Terminate(void (*destroyBuffersFunc)(void), vo
 	vkDestroyImage(this->device, depthImage, nullptr);
 	vkFreeMemory(this->device, depthImageMemory, nullptr);
 
+	vkDestroyImageView(this->device, multisampleImageView, nullptr);
+	vkDestroyImage(this->device, multisampleImage, nullptr);
+	vkFreeMemory(this->device, multisampleImageMemory, nullptr);
+
 	vkb::destroy_swapchain(this->swapchain);
 	vkb::destroy_device(this->device);
 	vkb::destroy_surface(this->instance, this->surface);
@@ -211,8 +216,11 @@ bool sf::Renderer::VulkanDisplay::Predraw(const glm::vec4& clearColor)
 
 	VkRenderingAttachmentInfo colorInfo{};
 	colorInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-	colorInfo.imageView = SwapchainImageView();
+	colorInfo.imageView = multisampleImageView;
+	colorInfo.resolveImageView = SwapchainImageView();
 	colorInfo.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+	colorInfo.resolveImageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+	colorInfo.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
 	colorInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	colorInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	colorInfo.clearValue.color = { clearColor.r, clearColor.g, clearColor.b, clearColor.a };
@@ -316,6 +324,18 @@ bool sf::Renderer::VulkanDisplay::Postdraw()
 	return true;
 }
 
+void sf::Renderer::VulkanDisplay::CreateMultisampleResources(bool recreate)
+{
+	if (recreate)
+	{
+		vkDestroyImageView(this->device, multisampleImageView, nullptr);
+		vkDestroyImage(this->device, multisampleImage, nullptr);
+		vkFreeMemory(this->device, multisampleImageMemory, nullptr);
+	}
+	VulkanUtils::CreateImage(this->swapchain.extent.width, this->swapchain.extent.height, this->swapchain.image_format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, multisampleImage, multisampleImageMemory, (VkSampleCountFlagBits)sampleCount);
+	multisampleImageView = VulkanUtils::CreateImageView(multisampleImage, this->swapchain.image_format, VK_IMAGE_ASPECT_COLOR_BIT);
+}
+
 void sf::Renderer::VulkanDisplay::CreateDepthResources(bool recreate)
 {
 	depthFormat = VulkanUtils::FindSupportedFormat(
@@ -330,7 +350,7 @@ void sf::Renderer::VulkanDisplay::CreateDepthResources(bool recreate)
 		vkFreeMemory(this->device, depthImageMemory, nullptr);
 	}
 
-	VulkanUtils::CreateImage(this->swapchain.extent.width, this->swapchain.extent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory);
+	VulkanUtils::CreateImage(this->swapchain.extent.width, this->swapchain.extent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory, (VkSampleCountFlagBits)sampleCount);
 	depthImageView = VulkanUtils::CreateImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 }
 
@@ -348,6 +368,7 @@ bool sf::Renderer::VulkanDisplay::CreateSwapchain(bool recreate)
 	vkb::destroy_swapchain(this->swapchain);
 	this->swapchain = swap_ret.value();
 
+	CreateMultisampleResources(recreate);
 	CreateDepthResources(recreate);
 	std::cout << "[VulkanDisplay] Created swapchain with " << this->swapchain.image_count << " images\n";
 	return true;

@@ -1,8 +1,8 @@
-#version 430 core
+#version 460
+
+layout(location = 0) out vec3 fTexCoords;
 
 layout(location = 0) in vec3 vPosition;
-
-out vec3 fTexCoords;
 
 uniform mat4 projection;
 uniform mat4 view;

@@ -1,9 +1,9 @@
-#version 430 core
+#version 460
 
-in vec2 fragInPos;
-flat in int fragInDataOffset;
+layout(location = 0) out vec4 outColor;
 
-out vec4 outColor;
+layout(location = 0) in vec2 fragInPos;
+layout(location = 1) flat in int fragInDataOffset;
 
 layout (std430, binding = 2) buffer bezierSSBO
 {

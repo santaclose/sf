@@ -1,4 +1,9 @@
-#version 430 core
+#version 460
+
+layout(location = 0) out mat3 fTBN;
+layout(location = 3) out vec3 fWorldPos;
+layout(location = 4) out vec2 fTexCoords;
+layout(location = 5) out float fVertexAo;
 
 layout(location = 0) in vec3 vPosition;
 layout(location = 1) in vec3 vNormal;
@@ -6,9 +11,9 @@ layout(location = 2) in vec3 vTangent;
 layout(location = 3) in vec3 vBitangent;
 layout(location = 4) in vec3 vColor;
 layout(location = 5) in vec2 vTexCoords;
-layout(location = 6) in float vAo;
+layout(location = 6) in float vAmbientOcclusion;
 
-layout(std140, binding = 0) uniform SharedGpuData
+layout(binding = 0) uniform SharedGpuData
 {
 	mat4 modelMatrix;
 	mat4 cameraMatrix;
@@ -16,14 +21,9 @@ layout(std140, binding = 0) uniform SharedGpuData
 	vec3 cameraPosition;
 };
 
-out mat3 fTBN;
-out vec3 fWorldPos;
-out vec2 fTexCoords;
-out float fVertexAo;
-
 void main()
 {
-	fVertexAo = vAo;
+	fVertexAo = vAmbientOcclusion;
 	fTexCoords = vTexCoords;
 	fWorldPos = (modelMatrix * vec4(vPosition, 1.0)).rgb;
 

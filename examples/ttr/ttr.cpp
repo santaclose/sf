@@ -80,7 +80,7 @@ namespace sf
 		{
 			static glm::vec3 color(1.0, 1.0, 1.0);
 			static glm::vec3 colorb(0.0, 0.0, 0.0);
-			Material materialTemplate("assets/shaders/defaultV.glsl", "assets/shaders/solidColorF.glsl", false);
+			Material materialTemplate("assets/shaders/default.vert", "assets/shaders/solidColor.frag", false);
 			materialTemplate.uniforms["color"] = { (uint32_t)DataType::vec3f32, &color };
 			whiteMaterial = Renderer::CreateMaterial(materialTemplate);
 			materialTemplate.uniforms["color"] = { (uint32_t)DataType::vec3f32, &colorb };

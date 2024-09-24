@@ -1,4 +1,4 @@
-shader: "assets/shaders/defaultV.glsl" "assets/shaders/flatF.glsl"
+shader: "assets/shaders/default.vert" "assets/shaders/flat.frag"
 b useTexture: true
 
 bitmap texture: "examples/thirdperson/7frj09nru4zu.png"

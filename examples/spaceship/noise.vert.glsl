@@ -1,10 +1,10 @@
-#version 430 core
+#version 460
+
+layout(location = 0) out vec2 fScreenPos;
 
 layout(location = 0) in vec3 vPosition;
 
-out vec2 fScreenPos;
-
-layout(std140, binding = 0) uniform SharedGpuData
+layout(binding = 0) uniform SharedGpuData
 {
 	mat4 modelMatrix;
 	mat4 cameraMatrix;

@@ -1,7 +1,8 @@
-#version 430 core
+#version 460
 
-in vec2 fScreenPos;
-out vec4 outColor;
+layout(location = 0) out vec4 outColor;
+
+layout(location = 0) in vec2 fScreenPos;
 
 float random(vec2 st) {
 	return fract(sin(dot(st.xy,

@@ -78,19 +78,19 @@ sf::GlShader::GlShader() : gl_id(-1) {}
 
 void sf::GlShader::CreateFromFiles(const std::string& vertexShaderPath, const std::string& fragmentShaderPath)
 {
-	std::cout << "[GlShader] Creating shader from files: " << vertexShaderPath << ", " << fragmentShaderPath << std::endl;
-	m_vertFileName = vertexShaderPath;
-	m_fragFileName = fragmentShaderPath;
+	m_vertFileName = vertexShaderPath + ".glsl";
+	m_fragFileName = fragmentShaderPath + ".glsl";
+	std::cout << "[GlShader] Creating shader from files: " << m_vertFileName << ", " << m_fragFileName << std::endl;
 
 	Delete();
 
-	std::ifstream ifs(vertexShaderPath);
-	std::ifstream ifs2(fragmentShaderPath);
+	std::ifstream ifs(m_vertFileName);
+	std::ifstream ifs2(m_fragFileName);
 
 	if (ifs.fail())
-		std::cout << "[GlShader] Could not read vertex shader file: " << vertexShaderPath << std::endl;
+		std::cout << "[GlShader] Could not read vertex shader file: " << m_vertFileName << std::endl;
 	if (ifs2.fail())
-		std::cout << "[GlShader] Could not read fragment shader file: " << fragmentShaderPath << std::endl;
+		std::cout << "[GlShader] Could not read fragment shader file: " << m_fragFileName << std::endl;
 
 	std::string vertexShaderSource((std::istreambuf_iterator<char>(ifs)),
 		(std::istreambuf_iterator<char>()));
@@ -114,10 +114,11 @@ void sf::GlShader::CreateFromFiles(const std::string& vertexShaderPath, const st
 
 void sf::GlShader::CreateComputeFromFile(const std::string& computeShaderPath)
 {
-	std::cout << "[GlShader] Creating compute shader from file: " << computeShaderPath << std::endl;
-	std::ifstream ifs(computeShaderPath);
+	std::string computeShaderPathGlsl = computeShaderPath + ".glsl";
+	std::cout << "[GlShader] Creating compute shader from file: " << computeShaderPathGlsl << std::endl;
+	std::ifstream ifs(computeShaderPathGlsl);
 	if (ifs.fail())
-		std::cout << "[GlShader] Could not read compute shader file: " << computeShaderPath << std::endl;
+		std::cout << "[GlShader] Could not read compute shader file: " << computeShaderPathGlsl << std::endl;
 	std::string computeShaderSource((std::istreambuf_iterator<char>(ifs)),
 		(std::istreambuf_iterator<char>()));
 	gl_id = glCreateProgram();

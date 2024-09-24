@@ -1,4 +1,9 @@
-#version 430 core
+#version 460
+
+layout(location = 0) out mat3 fTBN;
+layout(location = 3) out vec3 fWorldPos;
+layout(location = 4) out vec2 fTexCoords;
+layout(location = 5) out float fVertexAo;
 
 layout(location = 0) in vec4 vBoneIndices;
 layout(location = 1) in vec4 vBoneWeights;
@@ -8,9 +13,9 @@ layout(location = 4) in vec3 vTangent;
 layout(location = 5) in vec3 vBitangent;
 layout(location = 6) in vec3 vColor;
 layout(location = 7) in vec2 vTexCoords;
-layout(location = 8) in float vAo;
+layout(location = 8) in float vAmbientOcclusion;
 
-layout(std140, binding = 0) uniform SharedGpuData
+layout(binding = 0) uniform SharedGpuData
 {
 	mat4 modelMatrix;
 	mat4 cameraMatrix;
@@ -18,22 +23,17 @@ layout(std140, binding = 0) uniform SharedGpuData
 	vec3 cameraPosition;
 };
 
-layout (std430, binding = 1) buffer SkinningMatricesBuffer
+layout (binding = 1) buffer SkinningMatricesBuffer
 {
 	mat4 skinningMatrices[];
 };
-
-out mat3 fTBN;
-out vec3 fWorldPos;
-out vec2 fTexCoords;
-out float fVertexAo;
 
 uniform bool animate = false;
 
 void main()
 {
 	fTexCoords = vTexCoords;
-	fVertexAo = vAo;
+	fVertexAo = vAmbientOcclusion;
 
 	mat4 skinMat = animate ?
 		vBoneWeights.x * skinningMatrices[int(vBoneIndices.x)] +

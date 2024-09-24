@@ -1,12 +1,12 @@
-#version 430 core
+#version 460
 
-in vec2 fTexCoords;
+layout(location = 0) out vec4 outColor;
+
+layout(location = 4) in vec2 fTexCoords;
 
 uniform bool useTexture = false;
 uniform sampler2D texture;
 uniform vec3 color;
-
-out vec4 outColor;
 
 void main()
 {

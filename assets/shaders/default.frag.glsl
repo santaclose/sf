@@ -1,9 +1,9 @@
-#version 430 core
+#version 460
 
-in vec2 fTexCoords;
-in mat3 fTBN;
+layout(location = 0) out vec4 outColor;
 
-out vec4 outColor;
+layout(location = 0) in mat3 fTBN;
+layout(location = 4) in vec2 fTexCoords;
 
 void main()
 {

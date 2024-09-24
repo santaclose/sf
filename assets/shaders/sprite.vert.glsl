@@ -1,17 +1,17 @@
-#version 430 core
+#version 460
+
+layout(location = 4) out vec2 fTexCoords;
 
 layout(location = 0) in vec2 vPosition;
 layout(location = 1) in vec2 vTexCoords;
 
-layout(std140, binding = 0) uniform SharedGpuData
+layout(binding = 0) uniform SharedGpuData
 {
 	mat4 modelMatrix;
 	mat4 cameraMatrix;
 	mat4 screenSpaceMatrix;
 	vec3 cameraPosition;
 };
-
-out vec2 fTexCoords;
 
 void main()
 {

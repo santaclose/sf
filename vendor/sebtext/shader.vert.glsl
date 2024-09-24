@@ -1,10 +1,10 @@
-#version 430 core
+#version 460
+
+layout(location = 0) out vec2 fragInPos;
+layout(location = 1) flat out int fragInDataOffset;
 
 layout(location = 0) in vec3 vPosition;
 layout(location = 1) in vec2 vTexCoords;
-
-out vec2 fragInPos;
-flat out int fragInDataOffset;
 
 struct InstanceData
 {

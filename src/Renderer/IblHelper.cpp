@@ -49,7 +49,7 @@ namespace sf::IblHelper
 		GlTexture::StorageType textureStorageType = dataType == DataType::f16 ? GlTexture::StorageType::Float16 : GlTexture::StorageType::Float32;
 
 		GlShader lutComputeShader;
-		lutComputeShader.CreateComputeFromFile("assets/shaders/ibl/spbrdfC.glsl");
+		lutComputeShader.CreateComputeFromFile("assets/shaders/ibl/spbrdf.comp");
 
 		static constexpr int kBRDF_LUT_Size = 256;
 		Texture m_spBRDF_LUT = createTexture(GL_TEXTURE_2D, kBRDF_LUT_Size, kBRDF_LUT_Size, internalFormat, false);
@@ -83,7 +83,7 @@ namespace sf::IblHelper
 
 		static constexpr int kEnvMapSize = 1024;
 		GlShader equirect2CubeComputeShader;
-		equirect2CubeComputeShader.CreateComputeFromFile("assets/shaders/ibl/equirect2cubeC.glsl");
+		equirect2CubeComputeShader.CreateComputeFromFile("assets/shaders/ibl/equirect2cube.comp");
 
 		equirect2CubeComputeShader.Bind();
 		Texture envTextureUnfiltered = createTexture(GL_TEXTURE_CUBE_MAP, kEnvMapSize, kEnvMapSize, internalFormat, true);
@@ -107,7 +107,7 @@ namespace sf::IblHelper
 		GlCubemap::StorageType cubemapStorageType = dataType == DataType::f16 ? GlCubemap::StorageType::Float16 : GlCubemap::StorageType::Float32;
 
 		GlShader spmapComputeShader;
-		spmapComputeShader.CreateComputeFromFile("assets/shaders/ibl/spmapC.glsl");
+		spmapComputeShader.CreateComputeFromFile("assets/shaders/ibl/spmap.comp");
 
 		static constexpr int kEnvMapSize = 1024;
 		Texture m_envTexture = createTexture(GL_TEXTURE_CUBE_MAP, kEnvMapSize, kEnvMapSize, internalFormat, true);
@@ -146,7 +146,7 @@ namespace sf::IblHelper
 
 		static constexpr int kIrradianceMapSize = 32;
 		GlShader irmapComputeShader;
-		irmapComputeShader.CreateComputeFromFile("assets/shaders/ibl/irmapC.glsl");
+		irmapComputeShader.CreateComputeFromFile("assets/shaders/ibl/irmap.comp");
 
 		Texture m_irmapTexture = createTexture(GL_TEXTURE_CUBE_MAP, kIrradianceMapSize, kIrradianceMapSize, internalFormat, false);
 

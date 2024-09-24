@@ -1,7 +1,8 @@
-#version 430 core
+#version 460
 
-out vec4 outColor;
-in vec3 fTexCoords;
+layout(location = 0) out vec4 outColor;
+
+layout(location = 0) in vec3 fTexCoords;
 
 uniform samplerCube skybox;
 uniform bool useExposure = false;

@@ -1,9 +1,11 @@
-#version 430 core
+#version 460
+
+layout(location = 4) out vec2 fTexCoords;
 
 layout(location = 0) in vec3 vPosition;
 layout(location = 5) in vec2 vTexCoords;
 
-layout(std140, binding = 0) uniform SharedGpuData
+layout(binding = 0) uniform SharedGpuData
 {
 	mat4 modelMatrix;
 	mat4 cameraMatrix;
@@ -11,12 +13,10 @@ layout(std140, binding = 0) uniform SharedGpuData
 	vec3 cameraPosition;
 };
 
-layout (std430, binding = 1) buffer VoxelMatricesBuffer
+layout (binding = 1) buffer VoxelMatricesBuffer
 {
 	mat4 voxelMatrices[];
 };
-
-out vec2 fTexCoords;
 
 void main()
 {

@@ -337,11 +337,11 @@ bool sf::Renderer::Initialize(const Window& windowArg)
 
 	sf::Renderer::aspectRatio = (float)(window->GetWidth()) / (float)(window->GetHeight());
 
-	defaultShader.CreateFromFiles("assets/shaders/defaultV.glsl", "assets/shaders/defaultF.glsl");
+	defaultShader.CreateFromFiles("assets/shaders/default.vert", "assets/shaders/default.frag");
 	defaultMaterial.CreateFromShader(&defaultShader, false);
-	defaultSkinningShader.CreateFromFiles("assets/shaders/defaultSkinningV.glsl", "assets/shaders/defaultF.glsl");
+	defaultSkinningShader.CreateFromFiles("assets/shaders/defaultSkinning.vert", "assets/shaders/default.frag");
 	defaultSkinningMaterial.CreateFromShader(&defaultSkinningShader, false);
-	voxelBoxShader.CreateFromFiles("assets/shaders/voxelBoxV.glsl", "assets/shaders/uvF.glsl");
+	voxelBoxShader.CreateFromFiles("assets/shaders/voxelBox.vert", "assets/shaders/uv.frag");
 
 	glGenBuffers(1, &sharedGpuData_gl_ubo);
 
@@ -351,10 +351,10 @@ bool sf::Renderer::Initialize(const Window& windowArg)
 	rendererUniformVector[(uint32_t)RendererUniformData::IrradianceMap] = &environmentData.irradianceCubemap;
 
 	// sprites
-	spriteShader.CreateFromFiles("assets/shaders/spriteV.glsl", "assets/shaders/spriteF.glsl");
+	spriteShader.CreateFromFiles("assets/shaders/sprite.vert", "assets/shaders/sprite.frag");
 
 	// text
-	textShader.CreateFromFiles("vendor/sebtext/shader.vert.glsl", "vendor/sebtext/shader.frag.glsl");
+	textShader.CreateFromFiles("vendor/sebtext/shader.vert", "vendor/sebtext/shader.frag");
 
 	// quad uvs and indices won't change
 	spriteQuad.vertices[1] = { 0.0f, 0.0f };

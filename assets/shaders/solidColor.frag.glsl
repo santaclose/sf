@@ -1,6 +1,6 @@
-#version 430 core
+#version 460
 
-out vec4 outColor;
+layout(location = 0) out vec4 outColor;
 
 uniform vec3 color = vec3(0.0, 0.0, 0.0);
 

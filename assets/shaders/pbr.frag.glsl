@@ -1,14 +1,15 @@
-#version 430 core
+#version 460
 
 #define MAX_DIR_LIGHTS 10
 #define MAX_POINT_LIGHTS 10
 #define PI 3.14159265359
 
-out vec4 outColor;
-in mat3 fTBN;
-in vec3 fWorldPos;
-in vec2 fTexCoords;
-in float fVertexAo;
+layout(location = 0) out vec4 outColor;
+
+layout(location = 0) in mat3 fTBN;
+layout(location = 3) in vec3 fWorldPos;
+layout(location = 4) in vec2 fTexCoords;
+layout(location = 5) in float fVertexAo;
 
 layout(std140, binding = 0) uniform SharedGpuData
 {

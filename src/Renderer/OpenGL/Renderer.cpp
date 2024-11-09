@@ -316,11 +316,11 @@ bool sf::Renderer::Initialize(const Window& windowArg)
 
 	sf::Renderer::aspectRatio = (float)sf::Config::GetWindowSize().x / (float)sf::Config::GetWindowSize().y;
 
-	defaultShader.CreateFromFiles("assets/shaders/defaultV.glsl", "assets/shaders/defaultF.glsl");
+	defaultShader.CreateFromFiles("assets/shaders/defaultV", "assets/shaders/defaultF");
 	defaultMaterial.CreateFromShader(&defaultShader, false);
-	defaultSkinningShader.CreateFromFiles("assets/shaders/defaultSkinningV.glsl", "assets/shaders/defaultF.glsl");
+	defaultSkinningShader.CreateFromFiles("assets/shaders/defaultSkinningV", "assets/shaders/defaultF");
 	defaultSkinningMaterial.CreateFromShader(&defaultSkinningShader, false);
-	voxelBoxShader.CreateFromFiles("assets/shaders/voxelBoxV.glsl", "assets/shaders/uvF.glsl");
+	voxelBoxShader.CreateFromFiles("assets/shaders/voxelBoxV", "assets/shaders/uvF");
 
 	glGenBuffers(1, &sharedGpuData_gl_ubo);
 
@@ -330,7 +330,7 @@ bool sf::Renderer::Initialize(const Window& windowArg)
 	rendererUniformVector[(uint32_t)RendererUniformData::IrradianceMap] = &environmentData.irradianceCubemap;
 
 	// sprites
-	spriteShader.CreateFromFiles("assets/shaders/spriteV.glsl", "assets/shaders/spriteF.glsl");
+	spriteShader.CreateFromFiles("assets/shaders/spriteV", "assets/shaders/spriteF");
 
 	// quad uvs and indices won't change
 	spriteQuad.vertices[1] = { 0.0f, 0.0f };

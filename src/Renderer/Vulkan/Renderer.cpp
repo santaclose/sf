@@ -87,6 +87,53 @@ namespace sf::Renderer
 	PerObjectData perObjectData;
 	PerFrameData perFrameUniformData;
 
+	struct VoxelBoxGpuData
+	{
+		VulkanShaderBuffer matrixBuffer;
+		int numberOfCubes;
+		std::vector<glm::mat4> cubeModelMatrices;
+	};
+	std::unordered_map<const sf::VoxelBoxData*, VoxelBoxGpuData> voxelBoxGpuData;
+	Material voxelBoxMaterial = { std::string("assets/shaders/voxelBoxV"), std::string("assets/shaders/uvF") };
+	uint32_t voxelBoxPipeline;
+	Material defaultMaterial = { std::string("assets/shaders/defaultV"), std::string("assets/shaders/defaultF") };
+	uint32_t defaultPipeline;
+
+	void CreateVoxelBoxGpuData(const sf::VoxelBoxData* voxelBox, const Transform& transform)
+	{
+		voxelBoxGpuData[voxelBox] = VoxelBoxGpuData();
+		voxelBoxGpuData[voxelBox].cubeModelMatrices.resize(voxelBox->mat.size() * voxelBox->mat[0].size() * voxelBox->mat[0][0].size());
+
+		Transform voxelSpaceCursor;
+		voxelSpaceCursor.scale = voxelBox->voxelSize;
+
+		int currentCube = 0;
+		for (int i = 0; i < voxelBox->mat.size(); i++)
+		{
+			for (int j = 0; j < voxelBox->mat[0].size(); j++)
+			{
+				for (int k = 0; k < voxelBox->mat[0][0].size(); k++)
+				{
+					if (voxelBox->mat[i][j][k])
+					{
+						voxelSpaceCursor.position = voxelBox->offset;
+						voxelSpaceCursor.position.x += voxelBox->voxelSize * ((float)i + 0.5f);
+						voxelSpaceCursor.position.y += voxelBox->voxelSize * ((float)j + 0.5f);
+						voxelSpaceCursor.position.z += voxelBox->voxelSize * ((float)k + 0.5f);
+
+						voxelBoxGpuData[voxelBox].cubeModelMatrices[currentCube] = voxelSpaceCursor.ComputeMatrix();
+						currentCube++;
+					}
+				}
+			}
+		}
+		voxelBoxGpuData[voxelBox].numberOfCubes = currentCube;
+
+		voxelBoxGpuData[voxelBox].matrixBuffer.Create(VulkanShaderBufferType::StorageBuffer, sizeof(glm::mat4) * currentCube);
+		voxelBoxGpuData[voxelBox].matrixBuffer.Update(voxelBoxGpuData[voxelBox].cubeModelMatrices.data(), sizeof(glm::mat4) * currentCube);
+		return;
+	}
+
 	void DestroyPipelines()
 	{
 		for (int i = 0; i < pipelines.size(); i++)
@@ -111,6 +158,10 @@ namespace sf::Renderer
 			vkFreeMemory(VulkanDisplay::Device(), pair.second.vertexBufferMemory, nullptr);
 			vkDestroyBuffer(VulkanDisplay::Device(), pair.second.indexBuffer, nullptr);
 			vkFreeMemory(VulkanDisplay::Device(), pair.second.indexBufferMemory, nullptr);
+		}
+		for (auto pair : voxelBoxGpuData)
+		{
+			pair.second.matrixBuffer.Destroy();
 		}
 	}
 
@@ -304,10 +355,10 @@ namespace sf::Renderer
 		size_t vertexBufferSize = mesh->vertexCount * mesh->vertexLayout.GetSize();
 		meshGpuData[mesh] = MeshGpuData();
 
-		VulkanUtils::CreateVertexBuffer(vertexBufferSize,
-			mesh->vertexBuffer, meshGpuData[mesh].vertexBuffer, meshGpuData[mesh].vertexBufferMemory);
-		VulkanUtils::CreateIndexBuffer(mesh->indexVector.size() * sizeof(mesh->indexVector[0]),
-			mesh->indexVector.data(), meshGpuData[mesh].indexBuffer, meshGpuData[mesh].indexBufferMemory);
+		assert(VulkanUtils::CreateVertexBuffer(vertexBufferSize,
+			mesh->vertexBuffer, meshGpuData[mesh].vertexBuffer, meshGpuData[mesh].vertexBufferMemory));
+		assert(VulkanUtils::CreateIndexBuffer(mesh->indexVector.size() * sizeof(mesh->indexVector[0]),
+			mesh->indexVector.data(), meshGpuData[mesh].indexBuffer, meshGpuData[mesh].indexBufferMemory));
 	}
 }
 
@@ -321,6 +372,8 @@ bool sf::Renderer::Initialize(const Window& windowArg)
 	for (int i = 0; i < ARRAY_LEN(commonUniformBuffer); i++)
 		commonUniformBuffer[i].Create(VulkanShaderBufferType::UniformBuffer, sizeof(PerFrameData));
 
+	voxelBoxPipeline = CreateMaterial(voxelBoxMaterial);
+	defaultPipeline = CreateMaterial(defaultMaterial);
 	for (int i = 0; i < pipelines.size(); i++)
 		CreatePipeline(pipelines[i]);
 
@@ -481,6 +534,34 @@ void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 
 void sf::Renderer::DrawVoxelBox(VoxelBox& voxelBox, Transform& transform)
 {
+	assert(activeCameraEntity);
+
+	if (meshGpuData.find(&Defaults::cubeMeshData) == meshGpuData.end()) // create mesh data if not there
+		CreateMeshGpuData(&Defaults::cubeMeshData);
+
+	if (voxelBoxGpuData.find(voxelBox.voxelBoxData) == voxelBoxGpuData.end())
+		CreateVoxelBoxGpuData(voxelBox.voxelBoxData, transform);
+
+	perObjectData.modelMatrix = transform.ComputeMatrix();
+
+	vkCmdPushConstants(vkdd.CommandBuffer(), pipelines.back().layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PerObjectData), &perObjectData);
+
+	VkBuffer vertexBuffers[] = { meshGpuData[&Defaults::cubeMeshData].vertexBuffer };
+	VkDeviceSize offsets[] = { 0 };
+	vkCmdBindVertexBuffers(vkdd.CommandBuffer(), 0, 1, vertexBuffers, offsets);
+	vkCmdBindIndexBuffer(vkdd.CommandBuffer(), meshGpuData[&Defaults::cubeMeshData].indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+	int pipelineToUse = voxelBoxPipeline;
+	if (pipelineToUse != currentPipeline)
+	{
+		assert(Defaults::cubeMeshData.vertexLayout == pipelines[pipelineToUse].vertexAttributeDataLayout);
+		vkCmdBindPipeline(vkdd.CommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[pipelineToUse].pipeline);
+		vkCmdBindDescriptorSets(vkdd.CommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[pipelineToUse].layout, 0, 1,
+			&pipelines[pipelineToUse].descriptorSet[VulkanDisplay::CurrentFrameInFlight()], 0, nullptr);
+		currentPipeline = pipelineToUse;
+	}
+	voxelBoxGpuData[voxelBox.voxelBoxData].matrixBuffer.Write(pipelines[pipelineToUse].descriptorSet[VulkanDisplay::CurrentFrameInFlight()], 1);
+	vkCmdDrawIndexed(vkdd.CommandBuffer(), Defaults::cubeMeshData.indexVector.size(), voxelBoxGpuData[voxelBox.voxelBoxData].numberOfCubes, 0, 0, 0);
 }
 
 void sf::Renderer::DrawSkeleton(Skeleton& skeleton, Transform& transform)

@@ -282,30 +282,44 @@ uint32_t sf::Renderer::VulkanUtils::FindMemoryType(uint32_t typeFilter, VkMemory
 void sf::Renderer::VulkanUtils::DescriptorSetBindingsFromShader(const char* vertexShaderPath, const char* fragmentShaderPath, std::vector<VkDescriptorSetLayoutBinding>& out)
 {
 	// Restricted to 10 descriptor sets
-	const static std::string uboString = "layout(binding = ";
-	const static std::string ssboString = "layout(std140, binding = ";
-	assert(out.size() == 0);
 	int vertexBindings[10] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
 	int fragmentBindings[10] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+	const static std::string layoutString = "layout(";
+	const static std::string bindingString = "binding = ";
+	const static std::string bufferString = " buffer ";
+	const static std::string uniformString = " uniform ";
 
-	std::string shaderContents;
-	FileUtils::ReadFileAsString(std::string(vertexShaderPath) + ".glsl", shaderContents);
-	for (const char* c = shaderContents.data(); *c != '\0'; c++)
-	{
-		if (strncmp(c, uboString.c_str(), uboString.size()) == 0)
-			vertexBindings[c[uboString.size()] - '0'] = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		else if (strncmp(c, ssboString.c_str(), ssboString.size()) == 0)
-			vertexBindings[c[ssboString.size()] - '0'] = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	const char* shaderFilePaths[] = { vertexShaderPath, fragmentShaderPath };
+	int* shaderBindings[] = { vertexBindings, fragmentBindings };
 
-	}
-	shaderContents.clear();
-	FileUtils::ReadFileAsString(std::string(fragmentShaderPath) + ".glsl", shaderContents);
-	for (const char* c = shaderContents.data(); *c != '\0'; c++)
+	for (int cs = 0; cs < 2; cs++)
 	{
-		if (strncmp(c, uboString.c_str(), uboString.size()) == 0)
-			fragmentBindings[c[uboString.size()] - '0'] = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		else if (strncmp(c, ssboString.c_str(), ssboString.size()) == 0)
-			fragmentBindings[c[ssboString.size()] - '0'] = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		std::string shaderContents;
+		FileUtils::ReadFileAsString(std::string(shaderFilePaths[cs]) + ".glsl", shaderContents);
+		for (int i = 0; i < shaderContents.length(); i++)
+		{
+			if (strncmp(shaderContents.data() + i, layoutString.c_str(), layoutString.size()) != 0)
+				continue;
+			for (; i < shaderContents.length() && shaderContents[i] != '\n' && strncmp(shaderContents.data() + i, bindingString.c_str(), bindingString.size()) != 0; i++);
+			if (shaderContents[i] != 'b')
+				continue;
+			int bindingNumberStart, bindingNumberEnd;
+			bindingNumberStart = bindingNumberEnd = i + bindingString.length();
+			for (; shaderContents[bindingNumberEnd] >= '0' && shaderContents[bindingNumberEnd] <= '9'; bindingNumberEnd++);
+			for (i = bindingNumberEnd;
+				i < shaderContents.length() &&
+				strncmp(shaderContents.data() + i, bufferString.c_str(), bufferString.size()) != 0 &&
+				strncmp(shaderContents.data() + i, uniformString.c_str(), uniformString.size()) != 0; i++);
+			if (i >= shaderContents.length())
+				continue;
+
+			std::string bindingNumberString = shaderContents.substr(bindingNumberStart, bindingNumberEnd - bindingNumberStart);
+			int bindingNumber = std::stoi(bindingNumberString);
+			if (shaderContents[i + 1] == 'b') // buffer
+				shaderBindings[cs][bindingNumber] = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			else // uniform
+				shaderBindings[cs][bindingNumber] = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		}
 	}
 
 	for (int i = 0; i < 10; i++)

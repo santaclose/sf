@@ -1,4 +1,4 @@
-shader: "assets/shaders/defaultV.glsl" "assets/shaders/pbrF.glsl"
+shader: "assets/shaders/defaultV" "assets/shaders/pbrF"
 b useAlbedoTexture: true
 b useNormalTexture: true
 b useMetalnessTexture: true

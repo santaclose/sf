@@ -282,49 +282,55 @@ uint32_t sf::Renderer::VulkanUtils::FindMemoryType(uint32_t typeFilter, VkMemory
 void sf::Renderer::VulkanUtils::DescriptorSetBindingsFromShader(const char* vertexShaderPath, const char* fragmentShaderPath, std::vector<VkDescriptorSetLayoutBinding>& out)
 {
 	// Restricted to 10 descriptor sets
-	int vertexBindings[10] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
-	int fragmentBindings[10] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
-	const static std::string layoutString = "layout(";
-	const static std::string bindingString = "binding = ";
-	const static std::string bufferString = " buffer ";
-	const static std::string uniformString = " uniform ";
-
+	int vertBindings[10] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+	int fragBindings[10] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
 	const char* shaderFilePaths[] = { vertexShaderPath, fragmentShaderPath };
-	int* shaderBindings[] = { vertexBindings, fragmentBindings };
-
-	for (int cs = 0; cs < 2; cs++)
+	int* shaderBindings[] = { vertBindings, fragBindings };
+	for (int currentShader = 0; currentShader < 2; currentShader++)
 	{
 		std::string shaderContents;
-		FileUtils::ReadFileAsString(std::string(shaderFilePaths[cs]) + ".glsl", shaderContents);
+		FileUtils::ReadFileAsString(std::string(shaderFilePaths[currentShader]) + ".input", shaderContents);
+		char currentState = '\0';
 		for (int i = 0; i < shaderContents.length(); i++)
 		{
-			if (strncmp(shaderContents.data() + i, layoutString.c_str(), layoutString.size()) != 0)
+			if (shaderContents[i] == '[')
+			{
+				if (shaderContents[i + 1] == 'u')
+					currentState = 'u';
+				else if (shaderContents[i + 1] == 's')
+					currentState = 's';
 				continue;
-			for (; i < shaderContents.length() && shaderContents[i] != '\n' && strncmp(shaderContents.data() + i, bindingString.c_str(), bindingString.size()) != 0; i++);
-			if (shaderContents[i] != 'b')
-				continue;
-			int bindingNumberStart, bindingNumberEnd;
-			bindingNumberStart = bindingNumberEnd = i + bindingString.length();
-			for (; shaderContents[bindingNumberEnd] >= '0' && shaderContents[bindingNumberEnd] <= '9'; bindingNumberEnd++);
-			for (i = bindingNumberEnd;
-				i < shaderContents.length() &&
-				strncmp(shaderContents.data() + i, bufferString.c_str(), bufferString.size()) != 0 &&
-				strncmp(shaderContents.data() + i, uniformString.c_str(), uniformString.size()) != 0; i++);
-			if (i >= shaderContents.length())
-				continue;
-
-			std::string bindingNumberString = shaderContents.substr(bindingNumberStart, bindingNumberEnd - bindingNumberStart);
-			int bindingNumber = std::stoi(bindingNumberString);
-			if (shaderContents[i + 1] == 'b') // buffer
-				shaderBindings[cs][bindingNumber] = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			else // uniform
-				shaderBindings[cs][bindingNumber] = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			}
+			switch (currentState)
+			{
+			case 's': // ssbos
+			{
+				if (shaderContents[i - 1] == '\n')
+				{
+					int endOfLineIndex = i;
+					for (; shaderContents[endOfLineIndex] != '\n'; endOfLineIndex++);
+					shaderBindings[currentShader][std::stoi(shaderContents.substr(i, endOfLineIndex - i))] = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+				}
+				break;
+			}
+			case 'u': // ubos
+			{
+				if (shaderContents[i - 1] == '\n')
+				{
+					int endOfLineIndex = i;
+					for (; shaderContents[endOfLineIndex] != '\n'; endOfLineIndex++);
+					shaderBindings[currentShader][std::stoi(shaderContents.substr(i, endOfLineIndex - i))] = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+				}
+				break;
+			}
+			default: break;
+			}
 		}
 	}
 
 	for (int i = 0; i < 10; i++)
 	{
-		if (vertexBindings[i] != -1 || fragmentBindings[i] != -1)
+		if (vertBindings[i] != -1 || fragBindings[i] != -1)
 		{
 			out.emplace_back();
 			out.back().binding = i;
@@ -332,16 +338,16 @@ void sf::Renderer::VulkanUtils::DescriptorSetBindingsFromShader(const char* vert
 			out.back().stageFlags = 0U;
 			out.back().pImmutableSamplers = nullptr;
 		}
-		if (vertexBindings[i] != -1)
+		if (vertBindings[i] != -1)
 		{
-			assert(fragmentBindings[i] == -1 || fragmentBindings[i] == vertexBindings[i]);
-			out.back().descriptorType = (VkDescriptorType)vertexBindings[i];
+			assert(fragBindings[i] == -1 || fragBindings[i] == vertBindings[i]);
+			out.back().descriptorType = (VkDescriptorType)vertBindings[i];
 			out.back().stageFlags |= VK_SHADER_STAGE_VERTEX_BIT;
 		}
-		if (fragmentBindings[i] != -1)
+		if (fragBindings[i] != -1)
 		{
-			assert(vertexBindings[i] == -1 || fragmentBindings[i] == vertexBindings[i]);
-			out.back().descriptorType = (VkDescriptorType)fragmentBindings[i];
+			assert(vertBindings[i] == -1 || fragBindings[i] == vertBindings[i]);
+			out.back().descriptorType = (VkDescriptorType)fragBindings[i];
 			out.back().stageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
 		}
 	}

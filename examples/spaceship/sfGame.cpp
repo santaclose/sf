@@ -46,10 +46,10 @@ namespace sf
 
 	void Game::Initialize(int argc, char** argv)
 	{
-		uint32_t aoMaterial = Renderer::CreateMaterial(Material("assets/shaders/defaultV", "assets/shaders/vertexAoF", false));
-		uint32_t colorsMaterial = Renderer::CreateMaterial(Material("examples/spaceship/randomColorsV", "examples/spaceship/randomColorsF", false));
-		uint32_t uvMaterial = Renderer::CreateMaterial(Material("assets/shaders/defaultV", "assets/shaders/uvF", false));
-		uint32_t noiseMaterial = Renderer::CreateMaterial(Material("examples/spaceship/noiseV", "examples/spaceship/noiseF", false));
+		uint32_t aoMaterial = Renderer::CreateMaterial(Material("assets/shaders/default.vert", "assets/shaders/vertexAo.frag", false));
+		uint32_t colorsMaterial = Renderer::CreateMaterial(Material("examples/spaceship/randomColors.vert", "examples/spaceship/randomColors.frag", false));
+		uint32_t uvMaterial = Renderer::CreateMaterial(Material("assets/shaders/default.vert", "assets/shaders/uv.frag", false));
+		uint32_t noiseMaterial = Renderer::CreateMaterial(Material("examples/spaceship/noise.vert", "examples/spaceship/noise.frag", false));
 
 		e_ship = scene.CreateEntity();
 

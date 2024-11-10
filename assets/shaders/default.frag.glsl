@@ -1,9 +1,9 @@
 #version 460
 
+layout(location = 0) out vec4 outColor;
+
 layout(location = 0) in mat3 fTBN;
 layout(location = 4) in vec2 fTexCoords;
-
-layout(location = 0) out vec4 outColor;
 
 void main()
 {

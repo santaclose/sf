@@ -94,9 +94,9 @@ namespace sf::Renderer
 		std::vector<glm::mat4> cubeModelMatrices;
 	};
 	std::unordered_map<const sf::VoxelBoxData*, VoxelBoxGpuData> voxelBoxGpuData;
-	Material voxelBoxMaterial = { std::string("assets/shaders/voxelBoxV"), std::string("assets/shaders/uvF") };
+	Material voxelBoxMaterial = { std::string("assets/shaders/voxelBox.vert"), std::string("assets/shaders/uv.frag") };
 	uint32_t voxelBoxPipeline;
-	Material defaultMaterial = { std::string("assets/shaders/defaultV"), std::string("assets/shaders/defaultF") };
+	Material defaultMaterial = { std::string("assets/shaders/default.vert"), std::string("assets/shaders/default.frag") };
 	uint32_t defaultPipeline;
 
 	void CreateVoxelBoxGpuData(const sf::VoxelBoxData* voxelBox, const Transform& transform)
@@ -395,7 +395,7 @@ void sf::Renderer::OnResize()
 
 uint32_t sf::Renderer::CreateMaterial(const Material& material)
 {
-	system(std::string("python assets/vulkanCompileShaders.py " + material.vertexShaderFilePath + ".glsl " + material.fragmentShaderFilePath + ".glsl").c_str());
+	assert(system(std::string("python assets/vulkanCompileShaders.py " + material.vertexShaderFilePath + ".glsl " + material.fragmentShaderFilePath + ".glsl").c_str()) == 0);
 
 	pipelines.emplace_back();
 	pipelines.back().vertexShaderPath = material.vertexShaderFilePath;

@@ -1,9 +1,16 @@
+#version 460
+#include "../../assets/shaders/shaderCommon.h"
 
-out vec4 outColor;
-in mat3 fTBN;
-in vec3 fWorldPos;
-in vec2 fTexCoords;
-in float fVertexAo;
+#define MAX_DIR_LIGHTS 10
+#define MAX_POINT_LIGHTS 10
+#define PI 3.14159265359
+
+layout(location = 0) out vec4 outColor;
+
+layout(location = 0) in mat3 fTBN;
+layout(location = 3) in vec3 fWorldPos;
+layout(location = 4) in vec2 fTexCoords;
+layout(location = 5) in float fVertexAo;
 
 uniform bool useVertexAo = false;
 

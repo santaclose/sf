@@ -149,9 +149,9 @@ SebText::TextRenderData SebText::CreateRenderData(const std::vector<const GlyphD
         GetBounds(*uniqueCharacters[charIndex], fontData, glyphBoundsCenter, glyphBoundsSize);
         GlyphRenderData glyphData =
         {
-            contours.size(),
-            renderData.GlyphMetaData.size(),
-            renderData.BezierPoints.size(),
+            (int) contours.size(),
+            (int) renderData.GlyphMetaData.size(),
+            (int) renderData.BezierPoints.size(),
             glyphBoundsSize
         };
 

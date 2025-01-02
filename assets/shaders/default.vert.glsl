@@ -13,7 +13,7 @@ layout(location = 4) in vec3 vColor;
 layout(location = 5) in vec2 vTexCoords;
 layout(location = 6) in float vAmbientOcclusion;
 
-layout(binding = 0) uniform SharedGpuData
+layout(std140, binding = 0) uniform SharedGpuData
 {
 	mat4 modelMatrix;
 	mat4 cameraMatrix;

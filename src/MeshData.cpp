@@ -1,4 +1,5 @@
 #include <MeshData.h>
+#include <cstring>
 
 void sf::MeshData::ChangeVertexLayout(const sf::DataLayout& newLayout)
 {

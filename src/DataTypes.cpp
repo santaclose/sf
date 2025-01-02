@@ -2,7 +2,7 @@
 
 namespace sf {
 
-	uint32_t sf::GetDataTypeSize(DataType dataType)
+	uint32_t GetDataTypeSize(DataType dataType)
 	{
 		switch (dataType)
 		{
@@ -95,6 +95,7 @@ namespace sf {
 		case DataType::mat2f64: return 32;
 		case DataType::mat3f64: return 72;
 		case DataType::mat4f64: return 128;
+		default: return ~0;
 		}
 	}
 }

@@ -30,6 +30,7 @@ SOFTWARE.
 #include <cassert>
 #include <glm/glm.hpp>
 #include <unordered_map>
+#include <stdio.h>
 
 namespace BlendMatrixInterpolation
 {
@@ -284,7 +285,7 @@ namespace BlendMatrixInterpolation
 		{
 			float vmax = 0.0f;
 			for (int j = 0; j < n; j++)
-				vmax = glm::max(vmax, fabs(matrix(i, j)));
+				vmax = glm::max(vmax, (float) fabs(matrix(i, j)));
 
 			if (vmax == 0.0)
 				return false;

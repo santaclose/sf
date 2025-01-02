@@ -154,22 +154,26 @@ namespace sf::Renderer
 			switch (components[i].dataType)
 			{
 				case DataType::f32:
-					glVertexAttribPointer(i, 1, GL_FLOAT, GL_FALSE, mesh->vertexLayout.GetSize(), (void*)components[i].byteOffset);
+					glVertexAttribPointer(i, 1, GL_FLOAT, GL_FALSE, mesh->vertexLayout.GetSize(), (void*)(unsigned long long)components[i].byteOffset);
 					break;
 				case DataType::vec2f32:
-					glVertexAttribPointer(i, 2, GL_FLOAT, GL_FALSE, mesh->vertexLayout.GetSize(), (void*)components[i].byteOffset);
+					glVertexAttribPointer(i, 2, GL_FLOAT, GL_FALSE, mesh->vertexLayout.GetSize(), (void*)(unsigned long long)components[i].byteOffset);
 					break;
 				case DataType::vec3f32:
-					glVertexAttribPointer(i, 3, GL_FLOAT, GL_FALSE, mesh->vertexLayout.GetSize(), (void*)components[i].byteOffset);
+					glVertexAttribPointer(i, 3, GL_FLOAT, GL_FALSE, mesh->vertexLayout.GetSize(), (void*)(unsigned long long)components[i].byteOffset);
 					break;
 				case DataType::vec4f32:
-					glVertexAttribPointer(i, 4, GL_FLOAT, GL_FALSE, mesh->vertexLayout.GetSize(), (void*)components[i].byteOffset);
+					glVertexAttribPointer(i, 4, GL_FLOAT, GL_FALSE, mesh->vertexLayout.GetSize(), (void*)(unsigned long long)components[i].byteOffset);
 					break;
 				case DataType::vec4u8:
-					glVertexAttribPointer(i, 4, GL_UNSIGNED_BYTE, GL_FALSE, mesh->vertexLayout.GetSize(), (void*)components[i].byteOffset);
+					glVertexAttribPointer(i, 4, GL_UNSIGNED_BYTE, GL_FALSE, mesh->vertexLayout.GetSize(), (void*)(unsigned long long)components[i].byteOffset);
 					break;
 				case DataType::vec4u16:
-					glVertexAttribPointer(i, 4, GL_UNSIGNED_SHORT, GL_FALSE, mesh->vertexLayout.GetSize(), (void*)components[i].byteOffset);
+					glVertexAttribPointer(i, 4, GL_UNSIGNED_SHORT, GL_FALSE, mesh->vertexLayout.GetSize(), (void*)(unsigned long long)components[i].byteOffset);
+					break;
+				default:
+					std::cout << "[Renderer] Vertex attribute skipped" << std::endl;
+					assert(false);
 					break;
 			}
 		}
@@ -388,6 +392,7 @@ bool sf::Renderer::Initialize(const Window& windowArg)
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2) * 2, (void*)sizeof(glm::vec2));
 
 	glBindVertexArray(0);
+
 	return true;
 }
 
@@ -471,12 +476,6 @@ void sf::Renderer::SetMeshMaterial(Mesh mesh, uint32_t materialId, int piece)
 {
 	assert(materialId < materials.size());
 	SetMeshMaterial(mesh, materials[materialId]);
-}
-
-void sf::Renderer::OnComponentAddedToEntity(Entity entity)
-{
-	if (entity.HasComponent<Camera>() && !activeCameraEntity)
-		activeCameraEntity = entity;
 }
 
 void sf::Renderer::SetActiveCameraEntity(Entity cameraEntity)

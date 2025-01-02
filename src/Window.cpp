@@ -198,7 +198,7 @@ bool sf::Window::ImGuiInitForOpenGL(bool(*initForOpenGL)(GLFWwindow*, bool))
 }
 void* sf::Window::GetOpenGlFunctionAddress() const
 {
-	return glfwGetProcAddress;
+	return (void*) glfwGetProcAddress;
 }
 #endif
 

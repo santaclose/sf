@@ -21,6 +21,7 @@
 #include <Components/ScreenCoordinates.h>
 #include <Components/Sprite.h>
 #include <Components/Skeleton.h>
+#include <Components/SphereCollider.h>
 
 #include <ImGuiController.h>
 
@@ -29,6 +30,17 @@ double lastFrameTime = 0.0;
 double currentFrameTime = 0.0;
 double deltaTime = 0.0;
 bool deltaTimeLock = true;
+
+std::vector<entt::entity> entitiesWithCollider;
+
+namespace sf {
+
+	void OnComponentAddedToEntity(Entity entity)
+	{
+		if (entity.HasComponent<Camera>() && !Renderer::GetActiveCameraEntity())
+			Renderer::SetActiveCameraEntity(entity);
+	}
+}
 
 int main(int argc, char** argv)
 {
@@ -45,6 +57,8 @@ int main(int argc, char** argv)
 
 	if (!sf::Renderer::Initialize(window))
 		std::cout << "Failed to initialize renderer\n";
+
+	sf::Entity::SetOnComponentAddCallback(sf::OnComponentAddedToEntity);
 
 	sf::Defaults::Initialize();
 	//-------------------//
@@ -68,6 +82,39 @@ int main(int argc, char** argv)
 		//-------------------//
 
 		gameTime += deltaTime;
+
+		/* Collision */
+		entitiesWithCollider.clear();
+		auto colliderView = sf::Scene::activeScene->GetRegistry().view<sf::Base, sf::SphereCollider, sf::Transform>();
+		for (auto entity : colliderView)
+			entitiesWithCollider.push_back(entity);
+
+		// iterate through all combinations
+		for (int i = 0; i < entitiesWithCollider.size(); i++)
+		{
+			for (int j = i + 1; j < entitiesWithCollider.size(); j++)
+			{
+				auto [baseA, scA, transformA] = colliderView.get<sf::Base, sf::SphereCollider, sf::Transform>(entitiesWithCollider[i]);
+				auto [baseB, scB, transformB] = colliderView.get<sf::Base, sf::SphereCollider, sf::Transform>(entitiesWithCollider[j]);
+
+				if (!baseA.isEntityEnabled)
+					continue;
+				if (!baseB.isEntityEnabled)
+					continue;
+
+				float distance = glm::length(transformB.position - transformA.position);
+				bool collisionDetected = distance < (scA.radius + scB.radius);
+				scA.isColliding |= collisionDetected;
+				scB.isColliding |= collisionDetected;
+				if (collisionDetected)
+				{
+					sf::Entity entityA = { entitiesWithCollider[i], sf::Scene::activeScene };
+					sf::Entity entityB = { entitiesWithCollider[j], sf::Scene::activeScene };
+					sf::Game::OnCollision(entityA);
+					sf::Game::OnCollision(entityB);
+				}
+			}
+		}
 
 		/* Draw scene */
 		sf::Renderer::Predraw();

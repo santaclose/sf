@@ -30,11 +30,11 @@ namespace sf
 		std::unordered_map<std::string, Uniform> uniforms;
 		std::unordered_map<std::string, RendererUniform> rendererUniforms;
 		bool isDoubleSided;
-		std::unordered_set<void*> allocatedMemory;
+		std::unordered_set<void*> allocatedBitmaps;
 
-		Material::Material(bool isDoubleSided = false);
-		Material::Material(const std::string& vertexShaderFilePath, const std::string& fragmentShaderFilePath, bool isDoubleSided = false);
-		Material::Material(const std::string& filePath, bool isDoubleSided = false);
-		Material::~Material();
+		Material(bool isDoubleSided = false);
+		Material(const std::string& vertexShaderFilePath, const std::string& fragmentShaderFilePath, bool isDoubleSided = false);
+		Material(const std::string& filePath, bool isDoubleSided = false);
+		~Material();
 	};
 }

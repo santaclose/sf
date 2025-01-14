@@ -8,8 +8,8 @@ namespace sf {
 
 	struct Transform
 	{
-		glm::vec3 position = glm::vec3(0.0, 0.0, 0.0);
-		glm::quat rotation = glm::quat(1.0, 0.0, 0.0, 0.0);
+		glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
+		glm::quat rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
 		float scale = 1.0f;
 
 		Transform() = default;

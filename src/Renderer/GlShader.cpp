@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
 #include <fstream>
 
 uint32_t sf::GlShader::CheckLinkStatusAndReturnProgram(uint32_t program, bool outputErrorMessages)

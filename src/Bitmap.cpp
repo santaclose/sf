@@ -1,6 +1,7 @@
 #include "Bitmap.h"
 
 #include <fstream>
+#include <cstring>
 #include <assert.h>
 #include <stb_image.h>
 #include <stb_image_write.h>

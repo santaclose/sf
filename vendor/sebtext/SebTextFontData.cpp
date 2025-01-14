@@ -1,5 +1,6 @@
 #include "SebTextFontData.h"
 #include <cassert>
+#include <cstring>
 
 static unsigned int ToLittleEndian(unsigned int bigEndianValue)
 {

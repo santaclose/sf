@@ -13,13 +13,13 @@ namespace sf
 		uint32_t height = 0;
 		void* buffer = nullptr;
 
-		Bitmap::Bitmap() = default;
-		Bitmap::Bitmap(DataType dataType, uint8_t channelCount, uint32_t width, uint32_t height, const void* pixelValue = nullptr);
-		Bitmap::Bitmap(const std::string& filePath, bool flipVertically = true, bool limitRangeTo16bitFloat = false);
+		Bitmap() = default;
+		Bitmap(DataType dataType, uint8_t channelCount, uint32_t width, uint32_t height, const void* pixelValue = nullptr);
+		Bitmap(const std::string& filePath, bool flipVertically = true, bool limitRangeTo16bitFloat = false);
 		void AddChannels(uint8_t channelCount = 1);
 		void CopyChannel(const Bitmap& source, uint8_t sourceChannel, uint8_t targetChannel);
 		void WritePng(const std::string& filePath);
 		void WritePpm(const std::string& filePath);
-		Bitmap::~Bitmap();
+		~Bitmap();
 	};
 }

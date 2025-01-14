@@ -28,8 +28,6 @@ namespace sf::Renderer {
 	void SetMeshMaterial(Mesh mesh, GlMaterial* material, int piece = -1);
 	void SetMeshMaterial(Mesh mesh, uint32_t materialId, int piece = -1);
 
-	void OnComponentAddedToEntity(Entity entity);
-
 	void SetActiveCameraEntity(Entity cameraEntity);
 	Entity GetActiveCameraEntity();
 

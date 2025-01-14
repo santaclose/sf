@@ -112,7 +112,7 @@ void sf::GlMaterial::Bind()
 		}
 		case UniformType::_1i:
 		{
-			m_shader->SetUniform1i(m_uniformNames[i], (int)m_uniformData[i]);
+			m_shader->SetUniform1i(m_uniformNames[i], (int)(unsigned long long)m_uniformData[i]);
 			break;
 		}
 		case UniformType::_2f:

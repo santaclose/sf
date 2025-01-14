@@ -17,7 +17,7 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
 -- Projects
 group "Dependencies"
-	include "vendor/GLFW"
+	include "vendor/glfw"
 	include "vendor/Glad"
 	include "vendor/imgui"
 
@@ -57,13 +57,15 @@ project "sf"
 
 	defines
 	{
-		"_CRT_SECURE_NO_WARNINGS"
+		"GLFW_INCLUDE_NONE",
+		"_CRT_SECURE_NO_WARNINGS",
+		"SF_USE_OPENGL"
 	}
 
 	includedirs
 	{
 		"src",
-		"vendor/GLFW/include",
+		"vendor/glfw/include",
 		"vendor/Glad/include",
 		"vendor/glm",
 		"vendor/stb",
@@ -80,30 +82,36 @@ project "sf"
 
 	links 
 	{ 
-		"GLFW",
+		"glfw",
 		"Glad",
 		"ImGui",
-		"opengl32.lib"
+		-- "opengl32"
 	}
 
-	filter "system:windows"
+	filter "system:Windows"
 		systemversion "latest"
 
 		defines
 		{
-			"SF_PLATFORM_WINDOWS",
-			"GLFW_INCLUDE_NONE",
-			"SF_USE_OPENGL"
+			"SF_PLATFORM_WINDOWS"
+		}
+
+	filter "system:Unix"
+		system "linux"
+		systemversion "latest"
+		defines
+		{
+			"SF_PLATFORM_LINUX"
 		}
 
 	filter "configurations:Debug"
 		defines "SF_DEBUG"
 		runtime "Debug"
 		symbols "on"
-		buildoptions { "/openmp" }
+		-- buildoptions { "/openmp" }
 
 	filter "configurations:Release"
 		defines "SF_RELEASE"
 		runtime "Release"
 		optimize "on"
-		buildoptions { "/openmp" }
+		-- buildoptions { "/openmp" }

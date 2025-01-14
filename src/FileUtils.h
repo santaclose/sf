@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <string>
+#include <cstring>
 
 namespace sf::FileUtils
 {

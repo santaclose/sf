@@ -6,8 +6,6 @@
 
 #include "Scene.h"
 
-#include <Renderer/Renderer.h>
-
 namespace sf {
 
 	class Entity
@@ -15,11 +13,17 @@ namespace sf {
 	private:
 		entt::entity m_EntityHandle{ entt::null };
 		Scene* m_Scene = nullptr;
+		static void (*OnComponentAddCallback)(Entity);
 
 	public:
 		Entity() = default;
-		Entity(entt::entity handle, Scene * scene);
-		Entity(const Entity & other) = default;
+		Entity(entt::entity handle, Scene* scene);
+		Entity(const Entity& other) = default;
+
+		static void SetOnComponentAddCallback(void (*callback)(Entity))
+		{
+			OnComponentAddCallback = callback;
+		}
 
 		bool IsEnabled();
 		void SetEnabled(bool value);
@@ -29,7 +33,10 @@ namespace sf {
 		{
 			assert(!HasComponent<T>());
 			T& component = m_Scene->GetRegistry().emplace<T>(m_EntityHandle, std::forward<Args>(args)...);
-			Renderer::OnComponentAddedToEntity(*this); // so the camera can be detected
+
+			if (OnComponentAddCallback != nullptr)
+				OnComponentAddCallback(*this);
+
 			return component;
 		}
 

@@ -123,14 +123,14 @@ sf::Material::Material(const std::string& filePath, bool isDoubleSided)
 						Bitmap tempBitmap(imageFilePath);
 
 						Bitmap* newBitmap = new Bitmap(tempBitmap.dataType, 1, tempBitmap.width, tempBitmap.height);
-						allocatedMemory.insert(newBitmap);
+						allocatedBitmaps.insert(newBitmap);
 						uniforms[uniformName] = { uniformDataType, newBitmap };
 						((Bitmap*)uniforms[uniformName].data)->CopyChannel(tempBitmap, channelToUse, 0);
 					}
 					else
 					{
 						Bitmap* newBitmap = new Bitmap(imageFilePath);
-						allocatedMemory.insert(newBitmap);
+						allocatedBitmaps.insert(newBitmap);
 						uniforms[uniformName] = { uniformDataType, newBitmap };
 					}
 					break;
@@ -151,6 +151,6 @@ sf::Material::Material(const std::string& filePath, bool isDoubleSided)
 
 sf::Material::~Material()
 {
-	for (void* p : allocatedMemory)
-		delete p;
+	for (void* p : allocatedBitmaps)
+		delete (Bitmap*) p;
 }

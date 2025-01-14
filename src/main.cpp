@@ -30,6 +30,15 @@ double currentFrameTime = 0.0;
 double deltaTime = 0.0;
 bool deltaTimeLock = true;
 
+namespace sf {
+
+	void OnComponentAddedToEntity(Entity entity)
+	{
+		if (entity.HasComponent<Camera>() && !Renderer::GetActiveCameraEntity())
+			Renderer::SetActiveCameraEntity(entity);
+	}
+}
+
 int main(int argc, char** argv)
 {
 	if (!std::filesystem::is_directory("assets"))
@@ -45,6 +54,8 @@ int main(int argc, char** argv)
 
 	if (!sf::Renderer::Initialize(window))
 		std::cout << "Failed to initialize renderer\n";
+
+	sf::Entity::SetOnComponentAddCallback(sf::OnComponentAddedToEntity);
 
 	sf::Defaults::Initialize();
 	//-------------------//

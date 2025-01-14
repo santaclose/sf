@@ -2,6 +2,8 @@
 
 #include <Components/Base.h>
 
+void (*sf::Entity::OnComponentAddCallback)(Entity) = nullptr;
+
 sf::Entity::Entity(entt::entity handle, Scene* scene)
 {
 	m_EntityHandle = handle;

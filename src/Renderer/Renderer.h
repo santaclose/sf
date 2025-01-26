@@ -5,10 +5,13 @@
 #include <Components/SkinnedMesh.h>
 #include <Components/VoxelBox.h>
 #include <Components/Transform.h>
-#include <Components/Skeleton.h>
 #include <Components/ScreenCoordinates.h>
 #include <Components/Sprite.h>
 #include <Components/Text.h>
+
+#include <Components/SphereCollider.h>
+#include <Components/CapsuleCollider.h>
+#include <Components/BoxCollider.h>
 
 #include <Renderer/GlMaterial.h>
 #include <Window.h>
@@ -18,10 +21,14 @@
 
 namespace sf::Renderer {
 
-	bool Initialize(const Window& window);
+	bool Initialize(const Window& window, const glm::vec3& clearColorArg);
 	void OnResize();
 
 	void Predraw();
+	void Postdraw();
+
+	void SetClearColor(const glm::vec3& clearColorArg);
+	const glm::vec3& GetClearColor();
 
 	uint32_t CreateMaterial(const Material& material);
 
@@ -37,9 +44,19 @@ namespace sf::Renderer {
 	void DrawMesh(Mesh& mesh, Transform& transform);
 	void DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform);
 	void DrawVoxelBox(VoxelBox& voxelBox, Transform& transform);
-	void DrawSkeleton(Skeleton& skeleton, Transform& transform);
 	void DrawSprite(Sprite& sprite, ScreenCoordinates& screenCoordinates);
 	void DrawText(Text& text, ScreenCoordinates& screenCoordinates);
+
+	void AddLine(const glm::vec3& a, const glm::vec3& b, const glm::vec3& color);
+
+
+	void SetDebugDrawEnabled(bool value);
+	void DebugDrawSkeleton(SkinnedMesh& mesh, Transform& transform);
+
+	void DebugDrawSphereCollider(const SphereCollider& sc);
+	void DebugDrawCapsuleCollider(const CapsuleCollider& sc);
+	void DebugDrawBoxCollider(const BoxCollider& sc);
+	void DrawLines();
 
 	void Terminate();
 }

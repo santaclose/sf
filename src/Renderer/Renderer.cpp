@@ -30,12 +30,15 @@ namespace sf::Renderer
 	GlShader defaultSkinningShader;
 	GlMaterial defaultSkinningMaterial;
 	GlShader voxelBoxShader;
+	GlShader drawLineShader;
 
 	float aspectRatio;
 	Entity activeCameraEntity;
 
 	glm::mat4 cameraView;
 	glm::mat4 cameraProjection;
+
+	glm::vec3 clearColor;
 
 	struct MeshGpuData
 	{
@@ -109,6 +112,16 @@ namespace sf::Renderer
 	std::vector<void*> rendererUniformVector;
 	EnvironmentData environmentData;
 	uint32_t environment_gl_ubo;
+
+	struct LineVertex {
+		glm::vec3 pos;
+		glm::vec3 color;
+	};
+	std::vector<LineVertex> drawLineLines;
+	bool drawLineDataInitialized = false;
+	uint32_t drawLineVBO, drawLineVAO;
+
+	bool debugDrawEnabled = false;
 
 	void CreateMeshMaterialSlots(int id, const sf::MeshData* mesh)
 	{
@@ -297,8 +310,9 @@ namespace sf::Renderer
 }
 
 
-bool sf::Renderer::Initialize(const Window& windowArg)
+bool sf::Renderer::Initialize(const Window& windowArg, const glm::vec3& clearColorArg)
 {
+	clearColor = clearColorArg;
 	window = &windowArg;
 
 	if (!gladLoadGLLoader((GLADloadproc)window->GetOpenGlFunctionAddress()))
@@ -329,14 +343,16 @@ bool sf::Renderer::Initialize(const Window& windowArg)
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_BLEND);
 
+	glPolygonMode(GL_FRONT, GL_FILL);
 	glCullFace(GL_BACK);
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
+	glEnable(GL_DEPTH_TEST);
 
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
-	glClearColor(window->GetClearColor().r, window->GetClearColor().g, window->GetClearColor().b, 0.0);
+	glClearColor(clearColor.r, clearColor.g, clearColor.b, 0.0f);
 	glViewport(0, 0, window->GetWidth(), window->GetHeight());
 
 	sf::Renderer::aspectRatio = (float)(window->GetWidth()) / (float)(window->GetHeight());
@@ -453,6 +469,22 @@ void sf::Renderer::Predraw()
 	sharedGpuData.cameraPosition = cameraTransform.position;
 }
 
+void sf::Renderer::Postdraw()
+{
+	drawLineLines.clear();
+}
+
+void sf::Renderer::SetClearColor(const glm::vec3& clearColorArg)
+{
+	clearColor = clearColorArg;
+	glClearColor(clearColor.r, clearColor.g, clearColor.b, 0.0f);
+}
+
+const glm::vec3& sf::Renderer::GetClearColor()
+{
+	return clearColor;
+}
+
 void sf::Renderer::SetMeshMaterial(Mesh mesh, GlMaterial* material, int piece)
 {
 	if (meshGpuData.find(mesh.meshData) == meshGpuData.end()) // create mesh data if not there
@@ -517,7 +549,6 @@ void sf::Renderer::DrawSkybox()
 
 void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 {
-	glEnable(GL_DEPTH_TEST);
 	if (mesh.meshData->vertexCount == 0)
 		return;
 
@@ -551,6 +582,7 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 
 void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 {
+	assert(mesh.skeletonData != nullptr);
 	if (skeletonSsbos.find(mesh.skeletonData) == skeletonSsbos.end()) // create skeleton ssbo if not there
 	{
 		uint32_t newSsbo;
@@ -558,7 +590,6 @@ void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 		skeletonSsbos[mesh.skeletonData] = newSsbo;
 	}
 
-	glEnable(GL_DEPTH_TEST);
 	if (mesh.meshData->vertexCount == 0)
 		return;
 
@@ -593,11 +624,14 @@ void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, skeletonSsbos[mesh.skeletonData]);
 		glDrawElements(GL_TRIANGLES, drawEnd - drawStart, GL_UNSIGNED_INT, (void*)(drawStart * sizeof(uint32_t)));
 	}
+
+	if (debugDrawEnabled)
+		DebugDrawSkeleton(mesh, transform);
+
 }
 
 void sf::Renderer::DrawVoxelBox(VoxelBox& voxelBox, Transform& transform)
 {
-	glEnable(GL_DEPTH_TEST);
 	if (!activeCameraEntity)
 		return;
 
@@ -619,41 +653,6 @@ void sf::Renderer::DrawVoxelBox(VoxelBox& voxelBox, Transform& transform)
 	glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, voxelBoxGpuData[voxelBox.voxelBoxData].gl_ssbo);
 	glDrawElementsInstanced(GL_TRIANGLES, Defaults::cubeMeshData.indexVector.size(), GL_UNSIGNED_INT, (void*)0, voxelBoxGpuData[voxelBox.voxelBoxData].numberOfCubes);
-}
-
-void sf::Renderer::DrawSkeleton(Skeleton& skeleton, Transform& transform)
-{
-	glEnable(GL_DEPTH_TEST);
-
-	if (!activeCameraEntity)
-		return;
-
-	if (meshGpuData.find(&Defaults::cubeMeshData) == meshGpuData.end()) // create mesh data if not there
-		CreateMeshGpuData(&Defaults::cubeMeshData);
-
-	GlShader* shaderToUse = &defaultShader;
-	shaderToUse->Bind();
-
-	glm::mat4 worldMatrix = transform.ComputeMatrix();
-	glm::mat4* boneMatrices = (glm::mat4*)alloca(sizeof(glm::mat4) * skeleton.skeletonData->m_bones.size());
-
-	for (uint32_t i = 0; i < skeleton.skeletonData->m_bones.size(); i++)
-	{
-		const Bone* currentBone = &(skeleton.skeletonData->m_bones[i]);
-		if (currentBone->parent < 0)
-			boneMatrices[i] = worldMatrix * currentBone->localMatrix;
-		else
-			boneMatrices[i] = boneMatrices[currentBone->parent] * currentBone->localMatrix;
-
-		sharedGpuData.modelMatrix = boneMatrices[i];
-		sharedGpuData.modelMatrix = glm::scale(sharedGpuData.modelMatrix, glm::vec3(0.1f, 0.1f, 0.1f));
-		glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
-		glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
-
-		glBindVertexArray(meshGpuData[&Defaults::cubeMeshData].gl_vao);
-		glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
-		glDrawElements(GL_TRIANGLES, Defaults::cubeMeshData.indexVector.size(), GL_UNSIGNED_INT, (void*)0);
-	}
 }
 
 void sf::Renderer::DrawSprite(Sprite& sprite, ScreenCoordinates& screenCoordinates)
@@ -687,6 +686,8 @@ void sf::Renderer::DrawSprite(Sprite& sprite, ScreenCoordinates& screenCoordinat
 
 	glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+	glEnable(GL_DEPTH_TEST);
 }
 
 void sf::Renderer::DrawText(Text& text, ScreenCoordinates& screenCoordinates)
@@ -761,6 +762,139 @@ void sf::Renderer::DrawText(Text& text, ScreenCoordinates& screenCoordinates)
 	glBindBufferBase(GL_UNIFORM_BUFFER, 5, fontPathAndStringToTextData[fontPathHash].at(stringHash).gl_ubo_layoutData);
 
 	glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)0, fontPathAndStringToTextData[fontPathHash].at(stringHash).textData.PrintableCharacters.size());
+
+	glEnable(GL_DEPTH_TEST);
+}
+
+void sf::Renderer::AddLine(const glm::vec3& a, const glm::vec3& b, const glm::vec3& color)
+{
+	drawLineLines.resize(drawLineLines.size() + 2);
+	drawLineLines[drawLineLines.size() - 2] = { a, color };
+	drawLineLines[drawLineLines.size() - 1] = { b, color };
+}
+
+void sf::Renderer::SetDebugDrawEnabled(bool value)
+{
+	debugDrawEnabled = value;
+}
+
+void sf::Renderer::DebugDrawSkeleton(SkinnedMesh& mesh, Transform& transform)
+{
+	if (!debugDrawEnabled)
+		return;
+	if (!activeCameraEntity)
+		return;
+
+	glDisable(GL_DEPTH_TEST);
+	if (meshGpuData.find(&Defaults::cubeMeshData) == meshGpuData.end()) // create mesh data if not there
+		CreateMeshGpuData(&Defaults::cubeMeshData);
+
+	GlShader* shaderToUse = &defaultShader;
+	shaderToUse->Bind();
+
+	glm::mat4 worldMatrix = transform.ComputeMatrix();
+	glm::mat4* boneMatrices = (glm::mat4*)alloca(sizeof(glm::mat4) * mesh.skeletonData->m_bones.size());
+
+	for (uint32_t i = 0; i < mesh.skeletonData->m_bones.size(); i++)
+	{
+		const Bone* currentBone = &(mesh.skeletonData->m_bones[i]);
+		if (currentBone->parent < 0)
+			boneMatrices[i] = worldMatrix * currentBone->localMatrix;
+		else
+		{
+			boneMatrices[i] = boneMatrices[currentBone->parent] * currentBone->localMatrix;
+			AddLine(
+				boneMatrices[currentBone->parent] * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f),
+				boneMatrices[i] * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f),
+				glm::vec3(0.0f, 1.0f, 0.0f));
+		}
+	}
+	glEnable(GL_DEPTH_TEST);
+}
+
+void sf::Renderer::DebugDrawSphereCollider(const SphereCollider& sc)
+{
+	if (!debugDrawEnabled)
+		return;
+	AddLine(sc.center + glm::vec3(sc.radius, 0.0f, 0.0f), sc.center - glm::vec3(sc.radius, 0.0f, 0.0f), glm::vec3(0.0f));
+	AddLine(sc.center + glm::vec3(0.0f, sc.radius, 0.0f), sc.center - glm::vec3(0.0f, sc.radius, 0.0f), glm::vec3(0.0f));
+	AddLine(sc.center + glm::vec3(0.0f, 0.0f, sc.radius), sc.center - glm::vec3(0.0f, 0.0f, sc.radius), glm::vec3(0.0f));
+}
+
+void sf::Renderer::DebugDrawCapsuleCollider(const CapsuleCollider & cc)
+{
+	if (!debugDrawEnabled)
+		return;
+	AddLine(cc.centerA + glm::vec3(cc.radius, 0.0f, 0.0f), cc.centerA - glm::vec3(cc.radius, 0.0f, 0.0f), glm::vec3(0.0f));
+	AddLine(cc.centerA + glm::vec3(0.0f, cc.radius, 0.0f), cc.centerA - glm::vec3(0.0f, cc.radius, 0.0f), glm::vec3(0.0f));
+	AddLine(cc.centerA + glm::vec3(0.0f, 0.0f, cc.radius), cc.centerA - glm::vec3(0.0f, 0.0f, cc.radius), glm::vec3(0.0f));
+	AddLine(cc.centerB + glm::vec3(cc.radius, 0.0f, 0.0f), cc.centerB - glm::vec3(cc.radius, 0.0f, 0.0f), glm::vec3(0.0f));
+	AddLine(cc.centerB + glm::vec3(0.0f, cc.radius, 0.0f), cc.centerB - glm::vec3(0.0f, cc.radius, 0.0f), glm::vec3(0.0f));
+	AddLine(cc.centerB + glm::vec3(0.0f, 0.0f, cc.radius), cc.centerB - glm::vec3(0.0f, 0.0f, cc.radius), glm::vec3(0.0f));
+	AddLine(cc.centerA, cc.centerB, glm::vec3(0.0f));
+}
+
+void sf::Renderer::DebugDrawBoxCollider(const BoxCollider & bc)
+{
+	if (!debugDrawEnabled)
+		return;
+	AddLine(bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, -bc.size.y * 0.5f, -bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, -bc.size.y * 0.5f, +bc.size.z * 0.5f), glm::vec3(0.0f));
+	AddLine(bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, -bc.size.y * 0.5f, +bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, -bc.size.y * 0.5f, +bc.size.z * 0.5f), glm::vec3(0.0f));
+	AddLine(bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, -bc.size.y * 0.5f, +bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, -bc.size.y * 0.5f, -bc.size.z * 0.5f), glm::vec3(0.0f));
+	AddLine(bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, -bc.size.y * 0.5f, -bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, -bc.size.y * 0.5f, -bc.size.z * 0.5f), glm::vec3(0.0f));
+
+	AddLine(bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, +bc.size.y * 0.5f, -bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, +bc.size.y * 0.5f, +bc.size.z * 0.5f), glm::vec3(0.0f));
+	AddLine(bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, +bc.size.y * 0.5f, +bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, +bc.size.y * 0.5f, +bc.size.z * 0.5f), glm::vec3(0.0f));
+	AddLine(bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, +bc.size.y * 0.5f, +bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, +bc.size.y * 0.5f, -bc.size.z * 0.5f), glm::vec3(0.0f));
+	AddLine(bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, +bc.size.y * 0.5f, -bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, +bc.size.y * 0.5f, -bc.size.z * 0.5f), glm::vec3(0.0f));
+
+	AddLine(bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, -bc.size.y * 0.5f, -bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, +bc.size.y * 0.5f, -bc.size.z * 0.5f), glm::vec3(0.0f));
+	AddLine(bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, -bc.size.y * 0.5f, +bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, +bc.size.y * 0.5f, +bc.size.z * 0.5f), glm::vec3(0.0f));
+	AddLine(bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, -bc.size.y * 0.5f, +bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, +bc.size.y * 0.5f, +bc.size.z * 0.5f), glm::vec3(0.0f));
+	AddLine(bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, -bc.size.y * 0.5f, -bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, +bc.size.y * 0.5f, -bc.size.z * 0.5f), glm::vec3(0.0f));
+}
+
+void sf::Renderer::DrawLines()
+{
+	if (drawLineLines.size() == 0)
+		return;
+	glDisable(GL_DEPTH_TEST);
+	if (!drawLineDataInitialized)
+	{
+		glGenVertexArrays(1, &drawLineVAO);
+		glGenBuffers(1, &drawLineVBO);
+
+		glBindVertexArray(drawLineVAO);
+		glBindBuffer(GL_ARRAY_BUFFER, drawLineVBO);
+		glBufferData(GL_ARRAY_BUFFER, drawLineLines.size() * sizeof(LineVertex), drawLineLines.data(), GL_DYNAMIC_DRAW);
+
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(LineVertex), (void*)offsetof(LineVertex, pos));
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(LineVertex), (void*)offsetof(LineVertex, color));
+
+		drawLineShader.CreateFromFiles("assets/shaders/drawLines.vert", "assets/shaders/drawLines.frag");
+
+		drawLineDataInitialized = true;
+	}
+
+	drawLineShader.Bind();
+
+	glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
+
+	glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
+
+	glBindVertexArray(drawLineVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, drawLineVBO);
+
+	glBufferData(GL_ARRAY_BUFFER, drawLineLines.size() * sizeof(LineVertex), drawLineLines.data(), GL_DYNAMIC_DRAW);
+
+	glDrawArrays(GL_LINES, 0, drawLineLines.size());
+
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glEnable(GL_DEPTH_TEST);
 }
 
 void sf::Renderer::Terminate()

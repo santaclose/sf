@@ -35,12 +35,11 @@ sf::Window::Window(const GameInitializationData& gameInitData)
 	}
 	title = gameInitData.windowTitle;
 	size = gameInitData.windowSize;
-	msaaCount = gameInitData.windowMsaaCount;
-	clearColor = gameInitData.windowClearColor;
+	msaaCount = gameInitData.msaaCount;
 	fullscreenEnabled = gameInitData.windowFullscreenEnabled;
-	toolBarEnabled = gameInitData.windowToolBarEnabled;
+	toolBarEnabled = gameInitData.toolBarEnabled;
 	cursorEnabled = gameInitData.windowCursorEnabled;
-	vsyncEnabled = gameInitData.windowVsyncEnabled;
+	vsyncEnabled = gameInitData.vsyncEnabled;
 
 
 #ifdef SF_USE_VULKAN

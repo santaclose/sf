@@ -19,16 +19,16 @@ sf::GameInitializationData::GameInitializationData(const std::string& filePath)
 	if (j.find("windowWidth") != j.end() && j.find("windowHeight") != j.end())
 		windowSize = { j["windowWidth"], j["windowHeight"] };
 	if (j.find("msaaCount") != j.end())
-		windowMsaaCount = j["msaaCount"];
+		msaaCount = j["msaaCount"];
 	if (j.find("clearColorR") != j.end() && j.find("clearColorG") != j.end() && j.find("clearColorB") != j.end())
-		windowClearColor = { j["clearColorR"], j["clearColorG"], j["clearColorB"] };
+		clearColor = { j["clearColorR"], j["clearColorG"], j["clearColorB"] };
 	if (j.find("fullscreen") != j.end())
 		windowFullscreenEnabled = j["fullscreen"];
 	if (j.find("toolBarEnabled") != j.end())
-		windowToolBarEnabled = j["toolBarEnabled"];
+		toolBarEnabled = j["toolBarEnabled"];
 	if (j.find("cursorEnabled") != j.end())
 		windowCursorEnabled = j["cursorEnabled"];
 	if (j.find("vsyncEnabled") != j.end())
-		windowVsyncEnabled = j["vsyncEnabled"];
+		vsyncEnabled = j["vsyncEnabled"];
 	std::cout << "[GameInitializationData] Config file loaded\n";
 }

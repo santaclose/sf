@@ -45,7 +45,6 @@ namespace sf
 		inline bool GetCursorEnabled() const { return cursorEnabled; }
 		inline bool GetVsyncEnabled() const { return vsyncEnabled; }
 		inline bool GetToolBarEnabled() const { return toolBarEnabled; }
-		inline const glm::vec3& GetClearColor() const { return clearColor; }
 
 		void AddOnResizeCallback(void (*newCallback)(void)) const;
 
@@ -71,7 +70,6 @@ namespace sf
 		std::string title;
 		glm::uvec2 size = { 0, 0 };
 		uint32_t msaaCount = 4;
-		glm::vec3 clearColor = { 1.0f, 1.0f, 1.0f };
 		bool fullscreenEnabled = false;
 		bool toolBarEnabled = true;
 		bool cursorEnabled = true;

@@ -10,7 +10,7 @@ namespace sf {
 	struct SkinnedMesh : public Mesh
 	{
 	public:
-		const SkeletonData* skeletonData;
+		const SkeletonData* skeletonData = nullptr;
 		SkinnedMesh(const MeshData* meshData, const SkeletonData* skeletonData);
 	};
 }

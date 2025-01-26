@@ -20,7 +20,9 @@
 #include <Components/SkinnedMesh.h>
 #include <Components/ScreenCoordinates.h>
 #include <Components/Sprite.h>
-#include <Components/Skeleton.h>
+#include <Components/SphereCollider.h>
+#include <Components/CapsuleCollider.h>
+#include <Components/BoxCollider.h>
 
 #include <ImGuiController.h>
 
@@ -52,7 +54,7 @@ int main(int argc, char** argv)
 
 	sf::ImGuiController::Initialize(window);
 
-	if (!sf::Renderer::Initialize(window))
+	if (!sf::Renderer::Initialize(window, gameInitData.clearColor))
 		std::cout << "Failed to initialize renderer\n";
 
 	sf::Entity::SetOnComponentAddCallback(sf::OnComponentAddedToEntity);
@@ -104,13 +106,30 @@ int main(int argc, char** argv)
 			if (base.isEntityEnabled)
 				sf::Renderer::DrawVoxelBox(voxelBox, transform);
 		}
-		auto skeletonRenderView = sf::Scene::activeScene->GetRegistry().view<sf::Base, sf::Skeleton, sf::Transform>();
-		for (auto entity : skeletonRenderView)
+		auto sphereColliderRenderView = sf::Scene::activeScene->GetRegistry().view<sf::Base, sf::SphereCollider, sf::Transform>();
+		for (auto entity : sphereColliderRenderView)
 		{
-			auto [base, skeleton, transform] = skeletonRenderView.get<sf::Base, sf::Skeleton, sf::Transform>(entity);
+			auto [base, sc, transform] = sphereColliderRenderView.get<sf::Base, sf::SphereCollider, sf::Transform>(entity);
 			if (base.isEntityEnabled)
-				sf::Renderer::DrawSkeleton(skeleton, transform);
+				sf::Renderer::DebugDrawSphereCollider(sc.ApplyTransform(transform));
 		}
+		auto capsuleColliderRenderView = sf::Scene::activeScene->GetRegistry().view<sf::Base, sf::CapsuleCollider, sf::Transform>();
+		for (auto entity : capsuleColliderRenderView)
+		{
+			auto [base, sc, transform] = capsuleColliderRenderView.get<sf::Base, sf::CapsuleCollider, sf::Transform>(entity);
+			if (base.isEntityEnabled)
+				sf::Renderer::DebugDrawCapsuleCollider(sc.ApplyTransform(transform));
+		}
+		auto boxColliderRenderView = sf::Scene::activeScene->GetRegistry().view<sf::Base, sf::BoxCollider, sf::Transform>();
+		for (auto entity : boxColliderRenderView)
+		{
+			auto [base, bc, transform] = boxColliderRenderView.get<sf::Base, sf::BoxCollider, sf::Transform>(entity);
+			if (base.isEntityEnabled)
+				sf::Renderer::DebugDrawBoxCollider(bc.ApplyTransform(transform));
+		}
+
+		sf::Renderer::DrawLines();
+
 		auto spriteRenderView = sf::Scene::activeScene->GetRegistry().view<sf::Base, sf::Sprite, sf::ScreenCoordinates>();
 		for (auto entity : spriteRenderView)
 		{
@@ -129,6 +148,7 @@ int main(int argc, char** argv)
 		sf::ImGuiController::Tick(deltaTime);
 		window.SwapBuffers();
 
+		sf::Renderer::Postdraw();
 		sf::Input::FrameEnd();
 		window.PollEvents();
 

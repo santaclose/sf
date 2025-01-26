@@ -78,6 +78,7 @@ sf::Window::Window(const GameInitializationData& gameInitData)
 	glfwSetKeyCallback(windowHandle, KeyCallback);
 	glfwSetCharCallback(windowHandle, CharacterCallback);
 	glfwSetScrollCallback(windowHandle, ScrollCallback);
+	GLFWgamepadstate state;
 
 	glfwSetFramebufferSizeCallback(windowHandle, WindowResizeCallback);
 	glfwSwapInterval(vsyncEnabled);
@@ -101,6 +102,7 @@ sf::Window::~Window()
 void sf::Window::PollEvents()
 {
 	glfwPollEvents();
+	glfwGetGamepadState(GLFW_JOYSTICK_1, (GLFWgamepadstate*)Input::GetGamepadState());
 }
 
 void sf::Window::SwapBuffers()
@@ -198,7 +200,7 @@ bool sf::Window::ImGuiInitForOpenGL(bool(*initForOpenGL)(GLFWwindow*, bool))
 }
 void* sf::Window::GetOpenGlFunctionAddress() const
 {
-	return glfwGetProcAddress;
+	return (void*) glfwGetProcAddress;
 }
 #endif
 

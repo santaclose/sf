@@ -28,6 +28,19 @@ namespace sf::Input
 
 	bool CharacterInput(unsigned int& character);
 
+	void* GetGamepadState();
+	bool GamepadButtonDown(int button);
+	bool GamepadButtonUp(int button);
+	bool GamepadButton(int button);
+	/* From -1 to +1 */
+	float GamepadLeftStickX();
+	float GamepadLeftStickY();
+	float GamepadRightStickX();
+	float GamepadRightStickY();
+	/* From 0 to 1 */
+	float GamepadLeftTrigger();
+	float GamepadRightTrigger();
+
 	enum KeyCode
 	{
 		// From glfw3.h
@@ -161,5 +174,33 @@ namespace sf::Input
 		RightAlt = 346,
 		RightSuper = 347,
 		Menu = 348
+	};
+
+	enum GamepadButtonCode {
+		ActionDown = 0,
+		ActionRight = 1,
+		ActionLeft = 2,
+		ActionUp = 3,
+		LeftBumper = 4,
+		RightBumper = 5,
+		Back = 6,
+		Select = 6,
+		Start = 7,
+		Guide = 8,
+		LeftThumb = 9,
+		RightThumb = 10,
+		DpadUp = 11,
+		DpadRight = 12,
+		DpadDown = 13,
+		DpadLeft = 14
+	};
+
+	enum GamepadAxes {
+		LeftStickX = 0,
+		LeftStickY = 1,
+		RightStickX = 2,
+		RightStickY = 3,
+		LeftTrigger = 4,
+		RightTrigger = 5
 	};
 }

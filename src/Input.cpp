@@ -5,6 +5,8 @@
 
 #include <ImGuiController.h>
 
+#define GAMEPAD_BUTTON_COUNT 15
+
 namespace sf::Input {
 
 	int shouldIgnoreMouseDeltaNextFrame = 0;
@@ -32,6 +34,14 @@ namespace sf::Input {
 
 	bool charInput = false;
 	unsigned int character;
+
+	struct GamepadState
+	{
+		unsigned char buttons[GAMEPAD_BUTTON_COUNT] = { 0U };
+		float axes[6] = { 0.0f };
+	};
+	GamepadState gamepadState;
+	unsigned char gamepadButtonsPreviousFrame[GAMEPAD_BUTTON_COUNT];
 }
 
 void sf::Input::UpdateFullScreenEnabled()
@@ -213,4 +223,55 @@ bool sf::Input::CharacterInput(unsigned int& character)
 	if (cursorEnabled && ImGuiController::HasControl()) return false;
 	character = Input::character;
 	return charInput;
+}
+
+void* sf::Input::GetGamepadState()
+{
+	memcpy(gamepadButtonsPreviousFrame, gamepadState.buttons, GAMEPAD_BUTTON_COUNT);
+	return (void*) &gamepadState;
+}
+
+bool sf::Input::GamepadButtonDown(int button)
+{
+	return gamepadState.buttons[button] && !gamepadButtonsPreviousFrame[button];
+}
+
+bool sf::Input::GamepadButtonUp(int button)
+{
+	return !gamepadState.buttons[button] && gamepadButtonsPreviousFrame[button];
+}
+
+bool sf::Input::GamepadButton(int button)
+{
+	return gamepadState.buttons[button];
+}
+
+float sf::Input::GamepadLeftStickX()
+{
+	return gamepadState.axes[GamepadAxes::LeftStickX];
+}
+
+float sf::Input::GamepadLeftStickY()
+{
+	return gamepadState.axes[GamepadAxes::LeftStickY];
+}
+
+float sf::Input::GamepadRightStickX()
+{
+	return gamepadState.axes[GamepadAxes::RightStickX];
+}
+
+float sf::Input::GamepadRightStickY()
+{
+	return gamepadState.axes[GamepadAxes::RightStickY];
+}
+
+float sf::Input::GamepadLeftTrigger()
+{
+	return (gamepadState.axes[GamepadAxes::LeftTrigger] + 1.0f) / 2.0f;
+}
+
+float sf::Input::GamepadRightTrigger()
+{
+	return (gamepadState.axes[GamepadAxes::RightTrigger] + 1.0f) / 2.0f;
 }

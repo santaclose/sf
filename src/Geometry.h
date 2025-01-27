@@ -148,6 +148,11 @@ namespace sf::Geometry
 		float radiusSum = capsule.radius + sphere.radius;
 		return glm::distance2(pointOnLine, sphere.center) < radiusSum * radiusSum;
 	}
+
+	inline bool IntersectCapsuleSphere(const CapsuleCollider& capsule, const SphereCollider& sphere)
+	{
+		return IntersectSphereCapsule(sphere, capsule);
+	}
 	
 	inline bool IntersectSphereBox(const SphereCollider& sphere, const BoxCollider& box)
 	{
@@ -156,6 +161,11 @@ namespace sf::Geometry
 		glm::vec3 localSphereCenter = undoRotationQuat * (sphere.center - box.center);
 		glm::vec3 clampedPoint = glm::clamp(localSphereCenter, -box.size * 0.5f, box.size * 0.5f);
 		return glm::distance2(localSphereCenter, clampedPoint) <= sphere.radius * sphere.radius;
+	}
+
+	inline bool IntersectBoxSphere(const BoxCollider& box, const SphereCollider& sphere)
+	{
+		return IntersectSphereBox(sphere, box);
 	}
 
 	inline bool IntersectCapsuleCapsule(const CapsuleCollider& capsuleA, const CapsuleCollider& capsuleB)
@@ -179,6 +189,11 @@ namespace sf::Geometry
 		bool segmentIntersectsAABB;
 		ClosestPointsSegmentAABB(localCapsuleA, localCapsuleB, boxMin, boxMax, closestSegmentPoint, closestAABBPoint, segmentIntersectsAABB);
 		return segmentIntersectsAABB || glm::distance2(closestSegmentPoint, closestAABBPoint) <= (capsule.radius * capsule.radius);
+	}
+
+	inline bool IntersectBoxCapsule(const BoxCollider& box, const CapsuleCollider& capsule)
+	{
+		return IntersectCapsuleBox(capsule, box);
 	}
 
 	inline bool Intersect2dSegmentAARectangle(const glm::vec2& segA, const glm::vec2& segB, const glm::vec2& boxMin, const glm::vec2& boxMax)

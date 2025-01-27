@@ -44,6 +44,7 @@ namespace sf {
 		std::vector<uint32_t> pieces;
 
 		void ChangeVertexLayout(const DataLayout& newLayout);
+		bool Initialized() { return vertexBuffer != nullptr; }
 	};
 
 }

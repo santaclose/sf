@@ -59,7 +59,6 @@ int main(int argc, char** argv)
 
 	sf::Entity::SetOnComponentAddCallback(sf::OnComponentAddedToEntity);
 
-	sf::Defaults::Initialize();
 	//-------------------//
 	sf::Game::Initialize(argc, argv);
 	//-------------------//

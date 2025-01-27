@@ -105,7 +105,7 @@ namespace sf
 			shanyungMesh = new MeshData();
 			gltfid = GltfImporter::Load("examples/thirdperson/shanyung_blendspace2d.glb");
 			GltfImporter::GenerateSkeleton(gltfid, *shanyungSkeleton);
-			shanyungMesh->ChangeVertexLayout(Defaults::defaultSkinningVertexLayout);
+			shanyungMesh->ChangeVertexLayout(Defaults::VertexLayoutSkinning());
 			GltfImporter::GenerateMeshData(gltfid, *shanyungMesh);
 			shanyung.AddComponent<SkinnedMesh>(shanyungMesh, shanyungSkeleton);
 
@@ -126,7 +126,7 @@ namespace sf
 			foxMesh = new MeshData();
 			gltfid = GltfImporter::Load("examples/thirdperson/Fox.glb");
 			GltfImporter::GenerateSkeleton(gltfid, *foxSkeleton);
-			foxMesh->ChangeVertexLayout(Defaults::defaultSkinningVertexLayout);
+			foxMesh->ChangeVertexLayout(Defaults::VertexLayoutSkinning());
 			GltfImporter::GenerateMeshData(gltfid, *foxMesh);
 			MeshProcessor::ComputeNormals(*foxMesh);
 			fox.AddComponent<SkinnedMesh>(foxMesh, foxSkeleton);
@@ -154,7 +154,7 @@ namespace sf
 			Transform& e_t = floorPlanes[i].AddComponent<Transform>();
 			e_t.scale = FLOOR_PLANE_SCALE;
 			e_t.position = glm::vec3(-FLOOR_PLANE_SCALE + ((int)(i / 3)) * FLOOR_PLANE_SCALE, 0.0f, -FLOOR_PLANE_SCALE + ((int)(i % 3)) * FLOOR_PLANE_SCALE);
-			Mesh& objectMesh = floorPlanes[i].AddComponent<Mesh>(&Defaults::planeMeshData);
+			Mesh& objectMesh = floorPlanes[i].AddComponent<Mesh>(&Defaults::MeshDataPlane());
 			Renderer::SetMeshMaterial(objectMesh, floorMaterialId);
 		}
 	}

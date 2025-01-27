@@ -3,14 +3,13 @@
 #include <MeshData.h>
 #include <DataLayout.h>
 
-namespace sf::Defaults {
+namespace sf::Defaults
+{
+	const MeshData& MeshDataCube();
+	const MeshData& MeshDataPlane();
+	const MeshData& MeshDataSphere();
+	const MeshData& MeshDataMonkey();
 
-	extern MeshData cubeMeshData;
-	extern MeshData planeMeshData;
-	extern MeshData sphereMeshData;
-	extern MeshData monkeMeshData;
-	extern DataLayout defaultVertexLayout;
-	extern DataLayout defaultSkinningVertexLayout;
-
-	void Initialize();
+	DataLayout VertexLayout();
+	DataLayout VertexLayoutSkinning();
 }

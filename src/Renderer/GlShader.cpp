@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <fstream>
+#include <cassert>
 
 uint32_t sf::GlShader::CheckLinkStatusAndReturnProgram(uint32_t program, bool outputErrorMessages)
 {
@@ -138,8 +139,8 @@ sf::GlShader::~GlShader()
 
 void sf::GlShader::Bind() const
 {
+	assert(gl_id != -1);
 	glUseProgram(gl_id);
-	//std::cout << "Shader " << gl_id << " bound\n";
 }
 
 int sf::GlShader::GetUniformLocation(const std::string& name)

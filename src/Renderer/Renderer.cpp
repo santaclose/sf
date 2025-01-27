@@ -230,6 +230,44 @@ namespace sf::Renderer
 		glBufferData(GL_SHADER_STORAGE_BUFFER, voxelBoxGpuData[voxelBox].cubeModelMatrices.size() * sizeof(glm::mat4), &(voxelBoxGpuData[voxelBox].cubeModelMatrices[0][0][0]), GL_STATIC_DRAW);
 	}
 
+	void CreateSpriteGpuData()
+	{
+		spriteShader.CreateFromFiles("assets/shaders/sprite.vert", "assets/shaders/sprite.frag");
+
+		// quad uvs and indices won't change
+		spriteQuad.vertices[1] = { 0.0f, 0.0f };
+		spriteQuad.vertices[3] = { 0.0f, 1.0f };
+		spriteQuad.vertices[5] = { 1.0f, 1.0f };
+		spriteQuad.vertices[7] = { 1.0f, 0.0f };
+
+		spriteQuad.indices[0] = 0;
+		spriteQuad.indices[1] = 1;
+		spriteQuad.indices[2] = 2;
+		spriteQuad.indices[3] = 2;
+		spriteQuad.indices[4] = 3;
+		spriteQuad.indices[5] = 0;
+
+		glGenVertexArrays(1, &spriteQuad.gl_vao);
+		glGenBuffers(1, &spriteQuad.gl_vertexBuffer);
+		glGenBuffers(1, &spriteQuad.gl_indexBuffer);
+
+		glBindVertexArray(spriteQuad.gl_vao);
+		glBindBuffer(GL_ARRAY_BUFFER, spriteQuad.gl_vertexBuffer);
+
+		// update vertices
+		glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2) * 2 * 4, spriteQuad.vertices, GL_DYNAMIC_DRAW);
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, spriteQuad.gl_indexBuffer);
+		// update indices to draw
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * 6, spriteQuad.indices, GL_DYNAMIC_DRAW);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2) * 2, (void*)0);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2) * 2, (void*)sizeof(glm::vec2));
+
+		glBindVertexArray(0);
+	}
+
 	void CreateTextGpuData(const char* fontPath, const char* string, const SebText::TextRenderData& trd, const SebText::TextData& td)
 	{
 		unsigned fontPathHash = Hash::SimpleStringHash(fontPath);
@@ -359,9 +397,6 @@ bool sf::Renderer::Initialize(const Window& windowArg, const glm::vec3& clearCol
 
 	defaultShader.CreateFromFiles("assets/shaders/default.vert", "assets/shaders/default.frag");
 	defaultMaterial.CreateFromShader(&defaultShader, false);
-	defaultSkinningShader.CreateFromFiles("assets/shaders/defaultSkinning.vert", "assets/shaders/default.frag");
-	defaultSkinningMaterial.CreateFromShader(&defaultSkinningShader, false);
-	voxelBoxShader.CreateFromFiles("assets/shaders/voxelBox.vert", "assets/shaders/uv.frag");
 
 	glGenBuffers(1, &sharedGpuData_gl_ubo);
 
@@ -369,45 +404,6 @@ bool sf::Renderer::Initialize(const Window& windowArg, const glm::vec3& clearCol
 	rendererUniformVector[(uint32_t)RendererUniformData::BrdfLUT] = &environmentData.lookupTexture;
 	rendererUniformVector[(uint32_t)RendererUniformData::PrefilterMap] = &environmentData.prefilterCubemap;
 	rendererUniformVector[(uint32_t)RendererUniformData::IrradianceMap] = &environmentData.irradianceCubemap;
-
-	// sprites
-	spriteShader.CreateFromFiles("assets/shaders/sprite.vert", "assets/shaders/sprite.frag");
-
-	// text
-	textShader.CreateFromFiles("vendor/sebtext/shader.vert", "vendor/sebtext/shader.frag");
-
-	// quad uvs and indices won't change
-	spriteQuad.vertices[1] = { 0.0f, 0.0f };
-	spriteQuad.vertices[3] = { 0.0f, 1.0f };
-	spriteQuad.vertices[5] = { 1.0f, 1.0f };
-	spriteQuad.vertices[7] = { 1.0f, 0.0f };
-
-	spriteQuad.indices[0] = 0;
-	spriteQuad.indices[1] = 1;
-	spriteQuad.indices[2] = 2;
-	spriteQuad.indices[3] = 2;
-	spriteQuad.indices[4] = 3;
-	spriteQuad.indices[5] = 0;
-
-	glGenVertexArrays(1, &spriteQuad.gl_vao);
-	glGenBuffers(1, &spriteQuad.gl_vertexBuffer);
-	glGenBuffers(1, &spriteQuad.gl_indexBuffer);
-
-	glBindVertexArray(spriteQuad.gl_vao);
-	glBindBuffer(GL_ARRAY_BUFFER, spriteQuad.gl_vertexBuffer);
-
-	// update vertices
-	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2) * 2 * 4, spriteQuad.vertices, GL_DYNAMIC_DRAW);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, spriteQuad.gl_indexBuffer);
-	// update indices to draw
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * 6, spriteQuad.indices, GL_DYNAMIC_DRAW);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2) * 2, (void*)0);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2) * 2, (void*)sizeof(glm::vec2));
-
-	glBindVertexArray(0);
 
 	return true;
 }
@@ -583,6 +579,12 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 {
 	assert(mesh.skeletonData != nullptr);
+	if (!defaultSkinningShader.Initialized())
+	{
+		defaultSkinningShader.CreateFromFiles("assets/shaders/defaultSkinning.vert", "assets/shaders/default.frag");
+		defaultSkinningMaterial.CreateFromShader(&defaultSkinningShader, false);
+	}
+
 	if (skeletonSsbos.find(mesh.skeletonData) == skeletonSsbos.end()) // create skeleton ssbo if not there
 	{
 		uint32_t newSsbo;
@@ -635,29 +637,34 @@ void sf::Renderer::DrawVoxelBox(VoxelBox& voxelBox, Transform& transform)
 	if (!activeCameraEntity)
 		return;
 
-	if (meshGpuData.find(&Defaults::cubeMeshData) == meshGpuData.end()) // create mesh data if not there
-		CreateMeshGpuData(&Defaults::cubeMeshData);
+	if (meshGpuData.find(&Defaults::MeshDataCube()) == meshGpuData.end()) // create mesh data if not there
+		CreateMeshGpuData(&Defaults::MeshDataCube());
 
 	if (voxelBoxGpuData.find(voxelBox.voxelBoxData) == voxelBoxGpuData.end())
 		CreateVoxelBoxGpuData(voxelBox.voxelBoxData, transform);
 
-	// draw instanced box
+	if (!voxelBoxShader.Initialized())
+		voxelBoxShader.CreateFromFiles("assets/shaders/voxelBox.vert", "assets/shaders/uv.frag");
 	GlShader* shaderToUse = &voxelBoxShader;
 	shaderToUse->Bind();
 
+	// draw instanced box
 	sharedGpuData.modelMatrix = transform.ComputeMatrix();
 	glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
 
-	glBindVertexArray(meshGpuData[&Defaults::cubeMeshData].gl_vao);
+	glBindVertexArray(meshGpuData[&Defaults::MeshDataCube()].gl_vao);
 	glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, voxelBoxGpuData[voxelBox.voxelBoxData].gl_ssbo);
-	glDrawElementsInstanced(GL_TRIANGLES, Defaults::cubeMeshData.indexVector.size(), GL_UNSIGNED_INT, (void*)0, voxelBoxGpuData[voxelBox.voxelBoxData].numberOfCubes);
+	glDrawElementsInstanced(GL_TRIANGLES, Defaults::MeshDataCube().indexVector.size(), GL_UNSIGNED_INT, (void*)0, voxelBoxGpuData[voxelBox.voxelBoxData].numberOfCubes);
 }
 
 void sf::Renderer::DrawSprite(Sprite& sprite, ScreenCoordinates& screenCoordinates)
 {
 	glDisable(GL_DEPTH_TEST);
+
+	if (!spriteShader.Initialized())
+		CreateSpriteGpuData();
 
 	if (spriteTextures.find(sprite.bitmap) == spriteTextures.end()) // create mesh data if not there
 		spriteTextures[sprite.bitmap].CreateFromBitmap(*sprite.bitmap, GlTexture::ClampToEdge, false);
@@ -746,6 +753,9 @@ void sf::Renderer::DrawText(Text& text, ScreenCoordinates& screenCoordinates)
 	glBindBuffer(GL_UNIFORM_BUFFER, fontPathAndStringToTextData[fontPathHash].at(stringHash).gl_ubo_layoutData);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(SebText::LayoutSettings), &textLayoutSettings, GL_DYNAMIC_DRAW);
 
+	if (!textShader.Initialized())
+		textShader.CreateFromFiles("vendor/sebtext/shader.vert", "vendor/sebtext/shader.frag");
+
 	GlShader* shaderToUse = &textShader;
 	shaderToUse->Bind();
 	shaderToUse->SetUniform4fv("textCol", &text.color.r);
@@ -785,12 +795,8 @@ void sf::Renderer::DebugDrawSkeleton(SkinnedMesh& mesh, Transform& transform)
 	if (!activeCameraEntity)
 		return;
 
-	glDisable(GL_DEPTH_TEST);
-	if (meshGpuData.find(&Defaults::cubeMeshData) == meshGpuData.end()) // create mesh data if not there
-		CreateMeshGpuData(&Defaults::cubeMeshData);
-
-	GlShader* shaderToUse = &defaultShader;
-	shaderToUse->Bind();
+	if (meshGpuData.find(&Defaults::MeshDataCube()) == meshGpuData.end()) // create mesh data if not there
+		CreateMeshGpuData(&Defaults::MeshDataCube());
 
 	glm::mat4 worldMatrix = transform.ComputeMatrix();
 	glm::mat4* boneMatrices = (glm::mat4*)alloca(sizeof(glm::mat4) * mesh.skeletonData->m_bones.size());
@@ -809,7 +815,6 @@ void sf::Renderer::DebugDrawSkeleton(SkinnedMesh& mesh, Transform& transform)
 				glm::vec3(0.0f, 1.0f, 0.0f));
 		}
 	}
-	glEnable(GL_DEPTH_TEST);
 }
 
 void sf::Renderer::DebugDrawSphereCollider(const SphereCollider& sc)

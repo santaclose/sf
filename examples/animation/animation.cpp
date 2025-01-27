@@ -68,7 +68,7 @@ namespace sf
 
 			gltfid = GltfImporter::Load("examples/animation/Fox.glb");
 			GltfImporter::GenerateSkeleton(gltfid, skeletons[0]);
-			meshes[0].ChangeVertexLayout(Defaults::defaultSkinningVertexLayout);
+			meshes[0].ChangeVertexLayout(Defaults::VertexLayoutSkinning());
 			GltfImporter::GenerateMeshData(gltfid, meshes[0]);
 			MeshProcessor::ComputeNormals(meshes[0]);
 			Mesh& objectMesh = galleryObjects.back().AddComponent<SkinnedMesh>(&(meshes[0]), &(skeletons[0]));
@@ -82,7 +82,7 @@ namespace sf
 
 			gltfid = GltfImporter::Load("examples/animation/BrainStem.glb");
 			GltfImporter::GenerateSkeleton(gltfid, skeletons[1]);
-			meshes[1].ChangeVertexLayout(Defaults::defaultSkinningVertexLayout);
+			meshes[1].ChangeVertexLayout(Defaults::VertexLayoutSkinning());
 			GltfImporter::GenerateMeshData(gltfid, meshes[1]);
 			Mesh& objectMesh = galleryObjects.back().AddComponent<SkinnedMesh>(&(meshes[1]), &(skeletons[1]));
 		}

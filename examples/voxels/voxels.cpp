@@ -52,9 +52,9 @@ namespace sf
 	{
 		ExampleViewer::Initialize(scene);
 
-		monkevbd = new VoxelBoxData(Defaults::monkeMeshData, 0.007f);
-		monkevbd2 = new VoxelBoxData(Defaults::monkeMeshData, 0.02f);
-		monkevbd3 = new VoxelBoxData(Defaults::monkeMeshData, 0.07);
+		monkevbd = new VoxelBoxData(Defaults::MeshDataMonkey(), 0.007f);
+		monkevbd2 = new VoxelBoxData(Defaults::MeshDataMonkey(), 0.02f);
+		monkevbd3 = new VoxelBoxData(Defaults::MeshDataMonkey(), 0.07);
 
 		{
 			galleryObjects.push_back(scene.CreateEntity());
@@ -77,7 +77,7 @@ namespace sf
 		{
 			galleryObjects.push_back(scene.CreateEntity());
 			Transform& objectTransform = galleryObjects.back().AddComponent<Transform>();
-			Mesh& objectMesh = galleryObjects.back().AddComponent<Mesh>(&Defaults::monkeMeshData);
+			Mesh& objectMesh = galleryObjects.back().AddComponent<Mesh>(&Defaults::MeshDataMonkey());
 		}
 
 		for (int i = 0; i < galleryObjects.size(); i++)

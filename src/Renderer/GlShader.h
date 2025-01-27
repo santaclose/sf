@@ -37,6 +37,7 @@ namespace sf {
 		~GlShader();
 		void CreateFromFiles(const std::string& vertexShaderPath, const std::string& fragmentShaderPath);
 		void CreateComputeFromFile(const std::string& computeShaderPath);
+		inline bool Initialized() { return gl_id != -1; };
 		void Bind() const;
 		void SetUniformMatrix4fv(const std::string& name, const float* pointer, uint32_t number = 1);
 		void SetUniform1fv(const std::string& name, const float* pointer, uint32_t number = 1);

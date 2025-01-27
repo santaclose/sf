@@ -83,7 +83,7 @@ namespace sf
 		{
 			errt::seed = i;
 			MeshProcessor::GenerateMeshWithFunction(generatedMeshes[i], errt::GenerateModel);
-			generatedMeshes[i].ChangeVertexLayout(Defaults::defaultVertexLayout);
+			generatedMeshes[i].ChangeVertexLayout(Defaults::VertexLayout());
 			MeshProcessor::BakeAoToVertices(generatedMeshes[i]);
 		}
 

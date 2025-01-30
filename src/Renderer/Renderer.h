@@ -32,7 +32,6 @@ namespace sf::Renderer {
 
 	uint32_t CreateMaterial(const Material& material);
 
-	void SetMeshMaterial(Mesh mesh, GlMaterial* material, int piece = -1);
 	void SetMeshMaterial(Mesh mesh, uint32_t materialId, int piece = -1);
 
 	void SetActiveCameraEntity(Entity cameraEntity);

@@ -297,6 +297,24 @@ namespace sf::Renderer
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(SebText::LayoutSettings), &textLayoutSettings, GL_DYNAMIC_DRAW);
 	}
 
+	void SetMeshMaterial(Mesh mesh, GlMaterial* material, int piece = -1)
+	{
+		if (meshGpuData.find(mesh.meshData) == meshGpuData.end()) // create mesh data if not there
+			CreateMeshGpuData(mesh.meshData);
+		if (meshMaterials.find(mesh.id) == meshMaterials.end())
+			CreateMeshMaterialSlots(mesh.id, mesh.meshData);
+
+		if (piece < 0) // set for all pieces by default
+		{
+			for (int i = 0; i < meshMaterials[mesh.id].size(); i++)
+				meshMaterials[mesh.id][i] = material;
+		}
+		else
+		{
+			assert(piece < meshMaterials[mesh.id].size());
+			meshMaterials[mesh.id][piece] = material;
+		}
+	}
 #ifdef SF_DEBUG
 	void APIENTRY glDebugOutput(GLenum source,
 		GLenum type,
@@ -481,29 +499,10 @@ const glm::vec3& sf::Renderer::GetClearColor()
 	return clearColor;
 }
 
-void sf::Renderer::SetMeshMaterial(Mesh mesh, GlMaterial* material, int piece)
-{
-	if (meshGpuData.find(mesh.meshData) == meshGpuData.end()) // create mesh data if not there
-		CreateMeshGpuData(mesh.meshData);
-	if (meshMaterials.find(mesh.id) == meshMaterials.end())
-		CreateMeshMaterialSlots(mesh.id, mesh.meshData);
-
-	if (piece < 0) // set for all pieces by default
-	{
-		for (int i = 0; i < meshMaterials[mesh.id].size(); i++)
-			meshMaterials[mesh.id][i] = material;
-	}
-	else
-	{
-		assert(piece < meshMaterials[mesh.id].size());
-		meshMaterials[mesh.id][piece] = material;
-	}
-}
-
 void sf::Renderer::SetMeshMaterial(Mesh mesh, uint32_t materialId, int piece)
 {
 	assert(materialId < materials.size());
-	SetMeshMaterial(mesh, materials[materialId]);
+	SetMeshMaterial(mesh, materials[materialId], piece);
 }
 
 void sf::Renderer::SetActiveCameraEntity(Entity cameraEntity)

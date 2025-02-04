@@ -1,16 +1,12 @@
 #version 460
 
+#include <assets/shaders/random.h>
+
 layout(location = 0) out vec4 outColor;
 
 layout(location = 0) in vec2 fScreenPos;
 
-float random(vec2 st) {
-	return fract(sin(dot(st.xy,
-		vec2(12.9898, 78.233))) *
-		43758.5453123);
-}
-
 void main()
 {
-	outColor = vec4(vec3(random(fScreenPos)), 1.0);
+	outColor = vec4(vec3(Random(fScreenPos)), 1.0);
 }

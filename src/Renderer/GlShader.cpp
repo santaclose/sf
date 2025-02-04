@@ -5,6 +5,28 @@
 #include <vector>
 #include <fstream>
 #include <cassert>
+#include <cstring>
+
+namespace
+{
+	void ResolveIncludes(std::string& shaderSource)
+	{
+		for (int i = 0; i < shaderSource.length(); i++)
+		{
+			if (strncmp(shaderSource.data() + i, "\n#include <", 11) == 0)
+			{
+				int j = i + 11;
+				for (; shaderSource[j] != '>'; j++);
+				std::string filePath = shaderSource.substr(i + 11, j - (i + 11));
+				std::ifstream ifs(filePath);
+				if (ifs.fail())
+					std::cout << "[GlShader] Could not read shader include file: " << filePath << std::endl;
+				std::string includeText((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
+				shaderSource = shaderSource.substr(0, i + 1) + includeText + shaderSource.substr(j + 1);
+			}
+		}
+	}
+}
 
 uint32_t sf::GlShader::CheckLinkStatusAndReturnProgram(uint32_t program, bool outputErrorMessages)
 {
@@ -98,6 +120,8 @@ void sf::GlShader::CreateFromFiles(const std::string& vertexShaderPath, const st
 		(std::istreambuf_iterator<char>()));
 	std::string fragmentShaderSource((std::istreambuf_iterator<char>(ifs2)),
 		(std::istreambuf_iterator<char>()));
+	ResolveIncludes(vertexShaderSource);
+	ResolveIncludes(fragmentShaderSource);
 
 	gl_id = glCreateProgram();
 	std::cout << "[GlShader] Created program with id " << gl_id << std::endl;
@@ -123,6 +147,7 @@ void sf::GlShader::CreateComputeFromFile(const std::string& computeShaderPath)
 		std::cout << "[GlShader] Could not read compute shader file: " << computeShaderPathGlsl << std::endl;
 	std::string computeShaderSource((std::istreambuf_iterator<char>(ifs)),
 		(std::istreambuf_iterator<char>()));
+	ResolveIncludes(computeShaderSource);
 	gl_id = glCreateProgram();
 	std::cout << "[GlShader] Created program with id " << gl_id << std::endl;
 	uint32_t cs = CompileShader(GL_COMPUTE_SHADER, computeShaderSource);

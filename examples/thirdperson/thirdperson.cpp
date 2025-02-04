@@ -146,7 +146,7 @@ namespace sf
 		cameraObject.GetComponent<Transform>().position = glm::vec3(0.0, GIMBAL_OFFSET_SHANYUNG, cameraDistance);
 		cameraObject.GetComponent<Transform>().LookAt(glm::vec3(0.0, GIMBAL_OFFSET_SHANYUNG, 0.0), glm::vec3(0.0, 1.0, 0.0));
 
-		Material floorMaterial("examples/thirdperson/Floor.mat", false);
+		Material floorMaterial("examples/thirdperson/Floor.mat");
 		uint32_t floorMaterialId = Renderer::CreateMaterial(floorMaterial);
 		for (int i = 0; i < 9; i++)
 		{

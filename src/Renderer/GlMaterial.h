@@ -28,10 +28,14 @@ namespace sf {
 		std::vector<void*> m_uniformData;
 		std::vector<UniformType> m_uniformTypes;
 		bool m_isDoubleSided;
+		MaterialDrawMode m_drawMode;
+		MaterialBlendMode m_blendMode;
 
 	public:
 		void Create(const Material& material, const std::vector<void*>& rendererUniformVector);
-		void CreateFromShader(GlShader* theShader, bool isDoubleSided = false);
+		void CreateFromShader(GlShader* theShader, bool isDoubleSided = false,
+			MaterialDrawMode drawMode = MaterialDrawMode::Fill,
+			MaterialBlendMode blendMode = MaterialBlendMode::Alpha);
 		void SetUniform(const std::string& name, void* data, UniformType type);
 		void Bind();
 	};

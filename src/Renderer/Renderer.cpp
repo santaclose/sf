@@ -47,11 +47,25 @@ namespace sf::Renderer
 		uint32_t gl_vao;
 	};
 
-	struct VoxelBoxGpuData
+
+	struct PerParticleGpuData
+	{
+		Transform transform;
+		float timeSpawned;
+	};
+	struct ParticleGpuData
 	{
 		uint32_t gl_ssbo;
-		int numberOfCubes;
-		std::vector<glm::mat4> cubeModelMatrices;
+		std::vector<PerParticleGpuData> perParticleData;
+	};
+
+	struct ParticleSystemData
+	{
+		float emissionTimer = 0.0f;
+		float cycleCurrentTime = 0.0f;
+		uint32_t currentParticle = 0;
+		uint32_t activeParticles = 0;
+		ParticleGpuData gpuData;
 	};
 
 	struct SpriteQuad
@@ -98,7 +112,9 @@ namespace sf::Renderer
 	std::unordered_map<const sf::MeshData*, MeshGpuData> meshGpuData;
 	std::unordered_map<int, std::vector<GlMaterial*>> meshMaterials;
 
-	std::unordered_map<const sf::VoxelBoxData*, VoxelBoxGpuData> voxelBoxGpuData;
+	std::unordered_map<void*, ParticleSystemData> particleSystemData;
+
+	std::unordered_map<const sf::VoxelBoxData*, ParticleGpuData> voxelBoxGpuData;
 
 	std::vector<GlMaterial*> materials;
 	struct EnvironmentData
@@ -195,13 +211,11 @@ namespace sf::Renderer
 		glBindVertexArray(0);
 	}
 
-	void CreateVoxelBoxGpuData(const sf::VoxelBoxData* voxelBox, const Transform& transform)
+	void CreateVoxelBoxGpuData(const sf::VoxelBoxData* voxelBox)
 	{
-		voxelBoxGpuData[voxelBox] = VoxelBoxGpuData();
-
+		voxelBoxGpuData[voxelBox] = ParticleGpuData();
 		Transform voxelSpaceCursor;
 		voxelSpaceCursor.scale = voxelBox->voxelSize;
-
 		int currentCube = 0;
 		for (int i = 0; i < voxelBox->mat.size(); i++)
 		{
@@ -216,18 +230,16 @@ namespace sf::Renderer
 						voxelSpaceCursor.position.y += voxelBox->voxelSize * ((float)j + 0.5f);
 						voxelSpaceCursor.position.z += voxelBox->voxelSize * ((float)k + 0.5f);
 
-						voxelBoxGpuData[voxelBox].cubeModelMatrices.emplace_back();
-						voxelBoxGpuData[voxelBox].cubeModelMatrices[currentCube] = voxelSpaceCursor.ComputeMatrix();
+						voxelBoxGpuData[voxelBox].perParticleData.emplace_back();
+						voxelBoxGpuData[voxelBox].perParticleData[currentCube].transform = voxelSpaceCursor;
 						currentCube++;
 					}
 				}
 			}
 		}
-		voxelBoxGpuData[voxelBox].numberOfCubes = currentCube;
-
 		glGenBuffers(1, &(voxelBoxGpuData[voxelBox].gl_ssbo));
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, voxelBoxGpuData[voxelBox].gl_ssbo);
-		glBufferData(GL_SHADER_STORAGE_BUFFER, voxelBoxGpuData[voxelBox].cubeModelMatrices.size() * sizeof(glm::mat4), &(voxelBoxGpuData[voxelBox].cubeModelMatrices[0][0][0]), GL_STATIC_DRAW);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, voxelBoxGpuData[voxelBox].perParticleData.size() * sizeof(PerParticleGpuData), voxelBoxGpuData[voxelBox].perParticleData.data(), GL_STATIC_DRAW);
 	}
 
 	void CreateSpriteGpuData()
@@ -395,16 +407,16 @@ bool sf::Renderer::Initialize(const Window& windowArg, const glm::vec3& clearCol
 	std::cout << "[Renderer] Renderer: " << glGetString(GL_RENDERER) << std::endl;
 	std::cout << "[Renderer] OpenGL version supported " << glGetString(GL_VERSION) << std::endl;
 
-	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
 	glEnable(GL_BLEND);
 
 	glPolygonMode(GL_FRONT, GL_FILL);
 	glCullFace(GL_BACK);
 
+	glDepthMask(GL_TRUE);
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
-	glEnable(GL_DEPTH_TEST);
 
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
@@ -631,6 +643,95 @@ void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 
 }
 
+void sf::Renderer::DrawParticleSystem(ParticleSystem& particleSystem, Transform& transform, float deltaTime)
+{
+	if (!activeCameraEntity)
+		return;
+
+	glDepthMask(GL_FALSE); // Do not write to depth buffer
+
+	if (meshGpuData.find(particleSystem.meshData) == meshGpuData.end()) // create mesh data if not there
+		CreateMeshGpuData(particleSystem.meshData);
+
+	float cycleTotalTime = particleSystem.timeBetweenEmissions * (particleSystem.particleCount / particleSystem.particlesPerEmission);
+	if (particleSystemData.find(&particleSystem) == particleSystemData.end())
+	{
+		assert((particleSystem.particleCount % particleSystem.particlesPerEmission) == 0);
+		particleSystemData[&particleSystem].gpuData = ParticleGpuData();
+		particleSystemData[&particleSystem].gpuData.perParticleData.resize(particleSystem.particleCount);
+		memset(particleSystemData[&particleSystem].gpuData.perParticleData.data(), 0, sizeof(PerParticleGpuData) * particleSystem.particleCount);
+		cycleTotalTime = particleSystem.timeBetweenEmissions * particleSystem.particleCount;
+		glGenBuffers(1, &(particleSystemData[&particleSystem].gpuData.gl_ssbo));
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, particleSystemData[&particleSystem].gpuData.gl_ssbo);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, particleSystemData[&particleSystem].gpuData.perParticleData.size() * sizeof(PerParticleGpuData), particleSystemData[&particleSystem].gpuData.perParticleData.data(), GL_DYNAMIC_DRAW);
+	}
+
+	if (particleSystemData[&particleSystem].emissionTimer < 0.0f)
+	{
+		if (particleSystem.emit)
+		{
+			for (uint32_t i = 0; i < particleSystem.particlesPerEmission; i++)
+			{
+				uint32_t emittingParticle = (particleSystemData[&particleSystem].currentParticle + i) % particleSystem.particleCount;
+				particleSystemData[&particleSystem].gpuData.perParticleData[emittingParticle].transform = transform;
+				particleSystemData[&particleSystem].gpuData.perParticleData[emittingParticle].timeSpawned = particleSystemData[&particleSystem].cycleCurrentTime;
+				if (particleSystem.initialTransform != nullptr)
+				{
+					Transform initial = particleSystem.initialTransform();
+					particleSystemData[&particleSystem].gpuData.perParticleData[emittingParticle].transform.scale *= initial.scale;
+					particleSystemData[&particleSystem].gpuData.perParticleData[emittingParticle].transform.rotation *= initial.rotation;
+					particleSystemData[&particleSystem].gpuData.perParticleData[emittingParticle].transform.position += transform.rotation * initial.position;
+				}
+			}
+		}
+		else
+		{
+			for (uint32_t i = 0; i < particleSystem.particlesPerEmission; i++)
+			{
+				uint32_t disablingParticle = (particleSystemData[&particleSystem].currentParticle + i) % particleSystem.particleCount;
+				particleSystemData[&particleSystem].gpuData.perParticleData[disablingParticle].transform.scale = 0.0f;
+				particleSystemData[&particleSystem].gpuData.perParticleData[disablingParticle].timeSpawned = -1.0f;
+			}
+		}
+
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, particleSystemData[&particleSystem].gpuData.gl_ssbo);
+		glBufferSubData(GL_SHADER_STORAGE_BUFFER,
+			sizeof(PerParticleGpuData) * particleSystemData[&particleSystem].currentParticle,
+			sizeof(PerParticleGpuData) * particleSystem.particlesPerEmission,
+			particleSystemData[&particleSystem].gpuData.perParticleData.data() + particleSystemData[&particleSystem].currentParticle);
+
+		particleSystemData[&particleSystem].emissionTimer += particleSystem.timeBetweenEmissions;
+		if (particleSystem.emit)
+			particleSystemData[&particleSystem].activeParticles = glm::max(particleSystemData[&particleSystem].activeParticles + particleSystem.particlesPerEmission, particleSystem.particleCount);
+		else
+			particleSystemData[&particleSystem].activeParticles = particleSystemData[&particleSystem].activeParticles == 0U ? 0U : particleSystemData[&particleSystem].activeParticles - particleSystem.particlesPerEmission;
+		particleSystemData[&particleSystem].currentParticle = (particleSystemData[&particleSystem].currentParticle + particleSystem.particlesPerEmission) % particleSystem.particleCount;
+	}
+
+	if (particleSystemData[&particleSystem].activeParticles != 0)
+	{
+		GlMaterial* materialToUse = materials[particleSystem.material];
+		materialToUse->Bind();
+
+		materialToUse->m_shader->SetUniform1f("cycleCurrentTime", particleSystemData[&particleSystem].cycleCurrentTime);
+		materialToUse->m_shader->SetUniform1f("cycleTotalTime", cycleTotalTime);
+
+		sharedGpuData.modelMatrix = transform.ComputeMatrix();
+		glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
+		glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
+
+		glBindVertexArray(meshGpuData[particleSystem.meshData].gl_vao);
+		glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, particleSystemData[&particleSystem].gpuData.gl_ssbo);
+		glDrawElementsInstanced(GL_TRIANGLES, particleSystem.meshData->indexVector.size(), GL_UNSIGNED_INT, (void*)0, particleSystem.particleCount);
+	}
+
+	particleSystemData[&particleSystem].emissionTimer -= deltaTime;
+	particleSystemData[&particleSystem].cycleCurrentTime = glm::mod(particleSystemData[&particleSystem].cycleCurrentTime + deltaTime, cycleTotalTime);
+
+	glDepthMask(GL_TRUE); // Restore depth mask
+}
+
 void sf::Renderer::DrawVoxelBox(VoxelBox& voxelBox, Transform& transform)
 {
 	if (!activeCameraEntity)
@@ -640,12 +741,14 @@ void sf::Renderer::DrawVoxelBox(VoxelBox& voxelBox, Transform& transform)
 		CreateMeshGpuData(&Defaults::MeshDataCube());
 
 	if (voxelBoxGpuData.find(voxelBox.voxelBoxData) == voxelBoxGpuData.end())
-		CreateVoxelBoxGpuData(voxelBox.voxelBoxData, transform);
+		CreateVoxelBoxGpuData(voxelBox.voxelBoxData);
 
 	if (!voxelBoxShader.Initialized())
 		voxelBoxShader.CreateFromFiles("assets/shaders/voxelBox.vert", "assets/shaders/uv.frag");
-	GlShader* shaderToUse = &voxelBoxShader;
-	shaderToUse->Bind();
+	voxelBoxShader.Bind();
+	glPolygonMode(GL_FRONT, GL_FILL);
+	glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
 
 	// draw instanced box
 	sharedGpuData.modelMatrix = transform.ComputeMatrix();
@@ -655,7 +758,7 @@ void sf::Renderer::DrawVoxelBox(VoxelBox& voxelBox, Transform& transform)
 	glBindVertexArray(meshGpuData[&Defaults::MeshDataCube()].gl_vao);
 	glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, voxelBoxGpuData[voxelBox.voxelBoxData].gl_ssbo);
-	glDrawElementsInstanced(GL_TRIANGLES, Defaults::MeshDataCube().indexVector.size(), GL_UNSIGNED_INT, (void*)0, voxelBoxGpuData[voxelBox.voxelBoxData].numberOfCubes);
+	glDrawElementsInstanced(GL_TRIANGLES, Defaults::MeshDataCube().indexVector.size(), GL_UNSIGNED_INT, (void*)0, voxelBoxGpuData[voxelBox.voxelBoxData].perParticleData.size());
 }
 
 void sf::Renderer::DrawSprite(Sprite& sprite, ScreenCoordinates& screenCoordinates)
@@ -683,6 +786,9 @@ void sf::Renderer::DrawSprite(Sprite& sprite, ScreenCoordinates& screenCoordinat
 	spriteShader.Bind();
 	spriteTextures[sprite.bitmap].Bind(0);
 	spriteShader.SetUniform1i("bitmap", 0);
+	glPolygonMode(GL_FRONT, GL_FILL);
+	glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
 
 	glBindVertexArray(spriteQuad.gl_vao);
 	glBindBuffer(GL_ARRAY_BUFFER, spriteQuad.gl_vertexBuffer);
@@ -755,12 +861,14 @@ void sf::Renderer::DrawText(Text& text, ScreenCoordinates& screenCoordinates)
 	if (!textShader.Initialized())
 		textShader.CreateFromFiles("vendor/sebtext/shader.vert", "vendor/sebtext/shader.frag");
 
-	GlShader* shaderToUse = &textShader;
-	shaderToUse->Bind();
-	shaderToUse->SetUniform4fv("textCol", &text.color.r);
+	textShader.Bind();
+	glPolygonMode(GL_FRONT, GL_FILL);
+	glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
+	textShader.SetUniform4fv("textCol", &text.color.r);
 	glm::vec2 targetOffset = screenCoordinates.origin * glm::vec2(window->GetWidth(), window->GetHeight()) + (glm::vec2)screenCoordinates.offset;
-	shaderToUse->SetUniform2fv("globalOffset", &targetOffset.x);
-	shaderToUse->SetUniform1i("lineCount", fontPathAndStringToTextData[fontPathHash].at(stringHash).textData.LineCount);
+	textShader.SetUniform2fv("globalOffset", &targetOffset.x);
+	textShader.SetUniform1i("lineCount", fontPathAndStringToTextData[fontPathHash].at(stringHash).textData.LineCount);
 
 	glBindVertexArray(textMeshGpuData.gl_vao);
 	glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
@@ -883,6 +991,9 @@ void sf::Renderer::DrawLines()
 	}
 
 	drawLineShader.Bind();
+	glPolygonMode(GL_FRONT, GL_FILL);
+	glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
 
 	glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);

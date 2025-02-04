@@ -85,7 +85,7 @@ namespace sf
 			roughness.CopyChannel(metalRoughness, 1, 0);
 			metal.CopyChannel(metalRoughness, 2, 0);
 
-			Material damagedHelmetMaterial("examples/pbr/DamagedHelmet.mat", false);
+			Material damagedHelmetMaterial("examples/pbr/DamagedHelmet.mat");
 			damagedHelmetMaterial.uniforms["albedoTexture"] = { (uint32_t)ShaderDataType::bitmap, &albedo };
 			damagedHelmetMaterial.uniforms["normalTexture"] = { (uint32_t)ShaderDataType::bitmap, &normalmap };
 			damagedHelmetMaterial.uniforms["metalnessTexture"] = { (uint32_t)ShaderDataType::bitmap, &metal };
@@ -108,7 +108,7 @@ namespace sf
 
 			MeshProcessor::ComputeTangentSpace(meshes[1]);
 			Mesh& objectMesh = galleryObjects.back().AddComponent<Mesh>(&(meshes[1]));
-			uint32_t materialId = Renderer::CreateMaterial(Material("examples/pbr/SciFiHelmet.mat", false));
+			uint32_t materialId = Renderer::CreateMaterial(Material("examples/pbr/SciFiHelmet.mat"));
 			Renderer::SetMeshMaterial(objectMesh, materialId);
 		}
 

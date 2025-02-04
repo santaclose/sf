@@ -8,6 +8,7 @@
 #include <Components/ScreenCoordinates.h>
 #include <Components/Sprite.h>
 #include <Components/Text.h>
+#include <Components/ParticleSystem.h>
 
 #include <Components/SphereCollider.h>
 #include <Components/CapsuleCollider.h>
@@ -42,7 +43,8 @@ namespace sf::Renderer {
 	void DrawSkybox();
 	void DrawMesh(Mesh& mesh, Transform& transform);
 	void DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform);
-	void DrawVoxelBox(VoxelBox& voxelBox, Transform& transform);
+	void DrawParticleSystem(ParticleSystem& particleSystem, Transform& transform, float deltaTime);
+
 	void DrawSprite(Sprite& sprite, ScreenCoordinates& screenCoordinates);
 	void DrawText(Text& text, ScreenCoordinates& screenCoordinates);
 
@@ -52,6 +54,7 @@ namespace sf::Renderer {
 	void SetDebugDrawEnabled(bool value);
 	void DebugDrawSkeleton(SkinnedMesh& mesh, Transform& transform);
 
+	void DrawVoxelBox(VoxelBox& voxelBox, Transform& transform);
 	void DebugDrawSphereCollider(const SphereCollider& sc);
 	void DebugDrawCapsuleCollider(const CapsuleCollider& sc);
 	void DebugDrawBoxCollider(const BoxCollider& sc);

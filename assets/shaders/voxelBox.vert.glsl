@@ -1,5 +1,7 @@
 #version 460
 
+#include <assets/shaders/particle.h>
+
 layout(location = 4) out vec2 fTexCoords;
 
 layout(location = 0) in vec3 vPosition;
@@ -13,13 +15,13 @@ layout(binding = 0) uniform SharedGpuData
 	vec3 cameraPosition;
 };
 
-layout (binding = 1) buffer VoxelMatricesBuffer
+layout (std430, binding = 1) buffer PerParticleBuffer
 {
-	mat4 voxelMatrices[];
+	float perParticleData[];
 };
 
 void main()
 {
 	fTexCoords = vTexCoords;
-	gl_Position = cameraMatrix * modelMatrix * voxelMatrices[gl_InstanceID] * vec4(vPosition, 1.0);
+	gl_Position = cameraMatrix * vec4(PARTICLE_INITIAL_POSITION + vPosition * PARTICLE_INITIAL_SCALE, 1.0);
 }

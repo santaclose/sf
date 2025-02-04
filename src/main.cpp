@@ -98,6 +98,14 @@ int main(int argc, char** argv)
 			if (base.isEntityEnabled)
 				sf::Renderer::DrawSkinnedMesh(mesh, transform);
 		}
+		auto particlesRenderView = sf::Scene::activeScene->GetRegistry().view<sf::Base, sf::ParticleSystem, sf::Transform>();
+		for (auto entity : particlesRenderView)
+		{
+			auto [base, particleSystem, transform] = particlesRenderView.get<sf::Base, sf::ParticleSystem, sf::Transform>(entity);
+			if (base.isEntityEnabled)
+				sf::Renderer::DrawParticleSystem(particleSystem, transform, deltaTime);
+		}
+
 		auto voxelBoxRenderView = sf::Scene::activeScene->GetRegistry().view<sf::Base, sf::VoxelBox, sf::Transform>();
 		for (auto entity : voxelBoxRenderView)
 		{

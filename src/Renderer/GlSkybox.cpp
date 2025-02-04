@@ -100,6 +100,9 @@ void sf::GlSkybox::Draw(const glm::mat4& viewMatrix, const glm::mat4& projection
 	glDisable(GL_DEPTH_TEST);
 
 	shader.Bind();
+	glPolygonMode(GL_FRONT, GL_FILL);
+	glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
 
 	glm::mat4 fixedViewMat = glm::mat4(glm::mat3(viewMatrix));
 	shader.SetUniformMatrix4fv("view", &(fixedViewMat[0][0]));

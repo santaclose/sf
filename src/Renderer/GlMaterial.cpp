@@ -7,9 +7,12 @@
 
 void sf::GlMaterial::Create(const Material& material, const std::vector<void*>& rendererUniformVector)
 {
+	assert(material.vertexShaderFilePath.length() > 0 && material.fragmentShaderFilePath.length() > 0);
 	m_shader = new GlShader();
 	m_shader->CreateFromFiles(material.vertexShaderFilePath, material.fragmentShaderFilePath);
 	m_isDoubleSided = material.isDoubleSided;
+	m_drawMode = material.drawMode;
+	m_blendMode = material.blendMode;
 
 	for (const std::pair<std::string, Uniform>& uniformPair : material.uniforms)
 	{
@@ -52,10 +55,12 @@ void sf::GlMaterial::Create(const Material& material, const std::vector<void*>& 
 	}
 }
 
-void sf::GlMaterial::CreateFromShader(GlShader* theShader, bool isDoubleSided)
+void sf::GlMaterial::CreateFromShader(GlShader* theShader, bool isDoubleSided, MaterialDrawMode drawMode, MaterialBlendMode blendMode)
 {
 	m_shader = theShader;
 	m_isDoubleSided = isDoubleSided;
+	m_drawMode = drawMode;
+	m_blendMode = blendMode;
 }
 
 void sf::GlMaterial::SetUniform(const std::string& name, void* data, UniformType type)
@@ -74,6 +79,36 @@ void sf::GlMaterial::Bind()
 		glDisable(GL_CULL_FACE);
 	else
 		glEnable(GL_CULL_FACE);
+
+	switch (m_drawMode)
+	{
+	case MaterialDrawMode::Fill:
+		glPolygonMode(GL_FRONT, GL_FILL);
+		break;
+	case MaterialDrawMode::Lines:
+		glPolygonMode(GL_FRONT, GL_LINE);
+		break;
+	case MaterialDrawMode::Points:
+		glPolygonMode(GL_FRONT, GL_POINT);
+		break;
+
+	}
+
+	switch (m_blendMode)
+	{
+	case MaterialBlendMode::Alpha:
+		glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+		glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
+		break;
+	case MaterialBlendMode::Multiply:
+		glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+		glBlendFuncSeparate(GL_DST_COLOR, GL_ZERO, GL_ONE, GL_ONE);
+		break;
+	case MaterialBlendMode::Add:
+		glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+		glBlendFuncSeparate(GL_ONE, GL_ONE, GL_ONE, GL_ONE);
+		break;
+	}
 
 	m_shader->Bind();
 

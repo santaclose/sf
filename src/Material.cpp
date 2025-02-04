@@ -38,22 +38,14 @@ namespace sf {
 	};
 }
 
-sf::Material::Material(bool isDoubleSided)
+sf::Material::Material(const std::string& vertexShaderFilePath, const std::string& fragmentShaderFilePath)
 {
-	this->isDoubleSided = isDoubleSided;
-}
-
-sf::Material::Material(const std::string& vertexShaderFilePath, const std::string& fragmentShaderFilePath, bool isDoubleSided)
-{
-	this->isDoubleSided = isDoubleSided;
 	this->vertexShaderFilePath = vertexShaderFilePath;
 	this->fragmentShaderFilePath = fragmentShaderFilePath;
 }
 
-sf::Material::Material(const std::string& filePath, bool isDoubleSided)
+sf::Material::Material(const std::string& filePath)
 {
-	this->isDoubleSided = isDoubleSided;
-
 	std::ifstream ifs(filePath);
 
 	if (ifs.fail())

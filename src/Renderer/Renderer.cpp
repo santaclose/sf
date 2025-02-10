@@ -491,8 +491,7 @@ void sf::Renderer::Predraw()
 	cameraView = glm::translate(cameraView, -transformComponent.position);
 
 	sharedGpuData.cameraMatrix = cameraProjection * cameraView;
-	Transform& cameraTransform = activeCameraEntity.GetComponent<Transform>();
-	sharedGpuData.cameraPosition = cameraTransform.position;
+	sharedGpuData.cameraPosition = transformComponent.position;
 }
 
 void sf::Renderer::Postdraw()

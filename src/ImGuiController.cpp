@@ -82,6 +82,12 @@ void sf::ImGuiController::Tick(float deltaTime)
 					window->SetVsyncEnabled(!window->GetVsyncEnabled());
 				if (ImGui::MenuItem("Fullscreen", "Alt+Enter", window->GetFullScreenEnabled()))
 					window->SetFullScreenEnabled(!window->GetFullScreenEnabled());
+				if (ImGui::MenuItem("Restart"))
+				{
+					Game::Terminate();
+					Renderer::SetActiveCameraEntity(Entity());
+					Game::Initialize(0, nullptr);
+				}
 				ImGui::EndMenu();
 			}
 			ImGui::EndMainMenuBar();

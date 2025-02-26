@@ -1,5 +1,7 @@
 #version 460
 
+#include <assets/shaders/shared.h>
+
 #define MAX_DIR_LIGHTS 10
 #define MAX_POINT_LIGHTS 10
 #define PI 3.14159265359
@@ -15,8 +17,11 @@ layout(std140, binding = 0) uniform SharedGpuData
 {
 	mat4 modelMatrix;
 	mat4 cameraMatrix;
-	mat4 screenSpaceMatrix;
-	vec3 cameraPosition;
+	float cameraPositionX;
+	float cameraPositionY;
+	float cameraPositionZ;
+	float windowSizeX;
+	float windowSizeY;
 };
 
 uniform bool useVertexAo = false;
@@ -134,7 +139,7 @@ void main()
 	N = 2.0 * normalPixel - 1.0;
 	N = normalize(fTBN * N);
 
-	V = normalize(cameraPosition - fWorldPos);
+	V = normalize(CAMERA_POSITION_VEC - fWorldPos);
 	R = reflect(-V, N);
 
 	F0 = vec3(0.04);

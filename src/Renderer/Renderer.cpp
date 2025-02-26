@@ -101,8 +101,8 @@ namespace sf::Renderer
 	{
 		glm::mat4 modelMatrix;
 		glm::mat4 cameraMatrix;
-		glm::mat4 screenSpaceMatrix;
 		glm::vec3 cameraPosition;
+		glm::vec2 windowSize;
 	};
 	uint32_t sharedGpuData_gl_ubo;
 	SharedGpuData sharedGpuData;
@@ -449,8 +449,7 @@ void sf::Renderer::Predraw()
 	// clear
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	// screen space matrix
-	sharedGpuData.screenSpaceMatrix = glm::ortho(0.0f, (float)(window->GetWidth()), (float)(window->GetHeight()), 0.0f);
+	sharedGpuData.windowSize = glm::vec2((float)window->GetWidth(), (float)window->GetHeight());
 
 	if (!activeCameraEntity)
 		return;

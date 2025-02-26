@@ -11,8 +11,11 @@ layout(binding = 0) uniform SharedGpuData
 {
 	mat4 modelMatrix;
 	mat4 cameraMatrix;
-	mat4 screenSpaceMatrix;
-	vec3 cameraPosition;
+	float cameraPositionX;
+	float cameraPositionY;
+	float cameraPositionZ;
+	float windowSizeX;
+	float windowSizeY;
 };
 
 layout (std430, binding = 1) buffer PerParticleBuffer

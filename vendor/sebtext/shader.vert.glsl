@@ -1,5 +1,7 @@
 #version 460
 
+#include <assets/shaders/shared.h>
+
 layout(location = 0) out vec2 fragInPos;
 layout(location = 1) flat out int fragInDataOffset;
 
@@ -20,9 +22,13 @@ layout(std140, binding = 0) uniform SharedGpuData
 {
 	mat4 modelMatrix;
 	mat4 cameraMatrix;
-	mat4 screenSpaceMatrix;
-	vec3 cameraPosition;
+	float cameraPositionX;
+	float cameraPositionY;
+	float cameraPositionZ;
+	float windowSizeX;
+	float windowSizeY;
 };
+
 layout (std430, binding = 1) buffer instanceSSBO
 {
 	InstanceData PerInstanceData[];
@@ -89,9 +95,8 @@ void main()
 	vec2 offset = instancePos + vec2(globalOffset.x, -globalOffset.y);
 	vec2 instanceVertPos = vPosition.xy * instanceData.boundsSize * fontSize + offset - vec2(float(alignmentH == 2) * textWidth + float(alignmentH == 1) * textWidth / 2.0, 0.0);
 	instanceVertPos.y = -instanceVertPos.y;
-	instanceVertPos = (screenSpaceMatrix * vec4(instanceVertPos.xy, 0.0, 1.0)).xy;
 
-	gl_Position = vec4(instanceVertPos.x, instanceVertPos.y, 0.0, 1.0);
+	gl_Position = PIXEL_SPACE_TO_GL_SPACE(instanceVertPos);
 	fragInPos = -instanceData.boundsSize / 2 + instanceData.boundsSize * vTexCoords;
 	fragInDataOffset = instanceData.contourDataOffset;
 }

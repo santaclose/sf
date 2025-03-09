@@ -35,21 +35,25 @@ namespace sf
 	Scene scene;
 	std::vector<Entity> galleryObjects;
 
-	glm::vec3 targetGimbalRotation = glm::vec3(0.0, glm::radians(180.0f), 0.0);
+	glm::quat modelRotation;
+	float modelRotationY;
 
-	glm::quat modelRotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
-	float modelRotationY = 0.0f;
-
-	float cameraDistance = 3.0;
-	bool rotationEnabled = false;
+	float cameraDistance;
+	bool rotationEnabled;
 
 	SkeletonData* skeletons;
 	MeshData* meshes;
 
-	int selectedModel = 0;
+	int selectedModel;
 
 	void Game::Initialize(int argc, char** argv)
 	{
+		modelRotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+		modelRotationY = 0.0f;
+		cameraDistance = 3.0;
+		rotationEnabled = false;
+		selectedModel = 0;
+
 		FileUtils::DownloadFiles({
 			"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Fox/glTF-Binary/Fox.glb",
 			"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BrainStem/glTF-Binary/BrainStem.glb"
@@ -89,6 +93,16 @@ namespace sf
 
 		for (int i = 0; i < galleryObjects.size(); i++)
 			galleryObjects[i].SetEnabled(i == selectedModel);
+	}
+
+	void Game::Terminate()
+	{
+		delete[] meshes;
+		delete[] skeletons;
+		for (Entity e : galleryObjects)
+			scene.DestroyEntity(e);
+		galleryObjects.clear();
+		ExampleViewer::Terminate(scene);
 	}
 
 	void GalleryChange(bool next)
@@ -157,9 +171,5 @@ namespace sf
 			ImGui::EndMainMenuBar();
 		}
 		ExampleViewer::ImGuiCall();
-	}
-	void Game::Terminate()
-	{
-		delete[] meshes;
 	}
 }

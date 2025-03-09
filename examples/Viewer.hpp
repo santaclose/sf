@@ -20,11 +20,14 @@
 namespace sf::ExampleViewer
 {
 	Entity gimbal, cameraObject;
-	glm::vec3 targetGimbalRotation = glm::vec3(0.0, glm::radians(180.0f), 0.0);
-	float cameraDistance = 3.0;
+	glm::vec3 targetGimbalRotation;
+	float cameraDistance;
 
 	void Initialize(Scene& scene)
 	{
+		targetGimbalRotation = glm::vec3(0.0, glm::radians(180.0f), 0.0);
+		cameraDistance = 3.0;
+
 		gimbal = scene.CreateEntity();
 		cameraObject = scene.CreateEntity();
 
@@ -36,6 +39,12 @@ namespace sf::ExampleViewer
 		cameraTransform.position = glm::vec3(0.0, 0.0, cameraDistance);
 		cameraTransform.LookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 		cameraObject.AddComponent<Camera>();
+	}
+
+	void Terminate(Scene& scene)
+	{
+		scene.DestroyEntity(cameraObject);
+		scene.DestroyEntity(gimbal);
 	}
 
 	void UpdateCamera(float deltaTime)

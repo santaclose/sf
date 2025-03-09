@@ -36,16 +36,17 @@ namespace sf
 	Scene scene;
 	Entity e_ship, e_mainCamera, e_lookBackCamera;
 
-	float shipSpeed = 5.0;
+	float shipSpeed;
 	
 	MeshData shipMesh;
 	Entity* things;
-
 
 	MeshData* generatedMeshes;
 
 	void Game::Initialize(int argc, char** argv)
 	{
+		shipSpeed = 5.0;
+
 		uint32_t aoMaterial = Renderer::CreateMaterial(Material("assets/shaders/default.vert", "assets/shaders/vertexAo.frag"));
 		uint32_t colorsMaterial = Renderer::CreateMaterial(Material("examples/spaceship/randomColors.vert", "examples/spaceship/randomColors.frag"));
 		uint32_t uvMaterial = Renderer::CreateMaterial(Material("assets/shaders/default.vert", "assets/shaders/uv.frag"));
@@ -115,6 +116,12 @@ namespace sf
 
 	void Game::Terminate()
 	{
+		scene.DestroyEntity(e_ship);
+		scene.DestroyEntity(e_mainCamera);
+		scene.DestroyEntity(e_lookBackCamera);
+		for (unsigned int i = 0; i < COUNT; i++)
+			scene.DestroyEntity(things[i]);
+
 		delete[] things;
 		delete[] generatedMeshes;
 	}

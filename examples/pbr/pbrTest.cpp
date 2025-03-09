@@ -32,23 +32,29 @@ namespace sf
 	Scene scene;
 	std::vector<Entity> galleryObjects;
 
-	glm::vec3 targetGimbalRotation = glm::vec3(0.0, glm::radians(180.0f), 0.0);
+	glm::quat modelRotation;
+	float modelRotationY;
 
-	glm::quat modelRotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
-	float modelRotationY = 0.0f;
+	float cameraDistance;
+	bool rotationEnabled;
 
-	float cameraDistance = 3.0;
-	bool rotationEnabled = false;
-
-	int selectedEnvironment = 0;
-	std::vector<std::string> environments = { "examples/pbr/brown_photostudio_02_4k.hdr", "examples/pbr/aft_lounge_4k.hdr", };
+	int selectedEnvironment;
+	std::vector<std::string> environments;
 
 	MeshData* meshes;
 
-	int selectedModel = 0;
+	int selectedModel;
 
 	void Game::Initialize(int argc, char** argv)
 	{
+		modelRotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+		modelRotationY = 0.0f;
+		cameraDistance = 3.0;
+		rotationEnabled = false;
+		selectedEnvironment = 0;
+		environments = { "examples/pbr/brown_photostudio_02_4k.hdr", "examples/pbr/aft_lounge_4k.hdr", };
+		selectedModel = 0;
+
 		FileUtils::DownloadFiles({
 			"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb",
 			"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/SciFiHelmet/glTF/SciFiHelmet.gltf",
@@ -116,6 +122,15 @@ namespace sf
 			galleryObjects[i].SetEnabled(i == selectedModel);
 	}
 
+	void Game::Terminate()
+	{
+		delete[] meshes;
+		for (Entity e : galleryObjects)
+			scene.DestroyEntity(e);
+		galleryObjects.clear();
+		ExampleViewer::Terminate(scene);
+	}
+
 	void ChangeEnvironment()
 	{
 		selectedEnvironment++;
@@ -179,9 +194,5 @@ namespace sf
 			ImGui::EndMainMenuBar();
 		}
 		ExampleViewer::ImGuiCall();
-	}
-	void Game::Terminate()
-	{
-		delete[] meshes;
 	}
 }

@@ -42,30 +42,46 @@ namespace sf
 	Scene scene;
 	Entity e_camera;
 
-	float animation1A = 0.36, animation2A = 0.36;
-	float animation1B = 0.62, animation2B = 0.62;
-	float animation1C = 2.22, animation2C = 2.22;
-	float animation1D = 3.96, animation2D = 3.96;
+	float animation1A, animation2A;
+	float animation1B, animation2B;
+	float animation1C, animation2C;
+	float animation1D, animation2D;
 
 	MeshData uniqueErrts[UNIQUE_COUNT];
 	Entity* errts;
 
-	float tFreq = INITIAL_FREQUENCY;
-	float tStrength = INITIAL_STRENGTH;
-	float zFrequency = INITIAL_FREQUENCY;
-	float xFrequency = INITIAL_FREQUENCY;
-	float zWaveStrength = INITIAL_STRENGTH;
-	float xWaveStrength = INITIAL_STRENGTH;
+	float tFreq;
+	float tStrength;
+	float zFrequency;
+	float xFrequency;
+	float zWaveStrength;
+	float xWaveStrength;
 
-	float cameraRot = 0.0;
+	float cameraRot;
 
-	float tSpeed = INITIAL_SPEED;
-	float speed = INITIAL_SPEED;
-	float posY = 50.0f;
-	float cameraRadius = 650.0f;
+	float tSpeed;
+	float speed;
+	float posY;
+	float cameraRadius;
 
 	void Game::Initialize(int argc, char** argv)
 	{
+		animation1A = 0.36, animation2A = 0.36;
+		animation1B = 0.62, animation2B = 0.62;
+		animation1C = 2.22, animation2C = 2.22;
+		animation1D = 3.96, animation2D = 3.96;
+		tFreq = INITIAL_FREQUENCY;
+		tStrength = INITIAL_STRENGTH;
+		zFrequency = INITIAL_FREQUENCY;
+		xFrequency = INITIAL_FREQUENCY;
+		zWaveStrength = INITIAL_STRENGTH;
+		xWaveStrength = INITIAL_STRENGTH;
+		cameraRot = 0.0;
+		tSpeed = INITIAL_SPEED;
+		speed = INITIAL_SPEED;
+		posY = 50.0f;
+		cameraRadius = 650.0f;
+
 		e_camera = scene.CreateEntity();
 		Camera& c_camera = e_camera.AddComponent<Camera>();
 		c_camera.fieldOfView = 0.5f;
@@ -116,6 +132,9 @@ namespace sf
 
 	void Game::Terminate()
 	{
+		scene.DestroyEntity(e_camera);
+		for (int i = 0; i < ERRT_COUNT; i++)
+			scene.DestroyEntity(errts[i]);
 		delete[] errts;
 	}
 

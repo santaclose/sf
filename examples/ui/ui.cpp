@@ -27,11 +27,10 @@ namespace sf
 	Scene scene;
 	Entity textA, textB, textC, spriteTest;
 
-	char textStringA[256] = "Left aligned\0";
-	char textStringB[256] = "Right aligned\0";
-	char textStringC[256] = "Centered multiline\ntext\0";
+	char textStringA[256];
+	char textStringB[256];
+	char textStringC[256];
 
-	const char* testSpriteBitmapPath = "C:/Users/san/Desktop/test.png";
 	Bitmap* testSpriteBitmap;
 
 	void DownloadAssetDependencies(const std::vector<std::string>& urls, const std::string& targetPath)
@@ -50,6 +49,10 @@ namespace sf
 
 	void Game::Initialize(int argc, char** argv)
 	{
+		sprintf(textStringA, "Left aligned");
+		sprintf(textStringB, "Right aligned");
+		sprintf(textStringC, "Centered multiline\ntext");
+
 		FileUtils::DownloadFiles({
 			"https://www.wikipedia.org/portal/wikipedia.org/assets/img/Wikipedia-logo-v2.png",
 			"http://fonts.gstatic.com/s/abeezee/v11/mE5BOuZKGln_Ex0uYKpIaw.ttf",
@@ -106,6 +109,14 @@ namespace sf
 			e_spt.alignmentH = ALIGNMENT_CENTER;
 			e_spt.alignmentV = ALIGNMENT_CENTER;
 		}
+	}
+
+	void Game::Terminate()
+	{
+		scene.DestroyEntity(textA);
+		scene.DestroyEntity(textB);
+		scene.DestroyEntity(textC);
+		scene.DestroyEntity(spriteTest);
 	}
 
 	void Game::OnUpdate(float deltaTime, float time)
@@ -167,9 +178,5 @@ namespace sf
 			}
 			ImGui::EndMainMenuBar();
 		}
-	}
-
-	void Game::Terminate()
-	{
 	}
 }

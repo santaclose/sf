@@ -43,21 +43,21 @@ namespace sf
 	Entity gimbal, cameraObject;
 	Entity shanyung, fox;
 
-	glm::vec3 targetGimbalRotation = glm::vec3(0.0, glm::radians(180.0f), 0.0);
+	glm::vec3 targetGimbalRotation;
 
-	float cameraDistance = 3.0;
+	float cameraDistance;
 
 	SkeletonData* shanyungSkeleton;
 	MeshData* shanyungMesh;
 	int shanyungBlendSpace;
-	glm::vec2 shanyungBlendSpaceCurrentPos = { 0.0f, 0.0f };
+	glm::vec2 shanyungBlendSpaceCurrentPos;
 	std::vector<float> shanyungWeights;
 	std::vector<glm::vec2> shanyungSpeedPerAnimation;
 
 	SkeletonData* foxSkeleton;
 	MeshData* foxMesh;
 	int foxBlendSpace;
-	float foxBlendSpaceCurrentX = 0.0f;
+	float foxBlendSpaceCurrentX;
 	std::vector<float> foxWeights;
 	std::vector<float> foxSpeedPerAnimation;
 
@@ -80,6 +80,11 @@ namespace sf
 
 	void Game::Initialize(int argc, char** argv)
 	{
+		targetGimbalRotation = glm::vec3(0.0, glm::radians(180.0f), 0.0);
+		cameraDistance = 3.0;
+		shanyungBlendSpaceCurrentPos = { 0.0f, 0.0f };
+		foxBlendSpaceCurrentX = 0.0f;
+
 		FileUtils::DownloadFiles({
 			"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Fox/glTF-Binary/Fox.glb",
 			"https://us.v-cdn.net/5021068/uploads/editor/ha/7frj09nru4zu.png",
@@ -157,6 +162,21 @@ namespace sf
 			Mesh& objectMesh = floorPlanes[i].AddComponent<Mesh>(&Defaults::MeshDataPlane());
 			Renderer::SetMeshMaterial(objectMesh, floorMaterialId);
 		}
+	}
+
+	void Game::Terminate()
+	{
+		scene.DestroyEntity(gimbal);
+		scene.DestroyEntity(cameraObject);
+		scene.DestroyEntity(shanyung);
+		scene.DestroyEntity(fox);
+		for (int i = 0; i < 9; i++)
+			scene.DestroyEntity(floorPlanes[i]);
+
+		delete shanyungMesh;
+		delete shanyungSkeleton;
+		delete foxMesh;
+		delete foxSkeleton;
 	}
 
 	void UpdateCamera(float deltaTime, Entity targetCharacter, float gimbalOffsetY)
@@ -255,13 +275,5 @@ namespace sf
 			}
 			ImGui::EndMainMenuBar();
 		}
-	}
-
-	void Game::Terminate()
-	{
-		delete shanyungMesh;
-		delete shanyungSkeleton;
-		delete foxMesh;
-		delete foxSkeleton;
 	}
 }

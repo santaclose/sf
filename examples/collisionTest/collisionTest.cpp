@@ -29,8 +29,10 @@ namespace sf
 {
 	std::string Game::ConfigFilePath = "examples/pbr/config.json";
 
-	enum class TestCase {
+	enum class TestCase
+	{
 		PointLineClosestPoint,
+		PointTriangleClosestPoint,
 		LineLineClosestPoints,
 		LineAABBClosestPoints,
 		SphereSphereIntersection,
@@ -39,17 +41,19 @@ namespace sf
 		CapsuleCapsuleIntersection,
 		CapsuleBoxIntersection,
 		BoxBoxIntersection
-		
 	};
-	TestCase currentTestCase = TestCase::SphereSphereIntersection;
+	TestCase currentTestCase;
 
-	glm::vec3 point(-1.0f, 0.0f, 0.0f);
-	glm::vec3 line0A(1.0f, -1.0f, 0.0f);
-	glm::vec3 line0B(1.0f, 1.0f, 0.0f);
-	glm::vec3 line1A(-1.0f, 1.0f, 0.0f);
-	glm::vec3 line1B(-1.0f, -1.0f, 0.0f);
-	glm::vec3 aabbMin(-1.0f, 0.0f, 0.0f);
-	glm::vec3 aabbMax(-0.5f, 1.0f, 1.0f);
+	glm::vec3 point;
+	glm::vec3 line0A;
+	glm::vec3 line0B;
+	glm::vec3 line1A;
+	glm::vec3 line1B;
+	glm::vec3 triangle0A;
+	glm::vec3 triangle0B;
+	glm::vec3 triangle0C;
+	glm::vec3 aabbMin;
+	glm::vec3 aabbMax;
 
 	Scene scene;
 	Entity e_Sphere[2];
@@ -77,6 +81,7 @@ namespace sf
 		switch (currentTestCase)
 		{
 			case TestCase::PointLineClosestPoint:
+			case TestCase::PointTriangleClosestPoint:
 			case TestCase::LineLineClosestPoints:
 			case TestCase::LineAABBClosestPoints:
 				e_Sphere[0].SetEnabled(false);
@@ -139,6 +144,19 @@ namespace sf
 
 	void Game::Initialize(int argc, char** argv)
 	{
+		currentTestCase = TestCase::SphereSphereIntersection;
+
+		point = glm::vec3(-1.0f, 0.0f, 0.0f);
+		line0A = glm::vec3(1.0f, -1.0f, 0.0f);
+		line0B = glm::vec3(1.0f, 1.0f, 0.0f);
+		line1A = glm::vec3(-1.0f, 1.0f, 0.0f);
+		line1B = glm::vec3(-1.0f, -1.0f, 0.0f);
+		triangle0A = glm::vec3(1.0f, -1.0f, 0.0f);
+		triangle0B = glm::vec3(1.0f, 1.0f, 0.0f);
+		triangle0C = glm::vec3(0.0f, 0.0f, 0.0f);
+		aabbMin = glm::vec3(-1.0f, 0.0f, 0.0f);
+		aabbMax = glm::vec3(-0.5f, 1.0f, 1.0f);
+
 		Renderer::SetDebugDrawEnabled(true);
 
 		ExampleViewer::Initialize(scene);
@@ -166,7 +184,13 @@ namespace sf
 	}
 	void Game::Terminate()
 	{
-
+		ExampleViewer::Terminate(scene);
+		for (int i = 0; i < 2; i++)
+			scene.DestroyEntity(e_Sphere[i]);
+		for (int i = 0; i < 2; i++)
+			scene.DestroyEntity(e_Capsule[i]);
+		for (int i = 0; i < 2; i++)
+			scene.DestroyEntity(e_Box[i]);
 	}
 	void Game::OnUpdate(float deltaTime, float time)
 	{
@@ -181,6 +205,15 @@ namespace sf
 		{
 			glm::vec3 closestPoint = Geometry::ClosestPointPointSegment(point, line0A, line0B);
 			sf::Renderer::AddLine(line0A, line0B, COLOR_BLUE);
+			sf::Renderer::AddLine(closestPoint, point, COLOR_RED);
+			return;
+		}
+		case TestCase::PointTriangleClosestPoint:
+		{
+			glm::vec3 closestPoint = Geometry::ClosestPointPointTriangle(point, triangle0A, triangle0B, triangle0C);
+			sf::Renderer::AddLine(triangle0A, triangle0B, COLOR_BLUE);
+			sf::Renderer::AddLine(triangle0B, triangle0C, COLOR_BLUE);
+			sf::Renderer::AddLine(triangle0C, triangle0A, COLOR_BLUE);
 			sf::Renderer::AddLine(closestPoint, point, COLOR_RED);
 			return;
 		}
@@ -319,6 +352,7 @@ namespace sf
 			if (ImGui::BeginMenu("Case"))
 			{
 				if (ImGui::MenuItem("PointLineClosestPoint")) { currentTestCase = TestCase::PointLineClosestPoint; UpdateEnabledShapes(); }
+				if (ImGui::MenuItem("PointTriangleClosestPoint")) { currentTestCase = TestCase::PointTriangleClosestPoint; UpdateEnabledShapes(); }
 				if (ImGui::MenuItem("LineLineClosestPoints")) { currentTestCase = TestCase::LineLineClosestPoints; UpdateEnabledShapes(); }
 				if (ImGui::MenuItem("LineAABBClosestPoints")) { currentTestCase = TestCase::LineAABBClosestPoints; UpdateEnabledShapes(); }
 				if (ImGui::MenuItem("SphereSphereIntersection")) { currentTestCase = TestCase::SphereSphereIntersection; UpdateEnabledShapes(); }
@@ -337,6 +371,12 @@ namespace sf
 					ImGui::DragFloat3("Point", &point.x, 0.01f);
 					ImGui::DragFloat3("Line A", &line0A.x, 0.01f);
 					ImGui::DragFloat3("Line B", &line0B.x, 0.01f);
+					break;
+				case TestCase::PointTriangleClosestPoint:
+					ImGui::DragFloat3("Point", &point.x, 0.01f);
+					ImGui::DragFloat3("Triangle A", &triangle0A.x, 0.01f);
+					ImGui::DragFloat3("Triangle B", &triangle0B.x, 0.01f);
+					ImGui::DragFloat3("Triangle C", &triangle0C.x, 0.01f);
 					break;
 				case TestCase::LineLineClosestPoints:
 					ImGui::DragFloat3("Line 0 A", &line0A.x, 0.01f);

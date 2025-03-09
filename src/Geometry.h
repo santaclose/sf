@@ -16,6 +16,57 @@ namespace sf::Geometry
 		return segA + glm::clamp(t, 0.0f, 1.0f) * AB;
 	}
 
+	// From Fedor's answer at https://stackoverflow.com/questions/2924795/fastest-way-to-compute-point-to-triangle-distance-in-3d
+	inline glm::vec3 ClosestPointPointTriangle(const glm::vec3& p, const glm::vec3& a, const glm::vec3& b, const glm::vec3& c)
+	{
+		const glm::vec3 ab = b - a;
+		const glm::vec3 ac = c - a;
+		const glm::vec3 ap = p - a;
+
+		// Corners
+		const float d1 = dot(ab, ap);
+		const float d2 = dot(ac, ap);
+		if (d1 <= 0.0f && d2 <= 0.0f) return a;
+
+		const glm::vec3 bp = p - b;
+		const float d3 = dot(ab, bp);
+		const float d4 = dot(ac, bp);
+		if (d3 >= 0.0f && d4 <= d3) return b;
+
+		const glm::vec3 cp = p - c;
+		const float d5 = dot(ab, cp);
+		const float d6 = dot(ac, cp);
+		if (d6 >= 0.0f && d5 <= d6) return c;
+
+		// Edges
+		const float vc = d1 * d4 - d3 * d2;
+		if (vc <= 0.0f && d1 >= 0.0f && d3 <= 0.0f)
+		{
+			const float v = d1 / (d1 - d3);
+			return a + v * ab;
+		}
+
+		const float vb = d5 * d2 - d1 * d6;
+		if (vb <= 0.0f && d2 >= 0.0f && d6 <= 0.0f)
+		{
+			const float v = d2 / (d2 - d6);
+			return a + v * ac;
+		}
+
+		const float va = d3 * d6 - d5 * d4;
+		if (va <= 0.0f && (d4 - d3) >= 0.0f && (d5 - d6) >= 0.0f)
+		{
+			const float v = (d4 - d3) / ((d4 - d3) + (d5 - d6));
+			return b + v * (c - b);
+		}
+
+		// Face
+		const float denom = 1.f / (va + vb + vc);
+		const float v = vb * denom;
+		const float w = vc * denom;
+		return a + v * ab + w * ac;
+	}
+
 	inline void ClosestPointsSegmentSegment(
 		const glm::vec3& seg0A, const glm::vec3& seg0B,
 		const glm::vec3& seg1A, const glm::vec3& seg1B, glm::vec3& out0, glm::vec3& out1)
@@ -148,11 +199,6 @@ namespace sf::Geometry
 		float radiusSum = capsule.radius + sphere.radius;
 		return glm::distance2(pointOnLine, sphere.center) < radiusSum * radiusSum;
 	}
-
-	inline bool IntersectCapsuleSphere(const CapsuleCollider& capsule, const SphereCollider& sphere)
-	{
-		return IntersectSphereCapsule(sphere, capsule);
-	}
 	
 	inline bool IntersectSphereBox(const SphereCollider& sphere, const BoxCollider& box)
 	{
@@ -163,9 +209,10 @@ namespace sf::Geometry
 		return glm::distance2(localSphereCenter, clampedPoint) <= sphere.radius * sphere.radius;
 	}
 
-	inline bool IntersectBoxSphere(const BoxCollider& box, const SphereCollider& sphere)
+	inline bool IntersectSphereTriangle(const SphereCollider& sphere, const glm::vec3& triangleA, const glm::vec3& triangleB, const glm::vec3& triangleC)
 	{
-		return IntersectSphereBox(sphere, box);
+		glm::vec3 closestPointInTriangle = ClosestPointPointTriangle(sphere.center, triangleA, triangleB, triangleC);
+		return glm::distance2(sphere.center, closestPointInTriangle) <= sphere.radius * sphere.radius;
 	}
 
 	inline bool IntersectCapsuleCapsule(const CapsuleCollider& capsuleA, const CapsuleCollider& capsuleB)
@@ -189,11 +236,6 @@ namespace sf::Geometry
 		bool segmentIntersectsAABB;
 		ClosestPointsSegmentAABB(localCapsuleA, localCapsuleB, boxMin, boxMax, closestSegmentPoint, closestAABBPoint, segmentIntersectsAABB);
 		return segmentIntersectsAABB || glm::distance2(closestSegmentPoint, closestAABBPoint) <= (capsule.radius * capsule.radius);
-	}
-
-	inline bool IntersectBoxCapsule(const BoxCollider& box, const CapsuleCollider& capsule)
-	{
-		return IntersectCapsuleBox(capsule, box);
 	}
 
 	inline bool Intersect2dSegmentAARectangle(const glm::vec2& segA, const glm::vec2& segB, const glm::vec2& boxMin, const glm::vec2& boxMax)
@@ -291,5 +333,26 @@ namespace sf::Geometry
 		aRelativeToB.center = undoRotationQuatB * (boxA.center - boxB.center);
 		aRelativeToB.orientation = undoRotationQuatB * boxA.orientation;
 		return IntersectAABBAnyBoxSegment(-boxA.size * 0.5f, boxA.size * 0.5f, bRelativeToA) || IntersectAABBAnyBoxSegment(-boxB.size * 0.5f, boxB.size * 0.5f, aRelativeToB);
+	}
+
+	// Convenience functions
+	inline bool IntersectCapsuleSphere(const CapsuleCollider& capsule, const SphereCollider& sphere)
+	{
+		return IntersectSphereCapsule(sphere, capsule);
+	}
+
+	inline bool IntersectBoxSphere(const BoxCollider& box, const SphereCollider& sphere)
+	{
+		return IntersectSphereBox(sphere, box);
+	}
+
+	inline bool IntersectTriangleSphere(const glm::vec3& triangleA, const glm::vec3& triangleB, const glm::vec3& triangleC, const SphereCollider& sphere)
+	{
+		return IntersectSphereTriangle(sphere, triangleA, triangleB, triangleC);
+	}
+
+	inline bool IntersectBoxCapsule(const BoxCollider& box, const CapsuleCollider& capsule)
+	{
+		return IntersectCapsuleBox(capsule, box);
 	}
 }

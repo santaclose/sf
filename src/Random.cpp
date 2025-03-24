@@ -17,16 +17,25 @@ int sf::Random::Int(int limit)
 	return rand() % limit;
 }
 
+glm::vec2 sf::Random::UnitVec2()
+{
+	glm::vec2 unitVec;
+	float phi = sf::Random::Float() * Math::Pi * 2.0f;
+	unitVec.x = glm::cos(phi);
+	unitVec.y = glm::sin(phi);
+	return unitVec;
+}
+
 glm::vec3 sf::Random::UnitVec3()
 {
-	glm::vec3 rayDir;
+	glm::vec3 unitVec;
 	float phi = sf::Random::Float() * Math::Pi * 2.0f;
 	float costheta = sf::Random::Float() * 2.0f - 1.0f;
 	float theta = glm::acos(costheta);
-	rayDir.x = glm::sin(theta) * glm::cos(phi);
-	rayDir.y = glm::sin(theta) * glm::sin(phi);
-	rayDir.z = glm::cos(theta);
-	return rayDir;
+	unitVec.x = glm::sin(theta) * glm::cos(phi);
+	unitVec.y = glm::sin(theta) * glm::sin(phi);
+	unitVec.z = glm::cos(theta);
+	return unitVec;
 }
 
 glm::quat sf::Random::Rotation()

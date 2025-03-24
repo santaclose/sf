@@ -17,5 +17,16 @@ namespace sf
 			out.center += transform.position;
 			return out;
 		}
+		inline SphereCollider ApplyTransformInverse(const Transform& transform)
+		{
+			SphereCollider out;
+			out.center = this->center - transform.position;
+			out.center = glm::conjugate(transform.rotation) * out.center;
+			out.center = out.center / transform.scale;
+			out.radius = this->radius / transform.scale;
+			return out;
+		}
 	};
 }
+
+#define GET_WORLD_SPACE_SPHERE_COLLIDER(x) (x.GetComponent<SphereCollider>().ApplyTransform(x.GetComponent<Transform>()))

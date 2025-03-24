@@ -113,26 +113,29 @@ int main(int argc, char** argv)
 			if (base.isEntityEnabled)
 				sf::Renderer::DrawVoxelBox(voxelBox, transform);
 		}
-		auto sphereColliderRenderView = sf::Scene::activeScene->GetRegistry().view<sf::Base, sf::SphereCollider, sf::Transform>();
-		for (auto entity : sphereColliderRenderView)
+		if (sf::Renderer::IsDebugDrawEnabled())
 		{
-			auto [base, sc, transform] = sphereColliderRenderView.get<sf::Base, sf::SphereCollider, sf::Transform>(entity);
-			if (base.isEntityEnabled)
-				sf::Renderer::DebugDrawSphereCollider(sc.ApplyTransform(transform));
-		}
-		auto capsuleColliderRenderView = sf::Scene::activeScene->GetRegistry().view<sf::Base, sf::CapsuleCollider, sf::Transform>();
-		for (auto entity : capsuleColliderRenderView)
-		{
-			auto [base, sc, transform] = capsuleColliderRenderView.get<sf::Base, sf::CapsuleCollider, sf::Transform>(entity);
-			if (base.isEntityEnabled)
-				sf::Renderer::DebugDrawCapsuleCollider(sc.ApplyTransform(transform));
-		}
-		auto boxColliderRenderView = sf::Scene::activeScene->GetRegistry().view<sf::Base, sf::BoxCollider, sf::Transform>();
-		for (auto entity : boxColliderRenderView)
-		{
-			auto [base, bc, transform] = boxColliderRenderView.get<sf::Base, sf::BoxCollider, sf::Transform>(entity);
-			if (base.isEntityEnabled)
-				sf::Renderer::DebugDrawBoxCollider(bc.ApplyTransform(transform));
+			auto sphereColliderRenderView = sf::Scene::activeScene->GetRegistry().view<sf::Base, sf::SphereCollider, sf::Transform>();
+			for (auto entity : sphereColliderRenderView)
+			{
+				auto [base, sc, transform] = sphereColliderRenderView.get<sf::Base, sf::SphereCollider, sf::Transform>(entity);
+				if (base.isEntityEnabled)
+					sf::Renderer::DrawSphereCollider(sc.ApplyTransform(transform), glm::vec3(0.0f, 0.0f, 0.0f));
+			}
+			auto capsuleColliderRenderView = sf::Scene::activeScene->GetRegistry().view<sf::Base, sf::CapsuleCollider, sf::Transform>();
+			for (auto entity : capsuleColliderRenderView)
+			{
+				auto [base, sc, transform] = capsuleColliderRenderView.get<sf::Base, sf::CapsuleCollider, sf::Transform>(entity);
+				if (base.isEntityEnabled)
+					sf::Renderer::DrawCapsuleCollider(sc.ApplyTransform(transform), glm::vec3(0.0f, 0.0f, 0.0f));
+			}
+			auto boxColliderRenderView = sf::Scene::activeScene->GetRegistry().view<sf::Base, sf::BoxCollider, sf::Transform>();
+			for (auto entity : boxColliderRenderView)
+			{
+				auto [base, bc, transform] = boxColliderRenderView.get<sf::Base, sf::BoxCollider, sf::Transform>(entity);
+				if (base.isEntityEnabled)
+					sf::Renderer::DrawBoxCollider(bc.ApplyTransform(transform), glm::vec3(0.0f, 0.0f, 0.0f));
+			}
 		}
 
 		sf::Renderer::DrawLines();

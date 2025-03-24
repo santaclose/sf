@@ -3,13 +3,90 @@
 #include <Components/SphereCollider.h>
 #include <Components/CapsuleCollider.h>
 #include <Components/BoxCollider.h>
+#include <Components/MeshCollider.h>
 #include <Renderer/Renderer.h>
 #include <cassert>
 #include <glm/gtx/norm.hpp>
 
 namespace sf::Geometry
 {
-	inline glm::vec3 ClosestPointPointSegment(const glm::vec3& point, const glm::vec3& segA, const glm::vec3& segB)
+	// From https://github.com/juj/MathGeoLib/blob/master/src/Geometry/AABB.cpp#L725
+	inline bool IntersectLineAABB_CPP(
+		const glm::vec3& linePos, const glm::vec3& lineDir,
+		const glm::vec3& boxMin, const glm::vec3& boxMax,
+		float& tNear, float& tFar)
+	{
+		// lineDir must be normalized
+		assert(tNear <= tFar && "AABB::IntersectLineAABB: User gave a degenerate line as input for the intersection test!", tNear, tFar);
+		// The user should have inputted values for tNear and tFar to specify the desired subrange [tNear, tFar] of the line
+		// for this intersection test.
+		// For a Line-AABB test, pass in
+		//    tNear = -FLOAT_INF;
+		//    tFar = FLOAT_INF;
+		// For a Ray-AABB test, pass in
+		//    tNear = 0.f;
+		//    tFar = FLOAT_INF;
+		// For a LineSegment-AABB test, pass in
+		//    tNear = 0.f;
+		//    tFar = LineSegment.Length();
+
+		// Test each cardinal plane (X, Y and Z) in turn.
+		if (glm::abs(lineDir.x) < 0.0001f)
+		{
+			float recipDir = 1.0f / lineDir.x;
+			float t1 = (boxMin.x - linePos.x) * recipDir;
+			float t2 = (boxMax.x - linePos.x) * recipDir;
+
+			// tNear tracks distance to intersect (enter) the AABB.
+			// tFar tracks the distance to exit the AABB.
+			if (t1 < t2)
+				tNear = glm::max(t1, tNear), tFar = glm::min(t2, tFar);
+			else // Swap t1 and t2.
+				tNear = glm::max(t2, tNear), tFar = glm::min(t1, tFar);
+
+			if (tNear > tFar)
+				return false; // Box is missed since we "exit" before entering it.
+		}
+		else if (linePos.x < boxMin.x || linePos.x > boxMax.x)
+			return false; // The ray can't possibly enter the box, abort.
+
+		if (glm::abs(lineDir.y) < 0.0001f)
+		{
+			float recipDir = 1.0f / lineDir.y;
+			float t1 = (boxMin.y - linePos.y) * recipDir;
+			float t2 = (boxMax.y - linePos.y) * recipDir;
+
+			if (t1 < t2)
+				tNear = glm::max(t1, tNear), tFar = glm::min(t2, tFar);
+			else // Swap t1 and t2.
+				tNear = glm::max(t2, tNear), tFar = glm::min(t1, tFar);
+
+			if (tNear > tFar)
+				return false; // Box is missed since we "exit" before entering it.
+		}
+		else if (linePos.y < boxMin.y || linePos.y > boxMax.y)
+			return false; // The ray can't possibly enter the box, abort.
+
+		if (glm::abs(lineDir.z) < 0.0001f) // ray is parallel to plane in question
+		{
+			float recipDir = 1.0f / lineDir.z;
+			float t1 = (boxMin.z - linePos.z) * recipDir;
+			float t2 = (boxMax.z - linePos.z) * recipDir;
+
+			if (t1 < t2)
+				tNear = glm::max(t1, tNear), tFar = glm::min(t2, tFar);
+			else // Swap t1 and t2.
+				tNear = glm::max(t2, tNear), tFar = glm::min(t1, tFar);
+		}
+		else if (linePos.z < boxMin.z || linePos.z > boxMax.z)
+			return false; // The ray can't possibly enter the box, abort.
+
+		return tNear <= tFar;
+	}
+
+	inline glm::vec3 ClosestPointPointSegment(
+		const glm::vec3& point,
+		const glm::vec3& segA, const glm::vec3& segB)
 	{
 		glm::vec3 AB = segB - segA;
 		float t = glm::dot(point - segA, AB) / glm::dot(AB, AB);
@@ -17,91 +94,109 @@ namespace sf::Geometry
 	}
 
 	// From Fedor's answer at https://stackoverflow.com/questions/2924795/fastest-way-to-compute-point-to-triangle-distance-in-3d
-	inline glm::vec3 ClosestPointPointTriangle(const glm::vec3& p, const glm::vec3& a, const glm::vec3& b, const glm::vec3& c)
+	inline glm::vec3 ClosestPointPointTriangle(
+		const glm::vec3& point,
+		const glm::vec3& triA, const glm::vec3& triB, const glm::vec3& triC)
 	{
-		const glm::vec3 ab = b - a;
-		const glm::vec3 ac = c - a;
-		const glm::vec3 ap = p - a;
+		const glm::vec3 ab = triB - triA;
+		const glm::vec3 ac = triC - triA;
+		const glm::vec3 ap = point - triA;
 
 		// Corners
-		const float d1 = dot(ab, ap);
-		const float d2 = dot(ac, ap);
-		if (d1 <= 0.0f && d2 <= 0.0f) return a;
+		const float d1 = glm::dot(ab, ap);
+		const float d2 = glm::dot(ac, ap);
+		if (d1 <= 0.0f && d2 <= 0.0f)
+			return triA;
 
-		const glm::vec3 bp = p - b;
-		const float d3 = dot(ab, bp);
-		const float d4 = dot(ac, bp);
-		if (d3 >= 0.0f && d4 <= d3) return b;
+		const glm::vec3 bp = point - triB;
+		const float d3 = glm::dot(ab, bp);
+		const float d4 = glm::dot(ac, bp);
+		if (d3 >= 0.0f && d4 <= d3)
+			return triB;
 
-		const glm::vec3 cp = p - c;
-		const float d5 = dot(ab, cp);
-		const float d6 = dot(ac, cp);
-		if (d6 >= 0.0f && d5 <= d6) return c;
+		const glm::vec3 cp = point - triC;
+		const float d5 = glm::dot(ab, cp);
+		const float d6 = glm::dot(ac, cp);
+		if (d6 >= 0.0f && d5 <= d6)
+			return triC;
 
 		// Edges
 		const float vc = d1 * d4 - d3 * d2;
 		if (vc <= 0.0f && d1 >= 0.0f && d3 <= 0.0f)
 		{
 			const float v = d1 / (d1 - d3);
-			return a + v * ab;
+			return triA + v * ab;
 		}
 
 		const float vb = d5 * d2 - d1 * d6;
 		if (vb <= 0.0f && d2 >= 0.0f && d6 <= 0.0f)
 		{
 			const float v = d2 / (d2 - d6);
-			return a + v * ac;
+			return triA + v * ac;
 		}
 
 		const float va = d3 * d6 - d5 * d4;
 		if (va <= 0.0f && (d4 - d3) >= 0.0f && (d5 - d6) >= 0.0f)
 		{
 			const float v = (d4 - d3) / ((d4 - d3) + (d5 - d6));
-			return b + v * (c - b);
+			return triB + v * (triC - triB);
 		}
 
 		// Face
 		const float denom = 1.f / (va + vb + vc);
 		const float v = vb * denom;
 		const float w = vc * denom;
-		return a + v * ab + w * ac;
+		return triA + v * ab + w * ac;
+	}
+
+	inline glm::vec3 ClosestPointPointAABB(
+		const glm::vec3& point,
+		const glm::vec3& boxMin, const glm::vec3& boxMax)
+	{
+		return glm::vec3(
+			glm::clamp(point.x, boxMin.x, boxMax.x),
+			glm::clamp(point.y, boxMin.y, boxMax.y),
+			glm::clamp(point.z, boxMin.z, boxMax.z));
+	}
+
+	inline glm::vec3 ClosestPointPointBox(
+		const glm::vec3& point,
+		const BoxCollider& box)
+	{
+		glm::quat undoRotationQuat = glm::conjugate(box.orientation);
+		glm::vec3 localPoint = undoRotationQuat * (point - box.center);
+		return box.orientation * glm::clamp(localPoint, -box.size * 0.5f, box.size * 0.5f);
 	}
 
 	inline void ClosestPointsSegmentSegment(
 		const glm::vec3& seg0A, const glm::vec3& seg0B,
-		const glm::vec3& seg1A, const glm::vec3& seg1B, glm::vec3& out0, glm::vec3& out1)
+		const glm::vec3& seg1A, const glm::vec3& seg1B,
+		glm::vec3& out0, glm::vec3& out1)
 	{
-#define segA seg0A
-#define segB seg0B
-#define segC seg1A
-#define segD seg1B
-		glm::vec3 segDC = segD - segC; float lineDirSqrMag = glm::dot(segDC, segDC);
-		glm::vec3 inPlaneA = segA - ((glm::dot(segA - segC, segDC) / lineDirSqrMag) * segDC);
-		glm::vec3 inPlaneB = segB - ((glm::dot(segB - segC, segDC) / lineDirSqrMag) * segDC);
+		glm::vec3 seg1 = seg1B - seg1A;
+		float lineDirSqrMag = glm::dot(seg1, seg1);
+		glm::vec3 inPlaneA = seg0A - ((glm::dot(seg0A - seg1A, seg1) / lineDirSqrMag) * seg1);
+		glm::vec3 inPlaneB = seg0B - ((glm::dot(seg0B - seg1A, seg1) / lineDirSqrMag) * seg1);
 		glm::vec3 inPlaneBA = inPlaneB - inPlaneA;
-		float t = glm::dot(segC - inPlaneA, inPlaneBA) / glm::dot(inPlaneBA, inPlaneBA);
+		float t = glm::dot(seg1A - inPlaneA, inPlaneBA) / glm::dot(inPlaneBA, inPlaneBA);
 		t = (inPlaneA != inPlaneB) ? t : 0.0f; // Zero's t if parallel
-		glm::vec3 AB = segB - segA;
-		glm::vec3 segABtoLineCD = segA + glm::clamp(t, 0.0f, 1.0f) * AB;
+		glm::vec3 AB = seg0B - seg0A;
+		glm::vec3 seg0toLine1 = seg0A + glm::clamp(t, 0.0f, 1.0f) * AB;
 		{
-			glm::vec3 ba = segD - segC; t = glm::dot(segABtoLineCD - segC, ba) / glm::dot(ba, ba);
-			out1 = segC + glm::clamp(t, 0.0f, 1.0f) * ba;
+			glm::vec3 ba = seg1B - seg1A; t = glm::dot(seg0toLine1 - seg1A, ba) / glm::dot(ba, ba);
+			out1 = seg1A + glm::clamp(t, 0.0f, 1.0f) * ba;
 		}
 		{
-			glm::vec3 ba = segB - segA; t = glm::dot(out1 - segA, ba) / glm::dot(ba, ba);
-			out0 = segA + glm::clamp(t, 0.0f, 1.0f) * ba;
+			glm::vec3 ba = seg0B - seg0A; t = glm::dot(out1 - seg0A, ba) / glm::dot(ba, ba);
+			out0 = seg0A + glm::clamp(t, 0.0f, 1.0f) * ba;
 		}
-#undef segA
-#undef segB
-#undef segC
-#undef segD
 	}
 
-	void ClosestPointsSegmentAABB(
+	inline void ClosestPointsSegmentAABB(
 		const glm::vec3& segA, const glm::vec3& segB,
 		const glm::vec3& boxMin, const glm::vec3& boxMax,
 		glm::vec3& outSegment, glm::vec3& outAABB, bool& intersects)
-	{
+	{		
 		// segA is closer to inner face
 		if (
 			(segA.x > boxMax.x && segA.y >= boxMin.y && segA.y <= boxMax.y && segA.z >= boxMin.z && segA.z <= boxMax.z && (segB.x - segA.x) > 0.0f) ||
@@ -185,6 +280,102 @@ namespace sf::Geometry
 		}
 	}
 
+	inline void ClosestPointsSegmentTriangle(
+		const glm::vec3& segA, const glm::vec3& segB,
+		const glm::vec3& triA, const glm::vec3& triB, const glm::vec3& triC,
+		glm::vec3& outSeg, glm::vec3& outTri)
+	{
+		glm::vec3 trianglePlaneNormal = glm::cross(triB - triA, triC - triB);
+		glm::vec3 edgePerpA = glm::cross(trianglePlaneNormal, triB - triA);
+		glm::vec3 edgePerpB = glm::cross(trianglePlaneNormal, triC - triB);
+		glm::vec3 edgePerpC = glm::cross(trianglePlaneNormal, triA - triC);
+		bool segAFallsOnFace = glm::dot(edgePerpA, segA - triA) >= 0.0f && glm::dot(edgePerpB, segA - triB) >= 0.0f && glm::dot(edgePerpC, segA - triC) >= 0.0f;
+		bool segBFallsOnFace = glm::dot(edgePerpA, segB - triA) >= 0.0f && glm::dot(edgePerpB, segB - triB) >= 0.0f && glm::dot(edgePerpC, segB - triC) >= 0.0f;
+		glm::vec3 segAOnFace, segBOnFace;
+		if (segAFallsOnFace || segBFallsOnFace)
+			trianglePlaneNormal = glm::normalize(trianglePlaneNormal);
+		if (segAFallsOnFace)
+			segAOnFace = segA - trianglePlaneNormal * glm::dot(segA - triA, trianglePlaneNormal);
+		if (segBFallsOnFace)
+			segBOnFace = segB - trianglePlaneNormal * glm::dot(segB - triA, trianglePlaneNormal);
+
+		glm::vec3 closestInEdges[6];
+		ClosestPointsSegmentSegment(segA, segB, triA, triB, closestInEdges[0], closestInEdges[1]);
+		ClosestPointsSegmentSegment(segA, segB, triB, triC, closestInEdges[2], closestInEdges[3]);
+		ClosestPointsSegmentSegment(segA, segB, triC, triA, closestInEdges[4], closestInEdges[5]);
+
+		float minDist2 = glm::distance2(closestInEdges[0], closestInEdges[1]);
+		const glm::vec3* posSeg = &closestInEdges[0];
+		const glm::vec3* posTri = &closestInEdges[1];
+		for (int i = 2; i < 6; i += 2)
+		{
+			float dist2 = glm::distance2(closestInEdges[i], closestInEdges[i + 1]);
+			if (dist2 < minDist2)
+			{
+				minDist2 = dist2;
+				posSeg = &closestInEdges[i];
+				posTri = &closestInEdges[i + 1];
+			}
+		}
+
+		if (segAFallsOnFace)
+		{
+			float dist2 = glm::distance2(segAOnFace, segA);
+			if (dist2 < minDist2)
+			{
+				minDist2 = dist2;
+				posSeg = &segA;
+				posTri = &segAOnFace;
+			}
+		}
+
+		if (segBFallsOnFace)
+		{
+			float dist2 = glm::distance2(segBOnFace, segB);
+			if (dist2 < minDist2)
+			{
+				minDist2 = dist2;
+				posSeg = &segB;
+				posTri = &segBOnFace;
+			}
+		}
+		outSeg = *posSeg;
+		outTri = *posTri;
+	}
+
+	inline bool IntersectPlaneSegment(
+		const glm::vec3& planePoint, const glm::vec3& planeNormal,
+		const glm::vec3& segA, const glm::vec3& segB,
+		glm::vec3& out)
+	{
+		glm::vec3 segDisp = segB - segA;
+		float ratio = glm::dot(planePoint - segA, planeNormal) / glm::dot(segDisp, planeNormal);
+		out = segA + segDisp * ratio;
+		return ratio >= 0.0f && ratio <= 1.0f;
+	}
+
+	inline bool IntersectTriangleSegment(
+		const glm::vec3& triA, const glm::vec3& triB, const glm::vec3& triC,
+		const glm::vec3& segA, const glm::vec3& segB,
+		glm::vec3& out)
+	{
+		glm::vec3 normal = glm::cross(triB - triA, triC - triB);
+		bool planeIntersects = IntersectPlaneSegment(triA, normal, segA, segB, out);
+		return planeIntersects &&
+			glm::dot(out - triA, glm::cross(normal, triB - triA)) > 0.0f &&
+			glm::dot(out - triB, glm::cross(normal, triC - triB)) > 0.0f &&
+			glm::dot(out - triC, glm::cross(normal, triA - triC)) > 0.0f;
+	}
+
+	inline bool IntersectAABBSegment(
+		const glm::vec3& boxMin, const glm::vec3& boxMax,
+		const glm::vec3& segA, const glm::vec3& segB)
+	{
+		float segLength = glm::length(segB - segA);
+		float tNear = 0.0f;
+		return IntersectLineAABB_CPP(segA, (segB - segA) / segLength, boxMin, boxMax, tNear, segLength);
+	}
+
 	inline bool IntersectSphereSphere(const SphereCollider& sphereA, const SphereCollider& sphereB)
 	{
 		assert(sphereA.radius >= 0.0f && sphereB.radius >= 0.0f);
@@ -206,17 +397,21 @@ namespace sf::Geometry
 		glm::quat undoRotationQuat = glm::conjugate(box.orientation);
 		glm::vec3 localSphereCenter = undoRotationQuat * (sphere.center - box.center);
 		glm::vec3 clampedPoint = glm::clamp(localSphereCenter, -box.size * 0.5f, box.size * 0.5f);
-		return glm::distance2(localSphereCenter, clampedPoint) <= sphere.radius * sphere.radius;
+		return glm::distance2(localSphereCenter, clampedPoint) < sphere.radius * sphere.radius;
 	}
 
-	inline bool IntersectSphereTriangle(const SphereCollider& sphere, const glm::vec3& triangleA, const glm::vec3& triangleB, const glm::vec3& triangleC)
+	inline bool IntersectSphereTriangle(
+		const SphereCollider& sphere,
+		const glm::vec3& triA, const glm::vec3& triB, const glm::vec3& triC)
 	{
-		glm::vec3 closestPointInTriangle = ClosestPointPointTriangle(sphere.center, triangleA, triangleB, triangleC);
+		assert(sphere.radius >= 0.0f);
+		glm::vec3 closestPointInTriangle = ClosestPointPointTriangle(sphere.center, triA, triB, triC);
 		return glm::distance2(sphere.center, closestPointInTriangle) <= sphere.radius * sphere.radius;
 	}
 
 	inline bool IntersectCapsuleCapsule(const CapsuleCollider& capsuleA, const CapsuleCollider& capsuleB)
 	{
+		assert(capsuleA.radius >= 0.0f && capsuleB.radius >= 0.0f);
 		glm::vec3 a, b;
 		ClosestPointsSegmentSegment(capsuleA.centerA, capsuleA.centerB, capsuleB.centerA, capsuleB.centerB, a, b);
 		float radiusSum = capsuleA.radius + capsuleB.radius;
@@ -225,6 +420,7 @@ namespace sf::Geometry
 
 	inline bool IntersectCapsuleBox(const CapsuleCollider& capsule, const BoxCollider& box)
 	{
+		assert(capsule.radius >= 0.0f && box.size.x >= 0.0f && box.size.y >= 0.0f && box.size.z >= 0.0f);
 		glm::quat undoRotationQuat = glm::conjugate(box.orientation);
 		glm::vec3 localCapsuleA = undoRotationQuat * (capsule.centerA - box.center);
 		glm::vec3 localCapsuleB = undoRotationQuat * (capsule.centerB - box.center);
@@ -236,6 +432,16 @@ namespace sf::Geometry
 		bool segmentIntersectsAABB;
 		ClosestPointsSegmentAABB(localCapsuleA, localCapsuleB, boxMin, boxMax, closestSegmentPoint, closestAABBPoint, segmentIntersectsAABB);
 		return segmentIntersectsAABB || glm::distance2(closestSegmentPoint, closestAABBPoint) <= (capsule.radius * capsule.radius);
+	}
+
+	inline bool IntersectCapsuleTriangle(
+		const CapsuleCollider& capsule,
+		const glm::vec3& triA, const glm::vec3& triB, const glm::vec3& triC)
+	{
+		assert(capsule.radius >= 0.0f);
+		glm::vec3 a, b;
+		ClosestPointsSegmentTriangle(capsule.centerA, capsule.centerB, triA, triB, triC, a, b);
+		return glm::distance2(a, b) < capsule.radius * capsule.radius;
 	}
 
 	inline bool Intersect2dSegmentAARectangle(const glm::vec2& segA, const glm::vec2& segB, const glm::vec2& boxMin, const glm::vec2& boxMax)
@@ -323,7 +529,6 @@ namespace sf::Geometry
 		// and IntersectAABBAnyBoxSegment will be false
 		glm::quat undoRotationQuatA = glm::conjugate(boxA.orientation);
 		glm::quat undoRotationQuatB = glm::conjugate(boxB.orientation);
-
 		BoxCollider bRelativeToA;
 		bRelativeToA.size = boxB.size;
 		bRelativeToA.center = undoRotationQuatA * (boxB.center - boxA.center);
@@ -333,6 +538,123 @@ namespace sf::Geometry
 		aRelativeToB.center = undoRotationQuatB * (boxA.center - boxB.center);
 		aRelativeToB.orientation = undoRotationQuatB * boxA.orientation;
 		return IntersectAABBAnyBoxSegment(-boxA.size * 0.5f, boxA.size * 0.5f, bRelativeToA) || IntersectAABBAnyBoxSegment(-boxB.size * 0.5f, boxB.size * 0.5f, aRelativeToB);
+	}
+
+	inline bool IntersectBoxTriangle(
+		const BoxCollider& box,
+		const glm::vec3& triA, const glm::vec3& triB, const glm::vec3& triC)
+	{
+		glm::quat undoRotationQuat = glm::conjugate(box.orientation);
+		glm::vec3 localTriA = undoRotationQuat * (triA - box.center);
+		glm::vec3 localTriB = undoRotationQuat * (triB - box.center);
+		glm::vec3 localTriC = undoRotationQuat * (triC - box.center);
+
+		glm::vec3 boxMin = -box.size * 0.5f;
+		glm::vec3 boxMax = box.size * 0.5f;
+		if ((localTriA.x < boxMax.x && localTriA.x > boxMin.x &&
+				localTriA.y < boxMax.y && localTriA.y > boxMin.y &&
+				localTriA.z < boxMax.z && localTriA.z > boxMin.z) ||
+			(localTriB.x < boxMax.x && localTriB.x > boxMin.x &&
+				localTriB.y < boxMax.y && localTriB.y > boxMin.y &&
+				localTriB.z < boxMax.z && localTriB.z > boxMin.z) ||
+			(localTriC.x < boxMax.x && localTriC.x > boxMin.x &&
+				localTriC.y < boxMax.y && localTriC.y > boxMin.y &&
+				localTriC.z < boxMax.z && localTriC.z > boxMin.z))
+			return true;
+
+		glm::vec3 unused;
+		if (IntersectTriangleSegment(localTriA, localTriB, localTriC, glm::vec3(boxMin.x, boxMin.y, boxMin.z), glm::vec3(boxMin.x, boxMin.y, boxMax.z), unused) ||
+			IntersectTriangleSegment(localTriA, localTriB, localTriC, glm::vec3(boxMin.x, boxMin.y, boxMax.z), glm::vec3(boxMax.x, boxMin.y, boxMax.z), unused) ||
+			IntersectTriangleSegment(localTriA, localTriB, localTriC, glm::vec3(boxMax.x, boxMin.y, boxMax.z), glm::vec3(boxMax.x, boxMin.y, boxMin.z), unused) ||
+			IntersectTriangleSegment(localTriA, localTriB, localTriC, glm::vec3(boxMax.x, boxMin.y, boxMin.z), glm::vec3(boxMin.x, boxMin.y, boxMin.z), unused) ||
+			IntersectTriangleSegment(localTriA, localTriB, localTriC, glm::vec3(boxMin.x, boxMax.y, boxMin.z), glm::vec3(boxMin.x, boxMax.y, boxMax.z), unused) ||
+			IntersectTriangleSegment(localTriA, localTriB, localTriC, glm::vec3(boxMin.x, boxMax.y, boxMax.z), glm::vec3(boxMax.x, boxMax.y, boxMax.z), unused) ||
+			IntersectTriangleSegment(localTriA, localTriB, localTriC, glm::vec3(boxMax.x, boxMax.y, boxMax.z), glm::vec3(boxMax.x, boxMax.y, boxMin.z), unused) ||
+			IntersectTriangleSegment(localTriA, localTriB, localTriC, glm::vec3(boxMax.x, boxMax.y, boxMin.z), glm::vec3(boxMin.x, boxMax.y, boxMin.z), unused) ||
+			IntersectTriangleSegment(localTriA, localTriB, localTriC, glm::vec3(boxMin.x, boxMin.y, boxMin.z), glm::vec3(boxMin.x, boxMax.y, boxMin.z), unused) ||
+			IntersectTriangleSegment(localTriA, localTriB, localTriC, glm::vec3(boxMin.x, boxMin.y, boxMax.z), glm::vec3(boxMin.x, boxMax.y, boxMax.z), unused) ||
+			IntersectTriangleSegment(localTriA, localTriB, localTriC, glm::vec3(boxMax.x, boxMin.y, boxMax.z), glm::vec3(boxMax.x, boxMax.y, boxMax.z), unused) ||
+			IntersectTriangleSegment(localTriA, localTriB, localTriC, glm::vec3(boxMax.x, boxMin.y, boxMin.z), glm::vec3(boxMax.x, boxMax.y, boxMin.z), unused))
+			return true;
+
+		if (IntersectAABBSegment(boxMin, boxMax, localTriA, localTriB) ||
+			IntersectAABBSegment(boxMin, boxMax, localTriB, localTriC) ||
+			IntersectAABBSegment(boxMin, boxMax, localTriC, localTriA))
+			return true;
+		return false;
+	}
+
+	inline bool IntersectTriangleTriangle(
+		const glm::vec3& tri0A, const glm::vec3& tri0B, const glm::vec3& tri0C,
+		const glm::vec3& tri1A, const glm::vec3& tri1B, const glm::vec3& tri1C)
+	{
+		glm::vec3 unused;
+		return
+			IntersectTriangleSegment(tri0A, tri0B, tri0C, tri1A, tri1B, unused) ||
+			IntersectTriangleSegment(tri0A, tri0B, tri0C, tri1B, tri1C, unused) ||
+			IntersectTriangleSegment(tri0A, tri0B, tri0C, tri1C, tri1A, unused);
+	}
+
+	// for mesh intersects, the other collider must be in mesh local space
+	inline bool IntersectSphereMesh(const SphereCollider& sphere, const MeshCollider& meshCollider)
+	{
+		SphereCollider optimizationSphereCollider;
+		optimizationSphereCollider.center = { 0.0f, 0.0f, 0.0f };
+		optimizationSphereCollider.radius = meshCollider.boundingSphereRadius;
+		if (!IntersectSphereSphere(optimizationSphereCollider, sphere))
+			return false;
+
+		uint32_t j;
+		const MeshData* meshData = meshCollider.meshData;
+		for (j = 0; j < meshData->indexVector.size(); j += 3)
+		{
+			const glm::vec3* a = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, MeshData::Position, meshData->indexVector[j + 0]);
+			const glm::vec3* b = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, MeshData::Position, meshData->indexVector[j + 1]);
+			const glm::vec3* c = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, MeshData::Position, meshData->indexVector[j + 2]);
+			if (Geometry::IntersectSphereTriangle(sphere, *a, *b, *c))
+				break;
+		}
+		return j < meshData->indexVector.size();
+	}
+	inline bool IntersectCapsuleMesh(const CapsuleCollider& capsule, const MeshCollider& meshCollider)
+	{
+		SphereCollider optimizationSphereCollider;
+		optimizationSphereCollider.center = { 0.0f, 0.0f, 0.0f };
+		optimizationSphereCollider.radius = meshCollider.boundingSphereRadius;
+		if (!IntersectSphereCapsule(optimizationSphereCollider, capsule))
+			return false;
+
+		uint32_t j;
+		const MeshData* meshData = meshCollider.meshData;
+		for (j = 0; j < meshData->indexVector.size(); j += 3)
+		{
+			const glm::vec3* a = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, MeshData::Position, meshData->indexVector[j + 0]);
+			const glm::vec3* b = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, MeshData::Position, meshData->indexVector[j + 1]);
+			const glm::vec3* c = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, MeshData::Position, meshData->indexVector[j + 2]);
+			if (Geometry::IntersectCapsuleTriangle(capsule, *a, *b, *c))
+				break;
+		}
+		return j < meshData->indexVector.size();
+	}
+	inline bool IntersectBoxMesh(const BoxCollider& box, const MeshCollider& meshCollider)
+	{
+		SphereCollider optimizationSphereCollider;
+		optimizationSphereCollider.center = { 0.0f, 0.0f, 0.0f };
+		optimizationSphereCollider.radius = meshCollider.boundingSphereRadius;
+		if (!IntersectSphereBox(optimizationSphereCollider, box))
+			return false;
+
+		uint32_t j;
+		const MeshData* meshData = meshCollider.meshData;
+		for (j = 0; j < meshData->indexVector.size(); j += 3)
+		{
+			const glm::vec3* a = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, MeshData::Position, meshData->indexVector[j + 0]);
+			const glm::vec3* b = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, MeshData::Position, meshData->indexVector[j + 1]);
+			const glm::vec3* c = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, MeshData::Position, meshData->indexVector[j + 2]);
+			if (Geometry::IntersectBoxTriangle(box, *a, *b, *c))
+				break;
+		}
+		return j < meshData->indexVector.size();
 	}
 
 	// Convenience functions
@@ -346,13 +668,36 @@ namespace sf::Geometry
 		return IntersectSphereBox(sphere, box);
 	}
 
-	inline bool IntersectTriangleSphere(const glm::vec3& triangleA, const glm::vec3& triangleB, const glm::vec3& triangleC, const SphereCollider& sphere)
+	inline bool IntersectTriangleSphere(const glm::vec3& triA, const glm::vec3& triB, const glm::vec3& triC, const SphereCollider& sphere)
 	{
-		return IntersectSphereTriangle(sphere, triangleA, triangleB, triangleC);
+		return IntersectSphereTriangle(sphere, triA, triB, triC);
 	}
 
 	inline bool IntersectBoxCapsule(const BoxCollider& box, const CapsuleCollider& capsule)
 	{
 		return IntersectCapsuleBox(capsule, box);
+	}
+
+	inline bool IntersectTriangleCapsule(const glm::vec3& triA, const glm::vec3& triB, const glm::vec3& triC, const CapsuleCollider& capsule)
+	{
+		return IntersectCapsuleTriangle(capsule, triA, triB, triC);
+	}
+
+	inline bool IntersectTriangleBox(const glm::vec3& triA, const glm::vec3& triB, const glm::vec3& triC, const BoxCollider& box)
+	{
+		return IntersectBoxTriangle(box, triA, triB, triC);
+	}
+
+	inline bool IntersectMeshSphere(const MeshCollider& meshCollider, const SphereCollider& sphere)
+	{
+		return IntersectSphereMesh(sphere, meshCollider);
+	}
+	inline bool IntersectMeshCapsule(const MeshCollider& meshCollider, const CapsuleCollider& capsule)
+	{
+		return IntersectCapsuleMesh(capsule, meshCollider);
+	}
+	inline bool IntersectMeshBox(const MeshCollider& meshCollider, const BoxCollider& box)
+	{
+		return IntersectBoxMesh(box, meshCollider);
 	}
 }

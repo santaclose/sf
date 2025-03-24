@@ -52,12 +52,13 @@ namespace sf::Renderer {
 
 
 	void SetDebugDrawEnabled(bool value);
+	bool IsDebugDrawEnabled();
 	void DebugDrawSkeleton(SkinnedMesh& mesh, Transform& transform);
 
 	void DrawVoxelBox(VoxelBox& voxelBox, Transform& transform);
-	void DebugDrawSphereCollider(const SphereCollider& sc);
-	void DebugDrawCapsuleCollider(const CapsuleCollider& sc);
-	void DebugDrawBoxCollider(const BoxCollider& sc);
+	void DrawSphereCollider(const SphereCollider& sc, const glm::vec3& color);
+	void DrawCapsuleCollider(const CapsuleCollider& cc, const glm::vec3& color);
+	void DrawBoxCollider(const BoxCollider& bc, const glm::vec3& color);
 	void DrawLines();
 
 	void Terminate();

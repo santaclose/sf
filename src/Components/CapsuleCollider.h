@@ -21,5 +21,20 @@ namespace sf
 			out.centerB += transform.position;
 			return out;
 		}
+		inline CapsuleCollider ApplyTransformInverse(const Transform& transform)
+		{
+			CapsuleCollider out;
+			glm::quat conj = glm::conjugate(transform.rotation);
+			out.centerA = this->centerA - transform.position;
+			out.centerB = this->centerB - transform.position;
+			out.centerA = conj * out.centerA;
+			out.centerB = conj * out.centerB;
+			out.centerA = out.centerA / transform.scale;
+			out.centerB = out.centerB / transform.scale;
+			out.radius = this->radius / transform.scale;
+			return out;
+		}
 	};
 }
+
+#define GET_WORLD_SPACE_CAPSULE_COLLIDER(x) (x.GetComponent<CapsuleCollider>().ApplyTransform(x.GetComponent<Transform>()))

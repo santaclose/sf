@@ -138,6 +138,7 @@ namespace sf::Renderer
 	uint32_t drawLineVBO, drawLineVAO;
 
 	bool debugDrawEnabled = false;
+	glm::vec3 debugDrawColor = { 0.0f, 0.0f, 0.0f };
 
 	void CreateMeshMaterialSlots(int id, const sf::MeshData* mesh)
 	{
@@ -893,6 +894,11 @@ void sf::Renderer::SetDebugDrawEnabled(bool value)
 	debugDrawEnabled = value;
 }
 
+bool sf::Renderer::IsDebugDrawEnabled()
+{
+	return debugDrawEnabled;
+}
+
 void sf::Renderer::DebugDrawSkeleton(SkinnedMesh& mesh, Transform& transform)
 {
 	if (!debugDrawEnabled)
@@ -922,46 +928,40 @@ void sf::Renderer::DebugDrawSkeleton(SkinnedMesh& mesh, Transform& transform)
 	}
 }
 
-void sf::Renderer::DebugDrawSphereCollider(const SphereCollider& sc)
+void sf::Renderer::DrawSphereCollider(const SphereCollider& sc, const glm::vec3& color)
 {
-	if (!debugDrawEnabled)
-		return;
-	AddLine(sc.center + glm::vec3(sc.radius, 0.0f, 0.0f), sc.center - glm::vec3(sc.radius, 0.0f, 0.0f), glm::vec3(0.0f));
-	AddLine(sc.center + glm::vec3(0.0f, sc.radius, 0.0f), sc.center - glm::vec3(0.0f, sc.radius, 0.0f), glm::vec3(0.0f));
-	AddLine(sc.center + glm::vec3(0.0f, 0.0f, sc.radius), sc.center - glm::vec3(0.0f, 0.0f, sc.radius), glm::vec3(0.0f));
+	AddLine(sc.center + glm::vec3(sc.radius, 0.0f, 0.0f), sc.center - glm::vec3(sc.radius, 0.0f, 0.0f), color);
+	AddLine(sc.center + glm::vec3(0.0f, sc.radius, 0.0f), sc.center - glm::vec3(0.0f, sc.radius, 0.0f), color);
+	AddLine(sc.center + glm::vec3(0.0f, 0.0f, sc.radius), sc.center - glm::vec3(0.0f, 0.0f, sc.radius), color);
 }
 
-void sf::Renderer::DebugDrawCapsuleCollider(const CapsuleCollider & cc)
+void sf::Renderer::DrawCapsuleCollider(const CapsuleCollider& cc, const glm::vec3& color)
 {
-	if (!debugDrawEnabled)
-		return;
-	AddLine(cc.centerA + glm::vec3(cc.radius, 0.0f, 0.0f), cc.centerA - glm::vec3(cc.radius, 0.0f, 0.0f), glm::vec3(0.0f));
-	AddLine(cc.centerA + glm::vec3(0.0f, cc.radius, 0.0f), cc.centerA - glm::vec3(0.0f, cc.radius, 0.0f), glm::vec3(0.0f));
-	AddLine(cc.centerA + glm::vec3(0.0f, 0.0f, cc.radius), cc.centerA - glm::vec3(0.0f, 0.0f, cc.radius), glm::vec3(0.0f));
-	AddLine(cc.centerB + glm::vec3(cc.radius, 0.0f, 0.0f), cc.centerB - glm::vec3(cc.radius, 0.0f, 0.0f), glm::vec3(0.0f));
-	AddLine(cc.centerB + glm::vec3(0.0f, cc.radius, 0.0f), cc.centerB - glm::vec3(0.0f, cc.radius, 0.0f), glm::vec3(0.0f));
-	AddLine(cc.centerB + glm::vec3(0.0f, 0.0f, cc.radius), cc.centerB - glm::vec3(0.0f, 0.0f, cc.radius), glm::vec3(0.0f));
-	AddLine(cc.centerA, cc.centerB, glm::vec3(0.0f));
+	AddLine(cc.centerA + glm::vec3(cc.radius, 0.0f, 0.0f), cc.centerA - glm::vec3(cc.radius, 0.0f, 0.0f), color);
+	AddLine(cc.centerA + glm::vec3(0.0f, cc.radius, 0.0f), cc.centerA - glm::vec3(0.0f, cc.radius, 0.0f), color);
+	AddLine(cc.centerA + glm::vec3(0.0f, 0.0f, cc.radius), cc.centerA - glm::vec3(0.0f, 0.0f, cc.radius), color);
+	AddLine(cc.centerB + glm::vec3(cc.radius, 0.0f, 0.0f), cc.centerB - glm::vec3(cc.radius, 0.0f, 0.0f), color);
+	AddLine(cc.centerB + glm::vec3(0.0f, cc.radius, 0.0f), cc.centerB - glm::vec3(0.0f, cc.radius, 0.0f), color);
+	AddLine(cc.centerB + glm::vec3(0.0f, 0.0f, cc.radius), cc.centerB - glm::vec3(0.0f, 0.0f, cc.radius), color);
+	AddLine(cc.centerA, cc.centerB, color);
 }
 
-void sf::Renderer::DebugDrawBoxCollider(const BoxCollider & bc)
+void sf::Renderer::DrawBoxCollider(const BoxCollider& bc, const glm::vec3& color)
 {
-	if (!debugDrawEnabled)
-		return;
-	AddLine(bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, -bc.size.y * 0.5f, -bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, -bc.size.y * 0.5f, +bc.size.z * 0.5f), glm::vec3(0.0f));
-	AddLine(bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, -bc.size.y * 0.5f, +bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, -bc.size.y * 0.5f, +bc.size.z * 0.5f), glm::vec3(0.0f));
-	AddLine(bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, -bc.size.y * 0.5f, +bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, -bc.size.y * 0.5f, -bc.size.z * 0.5f), glm::vec3(0.0f));
-	AddLine(bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, -bc.size.y * 0.5f, -bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, -bc.size.y * 0.5f, -bc.size.z * 0.5f), glm::vec3(0.0f));
+	AddLine(bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, -bc.size.y * 0.5f, -bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, -bc.size.y * 0.5f, +bc.size.z * 0.5f), color);
+	AddLine(bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, -bc.size.y * 0.5f, +bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, -bc.size.y * 0.5f, +bc.size.z * 0.5f), color);
+	AddLine(bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, -bc.size.y * 0.5f, +bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, -bc.size.y * 0.5f, -bc.size.z * 0.5f), color);
+	AddLine(bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, -bc.size.y * 0.5f, -bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, -bc.size.y * 0.5f, -bc.size.z * 0.5f), color);
 
-	AddLine(bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, +bc.size.y * 0.5f, -bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, +bc.size.y * 0.5f, +bc.size.z * 0.5f), glm::vec3(0.0f));
-	AddLine(bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, +bc.size.y * 0.5f, +bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, +bc.size.y * 0.5f, +bc.size.z * 0.5f), glm::vec3(0.0f));
-	AddLine(bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, +bc.size.y * 0.5f, +bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, +bc.size.y * 0.5f, -bc.size.z * 0.5f), glm::vec3(0.0f));
-	AddLine(bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, +bc.size.y * 0.5f, -bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, +bc.size.y * 0.5f, -bc.size.z * 0.5f), glm::vec3(0.0f));
+	AddLine(bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, +bc.size.y * 0.5f, -bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, +bc.size.y * 0.5f, +bc.size.z * 0.5f), color);
+	AddLine(bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, +bc.size.y * 0.5f, +bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, +bc.size.y * 0.5f, +bc.size.z * 0.5f), color);
+	AddLine(bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, +bc.size.y * 0.5f, +bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, +bc.size.y * 0.5f, -bc.size.z * 0.5f), color);
+	AddLine(bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, +bc.size.y * 0.5f, -bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, +bc.size.y * 0.5f, -bc.size.z * 0.5f), color);
 
-	AddLine(bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, -bc.size.y * 0.5f, -bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, +bc.size.y * 0.5f, -bc.size.z * 0.5f), glm::vec3(0.0f));
-	AddLine(bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, -bc.size.y * 0.5f, +bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, +bc.size.y * 0.5f, +bc.size.z * 0.5f), glm::vec3(0.0f));
-	AddLine(bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, -bc.size.y * 0.5f, +bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, +bc.size.y * 0.5f, +bc.size.z * 0.5f), glm::vec3(0.0f));
-	AddLine(bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, -bc.size.y * 0.5f, -bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, +bc.size.y * 0.5f, -bc.size.z * 0.5f), glm::vec3(0.0f));
+	AddLine(bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, -bc.size.y * 0.5f, -bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, +bc.size.y * 0.5f, -bc.size.z * 0.5f), color);
+	AddLine(bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, -bc.size.y * 0.5f, +bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, +bc.size.y * 0.5f, +bc.size.z * 0.5f), color);
+	AddLine(bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, -bc.size.y * 0.5f, +bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, +bc.size.y * 0.5f, +bc.size.z * 0.5f), color);
+	AddLine(bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, -bc.size.y * 0.5f, -bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, +bc.size.y * 0.5f, -bc.size.z * 0.5f), color);
 }
 
 void sf::Renderer::DrawLines()

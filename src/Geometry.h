@@ -701,3 +701,20 @@ namespace sf::Geometry
 		return IntersectBoxMesh(box, meshCollider);
 	}
 }
+
+#define WORLD_SPACE_SPHERE_COLLIDER(x) (x.GetComponent<SphereCollider>().ApplyTransform(x.GetComponent<Transform>()))
+#define WORLD_SPACE_CAPSULE_COLLIDER(x) (x.GetComponent<CapsuleCollider>().ApplyTransform(x.GetComponent<Transform>()))
+#define WORLD_SPACE_BOX_COLLIDER(x) (x.GetComponent<BoxCollider>().ApplyTransform(x.GetComponent<Transform>()))
+
+#define INTERSECT_MESH_SPHERE(meshEntity, sphereEntity) Geometry::IntersectSphereMesh( \
+	sphereEntity.GetComponent<SphereCollider>().ApplyTransform(sphereEntity.GetComponent<Transform>()).ApplyTransformInverse(meshEntity.GetComponent<Transform>()), \
+	meshEntity.GetComponent<MeshCollider>())
+#define INTERSECT_SPHERE_MESH(sphereEntity, meshEntity) INTERSECT_MESH_SPHERE(meshEntity, sphereEntity)
+#define INTERSECT_MESH_CAPSULE(meshEntity, capsuleEntity) Geometry::IntersectCapsuleMesh( \
+	capsuleEntity.GetComponent<CapsuleCollider>().ApplyTransform(capsuleEntity.GetComponent<Transform>()).ApplyTransformInverse(meshEntity.GetComponent<Transform>()), \
+	meshEntity.GetComponent<MeshCollider>())
+#define INTERSECT_CAPSULE_MESH(capsuleEntity, meshEntity) INTERSECT_MESH_CAPSULE(meshEntity, capsuleEntity)
+#define INTERSECT_MESH_BOX(meshEntity, boxEntity) Geometry::IntersectBoxMesh( \
+	boxEntity.GetComponent<BoxCollider>().ApplyTransform(boxEntity.GetComponent<Transform>()).ApplyTransformInverse(meshEntity.GetComponent<Transform>()), \
+	meshEntity.GetComponent<MeshCollider>())
+#define INTERSECT_BOX_MESH(boxEntity, meshEntity) INTERSECT_MESH_BOX(meshEntity, boxEntity)

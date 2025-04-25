@@ -625,11 +625,11 @@ namespace sf
 		}
 		case TestCase::SphereSphereIntersection:
 		{
-			SphereCollider fixedSc = GET_WORLD_SPACE_SPHERE_COLLIDER(spheres[0]);
+			SphereCollider fixedSc = WORLD_SPACE_SPHERE_COLLIDER(spheres[0]);
 			Renderer::DrawSphereCollider(fixedSc, COLOR_BLUE);
 			for (int i = 0; i < testCount; i++)
 			{
-				SphereCollider sc = GET_WORLD_SPACE_SPHERE_COLLIDER(spheres[i + 1]);
+				SphereCollider sc = WORLD_SPACE_SPHERE_COLLIDER(spheres[i + 1]);
 				Renderer::DrawSphereCollider(sc,
 					Geometry::IntersectSphereSphere(fixedSc, sc) ? glm::vec3 COLOR_RED : glm::vec3 COLOR_GREEN);
 			}
@@ -637,11 +637,11 @@ namespace sf
 		}
 		case TestCase::SphereCapsuleIntersection:
 		{
-			CapsuleCollider cc = GET_WORLD_SPACE_CAPSULE_COLLIDER(capsules[0]);
+			CapsuleCollider cc = WORLD_SPACE_CAPSULE_COLLIDER(capsules[0]);
 			Renderer::DrawCapsuleCollider(cc, COLOR_BLUE);
 			for (int i = 0; i < testCount; i++)
 			{
-				SphereCollider sc = GET_WORLD_SPACE_SPHERE_COLLIDER(spheres[i]);
+				SphereCollider sc = WORLD_SPACE_SPHERE_COLLIDER(spheres[i]);
 				Renderer::DrawSphereCollider(sc,
 					Geometry::IntersectCapsuleSphere(cc, sc) ? glm::vec3 COLOR_RED : glm::vec3 COLOR_GREEN);
 			}
@@ -649,11 +649,11 @@ namespace sf
 		}
 		case TestCase::SphereBoxIntersection:
 		{
-			BoxCollider fixedBc = GET_WORLD_SPACE_BOX_COLLIDER(boxes[0]);
+			BoxCollider fixedBc = WORLD_SPACE_BOX_COLLIDER(boxes[0]);
 			Renderer::DrawBoxCollider(fixedBc, COLOR_BLUE);
 			for (int i = 0; i < testCount; i++)
 			{
-				SphereCollider sc = GET_WORLD_SPACE_SPHERE_COLLIDER(spheres[i]);
+				SphereCollider sc = WORLD_SPACE_SPHERE_COLLIDER(spheres[i]);
 				Renderer::DrawSphereCollider(sc,
 					Geometry::IntersectBoxSphere(fixedBc, sc) ? glm::vec3 COLOR_RED : glm::vec3 COLOR_GREEN);
 			}
@@ -661,11 +661,11 @@ namespace sf
 		}
 		case TestCase::CapsuleCapsuleIntersection:
 		{
-			CapsuleCollider fixedCc = GET_WORLD_SPACE_CAPSULE_COLLIDER(capsules[0]);
+			CapsuleCollider fixedCc = WORLD_SPACE_CAPSULE_COLLIDER(capsules[0]);
 			Renderer::DrawCapsuleCollider(fixedCc, COLOR_BLUE);
 			for (int i = 0; i < testCount; i++)
 			{
-				CapsuleCollider cc = GET_WORLD_SPACE_CAPSULE_COLLIDER(capsules[i + 1]);
+				CapsuleCollider cc = WORLD_SPACE_CAPSULE_COLLIDER(capsules[i + 1]);
 				Renderer::DrawCapsuleCollider(cc,
 					Geometry::IntersectCapsuleCapsule(fixedCc, cc) ? glm::vec3 COLOR_RED : glm::vec3 COLOR_GREEN);
 			}
@@ -673,11 +673,11 @@ namespace sf
 		}
 		case TestCase::CapsuleBoxIntersection:
 		{
-			BoxCollider fixedBc = GET_WORLD_SPACE_BOX_COLLIDER(boxes[0]);
+			BoxCollider fixedBc = WORLD_SPACE_BOX_COLLIDER(boxes[0]);
 			Renderer::DrawBoxCollider(fixedBc, COLOR_BLUE);
 			for (int i = 0; i < testCount; i++)
 			{
-				CapsuleCollider bc = GET_WORLD_SPACE_CAPSULE_COLLIDER(capsules[i]);
+				CapsuleCollider bc = WORLD_SPACE_CAPSULE_COLLIDER(capsules[i]);
 				Renderer::DrawCapsuleCollider(bc,
 					Geometry::IntersectBoxCapsule(fixedBc, bc) ? glm::vec3 COLOR_RED : glm::vec3 COLOR_GREEN);
 			}
@@ -685,11 +685,11 @@ namespace sf
 		}
 		case TestCase::BoxBoxIntersection:
 		{
-			BoxCollider fixedBc = GET_WORLD_SPACE_BOX_COLLIDER(boxes[0]);
+			BoxCollider fixedBc = WORLD_SPACE_BOX_COLLIDER(boxes[0]);
 			Renderer::DrawBoxCollider(fixedBc, COLOR_BLUE);
 			for (int i = 0; i < testCount; i++)
 			{
-				BoxCollider bc = GET_WORLD_SPACE_BOX_COLLIDER(boxes[i + 1]);
+				BoxCollider bc = WORLD_SPACE_BOX_COLLIDER(boxes[i + 1]);
 				Renderer::DrawBoxCollider(bc,
 					Geometry::IntersectBoxBox(fixedBc, bc) ? glm::vec3 COLOR_RED : glm::vec3 COLOR_GREEN);
 			}
@@ -697,7 +697,7 @@ namespace sf
 		}
 		case TestCase::BoxTriangleIntersection:
 		{
-			BoxCollider fixedBc = GET_WORLD_SPACE_BOX_COLLIDER(boxes[0]);
+			BoxCollider fixedBc = WORLD_SPACE_BOX_COLLIDER(boxes[0]);
 			Renderer::DrawBoxCollider(fixedBc, COLOR_BLUE);
 			for (int i = 0; i < testCount; i++)
 			{
@@ -731,12 +731,8 @@ namespace sf
 		{
 			for (int i = 0; i < testCount; i++)
 			{
-				SphereCollider& sc = spheres[i].GetComponent<SphereCollider>();
-				Transform& st = spheres[i].GetComponent<Transform>();
-				SphereCollider scRelativeToMesh = sc.ApplyTransform(st).ApplyTransformInverse(monkey.GetComponent<Transform>());
-				glm::vec3 sphereColor = Geometry::IntersectSphereMesh(scRelativeToMesh, monkey.GetComponent<MeshCollider>()) ?
-					glm::vec3 COLOR_RED : glm::vec3 COLOR_GREEN;
-				Renderer::DrawSphereCollider(sc.ApplyTransform(st), sphereColor);
+				glm::vec3 sphereColor = INTERSECT_MESH_SPHERE(monkey, spheres[i]) ? glm::vec3 COLOR_RED : glm::vec3 COLOR_GREEN;
+				Renderer::DrawSphereCollider(WORLD_SPACE_SPHERE_COLLIDER(spheres[i]), sphereColor);
 			}
 			return;
 		}
@@ -744,12 +740,8 @@ namespace sf
 		{
 			for (int i = 0; i < testCount; i++)
 			{
-				CapsuleCollider& cc = capsules[i].GetComponent<CapsuleCollider>();
-				Transform& ct = capsules[i].GetComponent<Transform>();
-				CapsuleCollider ccRelativeToMesh = cc.ApplyTransform(ct).ApplyTransformInverse(monkey.GetComponent<Transform>());
-				glm::vec3 capsuleColor = Geometry::IntersectCapsuleMesh(ccRelativeToMesh, monkey.GetComponent<MeshCollider>()) ?
-					glm::vec3 COLOR_RED : glm::vec3 COLOR_GREEN;
-				Renderer::DrawCapsuleCollider(cc.ApplyTransform(ct), capsuleColor);
+				glm::vec3 capsuleColor = INTERSECT_MESH_CAPSULE(monkey, capsules[i]) ? glm::vec3 COLOR_RED : glm::vec3 COLOR_GREEN;
+				Renderer::DrawCapsuleCollider(WORLD_SPACE_CAPSULE_COLLIDER(capsules[i]), capsuleColor);
 			}
 			break;
 		}
@@ -757,12 +749,8 @@ namespace sf
 		{
 			for (int i = 0; i < testCount; i++)
 			{
-				BoxCollider& bc = boxes[i].GetComponent<BoxCollider>();
-				Transform& bt = boxes[i].GetComponent<Transform>();
-				BoxCollider bcRelativeToMesh = bc.ApplyTransform(bt).ApplyTransformInverse(monkey.GetComponent<Transform>());
-				glm::vec3 boxColor = Geometry::IntersectBoxMesh(bcRelativeToMesh, monkey.GetComponent<MeshCollider>()) ?
-					glm::vec3 COLOR_RED : glm::vec3 COLOR_GREEN;
-				Renderer::DrawBoxCollider(bc.ApplyTransform(bt), boxColor);
+				glm::vec3 boxColor = INTERSECT_MESH_BOX(monkey, boxes[i]) ? glm::vec3 COLOR_RED : glm::vec3 COLOR_GREEN;
+				Renderer::DrawBoxCollider(WORLD_SPACE_BOX_COLLIDER(boxes[i]), boxColor);
 			}
 			break;
 		}

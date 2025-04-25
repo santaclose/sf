@@ -28,5 +28,3 @@ namespace sf
 		}
 	};
 }
-
-#define GET_WORLD_SPACE_SPHERE_COLLIDER(x) (x.GetComponent<SphereCollider>().ApplyTransform(x.GetComponent<Transform>()))

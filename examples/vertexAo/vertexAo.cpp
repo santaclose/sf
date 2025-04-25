@@ -74,8 +74,7 @@ namespace sf
 			if (i == 0)
 				e_t.position += glm::vec3(0.3f, -0.6f, 0.0f);
 
-			Mesh& objectMesh = galleryObjects.back().AddComponent<Mesh>(&(sampleMeshes[i]));
-			Renderer::SetMeshMaterial(objectMesh, aoMaterial);
+			Mesh& objectMesh = galleryObjects.back().AddComponent<Mesh>(&sampleMeshes[i], aoMaterial);
 
 			if (i != selectedModel)
 				galleryObjects[i].SetEnabled(false);

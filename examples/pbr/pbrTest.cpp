@@ -101,9 +101,7 @@ namespace sf
 
 			GltfImporter::GenerateMeshData(gltfid, meshes[0]);
 			MeshProcessor::ComputeTangentSpace(meshes[0]);
-			Mesh& objectMesh = galleryObjects.back().AddComponent<Mesh>(&(meshes[0]));
-			uint32_t materialId = Renderer::CreateMaterial(damagedHelmetMaterial);
-			Renderer::SetMeshMaterial(objectMesh, materialId);
+			Mesh& objectMesh = galleryObjects.back().AddComponent<Mesh>(&meshes[0], Renderer::CreateMaterial(damagedHelmetMaterial));
 		}
 		{
 			galleryObjects.push_back(scene.CreateEntity());
@@ -113,9 +111,7 @@ namespace sf
 			GltfImporter::GenerateMeshData(gltfid, meshes[1]);
 
 			MeshProcessor::ComputeTangentSpace(meshes[1]);
-			Mesh& objectMesh = galleryObjects.back().AddComponent<Mesh>(&(meshes[1]));
-			uint32_t materialId = Renderer::CreateMaterial(Material("examples/pbr/SciFiHelmet.mat"));
-			Renderer::SetMeshMaterial(objectMesh, materialId);
+			Mesh& objectMesh = galleryObjects.back().AddComponent<Mesh>(&meshes[1], Renderer::CreateMaterial(Material("examples/pbr/SciFiHelmet.mat")));
 		}
 
 		for (int i = 0; i < galleryObjects.size(); i++)

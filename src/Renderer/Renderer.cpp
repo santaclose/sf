@@ -110,7 +110,6 @@ namespace sf::Renderer
 	std::unordered_map<const sf::SkeletonData*, uint32_t> skeletonSsbos;
 
 	std::unordered_map<const sf::MeshData*, MeshGpuData> meshGpuData;
-	std::unordered_map<int, std::vector<GlMaterial*>> meshMaterials;
 
 	std::unordered_map<void*, ParticleSystemData> particleSystemData;
 
@@ -139,17 +138,6 @@ namespace sf::Renderer
 
 	bool debugDrawEnabled = false;
 	glm::vec3 debugDrawColor = { 0.0f, 0.0f, 0.0f };
-
-	void CreateMeshMaterialSlots(int id, const sf::MeshData* mesh)
-	{
-		for (int i = 0; i < mesh->pieces.size(); i++)
-			meshMaterials[id].push_back(&defaultMaterial);
-	}
-	void CreateSkinnedMeshMaterialSlots(int id, const sf::MeshData* mesh)
-	{
-		for (int i = 0; i < mesh->pieces.size(); i++)
-			meshMaterials[id].push_back(&defaultSkinningMaterial);
-	}
 
 	void TransferVertexData(const sf::MeshData* mesh)
 	{
@@ -310,24 +298,6 @@ namespace sf::Renderer
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(SebText::LayoutSettings), &textLayoutSettings, GL_DYNAMIC_DRAW);
 	}
 
-	void SetMeshMaterial(Mesh mesh, GlMaterial* material, int piece = -1)
-	{
-		if (meshGpuData.find(mesh.meshData) == meshGpuData.end()) // create mesh data if not there
-			CreateMeshGpuData(mesh.meshData);
-		if (meshMaterials.find(mesh.id) == meshMaterials.end())
-			CreateMeshMaterialSlots(mesh.id, mesh.meshData);
-
-		if (piece < 0) // set for all pieces by default
-		{
-			for (int i = 0; i < meshMaterials[mesh.id].size(); i++)
-				meshMaterials[mesh.id][i] = material;
-		}
-		else
-		{
-			assert(piece < meshMaterials[mesh.id].size());
-			meshMaterials[mesh.id][piece] = material;
-		}
-	}
 #ifdef SF_DEBUG
 	void APIENTRY glDebugOutput(GLenum source,
 		GLenum type,
@@ -426,9 +396,6 @@ bool sf::Renderer::Initialize(const Window& windowArg, const glm::vec3& clearCol
 
 	sf::Renderer::aspectRatio = (float)(window->GetWidth()) / (float)(window->GetHeight());
 
-	defaultShader.CreateFromFiles("assets/shaders/default.vert", "assets/shaders/default.frag");
-	defaultMaterial.CreateFromShader(&defaultShader, false);
-
 	glGenBuffers(1, &sharedGpuData_gl_ubo);
 
 	rendererUniformVector.resize(3);
@@ -510,12 +477,6 @@ const glm::vec3& sf::Renderer::GetClearColor()
 	return clearColor;
 }
 
-void sf::Renderer::SetMeshMaterial(Mesh mesh, uint32_t materialId, int piece)
-{
-	assert(materialId < materials.size());
-	SetMeshMaterial(mesh, materials[materialId], piece);
-}
-
 void sf::Renderer::SetActiveCameraEntity(Entity cameraEntity)
 {
 	activeCameraEntity = cameraEntity;
@@ -555,6 +516,12 @@ void sf::Renderer::DrawSkybox()
 
 void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 {
+	if (!defaultShader.Initialized())
+	{
+		defaultShader.CreateFromFiles("assets/shaders/default.vert", "assets/shaders/default.frag");
+		defaultMaterial.CreateFromShader(&defaultShader, false);
+	}
+
 	if (mesh.meshData->vertexCount == 0)
 		return;
 
@@ -563,8 +530,6 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 
 	if (meshGpuData.find(mesh.meshData) == meshGpuData.end()) // create mesh data if not there
 		CreateMeshGpuData(mesh.meshData);
-	if (meshMaterials.find(mesh.id) == meshMaterials.end())
-		CreateMeshMaterialSlots(mesh.id, mesh.meshData);
 
 	sharedGpuData.modelMatrix = transform.ComputeMatrix();
 	glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
@@ -572,7 +537,7 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 
 	for (uint32_t i = 0; i < mesh.meshData->pieces.size(); i++)
 	{
-		GlMaterial* materialToUse = meshMaterials[mesh.id][i];
+		GlMaterial* materialToUse = mesh.materials[i] == ~0U ? &defaultMaterial : materials[mesh.materials[i]];
 
 		materialToUse->Bind();
 
@@ -610,8 +575,6 @@ void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 
 	if (meshGpuData.find(mesh.meshData) == meshGpuData.end()) // create mesh data if not there
 		CreateMeshGpuData(mesh.meshData);
-	if (meshMaterials.find(mesh.id) == meshMaterials.end())
-		CreateSkinnedMeshMaterialSlots(mesh.id, mesh.meshData);
 
 	sharedGpuData.modelMatrix = transform.ComputeMatrix();
 	glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
@@ -622,7 +585,7 @@ void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 
 	for (uint32_t i = 0; i < mesh.meshData->pieces.size(); i++)
 	{
-		GlMaterial* materialToUse = meshMaterials[mesh.id][i];
+		GlMaterial* materialToUse = mesh.materials[i] == ~0U ? &defaultSkinningMaterial : materials[mesh.materials[i]];
 
 		materialToUse->Bind();
 		materialToUse->m_shader->SetUniform1i("animate", mesh.skeletonData->m_animate);

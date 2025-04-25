@@ -56,8 +56,7 @@ namespace sf
 
 		int gltfid = GltfImporter::Load("examples/spaceship/ship.glb");
 		GltfImporter::GenerateMeshData(gltfid, shipMesh);
-		Mesh& m_ship = e_ship.AddComponent<Mesh>(&shipMesh);
-		Renderer::SetMeshMaterial(m_ship, uvMaterial);
+		Mesh& m_ship = e_ship.AddComponent<Mesh>(&shipMesh, uvMaterial);
 		Transform& t_ship = e_ship.AddComponent<Transform>();
 
 		e_mainCamera = scene.CreateEntity();
@@ -92,19 +91,8 @@ namespace sf
 		for (unsigned int i = 0; i < COUNT; i++)
 		{
 			things[i] = scene.CreateEntity();
-			Mesh& m_thing = things[i].AddComponent<Mesh>(&(generatedMeshes[Random::Int(UNIQUE_COUNT)]));
-			switch (Random::Int(3))
-			{
-			case 0:
-				Renderer::SetMeshMaterial(m_thing, colorsMaterial);
-				break;
-			case 1:
-				Renderer::SetMeshMaterial(m_thing, noiseMaterial);
-				break;
-			case 2:
-				Renderer::SetMeshMaterial(m_thing, aoMaterial);
-				break;
-			}
+			uint32_t materialsToChooseFrom[3] = { colorsMaterial, noiseMaterial, aoMaterial };
+			Mesh& m_thing = things[i].AddComponent<Mesh>(&generatedMeshes[Random::Int(UNIQUE_COUNT)], materialsToChooseFrom[Random::Int(3)]);
 
 			Transform& t_thing = things[i].AddComponent<Transform>();
 

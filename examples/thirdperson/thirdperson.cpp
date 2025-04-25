@@ -159,8 +159,7 @@ namespace sf
 			Transform& e_t = floorPlanes[i].AddComponent<Transform>();
 			e_t.scale = FLOOR_PLANE_SCALE;
 			e_t.position = glm::vec3(-FLOOR_PLANE_SCALE + ((int)(i / 3)) * FLOOR_PLANE_SCALE, 0.0f, -FLOOR_PLANE_SCALE + ((int)(i % 3)) * FLOOR_PLANE_SCALE);
-			Mesh& objectMesh = floorPlanes[i].AddComponent<Mesh>(&Defaults::MeshDataPlane());
-			Renderer::SetMeshMaterial(objectMesh, floorMaterialId);
+			Mesh& objectMesh = floorPlanes[i].AddComponent<Mesh>(&Defaults::MeshDataPlane(), floorMaterialId);
 		}
 	}
 

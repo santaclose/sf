@@ -114,12 +114,7 @@ namespace sf
 		{
 			errts[i] = scene.CreateEntity();
 			Transform& t_errt = errts[i].AddComponent<Transform>();
-			Mesh& m_errt = errts[i].AddComponent<Mesh>(&(uniqueErrts[Random::Int(UNIQUE_COUNT)]));
-
-			if (Random::Float() > 0.5f)
-				Renderer::SetMeshMaterial(m_errt, whiteMaterial);
-			else
-				Renderer::SetMeshMaterial(m_errt, blackMaterial);
+			Mesh& m_errt = errts[i].AddComponent<Mesh>(&uniqueErrts[Random::Int(UNIQUE_COUNT)], Random::Float() > 0.5f ? whiteMaterial : blackMaterial);
 
 			glm::vec2 randCircle = Random::PointInCircle();
 			t_errt.position.x = randCircle.x * 200.0f;

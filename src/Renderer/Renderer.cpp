@@ -1,6 +1,7 @@
 #include "Renderer.h"
 
 #include <assert.h>
+#include <cstring>
 #include <iostream>
 #include <unordered_map>
 #include <glm/gtc/matrix_transform.hpp>

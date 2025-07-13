@@ -132,8 +132,10 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 				mesh.vertexCount += primitiveVertexCount;
 				mesh.vertexBuffer = malloc(mesh.vertexLayout.GetSize() * mesh.vertexCount);
 				if (oldVertexBuffer != nullptr)
+				{
 					memcpy(mesh.vertexBuffer, oldVertexBuffer, mesh.vertexLayout.GetSize() * vertexStart);
-				free(oldVertexBuffer);
+					free(oldVertexBuffer);
+				}
 
 				// Create Vertices
 				for (uint32_t i = 0; i < primitiveVertexCount; i++)

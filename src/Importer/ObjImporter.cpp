@@ -210,6 +210,8 @@ void sf::ObjImporter::GenerateMeshData(int id, MeshData& mesh)
 		mesh.indexVector.push_back(uniqueVertices[v]);
 	}
 
+	if (mesh.vertexBuffer != nullptr)
+		free(mesh.vertexBuffer);
 	mesh.vertexBuffer = malloc(mesh.vertexLayout.GetSize() * finalVertices.size());
 	for (int i = 0; i < finalVertices.size(); i++)
 	{

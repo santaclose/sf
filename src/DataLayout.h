@@ -10,7 +10,7 @@ namespace sf
 {
 	struct DataComponent
 	{
-		uint32_t id;
+		uint32_t id; // specifies which vertex attribute in mesh data case
 		DataType dataType;
 		uint32_t byteOffset;
 	};

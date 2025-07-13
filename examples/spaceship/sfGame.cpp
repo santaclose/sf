@@ -79,19 +79,25 @@ namespace sf
 
 		
 		generatedMeshes = new MeshData[UNIQUE_COUNT];
+		char cahedMeshesPath[] = "examples/spaceship/generatedXX.mesh\0";
 		for (unsigned int i = 0; i < UNIQUE_COUNT; i++)
 		{
+			cahedMeshesPath[28] = '0' + (i / 10);
+			cahedMeshesPath[29] = '0' + (i % 10);
+			if (generatedMeshes[i].LoadFromFile(cahedMeshesPath))
+				continue;
 			errt::seed = i;
 			MeshProcessor::GenerateMeshWithFunction(generatedMeshes[i], errt::GenerateModel);
 			generatedMeshes[i].ChangeVertexLayout(Defaults::VertexLayout());
 			MeshProcessor::BakeAoToVertices(generatedMeshes[i]);
+			generatedMeshes[i].SaveToFile(cahedMeshesPath);
 		}
 
 		things = new Entity[COUNT];
+		uint32_t materialsToChooseFrom[3] = { colorsMaterial, noiseMaterial, aoMaterial };
 		for (unsigned int i = 0; i < COUNT; i++)
 		{
 			things[i] = scene.CreateEntity();
-			uint32_t materialsToChooseFrom[3] = { colorsMaterial, noiseMaterial, aoMaterial };
 			Mesh& m_thing = things[i].AddComponent<Mesh>(&generatedMeshes[Random::Int(UNIQUE_COUNT)], materialsToChooseFrom[Random::Int(3)]);
 
 			Transform& t_thing = things[i].AddComponent<Transform>();

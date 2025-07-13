@@ -20,13 +20,6 @@ namespace sf {
 			BoneWeights = 7,
 			BoneIndices = 8
 		};
-		static std::string vertexPositionAttr;
-		static std::string vertexNormalAttr;
-		static std::string vertexTangentAttr;
-		static std::string vertexBitangentAttr;
-		static std::string vertexUvsAttr;
-		static std::string vertexColorAttr;
-		static std::string vertexAoAttr;
 
 		DataLayout vertexLayout = DataLayout({
 			{VertexAttribute::Position, DataType::vec3f32},

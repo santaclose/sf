@@ -38,6 +38,8 @@ namespace sf {
 
 		void ChangeVertexLayout(const DataLayout& newLayout);
 		bool Initialized() { return vertexBuffer != nullptr; }
-	};
 
+		void SaveToFile(const char* targetFile);
+		bool LoadFromFile(const char* targetFile);
+	};
 }

@@ -1,5 +1,6 @@
 #include <MeshData.h>
 #include <cstring>
+#include <fstream>
 
 void sf::MeshData::ChangeVertexLayout(const sf::DataLayout& newLayout)
 {
@@ -30,4 +31,77 @@ void sf::MeshData::ChangeVertexLayout(const sf::DataLayout& newLayout)
 	free(this->vertexBuffer);
 	this->vertexLayout = newLayout;
 	this->vertexBuffer = newVertexBuffer;
+}
+
+
+void sf::MeshData::SaveToFile(const char* targetFile)
+{
+	std::ofstream file;
+	file.open(targetFile, std::ios::trunc | std::ios::binary);
+
+	// Vertex layout
+	uint32_t componentCount = vertexLayout.GetComponents().size();
+	file.write((char*) &componentCount, sizeof(componentCount));
+	for (DataComponent comp : vertexLayout.GetComponents())
+	{
+		file.write((char*) &comp.id, sizeof(comp.id));
+		file.write((char*) &comp.dataType, sizeof(comp.dataType));
+	}
+
+	// Indices
+	uint32_t indexCount = indexVector.size();
+	file.write((char*) &indexCount, sizeof(indexCount));
+	file.write((char*) indexVector.data(), indexCount * sizeof(uint32_t));
+
+	// Pieces
+	uint32_t pieceCount = pieces.size();
+	file.write((char*) &pieceCount, sizeof(pieceCount));
+	file.write((char*) pieces.data(), pieceCount * sizeof(uint32_t));
+
+	// Vertices
+	file.write((char*) &vertexCount, sizeof(vertexCount));
+	uint32_t vertexBufferSizeInBytes = vertexLayout.GetSize() * vertexCount;
+	file.write((char*) vertexBuffer, vertexBufferSizeInBytes);
+
+	file.close();
+}
+
+bool sf::MeshData::LoadFromFile(const char* targetFile)
+{
+	std::ifstream file;
+	file.open(targetFile, std::ios::binary);
+	if (!file)
+		return false;
+
+	// Vertex layout
+	uint32_t componentCount;
+	file.read((char*)&componentCount, sizeof(componentCount));
+	std::vector<std::pair<uint32_t, DataType>> components;
+	components.resize(componentCount);
+	file.read((char*) components.data(), componentCount * (sizeof(uint32_t) + sizeof(DataType)));
+	vertexLayout = DataLayout(components);
+
+	// Indices
+	uint32_t indexCount;
+	file.read((char*) &indexCount, sizeof(indexCount));
+	indexVector.resize(indexCount);
+	file.read((char*) indexVector.data(), indexCount * sizeof(uint32_t));
+
+	// Pieces
+	uint32_t pieceCount;
+	file.read((char*) &pieceCount, sizeof(pieceCount));
+	pieces.resize(pieceCount);
+	file.read((char*) pieces.data(), pieceCount * sizeof(uint32_t));
+
+	// Vertices
+	file.read((char*) &vertexCount, sizeof(vertexCount));
+	uint32_t vertexBufferSizeInBytes = vertexLayout.GetSize() * vertexCount;
+	if (vertexBuffer != nullptr)
+		free(vertexBuffer);
+	vertexBuffer = malloc(vertexBufferSizeInBytes);
+	file.read((char*) vertexBuffer, vertexBufferSizeInBytes);
+
+	file.close();
+
+	return true;
 }

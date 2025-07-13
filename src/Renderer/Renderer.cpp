@@ -355,6 +355,9 @@ bool sf::Renderer::Initialize(const Window& windowArg, const glm::vec3& clearCol
 	clearColor = clearColorArg;
 	window = &windowArg;
 
+	materials.clear();
+	materials.reserve(64);
+
 	if (!gladLoadGLLoader((GLADloadproc)window->GetOpenGlFunctionAddress()))
 	{
 		std::cout << "[Renderer] Failed to initialize OpenGL context (GLAD)" << std::endl;
@@ -987,4 +990,14 @@ void sf::Renderer::Terminate()
 	{
 		delete material;
 	}
+	defaultShader.Delete();
+	defaultSkinningShader.Delete();
+	voxelBoxShader.Delete();
+	drawLineShader.Delete();
+
+	environmentData.envTexture.Delete();
+	environmentData.envCubemap.Delete();
+	environmentData.irradianceCubemap.Delete();
+	environmentData.prefilterCubemap.Delete();
+	environmentData.lookupTexture.Delete();
 }

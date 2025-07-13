@@ -42,9 +42,11 @@ namespace sf {
 			StorageType storageType = StorageType::Float16,
 			bool mipmap = true);
 
-		void ComputeMipmap();
+		void Delete();
+		GlCubemap() = default;
+		~GlCubemap() = default;
 
-		~GlCubemap();
+		void ComputeMipmap();
 
 		void Bind(uint32_t slot = 0) const;
 		void Unbind() const;

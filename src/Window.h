@@ -63,6 +63,8 @@ namespace sf
 		VkResult CreateVulkanSurface(VkInstance instance, VkSurfaceKHR& surfaceOut) const;
 #endif
 
+		static void Terminate();
+
 	private:
 		GLFWwindow* windowHandle;
 		GLFWwindow* contextBackup; // used for imgui viewports

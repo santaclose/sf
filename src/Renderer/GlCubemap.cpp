@@ -197,9 +197,11 @@ void sf::GlCubemap::ComputeMipmap()
 	glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 }
 
-sf::GlCubemap::~GlCubemap()
+void sf::GlCubemap::Delete()
 {
-	glDeleteTextures(1, &gl_id);
+	if (gl_id != 0)
+		glDeleteTextures(1, &gl_id);
+	gl_id = 0;
 }
 
 void sf::GlCubemap::Bind(uint32_t slot) const

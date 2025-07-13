@@ -23,18 +23,33 @@ namespace sf {
 		StorageType storageType;
 		WrapMode wrapMode;
 
-		void GetGlEnums(int channelCount, StorageType storageType, GLenum& type, int& internalFormat, GLenum& format);
+		void GetGlEnums(
+			int channelCount,
+			StorageType storageType,
+			GLenum& type,
+			int& internalFormat,
+			GLenum& format);
 
-		void Create(uint32_t width, uint32_t height,
+		void Create(
+			uint32_t width,
+			uint32_t height,
 			int channelCount = 3,
 			StorageType storageType = StorageType::UnsignedByte,
 			WrapMode wrapMode = WrapMode::Repeat,
 			bool mipmap = true);
 
-		void CreateFromBitmap(const Bitmap& bitmap, WrapMode wrapMode = WrapMode::Repeat, bool mipmap = true, int internalFormat = -1);
+		void CreateFromBitmap(
+			const Bitmap& bitmap,
+			WrapMode wrapMode =
+			WrapMode::Repeat,
+			bool mipmap = true,
+			int internalFormat = -1);
+
+		void Delete();
+		GlTexture() = default;
+		~GlTexture() = default;
 
 		void ComputeMipmap();
-		~GlTexture();
 
 		void Bind(uint32_t slot = 0) const;
 		void Unbind() const;

@@ -171,5 +171,6 @@ int main(int argc, char** argv)
 
 	sf::ImGuiController::Terminate();
 	sf::Renderer::Terminate();
+	sf::Window::Terminate();
 	return 0;
 }

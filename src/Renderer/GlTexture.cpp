@@ -157,9 +157,11 @@ void sf::GlTexture::ComputeMipmap()
 	glGenerateMipmap(GL_TEXTURE_2D);
 }
 
-sf::GlTexture::~GlTexture()
+void sf::GlTexture::Delete()
 {
-	glDeleteTextures(1, &this->gl_id);
+	if (this->gl_id != 0)
+		glDeleteTextures(1, &this->gl_id);
+	this->gl_id = 0;
 }
 
 void sf::GlTexture::Bind(uint32_t slot) const

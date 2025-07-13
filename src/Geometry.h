@@ -17,7 +17,7 @@ namespace sf::Geometry
 		float& tNear, float& tFar)
 	{
 		// lineDir must be normalized
-		assert(tNear <= tFar && "AABB::IntersectLineAABB: User gave a degenerate line as input for the intersection test!", tNear, tFar);
+		assert(tNear <= tFar); // AABB::IntersectLineAABB: User gave a degenerate line as input for the intersection test
 		// The user should have inputted values for tNear and tFar to specify the desired subrange [tNear, tFar] of the line
 		// for this intersection test.
 		// For a Line-AABB test, pass in

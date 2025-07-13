@@ -24,21 +24,28 @@ namespace sf {
 		std::unordered_map<std::string, ShaderUniformData> m_uniformCache;
 		int m_textureIndexCounter = 0;
 	public:
-		uint32_t gl_id;
+		uint32_t gl_id = -1;
 	private:
 		static uint32_t CheckLinkStatusAndReturnProgram(uint32_t program, bool outputErrorMessages);
 		static uint32_t CompileShader(uint32_t type, const std::string& source);
 		int GetUniformLocation(const std::string& name);
 		void AssignTextureNumberToUniform(const std::string& name);
 		int GetTextureIndex(const std::string& name);
-		void Delete();
+
 	public:
-		GlShader();
-		~GlShader();
-		void CreateFromFiles(const std::string& vertexShaderPath, const std::string& fragmentShaderPath);
+		void CreateFromFiles(
+			const std::string& vertexShaderPath,
+			const std::string& fragmentShaderPath);
+
 		void CreateComputeFromFile(const std::string& computeShaderPath);
+
+		void Delete();
+		GlShader() = default;
+		~GlShader() = default;
+
 		inline bool Initialized() { return gl_id != -1; };
 		void Bind() const;
+
 		void SetUniformMatrix4fv(const std::string& name, const float* pointer, uint32_t number = 1);
 		void SetUniform1fv(const std::string& name, const float* pointer, uint32_t number = 1);
 		void SetUniform2fv(const std::string& name, const float* pointer, uint32_t number = 1);

@@ -95,7 +95,6 @@ sf::Window::Window(const GameInitializationData& gameInitData)
 sf::Window::~Window()
 {
 	glfwDestroyWindow(windowHandle);
-	glfwTerminate();
 }
 
 void sf::Window::PollEvents()
@@ -265,6 +264,11 @@ void sf::Window::WindowResizeCallback(int width, int height)
 
 	for (auto* function : onResizeCallbacks)
 		function();
+}
+
+void sf::Window::Terminate()
+{
+	glfwTerminate();
 }
 
 void sf::Window::CursorPositionCallback(GLFWwindow* window, double xpos, double ypos) { windowMappingForCallbacks[window]->CursorPositionCallback(xpos, ypos); }

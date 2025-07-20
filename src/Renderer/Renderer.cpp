@@ -207,26 +207,23 @@ namespace sf::Renderer
 		Transform voxelSpaceCursor;
 		voxelSpaceCursor.scale = voxelBox->voxelSize;
 		int currentCube = 0;
-		for (int i = 0; i < voxelBox->mat.size(); i++)
-		{
-			for (int j = 0; j < voxelBox->mat[0].size(); j++)
-			{
-				for (int k = 0; k < voxelBox->mat[0][0].size(); k++)
+		glm::uvec3 currentVoxel;
+		for (currentVoxel.x = 0; currentVoxel.x < voxelBox->voxelCountPerAxis.x; currentVoxel.x++)
+			for (currentVoxel.y = 0; currentVoxel.y < voxelBox->voxelCountPerAxis.y; currentVoxel.y++)
+				for (currentVoxel.z = 0; currentVoxel.z < voxelBox->voxelCountPerAxis.z; currentVoxel.z++)
 				{
-					if (voxelBox->mat[i][j][k])
+					if (voxelBox->GetVoxel(currentVoxel))
 					{
 						voxelSpaceCursor.position = voxelBox->offset;
-						voxelSpaceCursor.position.x += voxelBox->voxelSize * ((float)i + 0.5f);
-						voxelSpaceCursor.position.y += voxelBox->voxelSize * ((float)j + 0.5f);
-						voxelSpaceCursor.position.z += voxelBox->voxelSize * ((float)k + 0.5f);
+						voxelSpaceCursor.position.x += voxelBox->voxelSize * ((float)currentVoxel.x + 0.5f);
+						voxelSpaceCursor.position.y += voxelBox->voxelSize * ((float)currentVoxel.y + 0.5f);
+						voxelSpaceCursor.position.z += voxelBox->voxelSize * ((float)currentVoxel.z + 0.5f);
 
 						voxelBoxGpuData[voxelBox].perParticleData.emplace_back();
 						voxelBoxGpuData[voxelBox].perParticleData[currentCube].transform = voxelSpaceCursor;
 						currentCube++;
 					}
 				}
-			}
-		}
 		glGenBuffers(1, &(voxelBoxGpuData[voxelBox].gl_ssbo));
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, voxelBoxGpuData[voxelBox].gl_ssbo);
 		glBufferData(GL_SHADER_STORAGE_BUFFER, voxelBoxGpuData[voxelBox].perParticleData.size() * sizeof(PerParticleGpuData), voxelBoxGpuData[voxelBox].perParticleData.data(), GL_STATIC_DRAW);

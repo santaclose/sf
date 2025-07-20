@@ -376,6 +376,44 @@ namespace sf::Geometry
 		return IntersectLineAABB_CPP(segA, (segB - segA) / segLength, boxMin, boxMax, tNear, segLength);
 	}
 
+	inline bool IntersectAABBTriangle(
+		const glm::vec3& boxMin, const glm::vec3& boxMax,
+		const glm::vec3& triA, const glm::vec3& triB, const glm::vec3& triC)
+	{
+		if ((triA.x < boxMax.x && triA.x > boxMin.x &&
+				triA.y < boxMax.y && triA.y > boxMin.y &&
+				triA.z < boxMax.z && triA.z > boxMin.z) ||
+			(triB.x < boxMax.x && triB.x > boxMin.x &&
+				triB.y < boxMax.y && triB.y > boxMin.y &&
+				triB.z < boxMax.z && triB.z > boxMin.z) ||
+			(triC.x < boxMax.x && triC.x > boxMin.x &&
+				triC.y < boxMax.y && triC.y > boxMin.y &&
+				triC.z < boxMax.z && triC.z > boxMin.z))
+			return true;
+
+		glm::vec3 unused;
+		if (IntersectTriangleSegment(triA, triB, triC, glm::vec3(boxMin.x, boxMin.y, boxMin.z), glm::vec3(boxMin.x, boxMin.y, boxMax.z), unused) ||
+			IntersectTriangleSegment(triA, triB, triC, glm::vec3(boxMin.x, boxMin.y, boxMax.z), glm::vec3(boxMax.x, boxMin.y, boxMax.z), unused) ||
+			IntersectTriangleSegment(triA, triB, triC, glm::vec3(boxMax.x, boxMin.y, boxMax.z), glm::vec3(boxMax.x, boxMin.y, boxMin.z), unused) ||
+			IntersectTriangleSegment(triA, triB, triC, glm::vec3(boxMax.x, boxMin.y, boxMin.z), glm::vec3(boxMin.x, boxMin.y, boxMin.z), unused) ||
+			IntersectTriangleSegment(triA, triB, triC, glm::vec3(boxMin.x, boxMax.y, boxMin.z), glm::vec3(boxMin.x, boxMax.y, boxMax.z), unused) ||
+			IntersectTriangleSegment(triA, triB, triC, glm::vec3(boxMin.x, boxMax.y, boxMax.z), glm::vec3(boxMax.x, boxMax.y, boxMax.z), unused) ||
+			IntersectTriangleSegment(triA, triB, triC, glm::vec3(boxMax.x, boxMax.y, boxMax.z), glm::vec3(boxMax.x, boxMax.y, boxMin.z), unused) ||
+			IntersectTriangleSegment(triA, triB, triC, glm::vec3(boxMax.x, boxMax.y, boxMin.z), glm::vec3(boxMin.x, boxMax.y, boxMin.z), unused) ||
+			IntersectTriangleSegment(triA, triB, triC, glm::vec3(boxMin.x, boxMin.y, boxMin.z), glm::vec3(boxMin.x, boxMax.y, boxMin.z), unused) ||
+			IntersectTriangleSegment(triA, triB, triC, glm::vec3(boxMin.x, boxMin.y, boxMax.z), glm::vec3(boxMin.x, boxMax.y, boxMax.z), unused) ||
+			IntersectTriangleSegment(triA, triB, triC, glm::vec3(boxMax.x, boxMin.y, boxMax.z), glm::vec3(boxMax.x, boxMax.y, boxMax.z), unused) ||
+			IntersectTriangleSegment(triA, triB, triC, glm::vec3(boxMax.x, boxMin.y, boxMin.z), glm::vec3(boxMax.x, boxMax.y, boxMin.z), unused))
+			return true;
+
+		if (IntersectAABBSegment(boxMin, boxMax, triA, triB) ||
+			IntersectAABBSegment(boxMin, boxMax, triB, triC) ||
+			IntersectAABBSegment(boxMin, boxMax, triC, triA))
+			return true;
+
+		return false;
+	}
+
 	inline bool IntersectSphereSphere(const SphereCollider& sphereA, const SphereCollider& sphereB)
 	{
 		assert(sphereA.radius >= 0.0f && sphereB.radius >= 0.0f);
@@ -551,37 +589,7 @@ namespace sf::Geometry
 
 		glm::vec3 boxMin = -box.size * 0.5f;
 		glm::vec3 boxMax = box.size * 0.5f;
-		if ((localTriA.x < boxMax.x && localTriA.x > boxMin.x &&
-				localTriA.y < boxMax.y && localTriA.y > boxMin.y &&
-				localTriA.z < boxMax.z && localTriA.z > boxMin.z) ||
-			(localTriB.x < boxMax.x && localTriB.x > boxMin.x &&
-				localTriB.y < boxMax.y && localTriB.y > boxMin.y &&
-				localTriB.z < boxMax.z && localTriB.z > boxMin.z) ||
-			(localTriC.x < boxMax.x && localTriC.x > boxMin.x &&
-				localTriC.y < boxMax.y && localTriC.y > boxMin.y &&
-				localTriC.z < boxMax.z && localTriC.z > boxMin.z))
-			return true;
-
-		glm::vec3 unused;
-		if (IntersectTriangleSegment(localTriA, localTriB, localTriC, glm::vec3(boxMin.x, boxMin.y, boxMin.z), glm::vec3(boxMin.x, boxMin.y, boxMax.z), unused) ||
-			IntersectTriangleSegment(localTriA, localTriB, localTriC, glm::vec3(boxMin.x, boxMin.y, boxMax.z), glm::vec3(boxMax.x, boxMin.y, boxMax.z), unused) ||
-			IntersectTriangleSegment(localTriA, localTriB, localTriC, glm::vec3(boxMax.x, boxMin.y, boxMax.z), glm::vec3(boxMax.x, boxMin.y, boxMin.z), unused) ||
-			IntersectTriangleSegment(localTriA, localTriB, localTriC, glm::vec3(boxMax.x, boxMin.y, boxMin.z), glm::vec3(boxMin.x, boxMin.y, boxMin.z), unused) ||
-			IntersectTriangleSegment(localTriA, localTriB, localTriC, glm::vec3(boxMin.x, boxMax.y, boxMin.z), glm::vec3(boxMin.x, boxMax.y, boxMax.z), unused) ||
-			IntersectTriangleSegment(localTriA, localTriB, localTriC, glm::vec3(boxMin.x, boxMax.y, boxMax.z), glm::vec3(boxMax.x, boxMax.y, boxMax.z), unused) ||
-			IntersectTriangleSegment(localTriA, localTriB, localTriC, glm::vec3(boxMax.x, boxMax.y, boxMax.z), glm::vec3(boxMax.x, boxMax.y, boxMin.z), unused) ||
-			IntersectTriangleSegment(localTriA, localTriB, localTriC, glm::vec3(boxMax.x, boxMax.y, boxMin.z), glm::vec3(boxMin.x, boxMax.y, boxMin.z), unused) ||
-			IntersectTriangleSegment(localTriA, localTriB, localTriC, glm::vec3(boxMin.x, boxMin.y, boxMin.z), glm::vec3(boxMin.x, boxMax.y, boxMin.z), unused) ||
-			IntersectTriangleSegment(localTriA, localTriB, localTriC, glm::vec3(boxMin.x, boxMin.y, boxMax.z), glm::vec3(boxMin.x, boxMax.y, boxMax.z), unused) ||
-			IntersectTriangleSegment(localTriA, localTriB, localTriC, glm::vec3(boxMax.x, boxMin.y, boxMax.z), glm::vec3(boxMax.x, boxMax.y, boxMax.z), unused) ||
-			IntersectTriangleSegment(localTriA, localTriB, localTriC, glm::vec3(boxMax.x, boxMin.y, boxMin.z), glm::vec3(boxMax.x, boxMax.y, boxMin.z), unused))
-			return true;
-
-		if (IntersectAABBSegment(boxMin, boxMax, localTriA, localTriB) ||
-			IntersectAABBSegment(boxMin, boxMax, localTriB, localTriC) ||
-			IntersectAABBSegment(boxMin, boxMax, localTriC, localTriA))
-			return true;
-		return false;
+		return IntersectAABBTriangle(boxMin, boxMax, localTriA, localTriB, localTriC);
 	}
 
 	inline bool IntersectTriangleTriangle(

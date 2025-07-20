@@ -40,9 +40,9 @@ namespace sf
 	float cameraDistance;
 	bool rotationEnabled;
 
-	VoxelBoxData* monkevbd;
-	VoxelBoxData* monkevbd2;
-	VoxelBoxData* monkevbd3;
+	VoxelBoxData monkevbd;
+	VoxelBoxData monkevbd2;
+	VoxelBoxData monkevbd3;
 
 	int selectedModel;
 
@@ -56,26 +56,26 @@ namespace sf
 
 		ExampleViewer::Initialize(scene);
 
-		monkevbd = new VoxelBoxData(Defaults::MeshDataMonkey(), 0.007f);
-		monkevbd2 = new VoxelBoxData(Defaults::MeshDataMonkey(), 0.02f);
-		monkevbd3 = new VoxelBoxData(Defaults::MeshDataMonkey(), 0.07);
+		monkevbd.BuildFromMesh(Defaults::MeshDataMonkey(), 0.007f);
+		monkevbd2.BuildFromMesh(Defaults::MeshDataMonkey(), 0.02f);
+		monkevbd3.BuildFromMesh(Defaults::MeshDataMonkey(), 0.07);
 
 		{
 			galleryObjects.push_back(scene.CreateEntity());
 			Transform& objectTransform = galleryObjects.back().AddComponent<Transform>();
-			VoxelBox& objectVoxelBox = galleryObjects.back().AddComponent<VoxelBox>(monkevbd);
+			VoxelBox& objectVoxelBox = galleryObjects.back().AddComponent<VoxelBox>(&monkevbd);
 		}
 
 		{
 			galleryObjects.push_back(scene.CreateEntity());
 			Transform& objectTransform = galleryObjects.back().AddComponent<Transform>();
-			VoxelBox& objectVoxelBox = galleryObjects.back().AddComponent<VoxelBox>(monkevbd2);
+			VoxelBox& objectVoxelBox = galleryObjects.back().AddComponent<VoxelBox>(&monkevbd2);
 		}
 
 		{
 			galleryObjects.push_back(scene.CreateEntity());
 			Transform& objectTransform = galleryObjects.back().AddComponent<Transform>();
-			VoxelBox& objectVoxelBox = galleryObjects.back().AddComponent<VoxelBox>(monkevbd3);
+			VoxelBox& objectVoxelBox = galleryObjects.back().AddComponent<VoxelBox>(&monkevbd3);
 		}
 
 		{
@@ -90,9 +90,6 @@ namespace sf
 
 	void Game::Terminate()
 	{
-		delete monkevbd;
-		delete monkevbd2;
-		delete monkevbd3;
 		for (Entity e : galleryObjects)
 			scene.DestroyEntity(e);
 		galleryObjects.clear();

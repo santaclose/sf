@@ -143,6 +143,7 @@ void sf::MeshProcessor::ComputeTangentSpace(MeshData& mesh)
 	assert(tangentDataType == DataType::vec3f32 || tangentDataType == DataType::vec3f64);
 	assert(bitangentDataType == tangentDataType);
 
+	// support doubles as well
 	if (positionDataType == DataType::vec3f32)
 	{
 		if (tangentDataType == DataType::vec3f32)

@@ -1,33 +1,29 @@
 #include "VoxelBoxData.h"
 
 #include <Math.hpp>
+#include <Geometry.h>
 
-sf::VoxelBoxData::VoxelBoxData(uint32_t voxelCountX, uint32_t voxelCountY, uint32_t voxelCountZ, float voxelSize, const glm::vec3& offset)
+void sf::VoxelBoxData::BuildEmpty(const glm::uvec3& voxelCountPerAxis, float voxelSize, const glm::vec3& offset)
 {
 	this->voxelSize = voxelSize;
 	this->offset = offset;
-
-	mat.resize(voxelCountX);
-	for (auto& vec : mat)
-	{
-		vec.resize(voxelCountY);
-		for (auto& deeperVec : vec)
-			deeperVec.resize(voxelCountZ);
-	}
+	this->voxelCountPerAxis = voxelCountPerAxis;
+	mat.clear();
+	mat.resize(voxelCountPerAxis.x * voxelCountPerAxis.y * voxelCountPerAxis.z, nullptr);
 }
 
-sf::VoxelBoxData::VoxelBoxData(const MeshData& mesh, float voxelSize)
+void sf::VoxelBoxData::BuildFromMesh(const MeshData& mesh, float voxelSize)
 {
 	DataType positionDataType = mesh.vertexLayout.GetComponent(MeshData::VertexAttribute::Position)->dataType;
 	assert(positionDataType == DataType::vec3f32);
-
-	const float RASTERIZE_MAX_DISTANCE = 0.7f;
+	assert(mesh.vertexCount > 0);
+	assert(voxelSize > 0.0f);
 
 	this->voxelSize = voxelSize;
 
+	// compute mesh AABB
 	glm::vec3 minP = *((glm::vec3*)mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Position, 0));
 	glm::vec3 maxP = minP;
-
 	for (int i = 1; i < mesh.vertexCount; i++)
 	{
 		glm::vec3* posPtr = (glm::vec3*)mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Position, i);
@@ -41,133 +37,62 @@ sf::VoxelBoxData::VoxelBoxData(const MeshData& mesh, float voxelSize)
 
 	this->offset = minP;
 
-	glm::uvec3 voxelCount = {
+	voxelCountPerAxis = {
 		(uint32_t)glm::ceil((maxP.x - minP.x) / voxelSize),
 		(uint32_t)glm::ceil((maxP.y - minP.y) / voxelSize),
 		(uint32_t)glm::ceil((maxP.z - minP.z) / voxelSize)
 	};
 
 	// allocate matrix
-	mat.resize(voxelCount.x);
-	for (auto& vector : mat)
-	{
-		vector.resize(voxelCount.y);
-		for (auto& subvector : vector)
-			subvector.resize(voxelCount.z);
-	}
+	mat.clear();
+	mat.resize(voxelCountPerAxis.x * voxelCountPerAxis.y * voxelCountPerAxis.z, nullptr);
 
-	// rasterize
+	// voxelize
 	for (int indexI = 0; indexI < mesh.indexVector.size(); indexI += 3)
 	{
 		uint32_t indexA = mesh.indexVector[indexI + 0];
 		uint32_t indexB = mesh.indexVector[indexI + 1];
 		uint32_t indexC = mesh.indexVector[indexI + 2];
 
-		glm::vec3* posPtrA = (glm::vec3*)mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Position, indexA);
-		glm::vec3* posPtrB = (glm::vec3*)mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Position, indexB);
-		glm::vec3* posPtrC = (glm::vec3*)mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Position, indexC);
-
+		glm::vec3* posPtrA = (glm::vec3*) mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Position, indexA);
+		glm::vec3* posPtrB = (glm::vec3*) mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Position, indexB);
+		glm::vec3* posPtrC = (glm::vec3*) mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Position, indexC);
 		glm::vec3 triNormal = glm::cross(
 			*posPtrB - *posPtrA,
 			*posPtrC - *posPtrA);
 
-		glm::vec3 trianglebbmin = {
-			glm::min(glm::min(posPtrA->x, posPtrB->x), posPtrC->x),
-			glm::min(glm::min(posPtrA->y, posPtrB->y), posPtrC->y),
-			glm::min(glm::min(posPtrA->z, posPtrB->z), posPtrC->z)
-		};
-		glm::vec3 trianglebbmax = {
-			glm::max(glm::max(posPtrA->x, posPtrB->x), posPtrC->x),
-			glm::max(glm::max(posPtrA->y, posPtrB->y), posPtrC->y),
-			glm::max(glm::max(posPtrA->z, posPtrB->z), posPtrC->z)
-		};
+		glm::vec3 trianglebbmin = glm::min(glm::min(*posPtrA, *posPtrB), *posPtrC);
+		glm::vec3 trianglebbmax = glm::max(glm::max(*posPtrA, *posPtrB), *posPtrC);
 		glm::uvec3 minVoxelCoords = {
-			glm::clamp((int)((trianglebbmin.x - minP.x) / voxelSize), 0, (int)(mat.size() - 1)),
-			glm::clamp((int)((trianglebbmin.y - minP.y) / voxelSize), 0, (int)(mat[0].size() - 1)),
-			glm::clamp((int)((trianglebbmin.z - minP.z) / voxelSize), 0, (int)(mat[0][0].size() - 1))
+			glm::clamp((int)((trianglebbmin.x - minP.x) / voxelSize), 0, (int)(voxelCountPerAxis.x - 1)),
+			glm::clamp((int)((trianglebbmin.y - minP.y) / voxelSize), 0, (int)(voxelCountPerAxis.y - 1)),
+			glm::clamp((int)((trianglebbmin.z - minP.z) / voxelSize), 0, (int)(voxelCountPerAxis.z - 1))
 		};
 		glm::uvec3 maxVoxelCoords = {
-			glm::clamp((int)((trianglebbmax.x - minP.x) / voxelSize), 0, (int)(mat.size() - 1)),
-			glm::clamp((int)((trianglebbmax.y - minP.y) / voxelSize), 0, (int)(mat[0].size() - 1)),
-			glm::clamp((int)((trianglebbmax.z - minP.z) / voxelSize), 0, (int)(mat[0][0].size() - 1))
+			glm::clamp((int)((trianglebbmax.x - minP.x) / voxelSize) + 1, 0, (int)(voxelCountPerAxis.x - 1)),
+			glm::clamp((int)((trianglebbmax.y - minP.y) / voxelSize) + 1, 0, (int)(voxelCountPerAxis.y - 1)),
+			glm::clamp((int)((trianglebbmax.z - minP.z) / voxelSize) + 1, 0, (int)(voxelCountPerAxis.z - 1))
 		};
 
-		std::vector<std::vector<bool>> xyMat;
-		std::vector<std::vector<bool>> xzMat;
-		std::vector<std::vector<bool>> zyMat;
-		std::vector<std::vector<std::vector<bool>>> xyzMat;
-
-		xyMat.resize(maxVoxelCoords.x - minVoxelCoords.x + 1);
-		for (auto& vec : xyMat)
-			vec.resize(maxVoxelCoords.y - minVoxelCoords.y + 1);
-		xzMat.resize(maxVoxelCoords.x - minVoxelCoords.x + 1);
-		for (auto& vec : xzMat)
-			vec.resize(maxVoxelCoords.z - minVoxelCoords.z + 1);
-		zyMat.resize(maxVoxelCoords.z - minVoxelCoords.z + 1);
-		for (auto& vec : zyMat)
-			vec.resize(maxVoxelCoords.y - minVoxelCoords.y + 1);
-
-		for (int i = minVoxelCoords.x; i <= maxVoxelCoords.x; i++)
-		{
-			for (int j = minVoxelCoords.y; j <= maxVoxelCoords.y; j++)
-			{
-				glm::vec2 voxelCenter = glm::vec2(minP.x, minP.y) + glm::vec2(i * voxelSize + voxelSize / 2.0f, j * voxelSize + voxelSize / 2.0f);
-				glm::vec2 tri0 = glm::vec2(posPtrA->x, posPtrA->y);
-				glm::vec2 tri1 = glm::vec2(posPtrB->x, posPtrB->y);
-				glm::vec2 tri2 = glm::vec2(posPtrC->x, posPtrC->y);
-				xyMat[i - minVoxelCoords.x][j - minVoxelCoords.y] = Math::TriPointDistance2D(voxelCenter, tri0, tri1, tri2) < voxelSize * RASTERIZE_MAX_DISTANCE;
-			}
-		}
-
-		for (int i = minVoxelCoords.x; i <= maxVoxelCoords.x; i++)
-		{
-			for (int j = minVoxelCoords.z; j <= maxVoxelCoords.z; j++)
-			{
-				glm::vec2 voxelCenter = glm::vec2(minP.x, minP.z) + glm::vec2(i * voxelSize + voxelSize / 2.0f, j * voxelSize + voxelSize / 2.0f);
-				glm::vec2 tri0 = glm::vec2(posPtrA->x, posPtrA->z);
-				glm::vec2 tri1 = glm::vec2(posPtrB->x, posPtrB->z);
-				glm::vec2 tri2 = glm::vec2(posPtrC->x, posPtrC->z);
-				xzMat[i - minVoxelCoords.x][j - minVoxelCoords.z] = Math::TriPointDistance2D(voxelCenter, tri0, tri1, tri2) < voxelSize * RASTERIZE_MAX_DISTANCE;
-			}
-		}
-
-		for (int i = minVoxelCoords.z; i <= maxVoxelCoords.z; i++)
-		{
-			for (int j = minVoxelCoords.y; j <= maxVoxelCoords.y; j++)
-			{
-				glm::vec2 voxelCenter = glm::vec2(minP.z, minP.y) + glm::vec2(i * voxelSize + voxelSize / 2.0f, j * voxelSize + voxelSize / 2.0f);
-				glm::vec2 tri0 = glm::vec2(posPtrA->z, posPtrA->y);
-				glm::vec2 tri1 = glm::vec2(posPtrB->z, posPtrB->y);
-				glm::vec2 tri2 = glm::vec2(posPtrC->z, posPtrC->y);
-				zyMat[i - minVoxelCoords.z][j - minVoxelCoords.y] = Math::TriPointDistance2D(voxelCenter, tri0, tri1, tri2) < voxelSize * RASTERIZE_MAX_DISTANCE;
-			}
-		}
-
-		for (int i = minVoxelCoords.x; i <= maxVoxelCoords.x; i++)
-		{
-			for (int j = minVoxelCoords.y; j <= maxVoxelCoords.y; j++)
-			{
-				for (int k = minVoxelCoords.z; k <= maxVoxelCoords.z; k++)
+		glm::uvec3 currentVoxel;
+		for (currentVoxel.x = minVoxelCoords.x; currentVoxel.x < maxVoxelCoords.x; currentVoxel.x++)
+			for (currentVoxel.y = minVoxelCoords.y; currentVoxel.y < maxVoxelCoords.y; currentVoxel.y++)
+				for (currentVoxel.z = minVoxelCoords.z; currentVoxel.z < maxVoxelCoords.z; currentVoxel.z++)
 				{
-					glm::vec3 voxelCenter =
-						glm::vec3(minP.x, minP.y, minP.z) +
-						glm::vec3(i * voxelSize + voxelSize / 2.0f, j * voxelSize + voxelSize / 2.0f, k * voxelSize + voxelSize / 2.0f);
+					glm::vec3 currentVoxelMin = offset + glm::vec3(currentVoxel) * voxelSize;
+					glm::vec3 currentVoxelMax = currentVoxelMin + glm::vec3(voxelSize, voxelSize, voxelSize);
+					glm::vec3 currentVoxelCenter = (currentVoxelMin + currentVoxelMax) / 2.0f;
+					// approximation is good and fast
+					bool voxelValue = glm::distance2(Geometry::ClosestPointPointTriangle(currentVoxelCenter, *posPtrA, *posPtrB, *posPtrC), currentVoxelCenter) < voxelSize * voxelSize;
+					// bool voxelValue = Geometry::IntersectAABBTriangle(currentVoxelMin, currentVoxelMax, *posPtrA, *posPtrB, *posPtrC);
 
-					bool voxelValueForCurrentTri =
-						xyMat[i - minVoxelCoords.x][j - minVoxelCoords.y] &&
-						xzMat[i - minVoxelCoords.x][k - minVoxelCoords.z] &&
-						zyMat[k - minVoxelCoords.z][j - minVoxelCoords.y] &&
-						glm::abs(Math::PlanePointDistance(triNormal, *posPtrA, voxelCenter)) < voxelSize * RASTERIZE_MAX_DISTANCE;
-
-					mat[i][j][k] = mat[i][j][k] || voxelValueForCurrentTri;
+					SetVoxel(currentVoxel, (void*) (GetVoxel(currentVoxel) != nullptr || voxelValue));
 				}
-			}
-		}
 	}
 }
 
 // https://www.researchgate.net/publication/2611491_A_Fast_Voxel_Traversal_Algorithm_for_Ray_Tracing
-bool sf::VoxelBoxData::CastRay(const glm::vec3& origin, const glm::vec3& direction, bool avoidEarlyCollision, float* out_t, bool draw)
+void* sf::VoxelBoxData::CastRay(const glm::vec3& origin, const glm::vec3& direction, bool avoidEarlyCollision, float* out_t, bool draw)
 {
 	glm::vec3 dir = glm::normalize(direction);
 	if (dir.x == 0.0f) dir.x = 0.00000001f;
@@ -189,7 +114,7 @@ bool sf::VoxelBoxData::CastRay(const glm::vec3& origin, const glm::vec3& directi
 		glm::vec3 point;
 		// move origin to bounding box
 		if (!Math::RayAABBIntersect(origin, dir, bbmin, bbmax, &point))
-			return false;
+			return nullptr;
 
 		currentVoxel = {
 			(point.x - bbmin.x) / voxelSize,
@@ -197,11 +122,11 @@ bool sf::VoxelBoxData::CastRay(const glm::vec3& origin, const glm::vec3& directi
 			(point.z - bbmin.z) / voxelSize
 		};
 		if (currentVoxel.x < 0) currentVoxel.x = 0;
-		if (currentVoxel.x > mat.size() - 1) currentVoxel.x = mat.size() - 1;
+		if (currentVoxel.x > voxelCountPerAxis.x - 1) currentVoxel.x = voxelCountPerAxis.x - 1;
 		if (currentVoxel.y < 0) currentVoxel.y = 0;
-		if (currentVoxel.y > mat[0].size() - 1) currentVoxel.y = mat[0].size() - 1;
+		if (currentVoxel.y > voxelCountPerAxis.y - 1) currentVoxel.y = voxelCountPerAxis.y - 1;
 		if (currentVoxel.z < 0) currentVoxel.z = 0;
-		if (currentVoxel.z > mat[0][0].size() - 1) currentVoxel.z = mat[0][0].size() - 1;
+		if (currentVoxel.z > voxelCountPerAxis.z - 1) currentVoxel.z = voxelCountPerAxis.z - 1;
 	}
 	else
 	{
@@ -239,13 +164,13 @@ bool sf::VoxelBoxData::CastRay(const glm::vec3& origin, const glm::vec3& directi
 			if (tMax.x < tMax.z)
 			{
 				currentVoxel.x = currentVoxel.x + step.x;
-				if (currentVoxel.x > mat.size() - 1) return false;
+				if (currentVoxel.x > voxelCountPerAxis.x - 1) return nullptr;
 				tMax.x = tMax.x + glm::abs(tDelta.x);
 			}
 			else
 			{
 				currentVoxel.z = currentVoxel.z + step.z;
-				if (currentVoxel.z > mat[0][0].size() - 1) return false;
+				if (currentVoxel.z > voxelCountPerAxis.z - 1) return nullptr;
 				tMax.z = tMax.z + glm::abs(tDelta.z);
 			}
 		}
@@ -254,27 +179,27 @@ bool sf::VoxelBoxData::CastRay(const glm::vec3& origin, const glm::vec3& directi
 			if (tMax.y < tMax.z)
 			{
 				currentVoxel.y = currentVoxel.y + step.y;
-				if (currentVoxel.y > mat[0].size() - 1) return false;
+				if (currentVoxel.y > voxelCountPerAxis.y - 1) return nullptr;
 				tMax.y = tMax.y + glm::abs(tDelta.y);
 			}
 			else
 			{
 				currentVoxel.z = currentVoxel.z + step.z;
-				if (currentVoxel.z > mat[0][0].size() - 1) return false;
+				if (currentVoxel.z > voxelCountPerAxis.z - 1) return nullptr;
 				tMax.z = tMax.z + glm::abs(tDelta.z);
 			}
 		}
-		if (!mat[currentVoxel.x][currentVoxel.y][currentVoxel.z] && !inAir)
+		if (!GetVoxel(currentVoxel) && !inAir)
 			inAir = true;
 
-		if (mat[currentVoxel.x][currentVoxel.y][currentVoxel.z] && inAir)
+		if (GetVoxel(currentVoxel) && inAir)
 		{
 			if (out_t != nullptr)
 				*out_t = glm::distance(GetVoxelCenterLocation(currentVoxel), origin);
-			return true;
+			return GetVoxel(currentVoxel);
 		}
 
 		if (draw)
-			mat[currentVoxel.x][currentVoxel.y][currentVoxel.z] = true;
+			SetVoxel(currentVoxel, (void*)true);
 	}
 }

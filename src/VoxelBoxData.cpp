@@ -92,7 +92,7 @@ void sf::VoxelBoxData::BuildFromMesh(const MeshData& mesh, float voxelSize)
 }
 
 // https://www.researchgate.net/publication/2611491_A_Fast_Voxel_Traversal_Algorithm_for_Ray_Tracing
-void* sf::VoxelBoxData::CastRay(const glm::vec3& origin, const glm::vec3& direction, bool avoidEarlyCollision, float* out_t, bool draw)
+void* sf::VoxelBoxData::CastRay(const glm::vec3& origin, const glm::vec3& direction, bool avoidEarlyCollision, float* out_t) const
 {
 	glm::vec3 dir = glm::normalize(direction);
 	if (dir.x == 0.0f) dir.x = 0.00000001f;
@@ -199,7 +199,7 @@ void* sf::VoxelBoxData::CastRay(const glm::vec3& origin, const glm::vec3& direct
 			return GetVoxel(currentVoxel);
 		}
 
-		if (draw)
-			SetVoxel(currentVoxel, (void*)true);
+		// if (draw)
+			// SetVoxel(currentVoxel, (void*)true);
 	}
 }

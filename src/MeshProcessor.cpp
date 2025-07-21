@@ -8,7 +8,6 @@
 
 #include <Random.h>
 #include <Math.hpp>
-#include <aobaker.h>
 
 namespace sf {
 
@@ -180,7 +179,25 @@ void sf::MeshProcessor::ComputeTangentSpace(MeshData& mesh)
 	}
 }
 
-void sf::MeshProcessor::BakeAoToVertices(MeshData& mesh)
+float sf::MeshProcessor::ComputeOcclusion(const std::vector<std::pair<bool, float>>& rayResults, float maxDistance, float falloff)
+{
+	float brightness = 1.0f;
+	int hit_count = 0;
+	for (const auto& r : rayResults)
+	{
+		if (r.first) // did hit
+		{
+			float normalizedDistance = r.second / maxDistance;
+			float occlusion = 1.0f - std::pow(normalizedDistance, falloff);
+			brightness -= occlusion / (float)rayResults.size();
+		}
+	}
+
+	brightness = glm::min(1.0f, brightness * glm::sqrt(2.0f));
+	return brightness;
+}
+
+void sf::MeshProcessor::ComputeVertexAmbientOcclusion(MeshData& mesh, const VoxelBoxData* voxelVolume, const VertexAmbientOcclusionBakerConfig* config)
 {
 	DataType positionDataType = mesh.vertexLayout.GetComponent(MeshData::VertexAttribute::Position)->dataType;
 	DataType aoDataType = mesh.vertexLayout.GetComponent(MeshData::VertexAttribute::AO)->dataType;
@@ -188,13 +205,92 @@ void sf::MeshProcessor::BakeAoToVertices(MeshData& mesh)
 	assert(positionDataType == DataType::vec3f32);
 	assert(aoDataType == DataType::f32);
 
-	float* posPointer = (float*) mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Position, 0);
-	float* aoPointer = (float*) mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::AO, 0);
+	VertexAmbientOcclusionBakerConfig autoConfig;
+	if (config == nullptr)
+	{
+		if (voxelVolume != nullptr)
+		{
+			glm::vec3 volumeSize = glm::vec3(voxelVolume->voxelCountPerAxis) * voxelVolume->voxelSize;
+			autoConfig.rayDistance = volumeSize.length();
+		}
+		else
+		{
+			glm::vec3 minvpos, maxvpos;
+			minvpos = maxvpos = *((glm::vec3*) mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Position, 0));
+			for (int i = 1; i < mesh.vertexCount; i++)
+			{
+				glm::vec3 vertexPos = *((glm::vec3*) mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Position, i));
+				minvpos.x = std::min(vertexPos.x, minvpos.x);
+				minvpos.y = std::min(vertexPos.y, minvpos.y);
+				minvpos.z = std::min(vertexPos.z, minvpos.z);
+				maxvpos.x = std::max(vertexPos.x, maxvpos.x);
+				maxvpos.y = std::max(vertexPos.y, maxvpos.y);
+				maxvpos.z = std::max(vertexPos.z, maxvpos.z);
+			}
+			glm::vec3 cornertocorner = maxvpos - minvpos;
+			autoConfig.rayDistance = cornertocorner.length();
+		}
+		autoConfig.falloff = autoConfig.rayDistance * 1.1f;
+		config = &autoConfig;
+	}
 
-	uint32_t vertexSizeInBytes = mesh.vertexLayout.GetSize();
 
-	aobaker::config conf;
-	aobaker::BakeAoToVertices(posPointer, aoPointer, mesh.vertexCount, vertexSizeInBytes, vertexSizeInBytes, &mesh.indexVector[0], mesh.indexVector.size(), conf);
+	#pragma omp parallel for
+	for (int q = 0; q < mesh.vertexCount; q++)
+	{
+		glm::vec3 vertexPos = *((glm::vec3*) mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Position, q));
+		float* aoTarget = (float*) mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::AO, q);
+
+		std::vector<std::pair<bool, float>> rayResults(config->rayCount);
+		for (int i = 0; i < config->rayCount; i++)
+		{
+			glm::vec3 rayDir = Random::UnitVec3();
+			if (config->onlyCastRaysUpwards && rayDir.y < 0.0f)
+				rayDir.y = -rayDir.y;
+
+			bool didHit = false;
+			float distance;
+			if (voxelVolume != nullptr)
+			{
+				didHit = voxelVolume->CastRay(vertexPos + (rayDir * config->rayOriginOffset), rayDir, true, &distance) != nullptr;
+				if (distance > config->rayDistance)
+					distance = config->rayDistance;
+				rayResults[i] = { didHit, distance };
+			}
+			else
+			{
+				for (int j = 0; j < mesh.indexVector.size() && !didHit; j += 3) // for each face, intersect
+				{
+					if (mesh.indexVector[j + 0] == q || mesh.indexVector[j + 1] == q || mesh.indexVector[j + 2] == q)
+						continue; // current vertex belongs to this face
+
+					didHit = Math::RayTriIntersect(vertexPos + (rayDir * config->rayOriginOffset), rayDir,
+						*((glm::vec3*) mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Position, mesh.indexVector[j + 0])),
+						*((glm::vec3*) mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Position, mesh.indexVector[j + 1])),
+						*((glm::vec3*) mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Position, mesh.indexVector[j + 2])),
+						&distance);
+				}
+				if (distance > config->rayDistance)
+					distance = config->rayDistance;
+			}
+		}
+		*aoTarget = ComputeOcclusion(rayResults, config->rayDistance, config->falloff);
+	}
+
+	for (int pass = 0; pass < config->denoisePasses; pass++)
+	{
+		for (int i = 0; i < mesh.indexVector.size(); i += 3)
+		{
+			float average =
+				(*((float*) mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::AO, mesh.indexVector[i + 0])) +
+					*((float*) mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::AO, mesh.indexVector[i + 1])) +
+					*((float*) mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::AO, mesh.indexVector[i + 2]))) / 3.0f;
+
+			*((float*) mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::AO, mesh.indexVector[i + 0])) = glm::mix(*((float*) mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::AO, mesh.indexVector[i + 0])), average, config->denoiseWeight);
+			*((float*) mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::AO, mesh.indexVector[i + 1])) = glm::mix(*((float*) mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::AO, mesh.indexVector[i + 1])), average, config->denoiseWeight);
+			*((float*) mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::AO, mesh.indexVector[i + 2])) = glm::mix(*((float*) mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::AO, mesh.indexVector[i + 2])), average, config->denoiseWeight);
+		}
+	}
 }
 
 void sf::MeshProcessor::GenerateMeshWithFunction(MeshData& mesh, void(*functionPointer)())

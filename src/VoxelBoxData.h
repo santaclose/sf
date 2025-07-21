@@ -18,7 +18,7 @@ namespace sf {
 
 		void BuildEmpty(const glm::uvec3& voxelCountPerAxis, float voxelSize = 1.0f, const glm::vec3& offset = { 0.0f, 0.0f, 0.0f });
 		void BuildFromMesh(const MeshData& meshData, float voxelSize);
-		void* CastRay(const glm::vec3& origin, const glm::vec3& direction, bool avoidEarlyCollision = true, float* out_t = nullptr, bool draw = false);
+		void* CastRay(const glm::vec3& origin, const glm::vec3& direction, bool avoidEarlyCollision = true, float* out_t = nullptr) const;
 
 		inline glm::vec3 GetAABBMin() const
 		{

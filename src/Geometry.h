@@ -84,6 +84,13 @@ namespace sf::Geometry
 		return tNear <= tFar;
 	}
 
+	inline float PointPlaneDistance(
+		const glm::vec3& planeNormal, const glm::vec3& planePoint,
+		const glm::vec3& point)
+	{
+		return glm::dot(glm::normalize(planeNormal), point - planePoint);
+	}
+
 	inline glm::vec3 ClosestPointPointSegment(
 		const glm::vec3& point,
 		const glm::vec3& segA, const glm::vec3& segB)

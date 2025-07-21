@@ -89,7 +89,9 @@ namespace sf
 			errt::seed = i;
 			MeshProcessor::GenerateMeshWithFunction(generatedMeshes[i], errt::GenerateModel);
 			generatedMeshes[i].ChangeVertexLayout(Defaults::VertexLayout());
-			MeshProcessor::BakeAoToVertices(generatedMeshes[i]);
+			VoxelBoxData vv;
+			vv.BuildFromMesh(generatedMeshes[i], 0.01f);
+			MeshProcessor::ComputeVertexAmbientOcclusion(generatedMeshes[i], &vv);
 			generatedMeshes[i].SaveToFile(cahedMeshesPath);
 		}
 

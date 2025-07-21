@@ -68,7 +68,9 @@ namespace sf
 
 			int objid = ObjImporter::Load(filePath);
 			ObjImporter::GenerateMeshData(objid, sampleMeshes[i]);
-			MeshProcessor::BakeAoToVertices(sampleMeshes[i]);
+			VoxelBoxData vv;
+			vv.BuildFromMesh(sampleMeshes[i], 0.01f);
+			MeshProcessor::ComputeVertexAmbientOcclusion(sampleMeshes[i], &vv);
 
 			Transform& e_t = galleryObjects.back().AddComponent<Transform>();
 			if (i == 0)

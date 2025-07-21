@@ -49,7 +49,6 @@ project "sf"
 		"vendor/glm/glm/**.hpp",
 		"vendor/glm/glm/**.inl",
 		"vendor/sfmg/*.cpp",
-		"vendor/aobaker/*.cpp",
 		"vendor/nanosvg/*.cpp",
 		"vendor/sebtext/*.cpp",
 		"vendor/vendor.cpp"
@@ -72,7 +71,6 @@ project "sf"
 		"vendor/sfmg",
 		"vendor/tinygltf",
 		"vendor/gli/gli",
-		"vendor/aobaker",
 		"vendor/entt/src/entt",
 		"vendor/nanosvg",
 		"vendor/imgui",
@@ -108,10 +106,15 @@ project "sf"
 		defines "SF_DEBUG"
 		runtime "Debug"
 		symbols "on"
-		-- buildoptions { "/openmp" }
 
 	filter "configurations:Release"
 		defines "SF_RELEASE"
 		runtime "Release"
 		optimize "on"
-		-- buildoptions { "/openmp" }
+
+	filter { "action:gmake" }
+		buildoptions { "-fopenmp" }
+		linkoptions { "-fopenmp" }
+
+	filter { "action:vs2022" }
+		buildoptions { "/openmp" }

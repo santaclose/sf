@@ -7,9 +7,6 @@
 [submodule "vendor/tinygltf"]
 	path = vendor/tinygltf
 	url = https://github.com/syoyo/tinygltf
-[submodule "vendor/aobaker"]
-	path = vendor/aobaker
-	url = https://github.com/santaclose/aobaker
 [submodule "vendor/imgui"]
 	path = vendor/imgui
 	url = https://github.com/santaclose/imgui

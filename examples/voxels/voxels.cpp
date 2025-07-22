@@ -17,7 +17,7 @@
 #include <Scene/Entity.h>
 #include <Scene/Scene.h>
 
-#include <Components/VoxelBox.h>
+#include <Components/VoxelVolume.h>
 #include <Components/Mesh.h>
 #include <Components/Camera.h>
 #include <Components/Transform.h>
@@ -40,9 +40,9 @@ namespace sf
 	float cameraDistance;
 	bool rotationEnabled;
 
-	VoxelBoxData monkevbd;
-	VoxelBoxData monkevbd2;
-	VoxelBoxData monkevbd3;
+	VoxelVolumeData monkevbd;
+	VoxelVolumeData monkevbd2;
+	VoxelVolumeData monkevbd3;
 
 	int selectedModel;
 
@@ -63,19 +63,19 @@ namespace sf
 		{
 			galleryObjects.push_back(scene.CreateEntity());
 			Transform& objectTransform = galleryObjects.back().AddComponent<Transform>();
-			VoxelBox& objectVoxelBox = galleryObjects.back().AddComponent<VoxelBox>(&monkevbd);
+			VoxelVolume& objectVoxelVolume = galleryObjects.back().AddComponent<VoxelVolume>(&monkevbd);
 		}
 
 		{
 			galleryObjects.push_back(scene.CreateEntity());
 			Transform& objectTransform = galleryObjects.back().AddComponent<Transform>();
-			VoxelBox& objectVoxelBox = galleryObjects.back().AddComponent<VoxelBox>(&monkevbd2);
+			VoxelVolume& objectVoxelVolume = galleryObjects.back().AddComponent<VoxelVolume>(&monkevbd2);
 		}
 
 		{
 			galleryObjects.push_back(scene.CreateEntity());
 			Transform& objectTransform = galleryObjects.back().AddComponent<Transform>();
-			VoxelBox& objectVoxelBox = galleryObjects.back().AddComponent<VoxelBox>(&monkevbd3);
+			VoxelVolume& objectVoxelVolume = galleryObjects.back().AddComponent<VoxelVolume>(&monkevbd3);
 		}
 
 		{

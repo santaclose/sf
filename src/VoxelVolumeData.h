@@ -6,15 +6,15 @@
 
 namespace sf {
 
-	struct VoxelBoxData
+	struct VoxelVolumeData
 	{
 		float voxelSize;
 		glm::vec3 offset; // from center to min corner
 		std::vector<void*> mat;
 		glm::uvec3 voxelCountPerAxis;
 
-		VoxelBoxData() = default;
-		~VoxelBoxData() = default;
+		VoxelVolumeData() = default;
+		~VoxelVolumeData() = default;
 
 		void BuildEmpty(const glm::uvec3& voxelCountPerAxis, float voxelSize = 1.0f, const glm::vec3& offset = { 0.0f, 0.0f, 0.0f });
 		void BuildFromMesh(const MeshData& meshData, float voxelSize);

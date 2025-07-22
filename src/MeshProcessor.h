@@ -1,7 +1,7 @@
 #pragma once
 
 #include <MeshData.h>
-#include <VoxelBoxData.h>
+#include <VoxelVolumeData.h>
 #include <string>
 
 namespace sf {
@@ -26,6 +26,6 @@ namespace sf {
 		static void ComputeTangentSpace(MeshData& mesh);
 
 		static void GenerateMeshWithFunction(MeshData& mesh, void (*functionPointer)());
-		static void ComputeVertexAmbientOcclusion(MeshData& mesh, const VoxelBoxData* voxelVolume = nullptr, const VertexAmbientOcclusionBakerConfig* config = nullptr);
+		static void ComputeVertexAmbientOcclusion(MeshData& mesh, const VoxelVolumeData* voxelVolume = nullptr, const VertexAmbientOcclusionBakerConfig* config = nullptr);
 	};
 }

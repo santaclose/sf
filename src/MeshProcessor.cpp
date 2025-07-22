@@ -197,7 +197,7 @@ float sf::MeshProcessor::ComputeOcclusion(const std::vector<std::pair<bool, floa
 	return brightness;
 }
 
-void sf::MeshProcessor::ComputeVertexAmbientOcclusion(MeshData& mesh, const VoxelBoxData* voxelVolume, const VertexAmbientOcclusionBakerConfig* config)
+void sf::MeshProcessor::ComputeVertexAmbientOcclusion(MeshData& mesh, const VoxelVolumeData* voxelVolume, const VertexAmbientOcclusionBakerConfig* config)
 {
 	DataType positionDataType = mesh.vertexLayout.GetComponent(MeshData::VertexAttribute::Position)->dataType;
 	DataType aoDataType = mesh.vertexLayout.GetComponent(MeshData::VertexAttribute::AO)->dataType;

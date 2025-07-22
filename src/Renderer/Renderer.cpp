@@ -30,7 +30,7 @@ namespace sf::Renderer
 	GlMaterial defaultMaterial;
 	GlShader defaultSkinningShader;
 	GlMaterial defaultSkinningMaterial;
-	GlShader voxelBoxShader;
+	GlShader voxelVolumeShader;
 	GlShader drawLineShader;
 
 	float aspectRatio;
@@ -114,7 +114,7 @@ namespace sf::Renderer
 
 	std::unordered_map<void*, ParticleSystemData> particleSystemData;
 
-	std::unordered_map<const sf::VoxelBoxData*, ParticleGpuData> voxelBoxGpuData;
+	std::unordered_map<const sf::VoxelVolumeData*, ParticleGpuData> voxelVolumeGpuData;
 
 	std::vector<GlMaterial*> materials;
 	struct EnvironmentData
@@ -201,32 +201,32 @@ namespace sf::Renderer
 		glBindVertexArray(0);
 	}
 
-	void CreateVoxelBoxGpuData(const sf::VoxelBoxData* voxelBox)
+	void CreateVoxelVolumeGpuData(const sf::VoxelVolumeData* voxelVolume)
 	{
-		voxelBoxGpuData[voxelBox] = ParticleGpuData();
+		voxelVolumeGpuData[voxelVolume] = ParticleGpuData();
 		Transform voxelSpaceCursor;
-		voxelSpaceCursor.scale = voxelBox->voxelSize;
+		voxelSpaceCursor.scale = voxelVolume->voxelSize;
 		int currentCube = 0;
 		glm::uvec3 currentVoxel;
-		for (currentVoxel.x = 0; currentVoxel.x < voxelBox->voxelCountPerAxis.x; currentVoxel.x++)
-			for (currentVoxel.y = 0; currentVoxel.y < voxelBox->voxelCountPerAxis.y; currentVoxel.y++)
-				for (currentVoxel.z = 0; currentVoxel.z < voxelBox->voxelCountPerAxis.z; currentVoxel.z++)
+		for (currentVoxel.x = 0; currentVoxel.x < voxelVolume->voxelCountPerAxis.x; currentVoxel.x++)
+			for (currentVoxel.y = 0; currentVoxel.y < voxelVolume->voxelCountPerAxis.y; currentVoxel.y++)
+				for (currentVoxel.z = 0; currentVoxel.z < voxelVolume->voxelCountPerAxis.z; currentVoxel.z++)
 				{
-					if (voxelBox->GetVoxel(currentVoxel))
+					if (voxelVolume->GetVoxel(currentVoxel))
 					{
-						voxelSpaceCursor.position = voxelBox->offset;
-						voxelSpaceCursor.position.x += voxelBox->voxelSize * ((float)currentVoxel.x + 0.5f);
-						voxelSpaceCursor.position.y += voxelBox->voxelSize * ((float)currentVoxel.y + 0.5f);
-						voxelSpaceCursor.position.z += voxelBox->voxelSize * ((float)currentVoxel.z + 0.5f);
+						voxelSpaceCursor.position = voxelVolume->offset;
+						voxelSpaceCursor.position.x += voxelVolume->voxelSize * ((float)currentVoxel.x + 0.5f);
+						voxelSpaceCursor.position.y += voxelVolume->voxelSize * ((float)currentVoxel.y + 0.5f);
+						voxelSpaceCursor.position.z += voxelVolume->voxelSize * ((float)currentVoxel.z + 0.5f);
 
-						voxelBoxGpuData[voxelBox].perParticleData.emplace_back();
-						voxelBoxGpuData[voxelBox].perParticleData[currentCube].transform = voxelSpaceCursor;
+						voxelVolumeGpuData[voxelVolume].perParticleData.emplace_back();
+						voxelVolumeGpuData[voxelVolume].perParticleData[currentCube].transform = voxelSpaceCursor;
 						currentCube++;
 					}
 				}
-		glGenBuffers(1, &(voxelBoxGpuData[voxelBox].gl_ssbo));
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, voxelBoxGpuData[voxelBox].gl_ssbo);
-		glBufferData(GL_SHADER_STORAGE_BUFFER, voxelBoxGpuData[voxelBox].perParticleData.size() * sizeof(PerParticleGpuData), voxelBoxGpuData[voxelBox].perParticleData.data(), GL_STATIC_DRAW);
+		glGenBuffers(1, &(voxelVolumeGpuData[voxelVolume].gl_ssbo));
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, voxelVolumeGpuData[voxelVolume].gl_ssbo);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, voxelVolumeGpuData[voxelVolume].perParticleData.size() * sizeof(PerParticleGpuData), voxelVolumeGpuData[voxelVolume].perParticleData.data(), GL_STATIC_DRAW);
 	}
 
 	void CreateSpriteGpuData()
@@ -695,7 +695,7 @@ void sf::Renderer::DrawParticleSystem(ParticleSystem& particleSystem, Transform&
 	glDepthMask(GL_TRUE); // Restore depth mask
 }
 
-void sf::Renderer::DrawVoxelBox(VoxelBox& voxelBox, Transform& transform)
+void sf::Renderer::DrawVoxelVolume(VoxelVolume& voxelVolume, Transform& transform)
 {
 	if (!activeCameraEntity)
 		return;
@@ -703,12 +703,12 @@ void sf::Renderer::DrawVoxelBox(VoxelBox& voxelBox, Transform& transform)
 	if (meshGpuData.find(&Defaults::MeshDataCube()) == meshGpuData.end()) // create mesh data if not there
 		CreateMeshGpuData(&Defaults::MeshDataCube());
 
-	if (voxelBoxGpuData.find(voxelBox.voxelBoxData) == voxelBoxGpuData.end())
-		CreateVoxelBoxGpuData(voxelBox.voxelBoxData);
+	if (voxelVolumeGpuData.find(voxelVolume.voxelVolumeData) == voxelVolumeGpuData.end())
+		CreateVoxelVolumeGpuData(voxelVolume.voxelVolumeData);
 
-	if (!voxelBoxShader.Initialized())
-		voxelBoxShader.CreateFromFiles("assets/shaders/voxelBox.vert", "assets/shaders/uv.frag");
-	voxelBoxShader.Bind();
+	if (!voxelVolumeShader.Initialized())
+		voxelVolumeShader.CreateFromFiles("assets/shaders/voxelVolume.vert", "assets/shaders/uv.frag");
+	voxelVolumeShader.Bind();
 	glPolygonMode(GL_FRONT, GL_FILL);
 	glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
 	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
@@ -720,8 +720,8 @@ void sf::Renderer::DrawVoxelBox(VoxelBox& voxelBox, Transform& transform)
 
 	glBindVertexArray(meshGpuData[&Defaults::MeshDataCube()].gl_vao);
 	glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, voxelBoxGpuData[voxelBox.voxelBoxData].gl_ssbo);
-	glDrawElementsInstanced(GL_TRIANGLES, Defaults::MeshDataCube().indexVector.size(), GL_UNSIGNED_INT, (void*)0, voxelBoxGpuData[voxelBox.voxelBoxData].perParticleData.size());
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, voxelVolumeGpuData[voxelVolume.voxelVolumeData].gl_ssbo);
+	glDrawElementsInstanced(GL_TRIANGLES, Defaults::MeshDataCube().indexVector.size(), GL_UNSIGNED_INT, (void*)0, voxelVolumeGpuData[voxelVolume.voxelVolumeData].perParticleData.size());
 }
 
 void sf::Renderer::DrawSprite(Sprite& sprite, ScreenCoordinates& screenCoordinates)
@@ -989,7 +989,7 @@ void sf::Renderer::Terminate()
 	}
 	defaultShader.Delete();
 	defaultSkinningShader.Delete();
-	voxelBoxShader.Delete();
+	voxelVolumeShader.Delete();
 	drawLineShader.Delete();
 
 	environmentData.envTexture.Delete();

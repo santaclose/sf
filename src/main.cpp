@@ -106,12 +106,12 @@ int main(int argc, char** argv)
 				sf::Renderer::DrawParticleSystem(particleSystem, transform, deltaTime);
 		}
 
-		auto voxelBoxRenderView = sf::Scene::activeScene->GetRegistry().view<sf::Base, sf::VoxelBox, sf::Transform>();
-		for (auto entity : voxelBoxRenderView)
+		auto voxelVolumeRenderView = sf::Scene::activeScene->GetRegistry().view<sf::Base, sf::VoxelVolume, sf::Transform>();
+		for (auto entity : voxelVolumeRenderView)
 		{
-			auto [base, voxelBox, transform] = voxelBoxRenderView.get<sf::Base, sf::VoxelBox, sf::Transform>(entity);
+			auto [base, voxelVolume, transform] = voxelVolumeRenderView.get<sf::Base, sf::VoxelVolume, sf::Transform>(entity);
 			if (base.isEntityEnabled)
-				sf::Renderer::DrawVoxelBox(voxelBox, transform);
+				sf::Renderer::DrawVoxelVolume(voxelVolume, transform);
 		}
 		if (sf::Renderer::IsDebugDrawEnabled())
 		{

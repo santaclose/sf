@@ -1,9 +1,9 @@
-#include "VoxelBoxData.h"
+#include "VoxelVolumeData.h"
 
 #include <Math.hpp>
 #include <Geometry.h>
 
-void sf::VoxelBoxData::BuildEmpty(const glm::uvec3& voxelCountPerAxis, float voxelSize, const glm::vec3& offset)
+void sf::VoxelVolumeData::BuildEmpty(const glm::uvec3& voxelCountPerAxis, float voxelSize, const glm::vec3& offset)
 {
 	this->voxelSize = voxelSize;
 	this->offset = offset;
@@ -12,7 +12,7 @@ void sf::VoxelBoxData::BuildEmpty(const glm::uvec3& voxelCountPerAxis, float vox
 	mat.resize(voxelCountPerAxis.x * voxelCountPerAxis.y * voxelCountPerAxis.z, nullptr);
 }
 
-void sf::VoxelBoxData::BuildFromMesh(const MeshData& mesh, float voxelSize)
+void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize)
 {
 	DataType positionDataType = mesh.vertexLayout.GetComponent(MeshData::VertexAttribute::Position)->dataType;
 	assert(positionDataType == DataType::vec3f32);
@@ -92,7 +92,7 @@ void sf::VoxelBoxData::BuildFromMesh(const MeshData& mesh, float voxelSize)
 }
 
 // https://www.researchgate.net/publication/2611491_A_Fast_Voxel_Traversal_Algorithm_for_Ray_Tracing
-void* sf::VoxelBoxData::CastRay(const glm::vec3& origin, const glm::vec3& direction, bool avoidEarlyCollision, float* out_t) const
+void* sf::VoxelVolumeData::CastRay(const glm::vec3& origin, const glm::vec3& direction, bool avoidEarlyCollision, float* out_t) const
 {
 	glm::vec3 dir = glm::normalize(direction);
 	if (dir.x == 0.0f) dir.x = 0.00000001f;

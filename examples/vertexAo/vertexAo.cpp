@@ -68,7 +68,7 @@ namespace sf
 
 			int objid = ObjImporter::Load(filePath);
 			ObjImporter::GenerateMeshData(objid, sampleMeshes[i]);
-			VoxelBoxData vv;
+			VoxelVolumeData vv;
 			vv.BuildFromMesh(sampleMeshes[i], 0.01f);
 			MeshProcessor::ComputeVertexAmbientOcclusion(sampleMeshes[i], &vv);
 

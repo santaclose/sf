@@ -7,10 +7,18 @@ namespace sf {
 	
 	struct Mesh
 	{
-		const MeshData* meshData;
+		const MeshData* meshData = nullptr;
 		std::vector<uint32_t> materials;
 
-		Mesh(const MeshData* meshData);
-		Mesh(const MeshData* meshData, uint32_t material);
+		inline Mesh(const MeshData* meshData)
+		{
+			this->meshData = meshData;
+			this->materials.resize(meshData->pieces.size(), ~0U);
+		}
+		inline Mesh(const MeshData* meshData, uint32_t material)
+		{
+			this->meshData = meshData;
+			this->materials.resize(meshData->pieces.size(), material);
+		}
 	};
 }

@@ -2,15 +2,27 @@
 
 #include <MeshData.h>
 #include <SkeletonData.h>
-
-#include <Components/Mesh.h>
+#include <vector>
 
 namespace sf {
 
-	struct SkinnedMesh : public Mesh
+	struct SkinnedMesh
 	{
-	public:
+		const MeshData* meshData = nullptr;
 		const SkeletonData* skeletonData = nullptr;
-		SkinnedMesh(const MeshData* meshData, const SkeletonData* skeletonData);
+		std::vector<uint32_t> materials;
+
+		inline SkinnedMesh(const MeshData* meshData, const SkeletonData* skeletonData)
+		{
+			this->meshData = meshData;
+			this->skeletonData = skeletonData;
+			this->materials.resize(meshData->pieces.size(), ~0U);
+		}
+		inline SkinnedMesh(const MeshData* meshData, uint32_t material, const SkeletonData* skeletonData)
+		{
+			this->meshData = meshData;
+			this->skeletonData = skeletonData;
+			this->materials.resize(meshData->pieces.size(), material);
+		}
 	};
 }

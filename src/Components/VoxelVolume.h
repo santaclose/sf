@@ -7,6 +7,9 @@ namespace sf {
 	struct VoxelVolume
 	{
 		const VoxelVolumeData* voxelVolumeData;
-		VoxelVolume(const VoxelVolumeData* vv);
+		inline VoxelVolume(const VoxelVolumeData* vv)
+		{
+			this->voxelVolumeData = vv;
+		}
 	};
 }

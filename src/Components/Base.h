@@ -8,6 +8,11 @@ namespace sf {
 
 		bool isEntityEnabled;
 		Entity entity;
-		Base(Entity entity);
+
+		inline Base(Entity entity)
+		{
+			this->entity = entity;
+			this->isEntityEnabled = true;
+		}
 	};
 }

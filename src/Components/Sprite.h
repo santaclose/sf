@@ -7,15 +7,13 @@ namespace sf {
 
 	struct Sprite
 	{
-	private:
-		static int counter;
-
-	public:
-		int id;
 		const Bitmap* bitmap;
 		int alignmentH = ALIGNMENT_LEFT;
 		int alignmentV = ALIGNMENT_TOP;
 
-		Sprite(const Bitmap* bitmap);
+		inline Sprite(const Bitmap* bitmap)
+		{
+			this->bitmap = bitmap;
+		}
 	};
 }

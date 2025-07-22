@@ -12,14 +12,33 @@ namespace sf {
 		glm::quat rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
 		float scale = 1.0f;
 
-		Transform() = default;
+		inline glm::mat4 ComputeMatrix() const
+		{
+			glm::mat4 outputMatrix = glm::translate(glm::mat4(1.0), position);
+			glm::mat4 rotationMatrix = (glm::mat4)rotation;
+			outputMatrix *= rotationMatrix;
+			outputMatrix = glm::scale(outputMatrix, glm::vec3(scale, scale, scale));
+			return outputMatrix;
+		}
 
-		glm::mat4 ComputeMatrix() const;
+		inline glm::vec3 Forward() const
+		{
+			return rotation * glm::vec3(0, 0, -1);
+		}
 
-		glm::vec3 Forward() const;
-		glm::vec3 Right() const;
-		glm::vec3 Up() const;
+		inline glm::vec3 Right() const
+		{
+			return rotation * glm::vec3(1, 0, 0);
+		}
 
-		void LookAt(const glm::vec3& target, const glm::vec3& up);
+		inline glm::vec3 Up() const
+		{
+			return rotation * glm::vec3(0, 1, 0);
+		}
+
+		inline void LookAt(const glm::vec3& target, const glm::vec3& up)
+		{
+			rotation = glm::quatLookAt(glm::normalize(target - position), up);
+		}
 	};
 }

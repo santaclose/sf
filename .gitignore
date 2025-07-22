@@ -18,3 +18,9 @@ premake-*
 **.hdr
 **.mtl
 **.spv
+**.ttf
+**.mesh
+**.zip
+
+Makefile
+sf.make

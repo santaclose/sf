@@ -721,7 +721,10 @@ namespace sf::Geometry
 		return
 			IntersectTriangleSegment(tri0A, tri0B, tri0C, tri1A, tri1B, unused) ||
 			IntersectTriangleSegment(tri0A, tri0B, tri0C, tri1B, tri1C, unused) ||
-			IntersectTriangleSegment(tri0A, tri0B, tri0C, tri1C, tri1A, unused);
+			IntersectTriangleSegment(tri0A, tri0B, tri0C, tri1C, tri1A, unused) ||
+			IntersectTriangleSegment(tri1A, tri1B, tri1C, tri0A, tri0B, unused) ||
+			IntersectTriangleSegment(tri1A, tri1B, tri1C, tri0B, tri0C, unused) ||
+			IntersectTriangleSegment(tri1A, tri1B, tri1C, tri0C, tri0A, unused);
 	}
 
 	// for mesh intersects, the other collider must be in mesh local space

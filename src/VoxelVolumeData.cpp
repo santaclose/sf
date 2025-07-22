@@ -1,6 +1,5 @@
 #include "VoxelVolumeData.h"
 
-#include <Math.hpp>
 #include <Geometry.h>
 
 void sf::VoxelVolumeData::BuildEmpty(const glm::uvec3& voxelCountPerAxis, float voxelSize, const glm::vec3& offset)
@@ -109,11 +108,11 @@ void* sf::VoxelVolumeData::CastRay(const glm::vec3& origin, const glm::vec3& dir
 	glm::vec3 bbmax = GetAABBMax();
 
 	glm::uvec3 currentVoxel;
-	if (!Math::PointInsideAABB(origin, bbmin, bbmax))
+	if (!Geometry::IntersectPointAABB(origin, bbmin, bbmax))
 	{
 		glm::vec3 point;
 		// move origin to bounding box
-		if (!Math::RayAABBIntersect(origin, dir, bbmin, bbmax, &point))
+		if (!Geometry::IntersectRayAABB(origin, dir, bbmin, bbmax, &point))
 			return nullptr;
 
 		currentVoxel = {

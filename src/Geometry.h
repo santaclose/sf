@@ -10,6 +10,118 @@
 
 namespace sf::Geometry
 {
+	inline bool IntersectPointAABB(
+		const glm::vec3& point,
+		const glm::vec3& boxMin, const glm::vec3& boxMax)
+	{
+		return point.x > boxMin.x && point.y > boxMin.y && point.z > boxMin.z && point.x < boxMax.x && point.y < boxMax.y && point.z < boxMax.z;
+	}
+
+	inline bool IntersectRayTriangle(
+		const glm::vec3& rayOrigin, const glm::vec3& rayDir,
+		const glm::vec3& triA, const glm::vec3& triB, const glm::vec3& triC, float* out_t)
+	{
+		glm::vec3 normal = glm::cross(triB - triA, triC - triA);
+		float q = glm::dot(normal, rayDir);
+		if (q == 0) return false;
+
+		float d = -glm::dot(normal, triA);
+		float t = -(glm::dot(normal, rayOrigin) + d) / q;
+		if (t < 0) return false;
+
+		glm::vec3 hit_point = rayOrigin + rayDir * t;
+
+		glm::vec3 edge0 = triB - triA;
+		glm::vec3 VP0 = hit_point - triA;
+		if (glm::dot(normal, glm::cross(edge0, VP0)) < 0)
+			return false;
+
+		glm::vec3 edge1 = triC - triB;
+		glm::vec3 VP1 = hit_point - triB;
+		if (glm::dot(normal, glm::cross(edge1, VP1)) < 0)
+			return false;
+
+		glm::vec3 edge2 = triA - triC;
+		glm::vec3 VP2 = hit_point - triC;
+		if (glm::dot(normal, glm::cross(edge2, VP2)) < 0)
+			return false;
+
+		if (out_t) *out_t = t;
+		return true;
+	}
+
+	inline bool IntersectRayAABB(
+		const glm::vec3& rayOrigin, const glm::vec3& rayDir,
+		const glm::vec3& boxMin, const glm::vec3& boxMax, glm::vec3* out)
+	{
+		glm::vec3 dirfrac;
+
+		dirfrac.x = 1.0f / (rayDir.x == 0 ? 0.00000001f : rayDir.x);
+		dirfrac.y = 1.0f / (rayDir.y == 0 ? 0.00000001f : rayDir.y);
+		dirfrac.z = 1.0f / (rayDir.z == 0 ? 0.00000001f : rayDir.z);
+
+		float t1 = (boxMin.x - rayOrigin.x) * dirfrac.x;
+		float t2 = (boxMax.x - rayOrigin.x) * dirfrac.x;
+		float t3 = (boxMin.y - rayOrigin.y) * dirfrac.y;
+		float t4 = (boxMax.y - rayOrigin.y) * dirfrac.y;
+		float t5 = (boxMin.z - rayOrigin.z) * dirfrac.z;
+		float t6 = (boxMax.z - rayOrigin.z) * dirfrac.z;
+
+		float tmin = glm::max(glm::max(glm::min(t1, t2), glm::min(t3, t4)), glm::min(t5, t6));
+		float tmax = glm::min(glm::min(glm::max(t1, t2), glm::max(t3, t4)), glm::max(t5, t6));
+
+		if (tmax < 0 || tmin > tmax)
+			return false;
+
+		if (out != nullptr)
+			*out = tmin < 0 ? rayOrigin : rayOrigin + rayDir * tmin;
+		return true;
+	}
+
+	inline float DistancePointSegment2D(
+		const glm::vec2& point,
+		const glm::vec2& segA, const glm::vec2& segB)
+	{
+		float l2 = glm::pow(segA.x - segB.x, 2.0f) + glm::pow(segA.y - segB.y, 2.0f);
+		if (l2 == 0.0f)
+			return glm::pow(point.x - segA.x, 2.0f) + glm::pow(point.y - segA.y, 2.0f);
+		float t = ((point.x - segA.x) * (segB.x - segA.x) + (point.y - segA.y) * (segB.y - segA.y)) / l2;
+		t = glm::max(0.0f, glm::min(1.0f, t));
+		glm::vec2 o = { segA.x + t * (segB.x - segA.x), segA.y + t * (segB.y - segA.y) };
+		return glm::sqrt(glm::pow(point.x - o.x, 2.0f) + glm::pow(point.y - o.y, 2.0f));
+	}
+
+	inline bool IntersectPointTriangle2D(
+		const glm::vec2& point,
+		const glm::vec2& triA, const glm::vec2& triB, const glm::vec2& triC)
+	{
+		float d1, d2, d3;
+		bool has_neg, has_pos;
+
+		d1 = (point.x - triB.x) * (triA.y - triB.y) - (triA.x - triB.x) * (point.y - triB.y);
+		d2 = (point.x - triC.x) * (triB.y - triC.y) - (triB.x - triC.x) * (point.y - triC.y);
+		d3 = (point.x - triA.x) * (triC.y - triA.y) - (triC.x - triA.x) * (point.y - triA.y);
+
+		has_neg = (d1 < 0) || (d2 < 0) || (d3 < 0);
+		has_pos = (d1 > 0) || (d2 > 0) || (d3 > 0);
+
+		return !(has_neg && has_pos);
+	}
+
+	inline float DistancePointTriangle2D(
+		const glm::vec2& point,
+		const glm::vec2& triA, const glm::vec2& triB, const glm::vec2& triC)
+	{
+		if (IntersectPointTriangle2D(point, triA, triB, triC))
+			return 0.0f;
+
+		float disToSideA = DistancePointSegment2D(point, triA, triB);
+		float disToSideB = DistancePointSegment2D(point, triB, triC);
+		float disToSideC = DistancePointSegment2D(point, triC, triA);
+
+		return glm::min(glm::min(disToSideA, disToSideB), disToSideC);
+	}
+
 	// From https://github.com/juj/MathGeoLib/blob/master/src/Geometry/AABB.cpp#L725
 	inline bool IntersectLineAABB_CPP(
 		const glm::vec3& linePos, const glm::vec3& lineDir,
@@ -84,7 +196,7 @@ namespace sf::Geometry
 		return tNear <= tFar;
 	}
 
-	inline float PointPlaneDistance(
+	inline float DistancePointPlane(
 		const glm::vec3& planeNormal, const glm::vec3& planePoint,
 		const glm::vec3& point)
 	{
@@ -489,7 +601,9 @@ namespace sf::Geometry
 		return glm::distance2(a, b) < capsule.radius * capsule.radius;
 	}
 
-	inline bool Intersect2dSegmentAARectangle(const glm::vec2& segA, const glm::vec2& segB, const glm::vec2& boxMin, const glm::vec2& boxMax)
+	inline bool IntersectSegmentRectangle2D(
+		const glm::vec2& segA, const glm::vec2& segB,
+		const glm::vec2& boxMin, const glm::vec2& boxMax)
 	{
 		float t0 = 0, t1 = 1;
 		float dx = segB.x - segA.x, dy = segB.y - segA.y;
@@ -552,13 +666,13 @@ namespace sf::Geometry
 
 		for (int i = 0; i < 12; i++)
 		{
-			bool xyIntersects = Intersect2dSegmentAARectangle(
+			bool xyIntersects = IntersectSegmentRectangle2D(
 				glm::vec2(edges[i][0].x, edges[i][0].y), glm::vec2(edges[i][1].x, edges[i][1].y),
 				glm::vec2(boxMin.x, boxMin.y), glm::vec2(boxMax.x, boxMax.y));
-			bool xzIntersects = Intersect2dSegmentAARectangle(
+			bool xzIntersects = IntersectSegmentRectangle2D(
 				glm::vec2(edges[i][0].x, edges[i][0].z), glm::vec2(edges[i][1].x, edges[i][1].z),
 				glm::vec2(boxMin.x, boxMin.z), glm::vec2(boxMax.x, boxMax.z));
-			bool zyIntersects = Intersect2dSegmentAARectangle(
+			bool zyIntersects = IntersectSegmentRectangle2D(
 				glm::vec2(edges[i][0].z, edges[i][0].y), glm::vec2(edges[i][1].z, edges[i][1].y),
 				glm::vec2(boxMin.z, boxMin.y), glm::vec2(boxMax.z, boxMax.y));
 
@@ -626,7 +740,7 @@ namespace sf::Geometry
 			const glm::vec3* a = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, MeshData::Position, meshData->indexVector[j + 0]);
 			const glm::vec3* b = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, MeshData::Position, meshData->indexVector[j + 1]);
 			const glm::vec3* c = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, MeshData::Position, meshData->indexVector[j + 2]);
-			if (Geometry::IntersectSphereTriangle(sphere, *a, *b, *c))
+			if (IntersectSphereTriangle(sphere, *a, *b, *c))
 				break;
 		}
 		return j < meshData->indexVector.size();
@@ -646,7 +760,7 @@ namespace sf::Geometry
 			const glm::vec3* a = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, MeshData::Position, meshData->indexVector[j + 0]);
 			const glm::vec3* b = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, MeshData::Position, meshData->indexVector[j + 1]);
 			const glm::vec3* c = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, MeshData::Position, meshData->indexVector[j + 2]);
-			if (Geometry::IntersectCapsuleTriangle(capsule, *a, *b, *c))
+			if (IntersectCapsuleTriangle(capsule, *a, *b, *c))
 				break;
 		}
 		return j < meshData->indexVector.size();
@@ -666,7 +780,7 @@ namespace sf::Geometry
 			const glm::vec3* a = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, MeshData::Position, meshData->indexVector[j + 0]);
 			const glm::vec3* b = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, MeshData::Position, meshData->indexVector[j + 1]);
 			const glm::vec3* c = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, MeshData::Position, meshData->indexVector[j + 2]);
-			if (Geometry::IntersectBoxTriangle(box, *a, *b, *c))
+			if (IntersectBoxTriangle(box, *a, *b, *c))
 				break;
 		}
 		return j < meshData->indexVector.size();

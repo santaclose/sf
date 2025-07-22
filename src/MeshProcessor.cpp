@@ -7,7 +7,7 @@
 #include <cstring>
 
 #include <Random.h>
-#include <Math.hpp>
+#include <Geometry.h>
 
 namespace sf {
 
@@ -264,7 +264,7 @@ void sf::MeshProcessor::ComputeVertexAmbientOcclusion(MeshData& mesh, const Voxe
 					if (mesh.indexVector[j + 0] == q || mesh.indexVector[j + 1] == q || mesh.indexVector[j + 2] == q)
 						continue; // current vertex belongs to this face
 
-					didHit = Math::RayTriIntersect(vertexPos + (rayDir * config->rayOriginOffset), rayDir,
+					didHit = Geometry::IntersectRayTriangle(vertexPos + (rayDir * config->rayOriginOffset), rayDir,
 						*((glm::vec3*) mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Position, mesh.indexVector[j + 0])),
 						*((glm::vec3*) mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Position, mesh.indexVector[j + 1])),
 						*((glm::vec3*) mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Position, mesh.indexVector[j + 2])),

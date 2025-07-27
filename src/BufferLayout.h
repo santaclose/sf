@@ -54,7 +54,7 @@ namespace sf
 			return this->sizeInBytes;
 		}
 
-		void* Access(void* buffer, BufferComponent component, uint32_t index) const
+		inline void* Access(void* buffer, BufferComponent component, uint32_t index) const
 		{
 			return (((uint8_t*)buffer) + (this->sizeInBytes * index) + this->componentInfos[this->componentMap.at(component)].byteOffset);
 		}

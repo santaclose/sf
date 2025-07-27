@@ -2,15 +2,15 @@
 #include <cstring>
 #include <fstream>
 
-void sf::MeshData::ChangeVertexLayout(const sf::BufferLayout& newLayout)
+void sf::MeshData::ChangeVertexBufferLayout(const sf::BufferLayout& newLayout)
 {
 	if (this->vertexBuffer == nullptr)
 	{
-		this->vertexLayout = newLayout;
+		this->vertexBufferLayout = newLayout;
 		return;
 	}
 
-	const std::vector<BufferComponentInfo>& oldComponents = this->vertexLayout.GetComponentInfos();
+	const std::vector<BufferComponentInfo>& oldComponents = this->vertexBufferLayout.GetComponentInfos();
 	void* newVertexBuffer = malloc(newLayout.GetSize() * this->vertexCount);
 	for (int i = 0; i < this->vertexCount; i++)
 	{
@@ -24,12 +24,12 @@ void sf::MeshData::ChangeVertexLayout(const sf::BufferLayout& newLayout)
 
 			uint32_t dataTypeSize = GetDataTypeSize(oldComponents[j].dataType);
 			void* targetPointer = newLayout.Access(newVertexBuffer, oldComponents[j].component, i);
-			void* sourcePointer = this->vertexLayout.Access(this->vertexBuffer, oldComponents[j].component, i);
+			void* sourcePointer = this->vertexBufferLayout.Access(this->vertexBuffer, oldComponents[j].component, i);
 			memcpy(targetPointer, sourcePointer, dataTypeSize);
 		}
 	}
 	free(this->vertexBuffer);
-	this->vertexLayout = newLayout;
+	this->vertexBufferLayout = newLayout;
 	this->vertexBuffer = newVertexBuffer;
 }
 
@@ -40,9 +40,9 @@ void sf::MeshData::SaveToFile(const char* targetFile)
 	file.open(targetFile, std::ios::trunc | std::ios::binary);
 
 	// Vertex layout
-	uint32_t componentCount = vertexLayout.GetComponentInfos().size();
+	uint32_t componentCount = vertexBufferLayout.GetComponentInfos().size();
 	file.write((char*) &componentCount, sizeof(componentCount));
-	for (BufferComponentInfo comp : vertexLayout.GetComponentInfos())
+	for (BufferComponentInfo comp : vertexBufferLayout.GetComponentInfos())
 		file.write((char*) &comp.component, sizeof(comp.component));
 
 	// Indices
@@ -57,7 +57,7 @@ void sf::MeshData::SaveToFile(const char* targetFile)
 
 	// Vertices
 	file.write((char*) &vertexCount, sizeof(vertexCount));
-	uint32_t vertexBufferSizeInBytes = vertexLayout.GetSize() * vertexCount;
+	uint32_t vertexBufferSizeInBytes = vertexBufferLayout.GetSize() * vertexCount;
 	file.write((char*) vertexBuffer, vertexBufferSizeInBytes);
 
 	file.close();
@@ -76,7 +76,7 @@ bool sf::MeshData::LoadFromFile(const char* targetFile)
 	std::vector<BufferComponent> components;
 	components.resize(componentCount);
 	file.read((char*) components.data(), componentCount * sizeof(BufferComponent));
-	vertexLayout = BufferLayout(components);
+	vertexBufferLayout = BufferLayout(components);
 
 	// Indices
 	uint32_t indexCount;
@@ -92,7 +92,7 @@ bool sf::MeshData::LoadFromFile(const char* targetFile)
 
 	// Vertices
 	file.read((char*) &vertexCount, sizeof(vertexCount));
-	uint32_t vertexBufferSizeInBytes = vertexLayout.GetSize() * vertexCount;
+	uint32_t vertexBufferSizeInBytes = vertexBufferLayout.GetSize() * vertexCount;
 	if (vertexBuffer != nullptr)
 		free(vertexBuffer);
 	vertexBuffer = malloc(vertexBufferSizeInBytes);

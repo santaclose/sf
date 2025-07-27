@@ -143,7 +143,7 @@ namespace sf::Renderer
 	void TransferVertexData(const sf::MeshData* mesh)
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, meshGpuData[mesh].gl_vertexBuffer);
-		glBufferData(GL_ARRAY_BUFFER, mesh->vertexCount * mesh->vertexLayout.GetSize(), mesh->vertexBuffer, GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, mesh->vertexCount * mesh->vertexBufferLayout.GetSize(), mesh->vertexBuffer, GL_STATIC_DRAW);
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshGpuData[mesh].gl_indexBuffer);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->indexVector.size() * sizeof(uint32_t), &mesh->indexVector[0], GL_STATIC_DRAW);
@@ -160,35 +160,35 @@ namespace sf::Renderer
 		glBindBuffer(GL_ARRAY_BUFFER, meshGpuData[mesh].gl_vertexBuffer);
 
 		// update vertices
-		glBufferData(GL_ARRAY_BUFFER, mesh->vertexCount * mesh->vertexLayout.GetSize(), mesh->vertexBuffer, GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, mesh->vertexCount * mesh->vertexBufferLayout.GetSize(), mesh->vertexBuffer, GL_STATIC_DRAW);
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshGpuData[mesh].gl_indexBuffer);
 		// update indices to draw
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->indexVector.size() * sizeof(uint32_t), &mesh->indexVector[0], GL_STATIC_DRAW);
 
-		const std::vector<BufferComponentInfo>& components = mesh->vertexLayout.GetComponentInfos();
+		const std::vector<BufferComponentInfo>& components = mesh->vertexBufferLayout.GetComponentInfos();
 		for (int i = 0; i < components.size(); i++)
 		{
 			glEnableVertexAttribArray(i);
 			switch (components[i].dataType)
 			{
 				case DataType::f32:
-					glVertexAttribPointer(i, 1, GL_FLOAT, GL_FALSE, mesh->vertexLayout.GetSize(), (void*)(unsigned long long)components[i].byteOffset);
+					glVertexAttribPointer(i, 1, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(unsigned long long)components[i].byteOffset);
 					break;
 				case DataType::vec2f32:
-					glVertexAttribPointer(i, 2, GL_FLOAT, GL_FALSE, mesh->vertexLayout.GetSize(), (void*)(unsigned long long)components[i].byteOffset);
+					glVertexAttribPointer(i, 2, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(unsigned long long)components[i].byteOffset);
 					break;
 				case DataType::vec3f32:
-					glVertexAttribPointer(i, 3, GL_FLOAT, GL_FALSE, mesh->vertexLayout.GetSize(), (void*)(unsigned long long)components[i].byteOffset);
+					glVertexAttribPointer(i, 3, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(unsigned long long)components[i].byteOffset);
 					break;
 				case DataType::vec4f32:
-					glVertexAttribPointer(i, 4, GL_FLOAT, GL_FALSE, mesh->vertexLayout.GetSize(), (void*)(unsigned long long)components[i].byteOffset);
+					glVertexAttribPointer(i, 4, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(unsigned long long)components[i].byteOffset);
 					break;
 				case DataType::vec4u8:
-					glVertexAttribPointer(i, 4, GL_UNSIGNED_BYTE, GL_FALSE, mesh->vertexLayout.GetSize(), (void*)(unsigned long long)components[i].byteOffset);
+					glVertexAttribPointer(i, 4, GL_UNSIGNED_BYTE, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(unsigned long long)components[i].byteOffset);
 					break;
 				case DataType::vec4u16:
-					glVertexAttribPointer(i, 4, GL_UNSIGNED_SHORT, GL_FALSE, mesh->vertexLayout.GetSize(), (void*)(unsigned long long)components[i].byteOffset);
+					glVertexAttribPointer(i, 4, GL_UNSIGNED_SHORT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(unsigned long long)components[i].byteOffset);
 					break;
 				default:
 					std::cout << "[Renderer] Vertex attribute skipped" << std::endl;

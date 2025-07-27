@@ -96,7 +96,7 @@ namespace sf
 			shanyungMesh = new MeshData();
 			gltfid = GltfImporter::Load("examples/thirdperson/shanyung_blendspace2d.glb");
 			GltfImporter::GenerateSkeleton(gltfid, *shanyungSkeleton);
-			shanyungMesh->ChangeVertexLayout(Defaults::VertexLayoutSkinning());
+			shanyungMesh->ChangeVertexBufferLayout(Defaults::VertexLayoutSkinning());
 			GltfImporter::GenerateMeshData(gltfid, *shanyungMesh);
 			shanyung.AddComponent<SkinnedMesh>(shanyungMesh, shanyungSkeleton);
 
@@ -117,7 +117,7 @@ namespace sf
 			foxMesh = new MeshData();
 			gltfid = GltfImporter::Load("examples/thirdperson/Fox.glb");
 			GltfImporter::GenerateSkeleton(gltfid, *foxSkeleton);
-			foxMesh->ChangeVertexLayout(Defaults::VertexLayoutSkinning());
+			foxMesh->ChangeVertexBufferLayout(Defaults::VertexLayoutSkinning());
 			GltfImporter::GenerateMeshData(gltfid, *foxMesh);
 			MeshProcessor::ComputeNormals(*foxMesh);
 			fox.AddComponent<SkinnedMesh>(foxMesh, foxSkeleton);

@@ -88,7 +88,7 @@ namespace sf
 				continue;
 			errt::seed = i;
 			MeshProcessor::GenerateMeshWithFunction(generatedMeshes[i], errt::GenerateModel);
-			generatedMeshes[i].ChangeVertexLayout(Defaults::VertexLayout());
+			generatedMeshes[i].ChangeVertexBufferLayout(Defaults::VertexLayout());
 			VoxelVolumeData vv;
 			vv.BuildFromMesh(generatedMeshes[i], 0.01f);
 			MeshProcessor::ComputeVertexAmbientOcclusion(generatedMeshes[i], &vv);

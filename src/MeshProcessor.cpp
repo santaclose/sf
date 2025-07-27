@@ -17,7 +17,7 @@ namespace sf {
 		// set all normals to zero
 		for (uint32_t i = 0; i < mesh.vertexCount; i++)
 		{
-			NDT* targetPointer = (NDT*)mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexNormal, i);
+			NDT* targetPointer = (NDT*)mesh.AccessVertexComponent(BufferComponent::VertexNormal, i);
 			targetPointer->x = targetPointer->y = targetPointer->z = 0.0;
 		}
 
@@ -25,15 +25,15 @@ namespace sf {
 		for (int i = 0; i < mesh.indexVector.size(); i += 3)
 		{
 			NDT faceNormal;
-			PDT* a = (PDT*)mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexPosition, mesh.indexVector[i + 0]);
-			PDT* b = (PDT*)mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexPosition, mesh.indexVector[i + 1]);
-			PDT* c = (PDT*)mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexPosition, mesh.indexVector[i + 2]);
+			PDT* a = (PDT*)mesh.AccessVertexComponent(BufferComponent::VertexPosition, mesh.indexVector[i + 0]);
+			PDT* b = (PDT*)mesh.AccessVertexComponent(BufferComponent::VertexPosition, mesh.indexVector[i + 1]);
+			PDT* c = (PDT*)mesh.AccessVertexComponent(BufferComponent::VertexPosition, mesh.indexVector[i + 2]);
 			NDT ab = (*b) - (*a);
 			NDT ac = (*c) - (*a);
 			faceNormal = glm::normalize(glm::cross(ab, ac));
-			NDT* normalA = (NDT*)mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexNormal, mesh.indexVector[i + 0]);
-			NDT* normalB = (NDT*)mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexNormal, mesh.indexVector[i + 1]);
-			NDT* normalC = (NDT*)mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexNormal, mesh.indexVector[i + 2]);
+			NDT* normalA = (NDT*)mesh.AccessVertexComponent(BufferComponent::VertexNormal, mesh.indexVector[i + 0]);
+			NDT* normalB = (NDT*)mesh.AccessVertexComponent(BufferComponent::VertexNormal, mesh.indexVector[i + 1]);
+			NDT* normalC = (NDT*)mesh.AccessVertexComponent(BufferComponent::VertexNormal, mesh.indexVector[i + 2]);
 			*normalA += faceNormal;
 			*normalB += faceNormal;
 			*normalC += faceNormal;
@@ -43,7 +43,7 @@ namespace sf {
 		{
 			for (uint32_t i = 0; i < mesh.vertexCount; i++)
 			{
-				NDT* targetPointer = (NDT*)mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexNormal, i);
+				NDT* targetPointer = (NDT*)mesh.AccessVertexComponent(BufferComponent::VertexNormal, i);
 				*targetPointer = glm::normalize(*targetPointer);
 			}
 		}
@@ -56,26 +56,21 @@ namespace sf {
 		for (uint32_t i = 0; i < mesh.vertexCount; i++)
 		{
 			TDT* targetPointer;
-			targetPointer = (TDT*)mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexTangent, i);
+			targetPointer = (TDT*)mesh.AccessVertexComponent(BufferComponent::VertexTangent, i);
 			targetPointer->x = targetPointer->y = targetPointer->z = 0.0;
-			// targetPointer = (TDT*)mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexBitangent, i);
-			// targetPointer->x = targetPointer->y = targetPointer->z = 0.0;
 		}
 
 		for (int i = 0; i < mesh.indexVector.size(); i += 3)
 		{
-			PDT* ap = (PDT*)mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexPosition, mesh.indexVector[i + 0]);
-			PDT* bp = (PDT*)mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexPosition, mesh.indexVector[i + 1]);
-			PDT* cp = (PDT*)mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexPosition, mesh.indexVector[i + 2]);
-			UDT* au = (UDT*)mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexUV, mesh.indexVector[i + 0]);
-			UDT* bu = (UDT*)mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexUV, mesh.indexVector[i + 1]);
-			UDT* cu = (UDT*)mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexUV, mesh.indexVector[i + 2]);
-			TDT* at = (TDT*)mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexTangent, mesh.indexVector[i + 0]);
-			TDT* bt = (TDT*)mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexTangent, mesh.indexVector[i + 1]);
-			TDT* ct = (TDT*)mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexTangent, mesh.indexVector[i + 2]);
-			// TDT* ab = (TDT*)mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexBitangent, mesh.indexVector[i + 0]);
-			// TDT* bb = (TDT*)mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexBitangent, mesh.indexVector[i + 1]);
-			// TDT* cb = (TDT*)mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexBitangent, mesh.indexVector[i + 2]);
+			PDT* ap = (PDT*)mesh.AccessVertexComponent(BufferComponent::VertexPosition, mesh.indexVector[i + 0]);
+			PDT* bp = (PDT*)mesh.AccessVertexComponent(BufferComponent::VertexPosition, mesh.indexVector[i + 1]);
+			PDT* cp = (PDT*)mesh.AccessVertexComponent(BufferComponent::VertexPosition, mesh.indexVector[i + 2]);
+			UDT* au = (UDT*)mesh.AccessVertexComponent(BufferComponent::VertexUV, mesh.indexVector[i + 0]);
+			UDT* bu = (UDT*)mesh.AccessVertexComponent(BufferComponent::VertexUV, mesh.indexVector[i + 1]);
+			UDT* cu = (UDT*)mesh.AccessVertexComponent(BufferComponent::VertexUV, mesh.indexVector[i + 2]);
+			TDT* at = (TDT*)mesh.AccessVertexComponent(BufferComponent::VertexTangent, mesh.indexVector[i + 0]);
+			TDT* bt = (TDT*)mesh.AccessVertexComponent(BufferComponent::VertexTangent, mesh.indexVector[i + 1]);
+			TDT* ct = (TDT*)mesh.AccessVertexComponent(BufferComponent::VertexTangent, mesh.indexVector[i + 2]);
 
 			glm::dvec3 edge1 = *bp - *ap;
 			glm::dvec3 edge2 = *cp - *ap;
@@ -99,17 +94,14 @@ namespace sf {
 			*at += t;
 			*bt += t;
 			*ct += t;
-			// *ab += b;
-			// *bb += b;
-			// *cb += b;
 		}
 	}
 }
 
 void sf::MeshProcessor::ComputeNormals(MeshData& mesh, bool normalize)
 {
-	DataType positionDataType = mesh.vertexLayout.GetComponentInfo(BufferComponent::VertexPosition)->dataType;
-	DataType normalDataType = mesh.vertexLayout.GetComponentInfo(BufferComponent::VertexNormal)->dataType;
+	DataType positionDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexPosition)->dataType;
+	DataType normalDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexNormal)->dataType;
 
 	assert(positionDataType == DataType::vec3f32 || positionDataType == DataType::vec3f64);
 	assert(normalDataType == DataType::vec3f32 || normalDataType == DataType::vec3f64);
@@ -132,15 +124,13 @@ void sf::MeshProcessor::ComputeNormals(MeshData& mesh, bool normalize)
 
 void sf::MeshProcessor::ComputeTangentSpace(MeshData& mesh)
 {
-	DataType positionDataType = mesh.vertexLayout.GetComponentInfo(BufferComponent::VertexPosition)->dataType;
-	DataType uvsDataType = mesh.vertexLayout.GetComponentInfo(BufferComponent::VertexUV)->dataType;
-	DataType tangentDataType = mesh.vertexLayout.GetComponentInfo(BufferComponent::VertexTangent)->dataType;
-	// DataType bitangentDataType = mesh.vertexLayout.GetComponentInfo(BufferComponent::VertexBitangent)->dataType;
+	DataType positionDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexPosition)->dataType;
+	DataType uvsDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexUV)->dataType;
+	DataType tangentDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexTangent)->dataType;
 
 	assert(positionDataType == DataType::vec3f32 || positionDataType == DataType::vec3f64);
 	assert(uvsDataType == DataType::vec2f32 || uvsDataType == DataType::vec2f64);
 	assert(tangentDataType == DataType::vec3f32 || tangentDataType == DataType::vec3f64);
-	// assert(bitangentDataType == tangentDataType);
 
 	// support doubles as well
 	if (positionDataType == DataType::vec3f32)
@@ -199,8 +189,8 @@ float sf::MeshProcessor::ComputeOcclusion(const std::vector<std::pair<bool, floa
 
 void sf::MeshProcessor::ComputeVertexAmbientOcclusion(MeshData& mesh, const VoxelVolumeData* voxelVolume, const VertexAmbientOcclusionBakerConfig* config)
 {
-	DataType positionDataType = mesh.vertexLayout.GetComponentInfo(BufferComponent::VertexPosition)->dataType;
-	DataType aoDataType = mesh.vertexLayout.GetComponentInfo(BufferComponent::VertexAO)->dataType;
+	DataType positionDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexPosition)->dataType;
+	DataType aoDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexAO)->dataType;
 
 	assert(positionDataType == DataType::vec3f32);
 	assert(aoDataType == DataType::f32);
@@ -216,10 +206,10 @@ void sf::MeshProcessor::ComputeVertexAmbientOcclusion(MeshData& mesh, const Voxe
 		else
 		{
 			glm::vec3 minvpos, maxvpos;
-			minvpos = maxvpos = *((glm::vec3*) mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexPosition, 0));
+			minvpos = maxvpos = *((glm::vec3*) mesh.AccessVertexComponent(BufferComponent::VertexPosition, 0));
 			for (int i = 1; i < mesh.vertexCount; i++)
 			{
-				glm::vec3 vertexPos = *((glm::vec3*) mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexPosition, i));
+				glm::vec3 vertexPos = *((glm::vec3*) mesh.AccessVertexComponent(BufferComponent::VertexPosition, i));
 				minvpos.x = std::min(vertexPos.x, minvpos.x);
 				minvpos.y = std::min(vertexPos.y, minvpos.y);
 				minvpos.z = std::min(vertexPos.z, minvpos.z);
@@ -238,8 +228,8 @@ void sf::MeshProcessor::ComputeVertexAmbientOcclusion(MeshData& mesh, const Voxe
 	#pragma omp parallel for
 	for (int q = 0; q < mesh.vertexCount; q++)
 	{
-		glm::vec3 vertexPos = *((glm::vec3*) mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexPosition, q));
-		float* aoTarget = (float*) mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexAO, q);
+		glm::vec3 vertexPos = *((glm::vec3*) mesh.AccessVertexComponent(BufferComponent::VertexPosition, q));
+		float* aoTarget = (float*) mesh.AccessVertexComponent(BufferComponent::VertexAO, q);
 
 		std::vector<std::pair<bool, float>> rayResults(config->rayCount);
 		for (int i = 0; i < config->rayCount; i++)
@@ -265,9 +255,9 @@ void sf::MeshProcessor::ComputeVertexAmbientOcclusion(MeshData& mesh, const Voxe
 						continue; // current vertex belongs to this face
 
 					didHit = Geometry::IntersectRayTriangle(vertexPos + (rayDir * config->rayOriginOffset), rayDir,
-						*((glm::vec3*) mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexPosition, mesh.indexVector[j + 0])),
-						*((glm::vec3*) mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexPosition, mesh.indexVector[j + 1])),
-						*((glm::vec3*) mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexPosition, mesh.indexVector[j + 2])),
+						*((glm::vec3*) mesh.AccessVertexComponent(BufferComponent::VertexPosition, mesh.indexVector[j + 0])),
+						*((glm::vec3*) mesh.AccessVertexComponent(BufferComponent::VertexPosition, mesh.indexVector[j + 1])),
+						*((glm::vec3*) mesh.AccessVertexComponent(BufferComponent::VertexPosition, mesh.indexVector[j + 2])),
 						&distance);
 				}
 				if (distance > config->rayDistance)
@@ -282,13 +272,13 @@ void sf::MeshProcessor::ComputeVertexAmbientOcclusion(MeshData& mesh, const Voxe
 		for (int i = 0; i < mesh.indexVector.size(); i += 3)
 		{
 			float average =
-				(*((float*) mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexAO, mesh.indexVector[i + 0])) +
-					*((float*) mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexAO, mesh.indexVector[i + 1])) +
-					*((float*) mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexAO, mesh.indexVector[i + 2]))) / 3.0f;
+				(*((float*) mesh.AccessVertexComponent(BufferComponent::VertexAO, mesh.indexVector[i + 0])) +
+					*((float*) mesh.AccessVertexComponent(BufferComponent::VertexAO, mesh.indexVector[i + 1])) +
+					*((float*) mesh.AccessVertexComponent(BufferComponent::VertexAO, mesh.indexVector[i + 2]))) / 3.0f;
 
-			*((float*) mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexAO, mesh.indexVector[i + 0])) = glm::mix(*((float*) mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexAO, mesh.indexVector[i + 0])), average, config->denoiseWeight);
-			*((float*) mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexAO, mesh.indexVector[i + 1])) = glm::mix(*((float*) mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexAO, mesh.indexVector[i + 1])), average, config->denoiseWeight);
-			*((float*) mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexAO, mesh.indexVector[i + 2])) = glm::mix(*((float*) mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexAO, mesh.indexVector[i + 2])), average, config->denoiseWeight);
+			*((float*) mesh.AccessVertexComponent(BufferComponent::VertexAO, mesh.indexVector[i + 0])) = glm::mix(*((float*) mesh.AccessVertexComponent(BufferComponent::VertexAO, mesh.indexVector[i + 0])), average, config->denoiseWeight);
+			*((float*) mesh.AccessVertexComponent(BufferComponent::VertexAO, mesh.indexVector[i + 1])) = glm::mix(*((float*) mesh.AccessVertexComponent(BufferComponent::VertexAO, mesh.indexVector[i + 1])), average, config->denoiseWeight);
+			*((float*) mesh.AccessVertexComponent(BufferComponent::VertexAO, mesh.indexVector[i + 2])) = glm::mix(*((float*) mesh.AccessVertexComponent(BufferComponent::VertexAO, mesh.indexVector[i + 2])), average, config->denoiseWeight);
 		}
 	}
 }
@@ -304,11 +294,11 @@ void sf::MeshProcessor::GenerateMeshWithFunction(MeshData& mesh, void(*functionP
 
 	mesh.pieces.clear();
 	mesh.pieces.push_back(0);
-	mesh.vertexLayout = BufferLayout({
+	mesh.vertexBufferLayout = BufferLayout({
 		BufferComponent::VertexPosition,
 		BufferComponent::VertexNormal,
 		BufferComponent::VertexUV });
-	uint32_t vertexSizeInBytes = mesh.vertexLayout.GetSize();
+	uint32_t vertexSizeInBytes = mesh.vertexBufferLayout.GetSize();
 	mesh.indexVector.resize(indexCount);
 	memcpy(&(mesh.indexVector[0]), indices, sizeof(uint32_t) * indexCount);
 	mesh.vertexBuffer = malloc(vertexSizeInBytes * vertexCount);

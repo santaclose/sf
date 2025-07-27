@@ -166,9 +166,9 @@ void sf::ObjImporter::Destroy(int id)
 
 void sf::ObjImporter::GenerateMeshData(int id, MeshData& mesh)
 {
-	DataType positionDataType = mesh.vertexLayout.GetComponentInfo(BufferComponent::VertexPosition)->dataType;
-	DataType normalDataType = mesh.vertexLayout.GetComponentInfo(BufferComponent::VertexNormal)->dataType;
-	DataType uvsDataType = mesh.vertexLayout.GetComponentInfo(BufferComponent::VertexUV)->dataType;
+	DataType positionDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexPosition)->dataType;
+	DataType normalDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexNormal)->dataType;
+	DataType uvsDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexUV)->dataType;
 
 	assert(positionDataType == DataType::vec3f32);
 	assert(normalDataType == DataType::vec3f32);
@@ -212,19 +212,19 @@ void sf::ObjImporter::GenerateMeshData(int id, MeshData& mesh)
 
 	if (mesh.vertexBuffer != nullptr)
 		free(mesh.vertexBuffer);
-	mesh.vertexBuffer = malloc(mesh.vertexLayout.GetSize() * finalVertices.size());
+	mesh.vertexBuffer = malloc(mesh.vertexBufferLayout.GetSize() * finalVertices.size());
 	for (int i = 0; i < finalVertices.size(); i++)
 	{
-		glm::vec3* posPtr = (glm::vec3*) mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexPosition, i);
+		glm::vec3* posPtr = (glm::vec3*) mesh.AccessVertexComponent(BufferComponent::VertexPosition, i);
 		*posPtr = meshes[id]->positions[finalVertices[i].posID];
 		if (meshes[id]->normals.size() > 0)
 		{
-			glm::vec3* normalPtr = (glm::vec3*)mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexNormal, i);
+			glm::vec3* normalPtr = (glm::vec3*)mesh.AccessVertexComponent(BufferComponent::VertexNormal, i);
 			*normalPtr = meshes[id]->normals[finalVertices[i].normalID];
 		}
 		if (meshes[id]->texCoords.size() > 0)
 		{
-			glm::vec2* coordsPtr = (glm::vec2*)mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexUV, i);
+			glm::vec2* coordsPtr = (glm::vec2*)mesh.AccessVertexComponent(BufferComponent::VertexUV, i);
 			*coordsPtr = meshes[id]->texCoords[finalVertices[i].coordsID];
 		}
 	}

@@ -8,6 +8,27 @@
 
 namespace sf
 {
+	enum class DataLayoutId
+	{
+		VertexPosition,
+		VertexNormal,
+		VertexTangent,
+		VertexBitangent,
+		VertexColor,
+		VertexUV,
+		VertexAO,
+		VertexBoneWeights,
+		VertexBoneIndices,
+		VoxelPosition,
+		VoxelNormal,
+		VoxelColor,
+		VoxelUV,
+		ParticlePosition,
+		ParticleRotation,
+		ParticleScale,
+		ParticleTime
+	};
+
 	struct DataComponent
 	{
 		uint32_t id; // specifies which vertex attribute in mesh data case

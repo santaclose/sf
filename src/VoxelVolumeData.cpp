@@ -2,17 +2,17 @@
 
 #include <Geometry.h>
 
-void sf::VoxelVolumeData::BuildEmpty(const glm::uvec3& voxelCountPerAxis, float voxelSize, const glm::vec3& offset)
+void sf::VoxelVolumeData::BuildEmpty(const glm::uvec3& voxelCountPerAxis, const DataLayout& voxelLayout, float voxelSize, const glm::vec3& offset)
 {
+	this->voxelLayout = voxelLayout;
 	this->voxelSize = voxelSize;
 	this->offset = offset;
 	this->voxelCountPerAxis = voxelCountPerAxis;
-	mat.clear();
-	mat.resize(voxelCountPerAxis.x * voxelCountPerAxis.y * voxelCountPerAxis.z, nullptr);
 }
 
-void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize)
+void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, const DataLayout& voxelLayout)
 {
+	this->voxelLayout = voxelLayout;
 	DataType positionDataType = mesh.vertexLayout.GetComponent(MeshData::VertexAttribute::Position)->dataType;
 	assert(positionDataType == DataType::vec3f32);
 	assert(mesh.vertexCount > 0);
@@ -41,10 +41,6 @@ void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize)
 		(uint32_t)glm::ceil((maxP.y - minP.y) / voxelSize),
 		(uint32_t)glm::ceil((maxP.z - minP.z) / voxelSize)
 	};
-
-	// allocate matrix
-	mat.clear();
-	mat.resize(voxelCountPerAxis.x * voxelCountPerAxis.y * voxelCountPerAxis.z, nullptr);
 
 	// voxelize
 	for (int indexI = 0; indexI < mesh.indexVector.size(); indexI += 3)
@@ -82,10 +78,13 @@ void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize)
 					glm::vec3 currentVoxelMax = currentVoxelMin + glm::vec3(voxelSize, voxelSize, voxelSize);
 					glm::vec3 currentVoxelCenter = (currentVoxelMin + currentVoxelMax) / 2.0f;
 					// approximation is good and fast
-					bool voxelValue = glm::distance2(Geometry::ClosestPointPointTriangle(currentVoxelCenter, *posPtrA, *posPtrB, *posPtrC), currentVoxelCenter) < voxelSize * voxelSize;
-					// bool voxelValue = Geometry::IntersectAABBTriangle(currentVoxelMin, currentVoxelMax, *posPtrA, *posPtrB, *posPtrC);
+					bool shouldFill = glm::distance2(Geometry::ClosestPointPointTriangle(currentVoxelCenter, *posPtrA, *posPtrB, *posPtrC), currentVoxelCenter) < voxelSize * voxelSize;
+					// bool shouldFill = Geometry::IntersectAABBTriangle(currentVoxelMin, currentVoxelMax, *posPtrA, *posPtrB, *posPtrC);
 
-					SetVoxel(currentVoxel, (void*) (GetVoxel(currentVoxel) != nullptr || voxelValue));
+					if (!shouldFill)
+						continue;
+
+					SetVoxel(currentVoxel, &currentVoxelCenter);
 				}
 	}
 }

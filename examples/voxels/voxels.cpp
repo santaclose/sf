@@ -40,6 +40,7 @@ namespace sf
 	float cameraDistance;
 	bool rotationEnabled;
 
+	DataLayout voxelLayout = DataLayout({{(uint32_t)DataLayoutId::VoxelPosition, DataType::vec3f32}});
 	VoxelVolumeData monkevbd;
 	VoxelVolumeData monkevbd2;
 	VoxelVolumeData monkevbd3;
@@ -56,9 +57,9 @@ namespace sf
 
 		ExampleViewer::Initialize(scene);
 
-		monkevbd.BuildFromMesh(Defaults::MeshDataMonkey(), 0.007f);
-		monkevbd2.BuildFromMesh(Defaults::MeshDataMonkey(), 0.02f);
-		monkevbd3.BuildFromMesh(Defaults::MeshDataMonkey(), 0.07);
+		monkevbd.BuildFromMesh(Defaults::MeshDataMonkey(), 0.007f, voxelLayout);
+		monkevbd2.BuildFromMesh(Defaults::MeshDataMonkey(), 0.02f, voxelLayout);
+		monkevbd3.BuildFromMesh(Defaults::MeshDataMonkey(), 0.07, voxelLayout);
 
 		{
 			galleryObjects.push_back(scene.CreateEntity());

@@ -114,7 +114,7 @@ namespace sf::Renderer
 
 	std::unordered_map<void*, ParticleSystemData> particleSystemData;
 
-	std::unordered_map<const sf::VoxelVolumeData*, ParticleGpuData> voxelVolumeGpuData;
+	std::unordered_map<const sf::VoxelVolumeData*, uint32_t> voxelVolumeSsbos;
 
 	std::vector<GlMaterial*> materials;
 	struct EnvironmentData
@@ -199,34 +199,6 @@ namespace sf::Renderer
 
 		TransferVertexData(mesh);
 		glBindVertexArray(0);
-	}
-
-	void CreateVoxelVolumeGpuData(const sf::VoxelVolumeData* voxelVolume)
-	{
-		voxelVolumeGpuData[voxelVolume] = ParticleGpuData();
-		Transform voxelSpaceCursor;
-		voxelSpaceCursor.scale = voxelVolume->voxelSize;
-		int currentCube = 0;
-		glm::uvec3 currentVoxel;
-		for (currentVoxel.x = 0; currentVoxel.x < voxelVolume->voxelCountPerAxis.x; currentVoxel.x++)
-			for (currentVoxel.y = 0; currentVoxel.y < voxelVolume->voxelCountPerAxis.y; currentVoxel.y++)
-				for (currentVoxel.z = 0; currentVoxel.z < voxelVolume->voxelCountPerAxis.z; currentVoxel.z++)
-				{
-					if (voxelVolume->GetVoxel(currentVoxel))
-					{
-						voxelSpaceCursor.position = voxelVolume->offset;
-						voxelSpaceCursor.position.x += voxelVolume->voxelSize * ((float)currentVoxel.x + 0.5f);
-						voxelSpaceCursor.position.y += voxelVolume->voxelSize * ((float)currentVoxel.y + 0.5f);
-						voxelSpaceCursor.position.z += voxelVolume->voxelSize * ((float)currentVoxel.z + 0.5f);
-
-						voxelVolumeGpuData[voxelVolume].perParticleData.emplace_back();
-						voxelVolumeGpuData[voxelVolume].perParticleData[currentCube].transform = voxelSpaceCursor;
-						currentCube++;
-					}
-				}
-		glGenBuffers(1, &(voxelVolumeGpuData[voxelVolume].gl_ssbo));
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, voxelVolumeGpuData[voxelVolume].gl_ssbo);
-		glBufferData(GL_SHADER_STORAGE_BUFFER, voxelVolumeGpuData[voxelVolume].perParticleData.size() * sizeof(PerParticleGpuData), voxelVolumeGpuData[voxelVolume].perParticleData.data(), GL_STATIC_DRAW);
 	}
 
 	void CreateSpriteGpuData()
@@ -703,12 +675,19 @@ void sf::Renderer::DrawVoxelVolume(VoxelVolume& voxelVolume, Transform& transfor
 	if (meshGpuData.find(&Defaults::MeshDataCube()) == meshGpuData.end()) // create mesh data if not there
 		CreateMeshGpuData(&Defaults::MeshDataCube());
 
-	if (voxelVolumeGpuData.find(voxelVolume.voxelVolumeData) == voxelVolumeGpuData.end())
-		CreateVoxelVolumeGpuData(voxelVolume.voxelVolumeData);
+	if (voxelVolumeSsbos.find(voxelVolume.voxelVolumeData) == voxelVolumeSsbos.end())
+	{
+		uint32_t newSsbo;
+		glGenBuffers(1, &newSsbo);
+		voxelVolumeSsbos[voxelVolume.voxelVolumeData] = newSsbo;
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, voxelVolumeSsbos[voxelVolume.voxelVolumeData]);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, voxelVolume.voxelVolumeData->perVoxelData.size(), voxelVolume.voxelVolumeData->perVoxelData.data(), GL_STATIC_DRAW);
+	}
 
 	if (!voxelVolumeShader.Initialized())
 		voxelVolumeShader.CreateFromFiles("assets/shaders/voxelVolume.vert", "assets/shaders/uv.frag");
 	voxelVolumeShader.Bind();
+	voxelVolumeShader.SetUniform1f("voxelSize", voxelVolume.voxelVolumeData->voxelSize);
 	glPolygonMode(GL_FRONT, GL_FILL);
 	glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
 	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
@@ -720,8 +699,8 @@ void sf::Renderer::DrawVoxelVolume(VoxelVolume& voxelVolume, Transform& transfor
 
 	glBindVertexArray(meshGpuData[&Defaults::MeshDataCube()].gl_vao);
 	glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, voxelVolumeGpuData[voxelVolume.voxelVolumeData].gl_ssbo);
-	glDrawElementsInstanced(GL_TRIANGLES, Defaults::MeshDataCube().indexVector.size(), GL_UNSIGNED_INT, (void*)0, voxelVolumeGpuData[voxelVolume.voxelVolumeData].perParticleData.size());
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, voxelVolumeSsbos[voxelVolume.voxelVolumeData]);
+	glDrawElementsInstanced(GL_TRIANGLES, Defaults::MeshDataCube().indexVector.size(), GL_UNSIGNED_INT, (void*)0, voxelVolume.voxelVolumeData->GetVoxelCount());
 }
 
 void sf::Renderer::DrawSprite(Sprite& sprite, ScreenCoordinates& screenCoordinates)

@@ -43,6 +43,12 @@ namespace sf {
 				offset.y + (voxelSize * (float)coords.y) + voxelSize / 2.0f,
 				offset.z + (voxelSize * (float)coords.z) + voxelSize / 2.0f);
 		}
+		inline void* AccessVoxelComponent(BufferComponent component, const glm::uvec3& coords) const
+		{
+			if (map.find(coords) == map.end())
+				return nullptr;
+			return voxelBufferLayout.Access((void*)voxelBuffer.data(), component, map.at(coords));
+		}
 		inline void* GetVoxel(glm::uvec3 coords) const
 		{
 			if (map.find(coords) == map.end())
@@ -52,20 +58,21 @@ namespace sf {
 				return (void*) true;
 			return (void*)&voxelBuffer[voxelBufferLayout.GetSize() * map.at(coords)];
 		}
-		inline void SetVoxel(glm::uvec3 coords, void* value)
+		inline void CreateVoxel(glm::uvec3 coords)
 		{
+			if (map.find(coords) != map.end())
+				return;
+
 			if (voxelBufferLayout.GetSize() == 0)
 			{
 				map[coords] = map.size();
 				return;
 			}
-			if (map.find(coords) == map.end())
-			{
-				map[coords] = voxelBuffer.size() / voxelBufferLayout.GetSize();
-				voxelBuffer.resize(voxelBuffer.size() + voxelBufferLayout.GetSize());
-			}
-			memcpy(&voxelBuffer[voxelBufferLayout.GetSize() * map[coords]], value, voxelBufferLayout.GetSize());
+
+			map[coords] = voxelBuffer.size() / voxelBufferLayout.GetSize();
+			voxelBuffer.resize(voxelBuffer.size() + voxelBufferLayout.GetSize());
 		}
+
 		inline uint32_t GetVoxelCount() const
 		{
 			assert(voxelBuffer.size() % voxelBufferLayout.GetSize() == 0);

@@ -79,6 +79,7 @@ void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, c
 					glm::vec3 currentVoxelMin = offset + glm::vec3(currentVoxel) * voxelSize;
 					glm::vec3 currentVoxelMax = currentVoxelMin + glm::vec3(voxelSize, voxelSize, voxelSize);
 					glm::vec3 currentVoxelCenter = (currentVoxelMin + currentVoxelMax) / 2.0f;
+
 					// approximation is good and fast
 					bool shouldFill = glm::distance2(Geometry::ClosestPointPointTriangle(currentVoxelCenter, *posPtrA, *posPtrB, *posPtrC), currentVoxelCenter) < voxelSize * voxelSize;
 					// bool shouldFill = Geometry::IntersectAABBTriangle(currentVoxelMin, currentVoxelMax, *posPtrA, *posPtrB, *posPtrC);
@@ -86,7 +87,19 @@ void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, c
 					if (!shouldFill)
 						continue;
 
-					SetVoxel(currentVoxel, &currentVoxelCenter);
+					CreateVoxel(currentVoxel);
+					if (voxelBufferLayout == nullptr)
+						continue;
+
+					for (const BufferComponentInfo& bci : voxelBufferLayout->GetComponentInfos())
+					{
+						if (bci.component == BufferComponent::VoxelPosition)
+						{
+							glm::vec3* voxelPosPointer = (glm::vec3*)AccessVoxelComponent(BufferComponent::VoxelPosition, currentVoxel);
+							if (voxelPosPointer != nullptr)
+								*voxelPosPointer = currentVoxelCenter;
+						}
+					}
 				}
 	}
 }
@@ -198,13 +211,5 @@ void* sf::VoxelVolumeData::CastRay(const glm::vec3& origin, const glm::vec3& dir
 				*out_t = glm::distance(GetVoxelCenterLocation(currentVoxel), origin);
 			return GetVoxel(currentVoxel);
 		}
-
-		// if (draw)
-		// {
-			// glm::vec3 voxelPos(currentVoxel);
-			// voxelPos *= voxelSize;
-			// voxelPos += offset;
-			// SetVoxel(currentVoxel, &voxelPos);
-		// }
 	}
 }

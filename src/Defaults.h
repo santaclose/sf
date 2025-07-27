@@ -1,7 +1,7 @@
 #pragma once
 
 #include <MeshData.h>
-#include <DataLayout.h>
+#include <BufferLayout.h>
 
 namespace sf::Defaults
 {
@@ -10,6 +10,6 @@ namespace sf::Defaults
 	const MeshData& MeshDataSphere();
 	const MeshData& MeshDataMonkey();
 
-	DataLayout VertexLayout();
-	DataLayout VertexLayoutSkinning();
+	BufferLayout VertexLayout();
+	BufferLayout VertexLayoutSkinning();
 }

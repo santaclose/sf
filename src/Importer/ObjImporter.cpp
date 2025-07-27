@@ -166,9 +166,9 @@ void sf::ObjImporter::Destroy(int id)
 
 void sf::ObjImporter::GenerateMeshData(int id, MeshData& mesh)
 {
-	DataType positionDataType = mesh.vertexLayout.GetComponent(MeshData::VertexAttribute::Position)->dataType;
-	DataType normalDataType = mesh.vertexLayout.GetComponent(MeshData::VertexAttribute::Normal)->dataType;
-	DataType uvsDataType = mesh.vertexLayout.GetComponent(MeshData::VertexAttribute::UV)->dataType;
+	DataType positionDataType = mesh.vertexLayout.GetComponentInfo(BufferComponent::VertexPosition)->dataType;
+	DataType normalDataType = mesh.vertexLayout.GetComponentInfo(BufferComponent::VertexNormal)->dataType;
+	DataType uvsDataType = mesh.vertexLayout.GetComponentInfo(BufferComponent::VertexUV)->dataType;
 
 	assert(positionDataType == DataType::vec3f32);
 	assert(normalDataType == DataType::vec3f32);
@@ -215,16 +215,16 @@ void sf::ObjImporter::GenerateMeshData(int id, MeshData& mesh)
 	mesh.vertexBuffer = malloc(mesh.vertexLayout.GetSize() * finalVertices.size());
 	for (int i = 0; i < finalVertices.size(); i++)
 	{
-		glm::vec3* posPtr = (glm::vec3*) mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Position, i);
+		glm::vec3* posPtr = (glm::vec3*) mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexPosition, i);
 		*posPtr = meshes[id]->positions[finalVertices[i].posID];
 		if (meshes[id]->normals.size() > 0)
 		{
-			glm::vec3* normalPtr = (glm::vec3*)mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Normal, i);
+			glm::vec3* normalPtr = (glm::vec3*)mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexNormal, i);
 			*normalPtr = meshes[id]->normals[finalVertices[i].normalID];
 		}
 		if (meshes[id]->texCoords.size() > 0)
 		{
-			glm::vec2* coordsPtr = (glm::vec2*)mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::UV, i);
+			glm::vec2* coordsPtr = (glm::vec2*)mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexUV, i);
 			*coordsPtr = meshes[id]->texCoords[finalVertices[i].coordsID];
 		}
 	}

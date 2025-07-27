@@ -5,7 +5,7 @@
 layout(location = 4) out vec2 fTexCoords;
 
 layout(location = 0) in vec3 vPosition;
-layout(location = 5) in vec2 vTexCoords;
+layout(location = 4) in vec2 vTexCoords;
 
 layout(binding = 0) uniform SharedGpuData
 {

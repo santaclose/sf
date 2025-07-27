@@ -740,9 +740,9 @@ namespace sf::Geometry
 		const MeshData* meshData = meshCollider.meshData;
 		for (j = 0; j < meshData->indexVector.size(); j += 3)
 		{
-			const glm::vec3* a = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, MeshData::Position, meshData->indexVector[j + 0]);
-			const glm::vec3* b = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, MeshData::Position, meshData->indexVector[j + 1]);
-			const glm::vec3* c = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, MeshData::Position, meshData->indexVector[j + 2]);
+			const glm::vec3* a = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, BufferComponent::VertexPosition, meshData->indexVector[j + 0]);
+			const glm::vec3* b = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, BufferComponent::VertexPosition, meshData->indexVector[j + 1]);
+			const glm::vec3* c = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, BufferComponent::VertexPosition, meshData->indexVector[j + 2]);
 			if (IntersectSphereTriangle(sphere, *a, *b, *c))
 				break;
 		}
@@ -760,9 +760,9 @@ namespace sf::Geometry
 		const MeshData* meshData = meshCollider.meshData;
 		for (j = 0; j < meshData->indexVector.size(); j += 3)
 		{
-			const glm::vec3* a = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, MeshData::Position, meshData->indexVector[j + 0]);
-			const glm::vec3* b = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, MeshData::Position, meshData->indexVector[j + 1]);
-			const glm::vec3* c = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, MeshData::Position, meshData->indexVector[j + 2]);
+			const glm::vec3* a = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, BufferComponent::VertexPosition, meshData->indexVector[j + 0]);
+			const glm::vec3* b = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, BufferComponent::VertexPosition, meshData->indexVector[j + 1]);
+			const glm::vec3* c = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, BufferComponent::VertexPosition, meshData->indexVector[j + 2]);
 			if (IntersectCapsuleTriangle(capsule, *a, *b, *c))
 				break;
 		}
@@ -780,9 +780,9 @@ namespace sf::Geometry
 		const MeshData* meshData = meshCollider.meshData;
 		for (j = 0; j < meshData->indexVector.size(); j += 3)
 		{
-			const glm::vec3* a = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, MeshData::Position, meshData->indexVector[j + 0]);
-			const glm::vec3* b = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, MeshData::Position, meshData->indexVector[j + 1]);
-			const glm::vec3* c = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, MeshData::Position, meshData->indexVector[j + 2]);
+			const glm::vec3* a = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, BufferComponent::VertexPosition, meshData->indexVector[j + 0]);
+			const glm::vec3* b = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, BufferComponent::VertexPosition, meshData->indexVector[j + 1]);
+			const glm::vec3* c = (glm::vec3*)meshData->vertexLayout.Access(meshData->vertexBuffer, BufferComponent::VertexPosition, meshData->indexVector[j + 2]);
 			if (IntersectBoxTriangle(box, *a, *b, *c))
 				break;
 		}

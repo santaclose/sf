@@ -8,10 +8,10 @@ layout(location = 5) out float fVertexAo;
 layout(location = 0) in vec3 vPosition;
 layout(location = 1) in vec3 vNormal;
 layout(location = 2) in vec3 vTangent;
-layout(location = 3) in vec3 vBitangent;
-layout(location = 4) in vec3 vColor;
-layout(location = 5) in vec2 vTexCoords;
-layout(location = 6) in float vAmbientOcclusion;
+//layout(location = 3) in vec3 vBitangent;
+layout(location = 3) in vec3 vColor;
+layout(location = 4) in vec2 vTexCoords;
+layout(location = 5) in float vAmbientOcclusion;
 
 layout(binding = 0) uniform SharedGpuData
 {
@@ -31,7 +31,7 @@ void main()
 	fWorldPos = (modelMatrix * vec4(vPosition, 1.0)).rgb;
 
 	vec3 T = normalize(vec3(modelMatrix * vec4(vTangent, 0.0)));
-	vec3 B = normalize(vec3(modelMatrix * vec4(vBitangent, 0.0)));
+	vec3 B = normalize(vec3(modelMatrix * vec4(cross(vNormal, vTangent), 0.0)));
 	vec3 N = normalize(vec3(modelMatrix * vec4(vNormal, 0.0)));
 	fTBN = mat3(T, B, N);
 

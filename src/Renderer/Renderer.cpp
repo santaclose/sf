@@ -166,7 +166,7 @@ namespace sf::Renderer
 		// update indices to draw
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->indexVector.size() * sizeof(uint32_t), &mesh->indexVector[0], GL_STATIC_DRAW);
 
-		const std::vector<DataComponent>& components = mesh->vertexLayout.GetComponents();
+		const std::vector<BufferComponentInfo>& components = mesh->vertexLayout.GetComponentInfos();
 		for (int i = 0; i < components.size(); i++)
 		{
 			glEnableVertexAttribArray(i);
@@ -681,7 +681,7 @@ void sf::Renderer::DrawVoxelVolume(VoxelVolume& voxelVolume, Transform& transfor
 		glGenBuffers(1, &newSsbo);
 		voxelVolumeSsbos[voxelVolume.voxelVolumeData] = newSsbo;
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, voxelVolumeSsbos[voxelVolume.voxelVolumeData]);
-		glBufferData(GL_SHADER_STORAGE_BUFFER, voxelVolume.voxelVolumeData->perVoxelData.size(), voxelVolume.voxelVolumeData->perVoxelData.data(), GL_STATIC_DRAW);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, voxelVolume.voxelVolumeData->voxelBuffer.size(), voxelVolume.voxelVolumeData->voxelBuffer.data(), GL_STATIC_DRAW);
 	}
 
 	if (!voxelVolumeShader.Initialized())

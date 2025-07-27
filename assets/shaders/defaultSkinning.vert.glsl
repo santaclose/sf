@@ -10,7 +10,7 @@ layout(location = 1) in vec4 vBoneWeights;
 layout(location = 2) in vec3 vPosition;
 layout(location = 3) in vec3 vNormal;
 layout(location = 4) in vec3 vTangent;
-layout(location = 5) in vec3 vBitangent;
+//layout(location = 5) in vec3 vBitangent;
 layout(location = 6) in vec3 vColor;
 layout(location = 7) in vec2 vTexCoords;
 layout(location = 8) in float vAmbientOcclusion;
@@ -45,7 +45,7 @@ void main()
 		vBoneWeights.w * skinningMatrices[int(vBoneIndices.w)] : mat4(1.0);
 
 	vec3 T = normalize(vec3(modelMatrix * skinMat * vec4(vTangent, 0.0)));
-	vec3 B = normalize(vec3(modelMatrix * skinMat * vec4(vBitangent, 0.0)));
+	vec3 B = normalize(vec3(modelMatrix * skinMat * vec4(cross(vNormal, vTangent), 0.0)));
 	vec3 N = normalize(vec3(modelMatrix * skinMat * vec4(vNormal, 0.0)));
 	fTBN = mat3(T, B, N);
 

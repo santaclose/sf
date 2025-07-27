@@ -2,7 +2,7 @@
 #include <cstring>
 #include <fstream>
 
-void sf::MeshData::ChangeVertexLayout(const sf::DataLayout& newLayout)
+void sf::MeshData::ChangeVertexLayout(const sf::BufferLayout& newLayout)
 {
 	if (this->vertexBuffer == nullptr)
 	{
@@ -10,21 +10,21 @@ void sf::MeshData::ChangeVertexLayout(const sf::DataLayout& newLayout)
 		return;
 	}
 
-	const std::vector<DataComponent>& oldComponents = this->vertexLayout.GetComponents();
+	const std::vector<BufferComponentInfo>& oldComponents = this->vertexLayout.GetComponentInfos();
 	void* newVertexBuffer = malloc(newLayout.GetSize() * this->vertexCount);
 	for (int i = 0; i < this->vertexCount; i++)
 	{
 		for (int j = 0; j < oldComponents.size(); j++)
 		{
-			const DataComponent* dataComponentInNewLayout = newLayout.GetComponent(oldComponents[j].id);
+			const BufferComponentInfo* dataComponentInNewLayout = newLayout.GetComponentInfo(oldComponents[j].component);
 			if (dataComponentInNewLayout == nullptr) // new layout does not have this component
 				continue;
 			if (oldComponents[j].dataType != dataComponentInNewLayout->dataType)
 				continue; // cannot use the data in this component
 
 			uint32_t dataTypeSize = GetDataTypeSize(oldComponents[j].dataType);
-			void* targetPointer = newLayout.Access(newVertexBuffer, oldComponents[j].id, i);
-			void* sourcePointer = this->vertexLayout.Access(this->vertexBuffer, oldComponents[j].id, i);
+			void* targetPointer = newLayout.Access(newVertexBuffer, oldComponents[j].component, i);
+			void* sourcePointer = this->vertexLayout.Access(this->vertexBuffer, oldComponents[j].component, i);
 			memcpy(targetPointer, sourcePointer, dataTypeSize);
 		}
 	}
@@ -40,13 +40,10 @@ void sf::MeshData::SaveToFile(const char* targetFile)
 	file.open(targetFile, std::ios::trunc | std::ios::binary);
 
 	// Vertex layout
-	uint32_t componentCount = vertexLayout.GetComponents().size();
+	uint32_t componentCount = vertexLayout.GetComponentInfos().size();
 	file.write((char*) &componentCount, sizeof(componentCount));
-	for (DataComponent comp : vertexLayout.GetComponents())
-	{
-		file.write((char*) &comp.id, sizeof(comp.id));
-		file.write((char*) &comp.dataType, sizeof(comp.dataType));
-	}
+	for (BufferComponentInfo comp : vertexLayout.GetComponentInfos())
+		file.write((char*) &comp.component, sizeof(comp.component));
 
 	// Indices
 	uint32_t indexCount = indexVector.size();
@@ -76,10 +73,10 @@ bool sf::MeshData::LoadFromFile(const char* targetFile)
 	// Vertex layout
 	uint32_t componentCount;
 	file.read((char*)&componentCount, sizeof(componentCount));
-	std::vector<std::pair<uint32_t, DataType>> components;
+	std::vector<BufferComponent> components;
 	components.resize(componentCount);
-	file.read((char*) components.data(), componentCount * (sizeof(uint32_t) + sizeof(DataType)));
-	vertexLayout = DataLayout(components);
+	file.read((char*) components.data(), componentCount * sizeof(BufferComponent));
+	vertexLayout = BufferLayout(components);
 
 	// Indices
 	uint32_t indexCount;

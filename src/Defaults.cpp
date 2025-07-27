@@ -46,30 +46,30 @@ namespace sf::Defaults
 		return monkeyMeshData;
 	}
 
-	DataLayout VertexLayout()
+	BufferLayout VertexLayout()
 	{
-		return DataLayout({
-			{MeshData::VertexAttribute::Position, DataType::vec3f32},
-			{MeshData::VertexAttribute::Normal, DataType::vec3f32},
-			{MeshData::VertexAttribute::Tangent, DataType::vec3f32},
-			{MeshData::VertexAttribute::Bitangent, DataType::vec3f32},
-			{MeshData::VertexAttribute::Color, DataType::vec3f32},
-			{MeshData::VertexAttribute::UV, DataType::vec2f32},
-			{MeshData::VertexAttribute::AO, DataType::f32}});
+		return BufferLayout({
+			BufferComponent::VertexPosition,
+			BufferComponent::VertexNormal,
+			BufferComponent::VertexTangent,
+			// BufferComponent::VertexBitangent,
+			BufferComponent::VertexColor,
+			BufferComponent::VertexUV,
+			BufferComponent::VertexAO});
 	}
 
-	DataLayout VertexLayoutSkinning()
+	BufferLayout VertexLayoutSkinning()
 	{
-		return DataLayout({
-			{MeshData::VertexAttribute::BoneIndices, DataType::vec4f32},
-			{MeshData::VertexAttribute::BoneWeights, DataType::vec4f32},
-			{MeshData::VertexAttribute::Position, DataType::vec3f32},
-			{MeshData::VertexAttribute::Normal, DataType::vec3f32},
-			{MeshData::VertexAttribute::Tangent, DataType::vec3f32},
-			{MeshData::VertexAttribute::Bitangent, DataType::vec3f32},
-			{MeshData::VertexAttribute::Color, DataType::vec3f32},
-			{MeshData::VertexAttribute::UV, DataType::vec2f32},
-			{MeshData::VertexAttribute::AO, DataType::f32}});
+		return BufferLayout({
+			BufferComponent::VertexBoneIndices,
+			BufferComponent::VertexBoneWeights,
+			BufferComponent::VertexPosition,
+			BufferComponent::VertexNormal,
+			BufferComponent::VertexTangent,
+			// BufferComponent::VertexBitangent,
+			BufferComponent::VertexColor,
+			BufferComponent::VertexUV,
+			BufferComponent::VertexAO});
 	}
 
 }

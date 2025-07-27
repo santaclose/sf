@@ -2,18 +2,20 @@
 
 #include <Geometry.h>
 
-void sf::VoxelVolumeData::BuildEmpty(const glm::uvec3& voxelCountPerAxis, const DataLayout& voxelLayout, float voxelSize, const glm::vec3& offset)
+void sf::VoxelVolumeData::BuildEmpty(const glm::uvec3& voxelCountPerAxis, const BufferLayout* voxelBufferLayout, float voxelSize, const glm::vec3& offset)
 {
-	this->voxelLayout = voxelLayout;
+	if (voxelBufferLayout != nullptr)
+		this->voxelBufferLayout = *voxelBufferLayout;
 	this->voxelSize = voxelSize;
 	this->offset = offset;
 	this->voxelCountPerAxis = voxelCountPerAxis;
 }
 
-void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, const DataLayout& voxelLayout)
+void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, const BufferLayout* voxelBufferLayout)
 {
-	this->voxelLayout = voxelLayout;
-	DataType positionDataType = mesh.vertexLayout.GetComponent(MeshData::VertexAttribute::Position)->dataType;
+	if (voxelBufferLayout != nullptr)
+		this->voxelBufferLayout = *voxelBufferLayout;
+	DataType positionDataType = mesh.vertexLayout.GetComponentInfo(BufferComponent::VertexPosition)->dataType;
 	assert(positionDataType == DataType::vec3f32);
 	assert(mesh.vertexCount > 0);
 	assert(voxelSize > 0.0f);
@@ -21,11 +23,11 @@ void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, c
 	this->voxelSize = voxelSize;
 
 	// compute mesh AABB
-	glm::vec3 minP = *((glm::vec3*)mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Position, 0));
+	glm::vec3 minP = *((glm::vec3*)mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexPosition, 0));
 	glm::vec3 maxP = minP;
 	for (int i = 1; i < mesh.vertexCount; i++)
 	{
-		glm::vec3* posPtr = (glm::vec3*)mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Position, i);
+		glm::vec3* posPtr = (glm::vec3*)mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexPosition, i);
 		minP.x = glm::min(minP.x, posPtr->x);
 		minP.y = glm::min(minP.y, posPtr->y);
 		minP.z = glm::min(minP.z, posPtr->z);
@@ -49,9 +51,9 @@ void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, c
 		uint32_t indexB = mesh.indexVector[indexI + 1];
 		uint32_t indexC = mesh.indexVector[indexI + 2];
 
-		glm::vec3* posPtrA = (glm::vec3*) mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Position, indexA);
-		glm::vec3* posPtrB = (glm::vec3*) mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Position, indexB);
-		glm::vec3* posPtrC = (glm::vec3*) mesh.vertexLayout.Access(mesh.vertexBuffer, MeshData::VertexAttribute::Position, indexC);
+		glm::vec3* posPtrA = (glm::vec3*) mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexPosition, indexA);
+		glm::vec3* posPtrB = (glm::vec3*) mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexPosition, indexB);
+		glm::vec3* posPtrC = (glm::vec3*) mesh.vertexLayout.Access(mesh.vertexBuffer, BufferComponent::VertexPosition, indexC);
 		glm::vec3 triNormal = glm::cross(
 			*posPtrB - *posPtrA,
 			*posPtrC - *posPtrA);
@@ -198,6 +200,11 @@ void* sf::VoxelVolumeData::CastRay(const glm::vec3& origin, const glm::vec3& dir
 		}
 
 		// if (draw)
-			// SetVoxel(currentVoxel, (void*)true);
+		// {
+			// glm::vec3 voxelPos(currentVoxel);
+			// voxelPos *= voxelSize;
+			// voxelPos += offset;
+			// SetVoxel(currentVoxel, &voxelPos);
+		// }
 	}
 }

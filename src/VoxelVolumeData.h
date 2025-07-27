@@ -16,14 +16,14 @@ namespace sf {
 		glm::uvec3 voxelCountPerAxis;
 
 		std::unordered_map<glm::uvec3, uint32_t, Hash::UVec3Hash> map;
-		std::vector<uint8_t> perVoxelData;
-		DataLayout voxelLayout;
+		std::vector<uint8_t> voxelBuffer;
+		BufferLayout voxelBufferLayout;
 
 		VoxelVolumeData() = default;
 		~VoxelVolumeData() = default;
 
-		void BuildEmpty(const glm::uvec3& voxelCountPerAxis, const DataLayout& voxelLayout, float voxelSize = 1.0f, const glm::vec3& offset = { 0.0f, 0.0f, 0.0f });
-		void BuildFromMesh(const MeshData& meshData, float voxelSize, const DataLayout& voxelLayout);
+		void BuildEmpty(const glm::uvec3& voxelCountPerAxis, const BufferLayout* voxelBufferLayout = nullptr, float voxelSize = 1.0f, const glm::vec3& offset = { 0.0f, 0.0f, 0.0f });
+		void BuildFromMesh(const MeshData& meshData, float voxelSize, const BufferLayout* voxelBufferLayout = nullptr);
 
 		void* CastRay(const glm::vec3& origin, const glm::vec3& direction, bool avoidEarlyCollision = true, float* out_t = nullptr) const;
 
@@ -48,21 +48,28 @@ namespace sf {
 			if (map.find(coords) == map.end())
 				return nullptr;
 
-			return (void*)&perVoxelData[voxelLayout.GetSize() * map.at(coords)];
+			if (voxelBufferLayout.GetSize() == 0)
+				return (void*) true;
+			return (void*)&voxelBuffer[voxelBufferLayout.GetSize() * map.at(coords)];
 		}
 		inline void SetVoxel(glm::uvec3 coords, void* value)
 		{
+			if (voxelBufferLayout.GetSize() == 0)
+			{
+				map[coords] = map.size();
+				return;
+			}
 			if (map.find(coords) == map.end())
 			{
-				map[coords] = perVoxelData.size() / voxelLayout.GetSize();
-				perVoxelData.resize(perVoxelData.size() + voxelLayout.GetSize());
+				map[coords] = voxelBuffer.size() / voxelBufferLayout.GetSize();
+				voxelBuffer.resize(voxelBuffer.size() + voxelBufferLayout.GetSize());
 			}
-			memcpy(&perVoxelData[voxelLayout.GetSize() * map[coords]], value, voxelLayout.GetSize());
+			memcpy(&voxelBuffer[voxelBufferLayout.GetSize() * map[coords]], value, voxelBufferLayout.GetSize());
 		}
 		inline uint32_t GetVoxelCount() const
 		{
-			assert(perVoxelData.size() % voxelLayout.GetSize() == 0);
-			assert(map.size() == (uint32_t) perVoxelData.size() / voxelLayout.GetSize());
+			assert(voxelBuffer.size() % voxelBufferLayout.GetSize() == 0);
+			assert(map.size() == (uint32_t) voxelBuffer.size() / voxelBufferLayout.GetSize());
 			return map.size();
 		}
 	};

@@ -29,5 +29,5 @@ void main()
 {
 	fTexCoords = vTexCoords;
 	vec3 voxelPos = vec3(perVoxelData[gl_InstanceID * 3 + 0], perVoxelData[gl_InstanceID * 3 + 1], perVoxelData[gl_InstanceID * 3 + 2]);
-	gl_Position = cameraMatrix * vec4(voxelPos + vPosition * voxelSize, 1.0);
+	gl_Position = cameraMatrix * modelMatrix * vec4(voxelPos + vPosition * voxelSize, 1.0);
 }

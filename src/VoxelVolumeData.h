@@ -58,19 +58,20 @@ namespace sf {
 				return (void*) true;
 			return (void*)&voxelBuffer[voxelBufferLayout.GetSize() * map.at(coords)];
 		}
-		inline void CreateVoxel(glm::uvec3 coords)
+		inline bool CreateVoxel(glm::uvec3 coords)
 		{
 			if (map.find(coords) != map.end())
-				return;
+				return false;
 
 			if (voxelBufferLayout.GetSize() == 0)
 			{
 				map[coords] = map.size();
-				return;
+				return true;
 			}
 
 			map[coords] = voxelBuffer.size() / voxelBufferLayout.GetSize();
-			voxelBuffer.resize(voxelBuffer.size() + voxelBufferLayout.GetSize());
+			voxelBuffer.resize(voxelBuffer.size() + voxelBufferLayout.GetSize(), 0);
+			return true;
 		}
 
 		inline uint32_t GetVoxelCount() const

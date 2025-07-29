@@ -10,6 +10,24 @@
 
 namespace sf::Geometry
 {
+	// from https://realtimecollisiondetection.net/
+	inline glm::vec3 Barycentric(
+		const glm::vec3& point,
+		const glm::vec3& triA, const glm::vec3& triB, const glm::vec3& triC)
+	{
+		glm::vec3 v0 = triB - triA, v1 = triC - triA, v2 = point - triA;
+		float d00 = glm::dot(v0, v0);
+		float d01 = glm::dot(v0, v1);
+		float d11 = glm::dot(v1, v1);
+		float d20 = glm::dot(v2, v0);
+		float d21 = glm::dot(v2, v1);
+		float denom = d00 * d11 - d01 * d01;
+		v0.x = (d11 * d20 - d01 * d21) / denom;
+		v0.y = (d00 * d21 - d01 * d20) / denom;
+		v0.z = 1.0f - v0.x - v0.y;
+		return v0;
+	}
+
 	inline bool IntersectPointAABB(
 		const glm::vec3& point,
 		const glm::vec3& boxMin, const glm::vec3& boxMax)
@@ -197,11 +215,21 @@ namespace sf::Geometry
 	}
 
 	inline float DistancePointPlane(
-		const glm::vec3& planeNormal, const glm::vec3& planePoint,
-		const glm::vec3& point)
+		const glm::vec3& point,
+		const glm::vec3& planeNormal, const glm::vec3& planePoint)
 	{
 		return glm::dot(glm::normalize(planeNormal), point - planePoint);
 	}
+
+	inline glm::vec3 ClosestPointPointPlane(
+		const glm::vec3& point,
+		const glm::vec3& planeNormal, const glm::vec3& planePoint)
+	{
+		glm::vec3 n = glm::normalize(planeNormal);
+		float distance = glm::dot(point - planePoint, n);
+		return point - distance * n;
+	}
+
 
 	inline glm::vec3 ClosestPointPointSegment(
 		const glm::vec3& point,

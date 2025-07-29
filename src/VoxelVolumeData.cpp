@@ -1,6 +1,7 @@
 #include "VoxelVolumeData.h"
 
 #include <Geometry.h>
+#include <Math.hpp>
 
 void sf::VoxelVolumeData::BuildEmpty(const glm::uvec3& voxelCountPerAxis, const BufferLayout* voxelBufferLayout, float voxelSize, const glm::vec3& offset)
 {
@@ -45,6 +46,7 @@ void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, c
 	};
 
 	// voxelize
+	std::unordered_map<uint32_t, uint32_t> voxelCollisions;
 	for (int indexI = 0; indexI < mesh.indexVector.size(); indexI += 3)
 	{
 		uint32_t indexA = mesh.indexVector[indexI + 0];
@@ -81,16 +83,24 @@ void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, c
 					glm::vec3 currentVoxelCenter = (currentVoxelMin + currentVoxelMax) / 2.0f;
 
 					// approximation is good and fast
-					bool shouldFill = glm::distance2(Geometry::ClosestPointPointTriangle(currentVoxelCenter, *posPtrA, *posPtrB, *posPtrC), currentVoxelCenter) < voxelSize * voxelSize;
+					glm::vec3 voxelCenterOnTriangle = Geometry::ClosestPointPointTriangle(currentVoxelCenter, *posPtrA, *posPtrB, *posPtrC);
+					bool shouldFill = glm::distance2(voxelCenterOnTriangle, currentVoxelCenter) < voxelSize * voxelSize;
 					// bool shouldFill = Geometry::IntersectAABBTriangle(currentVoxelMin, currentVoxelMax, *posPtrA, *posPtrB, *posPtrC);
 
 					if (!shouldFill)
 						continue;
 
-					CreateVoxel(currentVoxel);
+					bool voxelExists = !CreateVoxel(currentVoxel);
 					if (voxelBufferLayout == nullptr)
 						continue;
-
+					if (voxelExists)
+					{
+						uint32_t existingVoxel = map[currentVoxel];
+						if (voxelCollisions.find(existingVoxel) == voxelCollisions.end())
+							voxelCollisions[existingVoxel] = 2;
+						else
+							voxelCollisions[existingVoxel]++;
+					}
 					for (const BufferComponentInfo& bci : voxelBufferLayout->GetComponentInfos())
 					{
 						if (bci.component == BufferComponent::VoxelPosition)
@@ -98,9 +108,75 @@ void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, c
 							glm::vec3* voxelPosPointer = (glm::vec3*)AccessVoxelComponent(BufferComponent::VoxelPosition, currentVoxel);
 							if (voxelPosPointer != nullptr)
 								*voxelPosPointer = currentVoxelCenter;
+							continue;
+						}
+						BufferComponent targetVertexComponent;
+						switch (bci.component)
+						{
+							case BufferComponent::VoxelNormal:
+								targetVertexComponent = BufferComponent::VertexNormal;
+								break;
+							case BufferComponent::VoxelColor:
+								targetVertexComponent = BufferComponent::VertexColor;
+								break;
+							case BufferComponent::VoxelUV:
+								targetVertexComponent = BufferComponent::VertexUV;
+								break;
+							default:
+								continue;
+						}
+						if (mesh.vertexBufferLayout.GetComponentInfo(targetVertexComponent) == nullptr)
+							continue;
+
+						glm::vec2 toBlendVec2[3];
+						glm::vec3 toBlendVec3[3];
+						glm::vec2 blendVec2Out;
+						glm::vec3 blendVec3Out;
+						glm::vec3 barycentricCoords = Geometry::Barycentric(voxelCenterOnTriangle, *posPtrA, *posPtrB, *posPtrC);
+
+						switch (bci.dataType)
+						{
+							case DataType::vec2f32:
+								toBlendVec2[0] = *((glm::vec2*) mesh.AccessVertexComponent(targetVertexComponent, indexA));
+								toBlendVec2[1] = *((glm::vec2*) mesh.AccessVertexComponent(targetVertexComponent, indexB));
+								toBlendVec2[2] = *((glm::vec2*) mesh.AccessVertexComponent(targetVertexComponent, indexC));
+								Math::WeightedBlend(toBlendVec2, &barycentricCoords.x, 3, blendVec2Out);
+								*((glm::vec2*) AccessVoxelComponent(bci.component, currentVoxel)) += blendVec2Out;
+								break;
+							case DataType::vec3f32:
+								toBlendVec3[0] = *((glm::vec3*) mesh.AccessVertexComponent(targetVertexComponent, indexA));
+								toBlendVec3[1] = *((glm::vec3*) mesh.AccessVertexComponent(targetVertexComponent, indexB));
+								toBlendVec3[2] = *((glm::vec3*) mesh.AccessVertexComponent(targetVertexComponent, indexC));
+								Math::WeightedBlend(toBlendVec3, &barycentricCoords.x, 3, blendVec3Out);
+								*((glm::vec3*) AccessVoxelComponent(bci.component, currentVoxel)) += blendVec3Out;
+								break;
 						}
 					}
 				}
+	}
+
+	for (const auto& pair : voxelCollisions)
+	{
+		for (const BufferComponentInfo& bci : voxelBufferLayout->GetComponentInfos())
+		{
+			if (bci.component == BufferComponent::VoxelPosition)
+				continue;
+			switch (bci.dataType)
+			{
+				case DataType::vec2f32:
+					*((glm::vec2*) voxelBufferLayout->Access(voxelBuffer.data(), bci.component, pair.first)) /= (float) pair.second;
+					break;
+				case DataType::vec3f32:
+					if (bci.component == BufferComponent::VoxelNormal)
+					{
+						glm::vec3& temp = *((glm::vec3*) voxelBufferLayout->Access(voxelBuffer.data(), bci.component, pair.first));
+						temp = glm::normalize(temp);
+					}
+					else
+						*((glm::vec3*) voxelBufferLayout->Access(voxelBuffer.data(), bci.component, pair.first)) /= (float) pair.second;
+					break;
+			}
+		}
 	}
 }
 

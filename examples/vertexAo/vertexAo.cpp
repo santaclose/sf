@@ -45,6 +45,11 @@ namespace sf
 
 	int selectedModel;
 
+	BufferLayout meshVertexBufferLayout = BufferLayout({
+		BufferComponent::VertexPosition,
+		BufferComponent::VertexAO
+	});
+
 	void Game::Initialize(int argc, char** argv)
 	{
 		modelRotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
@@ -57,7 +62,7 @@ namespace sf
 
 		ExampleViewer::Initialize(scene);
 
-		uint32_t aoMaterial = Renderer::CreateMaterial(Material("assets/shaders/default.vert", "assets/shaders/vertexAo.frag"));
+		uint32_t aoMaterial = Renderer::CreateMaterial(Material("assets/shaders/default.vert", "assets/shaders/vertexAo.frag"), meshVertexBufferLayout);
 
 		std::vector<std::string> meshFilePaths = { "examples/vertexAo/bunny/bunny.obj", "assets/meshes/monke.obj" };
 		sampleMeshes = new MeshData[meshFilePaths.size()];
@@ -66,6 +71,7 @@ namespace sf
 			std::string& filePath = meshFilePaths[i];
 			galleryObjects.push_back(scene.CreateEntity());
 
+			sampleMeshes[i] = MeshData(meshVertexBufferLayout);
 			int objid = ObjImporter::Load(filePath);
 			ObjImporter::GenerateMeshData(objid, sampleMeshes[i]);
 			VoxelVolumeData vv;

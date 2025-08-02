@@ -26,10 +26,15 @@ namespace sf::Renderer
 {
 	const Window* window;
 
-	GlShader defaultShader;
-	GlMaterial defaultMaterial;
-	GlShader defaultSkinningShader;
-	GlMaterial defaultSkinningMaterial;
+	BufferLayout positionColorVertexLayout = BufferLayout({
+		BufferComponent::VertexPosition,
+		BufferComponent::VertexColor
+	});
+	BufferLayout positionUvVertexLayout = BufferLayout({
+		BufferComponent::VertexPosition,
+		BufferComponent::VertexUV
+	});
+
 	GlShader voxelVolumeShader;
 	GlShader drawLineShader;
 
@@ -173,22 +178,22 @@ namespace sf::Renderer
 			switch (components[i].dataType)
 			{
 				case DataType::f32:
-					glVertexAttribPointer(i, 1, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(unsigned long long)components[i].byteOffset);
+					glVertexAttribPointer(i, 1, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(uint64_t)components[i].byteOffset);
 					break;
 				case DataType::vec2f32:
-					glVertexAttribPointer(i, 2, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(unsigned long long)components[i].byteOffset);
+					glVertexAttribPointer(i, 2, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(uint64_t)components[i].byteOffset);
 					break;
 				case DataType::vec3f32:
-					glVertexAttribPointer(i, 3, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(unsigned long long)components[i].byteOffset);
+					glVertexAttribPointer(i, 3, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(uint64_t)components[i].byteOffset);
 					break;
 				case DataType::vec4f32:
-					glVertexAttribPointer(i, 4, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(unsigned long long)components[i].byteOffset);
+					glVertexAttribPointer(i, 4, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(uint64_t)components[i].byteOffset);
 					break;
 				case DataType::vec4u8:
-					glVertexAttribPointer(i, 4, GL_UNSIGNED_BYTE, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(unsigned long long)components[i].byteOffset);
+					glVertexAttribPointer(i, 4, GL_UNSIGNED_BYTE, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(uint64_t)components[i].byteOffset);
 					break;
 				case DataType::vec4u16:
-					glVertexAttribPointer(i, 4, GL_UNSIGNED_SHORT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(unsigned long long)components[i].byteOffset);
+					glVertexAttribPointer(i, 4, GL_UNSIGNED_SHORT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(uint64_t)components[i].byteOffset);
 					break;
 				default:
 					std::cout << "[Renderer] Vertex attribute skipped" << std::endl;
@@ -203,7 +208,7 @@ namespace sf::Renderer
 
 	void CreateSpriteGpuData()
 	{
-		spriteShader.CreateFromFiles("assets/shaders/sprite.vert", "assets/shaders/sprite.frag");
+		spriteShader.CreateFromFiles("assets/shaders/sprite.vert", "assets/shaders/sprite.frag", positionUvVertexLayout);
 
 		// quad uvs and indices won't change
 		spriteQuad.vertices[1] = { 0.0f, 0.0f };
@@ -460,10 +465,10 @@ sf::Entity sf::Renderer::GetActiveCameraEntity()
 	return activeCameraEntity;
 }
 
-uint32_t sf::Renderer::CreateMaterial(const Material& material)
+uint32_t sf::Renderer::CreateMaterial(const Material& material, const BufferLayout& vertexBufferLayout)
 {
 	GlMaterial* newMaterial = new GlMaterial();
-	newMaterial->Create(material, rendererUniformVector);
+	newMaterial->Create(material, rendererUniformVector, vertexBufferLayout);
 	materials.push_back(newMaterial);
 	return materials.size() - 1;
 }
@@ -489,12 +494,6 @@ void sf::Renderer::DrawSkybox()
 
 void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 {
-	if (!defaultShader.Initialized())
-	{
-		defaultShader.CreateFromFiles("assets/shaders/default.vert", "assets/shaders/default.frag");
-		defaultMaterial.CreateFromShader(&defaultShader, false);
-	}
-
 	if (mesh.meshData->vertexCount == 0)
 		return;
 
@@ -510,7 +509,7 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 
 	for (uint32_t i = 0; i < mesh.meshData->pieces.size(); i++)
 	{
-		GlMaterial* materialToUse = mesh.materials[i] == ~0U ? &defaultMaterial : materials[mesh.materials[i]];
+		GlMaterial* materialToUse = materials[mesh.materials[i]];
 
 		materialToUse->Bind();
 
@@ -527,11 +526,6 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 {
 	assert(mesh.skeletonData != nullptr);
-	if (!defaultSkinningShader.Initialized())
-	{
-		defaultSkinningShader.CreateFromFiles("assets/shaders/defaultSkinning.vert", "assets/shaders/default.frag");
-		defaultSkinningMaterial.CreateFromShader(&defaultSkinningShader, false);
-	}
 
 	if (skeletonSsbos.find(mesh.skeletonData) == skeletonSsbos.end()) // create skeleton ssbo if not there
 	{
@@ -558,7 +552,7 @@ void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 
 	for (uint32_t i = 0; i < mesh.meshData->pieces.size(); i++)
 	{
-		GlMaterial* materialToUse = mesh.materials[i] == ~0U ? &defaultSkinningMaterial : materials[mesh.materials[i]];
+		GlMaterial* materialToUse = materials[mesh.materials[i]];
 
 		materialToUse->Bind();
 		materialToUse->m_shader->SetUniform1i("animate", mesh.skeletonData->m_animate);
@@ -685,7 +679,7 @@ void sf::Renderer::DrawVoxelVolume(VoxelVolume& voxelVolume, Transform& transfor
 	}
 
 	if (!voxelVolumeShader.Initialized())
-		voxelVolumeShader.CreateFromFiles("assets/shaders/voxelVolume.vert", "assets/shaders/uv.frag");
+		voxelVolumeShader.CreateFromFiles("assets/shaders/voxelVolume.vert", "assets/shaders/uv.frag", Defaults::MeshDataCube().vertexBufferLayout);
 	voxelVolumeShader.Bind();
 	voxelVolumeShader.SetUniform1f("voxelSize", voxelVolume.voxelVolumeData->voxelSize);
 	glPolygonMode(GL_FRONT, GL_FILL);
@@ -801,7 +795,7 @@ void sf::Renderer::DrawText(Text& text, ScreenCoordinates& screenCoordinates)
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(SebText::LayoutSettings), &textLayoutSettings, GL_DYNAMIC_DRAW);
 
 	if (!textShader.Initialized())
-		textShader.CreateFromFiles("vendor/sebtext/shader.vert", "vendor/sebtext/shader.frag");
+		textShader.CreateFromFiles("vendor/sebtext/shader.vert", "vendor/sebtext/shader.frag", positionUvVertexLayout);
 
 	textShader.Bind();
 	glPolygonMode(GL_FRONT, GL_FILL);
@@ -926,7 +920,7 @@ void sf::Renderer::DrawLines()
 		glEnableVertexAttribArray(1);
 		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(LineVertex), (void*)offsetof(LineVertex, color));
 
-		drawLineShader.CreateFromFiles("assets/shaders/drawLines.vert", "assets/shaders/drawLines.frag");
+		drawLineShader.CreateFromFiles("assets/shaders/drawLines.vert", "assets/shaders/drawLines.frag", positionColorVertexLayout);
 
 		drawLineDataInitialized = true;
 	}
@@ -966,8 +960,6 @@ void sf::Renderer::Terminate()
 	{
 		delete material;
 	}
-	defaultShader.Delete();
-	defaultSkinningShader.Delete();
 	voxelVolumeShader.Delete();
 	drawLineShader.Delete();
 

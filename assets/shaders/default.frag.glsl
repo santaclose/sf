@@ -1,7 +1,3 @@
-#version 460
-
-layout(location = 0) out vec4 outColor;
-
 layout(location = 0) in mat3 fTBN;
 layout(location = 4) in vec2 fTexCoords;
 
@@ -14,5 +10,5 @@ void main()
 	vec3 lightDir = vec3(1.0, -1.0, -1.0);
 	float diff = max(dot(-normal, normalize(lightDir)), 0.0);
 	vec4 texColor = vec4(1.0);
-	outColor = vec4(texColor.rgb * diff, 1.0);
+	OUT_COLOR = vec4(texColor.rgb * diff, 1.0);
 }

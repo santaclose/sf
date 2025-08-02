@@ -1,11 +1,6 @@
-#version 460
-
-#include <assets/shaders/shared.h>
-
 layout(location = 4) out vec2 fTexCoords;
 
-layout(location = 0) in vec2 vPosition;
-layout(location = 1) in vec2 vTexCoords;
+#include <assets/shaders/shared.h>
 
 layout(binding = 0) uniform SharedGpuData
 {
@@ -20,6 +15,6 @@ layout(binding = 0) uniform SharedGpuData
 
 void main()
 {
-	fTexCoords = vTexCoords;
-	gl_Position = PIXEL_SPACE_TO_GL_SPACE(vPosition);
+	fTexCoords = VA_UV;
+	gl_Position = PIXEL_SPACE_TO_GL_SPACE(VA_Position);
 }

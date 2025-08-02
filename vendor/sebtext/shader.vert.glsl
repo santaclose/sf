@@ -1,12 +1,7 @@
-#version 460
-
-#include <assets/shaders/shared.h>
-
 layout(location = 0) out vec2 fragInPos;
 layout(location = 1) flat out int fragInDataOffset;
 
-layout(location = 0) in vec3 vPosition;
-layout(location = 1) in vec2 vTexCoords;
+#include <assets/shaders/shared.h>
 
 struct InstanceData
 {
@@ -93,10 +88,10 @@ void main()
 	);
 
 	vec2 offset = instancePos + vec2(globalOffset.x, -globalOffset.y);
-	vec2 instanceVertPos = vPosition.xy * instanceData.boundsSize * fontSize + offset - vec2(float(alignmentH == 2) * textWidth + float(alignmentH == 1) * textWidth / 2.0, 0.0);
+	vec2 instanceVertPos = VA_Position.xy * instanceData.boundsSize * fontSize + offset - vec2(float(alignmentH == 2) * textWidth + float(alignmentH == 1) * textWidth / 2.0, 0.0);
 	instanceVertPos.y = -instanceVertPos.y;
 
 	gl_Position = PIXEL_SPACE_TO_GL_SPACE(instanceVertPos);
-	fragInPos = -instanceData.boundsSize / 2 + instanceData.boundsSize * vTexCoords;
+	fragInPos = -instanceData.boundsSize / 2 + instanceData.boundsSize * VA_UV;
 	fragInDataOffset = instanceData.contourDataOffset;
 }

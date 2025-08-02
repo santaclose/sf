@@ -5,6 +5,7 @@
 bool sf::GlSkybox::generated = false;
 uint32_t sf::GlSkybox::gl_VAO;
 uint32_t sf::GlSkybox::gl_VBO;
+sf::BufferLayout sf::GlSkybox::vertexBufferLayout = sf::BufferLayout({sf::BufferComponent::VertexPosition});
 
 float sf::GlSkybox::cubeVertices[] = {   
 	-1.0f,  1.0f, -1.0f,
@@ -72,9 +73,9 @@ void sf::GlSkybox::SetCubemap(GlCubemap* cubemap)
 	}
 
 	if (cubemap->IsHDR())
-		shader.CreateFromFiles("assets/shaders/skybox.vert", "assets/shaders/skyboxHdr.frag");
+		shader.CreateFromFiles("assets/shaders/skybox.vert", "assets/shaders/skyboxHdr.frag", vertexBufferLayout);
 	else
-		shader.CreateFromFiles("assets/shaders/skybox.vert", "assets/shaders/skybox.frag");
+		shader.CreateFromFiles("assets/shaders/skybox.vert", "assets/shaders/skybox.frag", vertexBufferLayout);
 
 	sf::GlSkybox::cubemap = cubemap;
 }

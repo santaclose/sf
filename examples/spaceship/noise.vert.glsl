@@ -1,8 +1,4 @@
-#version 460
-
 layout(location = 0) out vec2 fScreenPos;
-
-layout(location = 0) in vec3 vPosition;
 
 layout(binding = 0) uniform SharedGpuData
 {
@@ -14,6 +10,6 @@ layout(binding = 0) uniform SharedGpuData
 
 void main()
 {
-	gl_Position = cameraMatrix * modelMatrix * vec4(vPosition, 1.0);
+	gl_Position = cameraMatrix * modelMatrix * vec4(VA_Position, 1.0);
 	fScreenPos = gl_Position.xy;
 }

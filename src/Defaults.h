@@ -9,7 +9,4 @@ namespace sf::Defaults
 	const MeshData& MeshDataPlane();
 	const MeshData& MeshDataSphere();
 	const MeshData& MeshDataMonkey();
-
-	BufferLayout VertexLayout();
-	BufferLayout VertexLayoutSkinning();
 }

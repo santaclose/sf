@@ -42,6 +42,12 @@ namespace sf
 	std::vector<std::string> environments;
 
 	MeshData* meshes;
+	BufferLayout meshVertexLayout = BufferLayout({
+		BufferComponent::VertexPosition,
+		BufferComponent::VertexNormal,
+		BufferComponent::VertexTangent,
+		BufferComponent::VertexUV
+	});
 
 	int selectedModel;
 
@@ -99,19 +105,21 @@ namespace sf
 			damagedHelmetMaterial.uniforms["aoTexture"] = { (uint32_t)ShaderDataType::bitmap, &ao };
 			damagedHelmetMaterial.uniforms["emissiveTexture"] = { (uint32_t)ShaderDataType::bitmap, &emissive };
 
+			meshes[0] = MeshData(meshVertexLayout);
 			GltfImporter::GenerateMeshData(gltfid, meshes[0]);
 			MeshProcessor::ComputeTangentSpace(meshes[0]);
-			Mesh& objectMesh = galleryObjects.back().AddComponent<Mesh>(&meshes[0], Renderer::CreateMaterial(damagedHelmetMaterial));
+			Mesh& objectMesh = galleryObjects.back().AddComponent<Mesh>(&meshes[0], Renderer::CreateMaterial(damagedHelmetMaterial, meshVertexLayout));
 		}
 		{
 			galleryObjects.push_back(scene.CreateEntity());
 			galleryObjects.back().AddComponent<Transform>();
 
 			gltfid = GltfImporter::Load("examples/pbr/SciFiHelmet.gltf");
+			meshes[1] = MeshData(meshVertexLayout);
 			GltfImporter::GenerateMeshData(gltfid, meshes[1]);
 
 			MeshProcessor::ComputeTangentSpace(meshes[1]);
-			Mesh& objectMesh = galleryObjects.back().AddComponent<Mesh>(&meshes[1], Renderer::CreateMaterial(Material("examples/pbr/SciFiHelmet.mat")));
+			Mesh& objectMesh = galleryObjects.back().AddComponent<Mesh>(&meshes[1], Renderer::CreateMaterial(Material("examples/pbr/SciFiHelmet.mat"), meshVertexLayout));
 		}
 
 		for (int i = 0; i < galleryObjects.size(); i++)

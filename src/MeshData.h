@@ -9,19 +9,18 @@ namespace sf {
 	struct MeshData
 	{
 		void* vertexBuffer = nullptr;
-		BufferLayout vertexBufferLayout = BufferLayout({
-			BufferComponent::VertexPosition,
-			BufferComponent::VertexNormal,
-			BufferComponent::VertexTangent,
-			BufferComponent::VertexColor,
-			BufferComponent::VertexUV,
-			BufferComponent::VertexAO
-		});
+		BufferLayout vertexBufferLayout;
 
 		uint32_t vertexCount = 0;
 
 		std::vector<uint32_t> indexVector;
 		std::vector<uint32_t> pieces;
+
+		MeshData() = default;
+		inline MeshData(const BufferLayout& newLayout)
+		{
+			vertexBufferLayout = newLayout;
+		}
 
 		void ChangeVertexBufferLayout(const BufferLayout& newLayout);
 		bool Initialized() { return vertexBuffer != nullptr; }

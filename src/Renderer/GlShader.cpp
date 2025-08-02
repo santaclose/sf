@@ -98,7 +98,7 @@ uint32_t sf::GlShader::CompileShader(uint32_t type, const std::string& source)
 	return id;
 }
 
-void sf::GlShader::CreateFromFiles(const std::string& vertexShaderPath, const std::string& fragmentShaderPath)
+void sf::GlShader::CreateFromFiles(const std::string& vertexShaderPath, const std::string& fragmentShaderPath, const BufferLayout& vertexBufferLayout)
 {
 	m_vertFileName = vertexShaderPath + ".glsl";
 	m_fragFileName = fragmentShaderPath + ".glsl";
@@ -118,6 +118,12 @@ void sf::GlShader::CreateFromFiles(const std::string& vertexShaderPath, const st
 		(std::istreambuf_iterator<char>()));
 	std::string fragmentShaderSource((std::istreambuf_iterator<char>(ifs2)),
 		(std::istreambuf_iterator<char>()));
+
+	vertexShaderSource = GenerateVertexShaderHeader(vertexBufferLayout) + vertexShaderSource;
+	vertexShaderSource = "#version 460\n" + vertexShaderSource;
+
+	fragmentShaderSource = "#version 460\nlayout(location = 0) out vec4 OUT_COLOR;\n" + fragmentShaderSource;
+
 	ResolveIncludes(vertexShaderSource);
 	ResolveIncludes(fragmentShaderSource);
 
@@ -125,6 +131,11 @@ void sf::GlShader::CreateFromFiles(const std::string& vertexShaderPath, const st
 	std::cout << "[GlShader] Created program with id " << gl_id << std::endl;
 	uint32_t vs = CompileShader(GL_VERTEX_SHADER, vertexShaderSource);
 	uint32_t fs = CompileShader(GL_FRAGMENT_SHADER, fragmentShaderSource);
+
+	if (!vs)
+		std::cout << vertexShaderSource << std::endl;
+	if (!fs)
+		std::cout << fragmentShaderSource << std::endl;
 
 	glAttachShader(gl_id, vs);
 	glAttachShader(gl_id, fs);
@@ -199,6 +210,52 @@ void sf::GlShader::AssignTextureNumberToUniform(const std::string& name)
 int sf::GlShader::GetTextureIndex(const std::string& name)
 {
 	return m_uniformCache[name].textureIndex;
+}
+
+std::string sf::GlShader::GenerateVertexShaderHeader(const BufferLayout& vertexBufferLayout)
+{
+	uint32_t currentLocation = 0;
+	std::string out = "";
+	for (const BufferComponentInfo& bci : vertexBufferLayout.GetComponentInfos())
+	{
+		assert((uint32_t)bci.component < (uint32_t) BufferComponent::VoxelPosition); // should be vertex component
+		out += "layout(location = " + std::to_string(currentLocation) + ") in ";
+		switch (bci.dataType)
+		{
+			case DataType::f32:
+				out += "float"; break;
+			case DataType::vec2f32:
+				out += "vec2"; break;
+			case DataType::vec3f32:
+				out += "vec3"; break;
+			case DataType::vec4f32:
+				out += "vec4"; break;
+			default:
+				assert(false); // missing type, should add to this switch
+		}
+		out += " ";
+		switch (bci.component)
+		{
+			case BufferComponent::VertexPosition:
+				out += "VA_Position;\n#define HAS_VA_Position 1\n"; break;
+			case BufferComponent::VertexNormal:
+				out += "VA_Normal;\n#define HAS_VA_Normal 1\n"; break;
+			case BufferComponent::VertexTangent:
+				out += "VA_Tangent;\n#define HAS_VA_Tangent 1\n"; break;
+			case BufferComponent::VertexColor:
+				out += "VA_Color;\n#define HAS_VA_Color 1\n"; break;
+			case BufferComponent::VertexUV:
+				out += "VA_UV;\n#define HAS_VA_UV 1\n"; break;
+			case BufferComponent::VertexAO:
+				out += "VA_AO;\n#define HAS_VA_AO 1\n"; break;
+			case BufferComponent::VertexBoneWeights:
+				out += "VA_BoneWeights;\n#define HAS_VA_BoneWeights 1\n"; break;
+			case BufferComponent::VertexBoneIndices:
+				out += "VA_BoneIndices;\n#define HAS_VA_BoneIndices 1\n"; break;
+		}
+		currentLocation++;
+	}
+	return out;
 }
 
 void sf::GlShader::SetUniformMatrix4fv(const std::string& name, const float* pointer, uint32_t number)

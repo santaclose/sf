@@ -38,19 +38,29 @@ namespace sf
 
 	float shipSpeed;
 	
-	MeshData shipMesh;
+	MeshData shipMesh = MeshData(BufferLayout({
+		BufferComponent::VertexPosition,
+		BufferComponent::VertexUV
+	}));
+
 	Entity* things;
 
 	MeshData* generatedMeshes;
+	BufferLayout generatedMeshesVertexLayout = BufferLayout({
+		BufferComponent::VertexPosition,
+		BufferComponent::VertexNormal,
+		BufferComponent::VertexUV,
+		BufferComponent::VertexAO
+	});
 
 	void Game::Initialize(int argc, char** argv)
 	{
 		shipSpeed = 5.0;
 
-		uint32_t aoMaterial = Renderer::CreateMaterial(Material("assets/shaders/default.vert", "assets/shaders/vertexAo.frag"));
-		uint32_t colorsMaterial = Renderer::CreateMaterial(Material("examples/spaceship/randomColors.vert", "examples/spaceship/randomColors.frag"));
-		uint32_t uvMaterial = Renderer::CreateMaterial(Material("assets/shaders/default.vert", "assets/shaders/uv.frag"));
-		uint32_t noiseMaterial = Renderer::CreateMaterial(Material("examples/spaceship/noise.vert", "examples/spaceship/noise.frag"));
+		uint32_t uvMaterial = Renderer::CreateMaterial(Material("assets/shaders/default.vert", "assets/shaders/uv.frag"), shipMesh.vertexBufferLayout);
+		uint32_t aoMaterial = Renderer::CreateMaterial(Material("assets/shaders/default.vert", "assets/shaders/vertexAo.frag"), generatedMeshesVertexLayout);
+		uint32_t colorsMaterial = Renderer::CreateMaterial(Material("examples/spaceship/randomColors.vert", "examples/spaceship/randomColors.frag"), generatedMeshesVertexLayout);
+		uint32_t noiseMaterial = Renderer::CreateMaterial(Material("examples/spaceship/noise.vert", "examples/spaceship/noise.frag"), generatedMeshesVertexLayout);
 
 		e_ship = scene.CreateEntity();
 
@@ -88,7 +98,7 @@ namespace sf
 				continue;
 			errt::seed = i;
 			MeshProcessor::GenerateMeshWithFunction(generatedMeshes[i], errt::GenerateModel);
-			generatedMeshes[i].ChangeVertexBufferLayout(Defaults::VertexLayout());
+			generatedMeshes[i].ChangeVertexBufferLayout(generatedMeshesVertexLayout);
 			VoxelVolumeData vv;
 			vv.BuildFromMesh(generatedMeshes[i], 0.01f);
 			MeshProcessor::ComputeVertexAmbientOcclusion(generatedMeshes[i], &vv);

@@ -1,10 +1,6 @@
-#version 460
-
-layout(location = 0) out vec4 outColor;
-
 uniform vec3 color = vec3(0.0, 0.0, 0.0);
 
 void main()
 {
-	outColor = vec4(color, 1.0);
+	OUT_COLOR = vec4(color, 1.0);
 }

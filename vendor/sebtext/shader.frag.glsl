@@ -1,7 +1,3 @@
-#version 460
-
-layout(location = 0) out vec4 outColor;
-
 layout(location = 0) in vec2 fragInPos;
 layout(location = 1) flat in int fragInDataOffset;
 
@@ -141,5 +137,5 @@ void main()
 	}
 
 	float alpha = alphaSum / 3.0;
-	outColor = vec4(textCol.rgb, min(alpha, textCol.a));
+	OUT_COLOR = vec4(textCol.rgb, min(alpha, textCol.a));
 }

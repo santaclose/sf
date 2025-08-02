@@ -32,7 +32,7 @@ namespace sf {
 		MaterialBlendMode m_blendMode;
 
 	public:
-		void Create(const Material& material, const std::vector<void*>& rendererUniformVector);
+		void Create(const Material& material, const std::vector<void*>& rendererUniformVector, const BufferLayout& vertexBufferLayout);
 		void CreateFromShader(GlShader* theShader, bool isDoubleSided = false,
 			MaterialDrawMode drawMode = MaterialDrawMode::Fill,
 			MaterialBlendMode blendMode = MaterialBlendMode::Alpha);

@@ -64,6 +64,8 @@ namespace sf
 	float posY;
 	float cameraRadius;
 
+	BufferLayout vertexBufferLayout = BufferLayout({BufferComponent::VertexPosition});
+
 	void Game::Initialize(int argc, char** argv)
 	{
 		animation1A = 0.36, animation2A = 0.36;
@@ -98,9 +100,9 @@ namespace sf
 			static glm::vec3 colorb(0.0, 0.0, 0.0);
 			Material materialTemplate("assets/shaders/default.vert", "assets/shaders/solidColor.frag");
 			materialTemplate.uniforms["color"] = { (uint32_t)DataType::vec3f32, &color };
-			whiteMaterial = Renderer::CreateMaterial(materialTemplate);
+			whiteMaterial = Renderer::CreateMaterial(materialTemplate, vertexBufferLayout);
 			materialTemplate.uniforms["color"] = { (uint32_t)DataType::vec3f32, &colorb };
-			blackMaterial = Renderer::CreateMaterial(materialTemplate);
+			blackMaterial = Renderer::CreateMaterial(materialTemplate, vertexBufferLayout);
 		}
 
 		for (int i = 0; i < UNIQUE_COUNT; i++)

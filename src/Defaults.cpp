@@ -14,6 +14,11 @@ namespace sf::Defaults
 	{
 		if (cubeMeshData.Initialized())
 			return cubeMeshData;
+		cubeMeshData.vertexBufferLayout = BufferLayout({
+			BufferComponent::VertexPosition,
+			BufferComponent::VertexNormal,
+			BufferComponent::VertexUV,
+		});
 		objId = ObjImporter::Load("assets/meshes/unitCube.obj");
 		ObjImporter::GenerateMeshData(objId, cubeMeshData);
 		return cubeMeshData;
@@ -23,6 +28,11 @@ namespace sf::Defaults
 	{
 		if (planeMeshData.Initialized())
 			return planeMeshData;
+		planeMeshData.vertexBufferLayout = BufferLayout({
+			BufferComponent::VertexPosition,
+			BufferComponent::VertexNormal,
+			BufferComponent::VertexUV,
+		});
 		objId = ObjImporter::Load("assets/meshes/unitPlane.obj");
 		ObjImporter::GenerateMeshData(objId, planeMeshData);
 		return planeMeshData;
@@ -32,6 +42,11 @@ namespace sf::Defaults
 	{
 		if (sphereMeshData.Initialized())
 			return sphereMeshData;
+		sphereMeshData.vertexBufferLayout = BufferLayout({
+			BufferComponent::VertexPosition,
+			BufferComponent::VertexNormal,
+			BufferComponent::VertexUV,
+		});
 		objId = ObjImporter::Load("assets/meshes/unitSphere.obj");
 		ObjImporter::GenerateMeshData(objId, sphereMeshData);
 		return sphereMeshData;
@@ -41,35 +56,13 @@ namespace sf::Defaults
 	{
 		if (monkeyMeshData.Initialized())
 			return monkeyMeshData;
+		monkeyMeshData.vertexBufferLayout = BufferLayout({
+			BufferComponent::VertexPosition,
+			BufferComponent::VertexNormal,
+			BufferComponent::VertexUV,
+		});
 		objId = ObjImporter::Load("assets/meshes/monke.obj");
 		ObjImporter::GenerateMeshData(objId, monkeyMeshData);
 		return monkeyMeshData;
 	}
-
-	BufferLayout VertexLayout()
-	{
-		return BufferLayout({
-			BufferComponent::VertexPosition,
-			BufferComponent::VertexNormal,
-			BufferComponent::VertexTangent,
-			// BufferComponent::VertexBitangent,
-			BufferComponent::VertexColor,
-			BufferComponent::VertexUV,
-			BufferComponent::VertexAO});
-	}
-
-	BufferLayout VertexLayoutSkinning()
-	{
-		return BufferLayout({
-			BufferComponent::VertexBoneIndices,
-			BufferComponent::VertexBoneWeights,
-			BufferComponent::VertexPosition,
-			BufferComponent::VertexNormal,
-			BufferComponent::VertexTangent,
-			// BufferComponent::VertexBitangent,
-			BufferComponent::VertexColor,
-			BufferComponent::VertexUV,
-			BufferComponent::VertexAO});
-	}
-
 }

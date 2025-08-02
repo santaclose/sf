@@ -1,11 +1,7 @@
-#version 460
-
 #include <assets/shaders/particle.h>
 
 layout(location = 4) out vec2 fTexCoords;
 
-layout(location = 0) in vec3 vPosition;
-layout(location = 4) in vec2 vTexCoords;
 
 layout(binding = 0) uniform SharedGpuData
 {
@@ -27,7 +23,7 @@ uniform float voxelSize;
 
 void main()
 {
-	fTexCoords = vTexCoords;
+	fTexCoords = VA_UV;
 	vec3 voxelPos = vec3(perVoxelData[gl_InstanceID * 3 + 0], perVoxelData[gl_InstanceID * 3 + 1], perVoxelData[gl_InstanceID * 3 + 2]);
-	gl_Position = cameraMatrix * modelMatrix * vec4(voxelPos + vPosition * voxelSize, 1.0);
+	gl_Position = cameraMatrix * modelMatrix * vec4(voxelPos + VA_Position * voxelSize, 1.0);
 }

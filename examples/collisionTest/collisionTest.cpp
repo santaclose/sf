@@ -32,9 +32,6 @@
 
 namespace sf
 {
-	glm::vec3 materialColorGreen = COLOR_GREEN;
-	glm::vec3 materialColorRed = COLOR_RED;
-
 	std::string Game::ConfigFilePath = "examples/pbr/config.json";
 
 	enum class TestCase
@@ -65,22 +62,6 @@ namespace sf
 
 	Scene scene;
 
-	MeshData capsuleMesh;
-
-	glm::vec3 positionA = glm::vec3(-1.0f, 0.0f, 0.0f);
-	glm::quat rotationA = glm::vec3(0.0f, 0.0f, 0.0f);
-	float scaleA = 1.0f;
-
-	glm::vec3 positionB = glm::vec3(1.0f, 0.0f, 0.0f);
-	glm::quat rotationB = glm::vec3(0.0f, 0.0f, 0.0f);
-	float scaleB = 1.0f;
-
-	glm::vec3 testA = glm::vec3(0.0f, 1.0f, 1.0f);
-	glm::vec3 testB = glm::vec3(0.0f, 1.0f, -1.0f);
-
-	glm::vec3 boxOrientationA = glm::vec3(0.0f, 0.0f, 0.0f);
-	glm::vec3 boxOrientationB = glm::vec3(0.0f, 0.0f, 0.0f);
-
 	uint32_t testCount;
 	std::vector<glm::vec3> points;
 	std::vector<glm::vec3> lines;
@@ -90,8 +71,6 @@ namespace sf
 	std::vector<Entity> boxes;
 
 	Entity monkey;
-
-	uint32_t greenMaterial, redMaterial;
 
 	void GenerateShapesForCurrentCase()
 	{
@@ -455,12 +434,6 @@ namespace sf
 		currentTestCase = TestCase::LineAABBClosestPoints;
 		testCount = MAX_TEST_COUNT;
 
-		Material materialTemplate("assets/shaders/default.vert", "assets/shaders/solidColor.frag");
-		materialTemplate.uniforms["color"] = { (uint32_t)DataType::vec3f32, &materialColorGreen };
-		greenMaterial = Renderer::CreateMaterial(materialTemplate);
-		materialTemplate.uniforms["color"] = { (uint32_t)DataType::vec3f32, &materialColorRed };
-		redMaterial = Renderer::CreateMaterial(materialTemplate);
-
 		aabbMin = glm::vec3(-1.0f, 0.0f, 0.0f);
 		aabbMax = glm::vec3(-0.5f, 1.0f, 1.0f);
 
@@ -487,9 +460,10 @@ namespace sf
 			boxes[i].AddComponent<BoxCollider>();
 		}
 
+		uint32_t monkeyMaterial = Renderer::CreateMaterial(Material("assets/shaders/default.vert", "assets/shaders/default.frag"), Defaults::MeshDataMonkey().vertexBufferLayout);
 		monkey = scene.CreateEntity();
 		monkey.AddComponent<Transform>();
-		monkey.AddComponent<Mesh>(&Defaults::MeshDataMonkey());
+		monkey.AddComponent<Mesh>(&Defaults::MeshDataMonkey(), monkeyMaterial);
 		monkey.AddComponent<MeshCollider>(&Defaults::MeshDataMonkey());
 
 		GenerateShapesForCurrentCase();

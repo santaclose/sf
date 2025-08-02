@@ -4,6 +4,8 @@
 #include <glad/glad.h>
 #include <unordered_map>
 
+#include <BufferLayout.h>
+
 namespace sf {
 
 	class ComputeShader;
@@ -31,11 +33,12 @@ namespace sf {
 		int GetUniformLocation(const std::string& name);
 		void AssignTextureNumberToUniform(const std::string& name);
 		int GetTextureIndex(const std::string& name);
-
+		std::string GenerateVertexShaderHeader(const BufferLayout& vertexBufferLayout);
 	public:
 		void CreateFromFiles(
 			const std::string& vertexShaderPath,
-			const std::string& fragmentShaderPath);
+			const std::string& fragmentShaderPath,
+			const BufferLayout& vertexBufferLayout);
 
 		void CreateComputeFromFile(const std::string& computeShaderPath);
 

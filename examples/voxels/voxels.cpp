@@ -47,6 +47,8 @@ namespace sf
 
 	int selectedModel;
 
+	uint32_t meshMaterial;
+
 	void Game::Initialize(int argc, char** argv)
 	{
 		modelRotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
@@ -60,6 +62,8 @@ namespace sf
 		monkevbd.BuildFromMesh(Defaults::MeshDataMonkey(), 0.007f, &voxelLayout);
 		monkevbd2.BuildFromMesh(Defaults::MeshDataMonkey(), 0.02f, &voxelLayout);
 		monkevbd3.BuildFromMesh(Defaults::MeshDataMonkey(), 0.07, &voxelLayout);
+
+		meshMaterial = Renderer::CreateMaterial(Material("assets/shaders/default.vert", "assets/shaders/default.frag"), Defaults::MeshDataMonkey().vertexBufferLayout);
 
 		{
 			galleryObjects.push_back(scene.CreateEntity());
@@ -82,7 +86,7 @@ namespace sf
 		{
 			galleryObjects.push_back(scene.CreateEntity());
 			Transform& objectTransform = galleryObjects.back().AddComponent<Transform>();
-			Mesh& objectMesh = galleryObjects.back().AddComponent<Mesh>(&Defaults::MeshDataMonkey());
+			Mesh& objectMesh = galleryObjects.back().AddComponent<Mesh>(&Defaults::MeshDataMonkey(), meshMaterial);
 		}
 
 		for (int i = 0; i < galleryObjects.size(); i++)

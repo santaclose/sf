@@ -59,14 +59,14 @@ namespace sf
 			return (((uint8_t*)buffer) + (this->sizeInBytes * index) + this->componentInfos[this->componentMap.at(component)].byteOffset);
 		}
 
-		const BufferComponentInfo* GetComponentInfo(BufferComponent component) const
+		inline const BufferComponentInfo* GetComponentInfo(BufferComponent component) const
 		{
 			if (this->componentMap.find(component) == this->componentMap.end())
 				return nullptr;
 			return &(this->componentInfos[this->componentMap.at(component)]);
 		}
 
-		const std::vector<BufferComponentInfo>& GetComponentInfos() const
+		inline const std::vector<BufferComponentInfo>& GetComponentInfos() const
 		{
 			return this->componentInfos;
 		}

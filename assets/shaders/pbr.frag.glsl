@@ -1,17 +1,13 @@
-#version 460
+layout(location = 0) in mat3 fTBN;
+layout(location = 3) in vec3 fWorldPos;
+layout(location = 4) in vec2 fTexCoords;
+layout(location = 5) in float fVertexAo;
 
 #include <assets/shaders/shared.h>
 
 #define MAX_DIR_LIGHTS 10
 #define MAX_POINT_LIGHTS 10
 #define PI 3.14159265359
-
-layout(location = 0) out vec4 outColor;
-
-layout(location = 0) in mat3 fTBN;
-layout(location = 3) in vec3 fWorldPos;
-layout(location = 4) in vec2 fTexCoords;
-layout(location = 5) in float fVertexAo;
 
 layout(std140, binding = 0) uniform SharedGpuData
 {
@@ -190,5 +186,5 @@ void main()
 	// gamma correct
 	temp = pow(temp, vec3(1.0 / 2.2));
 
-	outColor = vec4(temp, 1.0);
+	OUT_COLOR = vec4(temp, 1.0);
 }

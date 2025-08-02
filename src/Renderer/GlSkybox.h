@@ -13,6 +13,7 @@ namespace sf {
 		static float cubeVertices[];
 		static GlShader shader;
 		static GlCubemap* cubemap;
+		static BufferLayout vertexBufferLayout;
 
 	public:
 		static void SetCubemap(GlCubemap* cubemap);

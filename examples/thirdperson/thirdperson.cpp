@@ -47,6 +47,12 @@ namespace sf
 
 	float cameraDistance;
 
+	BufferLayout characterVertexLayout = BufferLayout({
+		BufferComponent::VertexPosition,
+		BufferComponent::VertexNormal,
+		BufferComponent::VertexBoneIndices,
+		BufferComponent::VertexBoneWeights
+	});
 	SkeletonData* shanyungSkeleton;
 	MeshData* shanyungMesh;
 	int shanyungBlendSpace;
@@ -84,6 +90,7 @@ namespace sf
 
 		cameraObject.AddComponent<Camera>();
 		cameraObject.AddComponent<Transform>();
+		uint32_t characterMaterial = Renderer::CreateMaterial(Material("assets/shaders/default.vert", "assets/shaders/default.frag"), characterVertexLayout);
 
 		int gltfid;
 		{
@@ -93,12 +100,11 @@ namespace sf
 			e_t.rotation *= glm::quat(glm::vec3(0.0f, 0.0f, glm::radians(180.0f)));
 
 			shanyungSkeleton = new SkeletonData();
-			shanyungMesh = new MeshData();
+			shanyungMesh = new MeshData(characterVertexLayout);
 			gltfid = GltfImporter::Load("examples/thirdperson/shanyung_blendspace2d.glb");
 			GltfImporter::GenerateSkeleton(gltfid, *shanyungSkeleton);
-			shanyungMesh->ChangeVertexBufferLayout(Defaults::VertexLayoutSkinning());
 			GltfImporter::GenerateMeshData(gltfid, *shanyungMesh);
-			shanyung.AddComponent<SkinnedMesh>(shanyungMesh, shanyungSkeleton);
+			shanyung.AddComponent<SkinnedMesh>(shanyungMesh, characterMaterial, shanyungSkeleton);
 
 			shanyungBlendSpace = shanyungSkeleton->AddBlendSpace2D({ {0, 1.0f, {0.0f, 0.0f}}, {1, 1.0f, {0.0f, 1.0f}}, {2, 1.0f, {-1.0f, 0.0f}}, {3, 1.0f, {1.0f, 0.0f}}, {4, 1.0f, {0.0f, 0.5f}}, {5, 1.0f, {0.0f, -0.5f}}, {6, 1.0f, {-0.5f, -0.5f}}, {7, 1.0f, {0.5f, -0.5f}}, {8, 1.0f, {-0.5f, 0.0f}}, {9, 1.0f, {0.5f, 0.0f}} }, { 0.0f, 0.0f });
 			shanyungSkeleton->SetBlendSpace2D(shanyungBlendSpace);
@@ -114,13 +120,12 @@ namespace sf
 			e_t.scale = 0.01f;
 
 			foxSkeleton = new SkeletonData();
-			foxMesh = new MeshData();
+			foxMesh = new MeshData(characterVertexLayout);
 			gltfid = GltfImporter::Load("examples/thirdperson/Fox.glb");
 			GltfImporter::GenerateSkeleton(gltfid, *foxSkeleton);
-			foxMesh->ChangeVertexBufferLayout(Defaults::VertexLayoutSkinning());
 			GltfImporter::GenerateMeshData(gltfid, *foxMesh);
 			MeshProcessor::ComputeNormals(*foxMesh);
-			fox.AddComponent<SkinnedMesh>(foxMesh, foxSkeleton);
+			fox.AddComponent<SkinnedMesh>(foxMesh, characterMaterial, foxSkeleton);
 
 			foxBlendSpace = foxSkeleton->AddBlendSpace1D({ {0, 1.0f, 0.0f}, {1, 1.0f, 0.5f}, {2, 2.3f, 1.0f} }, 0.0f);
 			foxSkeleton->SetBlendSpace1D(foxBlendSpace);
@@ -138,7 +143,7 @@ namespace sf
 		cameraObject.GetComponent<Transform>().LookAt(glm::vec3(0.0, GIMBAL_OFFSET_SHANYUNG, 0.0), glm::vec3(0.0, 1.0, 0.0));
 
 		Material floorMaterial("examples/thirdperson/Floor.mat");
-		uint32_t floorMaterialId = Renderer::CreateMaterial(floorMaterial);
+		uint32_t floorMaterialId = Renderer::CreateMaterial(floorMaterial, Defaults::MeshDataPlane().vertexBufferLayout);
 		for (int i = 0; i < 9; i++)
 		{
 			floorPlanes[i] = scene.CreateEntity();

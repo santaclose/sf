@@ -61,13 +61,24 @@ void sf::GltfImporter::Destroy(int id)
 // https://github.com/SaschaWillems/Vulkan/blob/master/examples/gltfloading/gltfloading.cpp
 void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 {
-	DataType positionDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexPosition)->dataType;
-	DataType normalDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexNormal)->dataType;
-	DataType uvsDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexUV)->dataType;
+	bool meshHasNormals = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexNormal) != nullptr;
+	bool meshHasUVs = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexUV) != nullptr;
+	bool meshHasBoneIndices = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexBoneIndices) != nullptr;
+	bool meshHasBoneWeights = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexBoneWeights) != nullptr;
 
+	DataType positionDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexPosition)->dataType;
 	assert(positionDataType == DataType::vec3f32);
-	assert(normalDataType == DataType::vec3f32);
-	assert(uvsDataType == DataType::vec2f32);
+
+	if (meshHasNormals)
+	{
+		DataType normalDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexNormal)->dataType;
+		assert(normalDataType == DataType::vec3f32);
+	}
+	if (meshHasUVs)
+	{
+		DataType uvsDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexUV)->dataType;
+		assert(uvsDataType == DataType::vec2f32);
+	}
 
 	assert(id > -1 && id < models.size());
 	assert(models[id] != nullptr);
@@ -142,17 +153,17 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 				{
 					glm::vec3* posPtr = (glm::vec3*)mesh.AccessVertexComponent(BufferComponent::VertexPosition, vertexStart + i);
 					*posPtr = { positionBuffer[i * 3 + 0], positionBuffer[i * 3 + 1], positionBuffer[i * 3 + 2] };
-					if (normalsBuffer)
+					if (normalsBuffer && meshHasNormals)
 					{
 						glm::vec3* normalPtr = (glm::vec3*)mesh.AccessVertexComponent(BufferComponent::VertexNormal, vertexStart + i);
 						*normalPtr = glm::normalize(glm::vec3(normalsBuffer[i * 3 + 0], normalsBuffer[i * 3 + 1], normalsBuffer[i * 3 + 2]));
 					}
-					if (texCoordsBuffer)
+					if (texCoordsBuffer && meshHasUVs)
 					{
 						glm::vec2* uvsPtr = (glm::vec2*)mesh.AccessVertexComponent(BufferComponent::VertexUV, vertexStart + i);
 						*uvsPtr = { texCoordsBuffer[i * 2 + 0], 1.0 - texCoordsBuffer[i * 2 + 1] };
 					}
-					if (jointsBuffer && mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexBoneIndices) != nullptr)
+					if (jointsBuffer && meshHasBoneIndices)
 					{
 						DataType boneIndicesDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexBoneIndices)->dataType;
 						assert(nodeToBonePerModel.find(id) != nodeToBonePerModel.end()); // need mapping from gltf node to bone index to set vertex bone indices
@@ -177,7 +188,7 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 								(float)nodeToBonePerModel[id][model.skins[0].joints[buf[i * 4 + 3]]] };
 						}
 					}
-					if (boneWeightsBuffer && mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexBoneWeights) != nullptr)
+					if (boneWeightsBuffer && meshHasBoneWeights)
 					{
 						glm::vec4* boneWeightsPtr = (glm::vec4*)mesh.AccessVertexComponent(BufferComponent::VertexBoneWeights, vertexStart + i);
 						*boneWeightsPtr = { boneWeightsBuffer[i * 4 + 0], boneWeightsBuffer[i * 4 + 1], boneWeightsBuffer[i * 4 + 2], boneWeightsBuffer[i * 4 + 3] };

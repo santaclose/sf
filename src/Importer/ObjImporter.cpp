@@ -166,13 +166,22 @@ void sf::ObjImporter::Destroy(int id)
 
 void sf::ObjImporter::GenerateMeshData(int id, MeshData& mesh)
 {
-	DataType positionDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexPosition)->dataType;
-	DataType normalDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexNormal)->dataType;
-	DataType uvsDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexUV)->dataType;
+	bool meshHasNormals = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexNormal) != nullptr;
+	bool meshHasUVs = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexUV) != nullptr;
 
+	DataType positionDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexPosition)->dataType;
 	assert(positionDataType == DataType::vec3f32);
-	assert(normalDataType == DataType::vec3f32);
-	assert(uvsDataType == DataType::vec2f32);
+
+	if (meshHasNormals)
+	{
+		DataType normalDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexNormal)->dataType;
+		assert(normalDataType == DataType::vec3f32);
+	}
+	if (meshHasUVs)
+	{
+		DataType uvsDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexUV)->dataType;
+		assert(uvsDataType == DataType::vec2f32);
+	}
 
 	assert(id > -1 && id < meshes.size());
 	assert(meshes[id] != nullptr);
@@ -217,12 +226,12 @@ void sf::ObjImporter::GenerateMeshData(int id, MeshData& mesh)
 	{
 		glm::vec3* posPtr = (glm::vec3*) mesh.AccessVertexComponent(BufferComponent::VertexPosition, i);
 		*posPtr = meshes[id]->positions[finalVertices[i].posID];
-		if (meshes[id]->normals.size() > 0)
+		if (meshes[id]->normals.size() > 0 && meshHasNormals)
 		{
 			glm::vec3* normalPtr = (glm::vec3*)mesh.AccessVertexComponent(BufferComponent::VertexNormal, i);
 			*normalPtr = meshes[id]->normals[finalVertices[i].normalID];
 		}
-		if (meshes[id]->texCoords.size() > 0)
+		if (meshes[id]->texCoords.size() > 0 && meshHasUVs)
 		{
 			glm::vec2* coordsPtr = (glm::vec2*)mesh.AccessVertexComponent(BufferComponent::VertexUV, i);
 			*coordsPtr = meshes[id]->texCoords[finalVertices[i].coordsID];

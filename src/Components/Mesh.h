@@ -13,11 +13,13 @@ namespace sf {
 		inline Mesh(const MeshData* meshData)
 		{
 			this->meshData = meshData;
+			this->materials.clear();
 			this->materials.resize(meshData->pieces.size(), ~0U);
 		}
 		inline Mesh(const MeshData* meshData, uint32_t material)
 		{
 			this->meshData = meshData;
+			this->materials.clear();
 			this->materials.resize(meshData->pieces.size(), material);
 		}
 	};

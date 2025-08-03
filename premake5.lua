@@ -35,9 +35,9 @@ project "sf"
 	files
 	{
 		-- one example project
-		"examples/spaceship/**.h",
-		"examples/spaceship/**.hpp",
-		"examples/spaceship/**.cpp",
+		"examples/voxels/**.h",
+		"examples/voxels/**.hpp",
+		"examples/voxels/**.cpp",
 
 		"src/**.h",
 		"src/**.hpp",

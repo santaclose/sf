@@ -14,9 +14,9 @@ layout(binding = 0) uniform SharedGpuData
 	float windowSizeY;
 };
 
-layout (std430, binding = 1) buffer PerVoxelBuffer
+layout (std430, binding = 1) buffer _VOXEL_BUFFER
 {
-	float perVoxelData[];
+	float VOXEL_BUFFER[];
 };
 
 uniform float voxelSize;
@@ -24,6 +24,5 @@ uniform float voxelSize;
 void main()
 {
 	fTexCoords = VA_UV;
-	vec3 voxelPos = vec3(perVoxelData[gl_InstanceID * 3 + 0], perVoxelData[gl_InstanceID * 3 + 1], perVoxelData[gl_InstanceID * 3 + 2]);
-	gl_Position = cameraMatrix * modelMatrix * vec4(voxelPos + VA_Position * voxelSize, 1.0);
+	gl_Position = cameraMatrix * modelMatrix * vec4(LOAD_VOXEL_POSITION + VA_Position * voxelSize, 1.0);
 }

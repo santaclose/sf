@@ -5,11 +5,11 @@
 #include <Renderer/GlTexture.h>
 #include <Renderer/GlCubemap.h>
 
-void sf::GlMaterial::Create(const Material& material, const std::vector<void*>& rendererUniformVector, const BufferLayout& vertexBufferLayout)
+void sf::GlMaterial::Create(const Material& material, const std::vector<void*>& rendererUniformVector, const BufferLayout& vertexBufferLayout, const BufferLayout* voxelBufferLayout)
 {
 	assert(material.vertexShaderFilePath.length() > 0 && material.fragmentShaderFilePath.length() > 0);
 	m_shader = new GlShader();
-	m_shader->CreateFromFiles(material.vertexShaderFilePath, material.fragmentShaderFilePath, vertexBufferLayout);
+	m_shader->CreateFromFiles(material.vertexShaderFilePath, material.fragmentShaderFilePath, vertexBufferLayout, voxelBufferLayout);
 	m_isDoubleSided = material.isDoubleSided;
 	m_drawMode = material.drawMode;
 	m_blendMode = material.blendMode;

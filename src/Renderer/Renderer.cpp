@@ -35,7 +35,6 @@ namespace sf::Renderer
 		BufferComponent::VertexUV
 	});
 
-	GlShader voxelVolumeShader;
 	GlShader drawLineShader;
 
 	float aspectRatio;
@@ -465,10 +464,10 @@ sf::Entity sf::Renderer::GetActiveCameraEntity()
 	return activeCameraEntity;
 }
 
-uint32_t sf::Renderer::CreateMaterial(const Material& material, const BufferLayout& vertexBufferLayout)
+uint32_t sf::Renderer::CreateMaterial(const Material& material, const BufferLayout& vertexBufferLayout, const BufferLayout* voxelBufferLayout)
 {
 	GlMaterial* newMaterial = new GlMaterial();
-	newMaterial->Create(material, rendererUniformVector, vertexBufferLayout);
+	newMaterial->Create(material, rendererUniformVector, vertexBufferLayout, voxelBufferLayout);
 	materials.push_back(newMaterial);
 	return materials.size() - 1;
 }
@@ -569,7 +568,6 @@ void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 
 	if (debugDrawEnabled)
 		DebugDrawSkeleton(mesh, transform);
-
 }
 
 void sf::Renderer::DrawParticleSystem(ParticleSystem& particleSystem, Transform& transform, float deltaTime)
@@ -678,13 +676,10 @@ void sf::Renderer::DrawVoxelVolume(VoxelVolume& voxelVolume, Transform& transfor
 		glBufferData(GL_SHADER_STORAGE_BUFFER, voxelVolume.voxelVolumeData->voxelBuffer.size(), voxelVolume.voxelVolumeData->voxelBuffer.data(), GL_STATIC_DRAW);
 	}
 
-	if (!voxelVolumeShader.Initialized())
-		voxelVolumeShader.CreateFromFiles("assets/shaders/voxelVolume.vert", "assets/shaders/uv.frag", Defaults::MeshDataCube().vertexBufferLayout);
-	voxelVolumeShader.Bind();
-	voxelVolumeShader.SetUniform1f("voxelSize", voxelVolume.voxelVolumeData->voxelSize);
-	glPolygonMode(GL_FRONT, GL_FILL);
-	glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
-	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
+	GlMaterial* materialToUse = materials[voxelVolume.material];
+
+	materialToUse->Bind();
+	materialToUse->m_shader->SetUniform1f("voxelSize", voxelVolume.voxelVolumeData->voxelSize);
 
 	// draw instanced box
 	sharedGpuData.modelMatrix = transform.ComputeMatrix();
@@ -960,7 +955,6 @@ void sf::Renderer::Terminate()
 	{
 		delete material;
 	}
-	voxelVolumeShader.Delete();
 	drawLineShader.Delete();
 
 	environmentData.envTexture.Delete();

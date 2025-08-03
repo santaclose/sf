@@ -48,6 +48,7 @@ namespace sf
 	int selectedModel;
 
 	uint32_t meshMaterial;
+	uint32_t voxelVolumeMaterial;
 
 	void Game::Initialize(int argc, char** argv)
 	{
@@ -64,23 +65,24 @@ namespace sf
 		monkevbd3.BuildFromMesh(Defaults::MeshDataMonkey(), 0.07, &voxelLayout);
 
 		meshMaterial = Renderer::CreateMaterial(Material("assets/shaders/default.vert", "assets/shaders/default.frag"), Defaults::MeshDataMonkey().vertexBufferLayout);
+		voxelVolumeMaterial = Renderer::CreateMaterial(Material("assets/shaders/voxelVolume.vert", "assets/shaders/uv.frag"), Defaults::MeshDataCube().vertexBufferLayout, &voxelLayout);
 
 		{
 			galleryObjects.push_back(scene.CreateEntity());
 			Transform& objectTransform = galleryObjects.back().AddComponent<Transform>();
-			VoxelVolume& objectVoxelVolume = galleryObjects.back().AddComponent<VoxelVolume>(&monkevbd);
+			VoxelVolume& objectVoxelVolume = galleryObjects.back().AddComponent<VoxelVolume>(&monkevbd, voxelVolumeMaterial);
 		}
 
 		{
 			galleryObjects.push_back(scene.CreateEntity());
 			Transform& objectTransform = galleryObjects.back().AddComponent<Transform>();
-			VoxelVolume& objectVoxelVolume = galleryObjects.back().AddComponent<VoxelVolume>(&monkevbd2);
+			VoxelVolume& objectVoxelVolume = galleryObjects.back().AddComponent<VoxelVolume>(&monkevbd2, voxelVolumeMaterial);
 		}
 
 		{
 			galleryObjects.push_back(scene.CreateEntity());
 			Transform& objectTransform = galleryObjects.back().AddComponent<Transform>();
-			VoxelVolume& objectVoxelVolume = galleryObjects.back().AddComponent<VoxelVolume>(&monkevbd3);
+			VoxelVolume& objectVoxelVolume = galleryObjects.back().AddComponent<VoxelVolume>(&monkevbd3, voxelVolumeMaterial);
 		}
 
 		{

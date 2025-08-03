@@ -33,12 +33,12 @@ namespace sf {
 		int GetUniformLocation(const std::string& name);
 		void AssignTextureNumberToUniform(const std::string& name);
 		int GetTextureIndex(const std::string& name);
-		std::string GenerateVertexShaderHeader(const BufferLayout& vertexBufferLayout);
 	public:
 		void CreateFromFiles(
 			const std::string& vertexShaderPath,
 			const std::string& fragmentShaderPath,
-			const BufferLayout& vertexBufferLayout);
+			const BufferLayout& vertexBufferLayout,
+			const BufferLayout* voxelBufferLayout = nullptr);
 
 		void CreateComputeFromFile(const std::string& computeShaderPath);
 

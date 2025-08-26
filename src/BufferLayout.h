@@ -25,7 +25,7 @@ namespace sf
 		ParticlePosition,
 		ParticleRotation,
 		ParticleScale,
-		ParticleTime
+		ParticleSpawnTime
 	};
 
 	struct BufferComponentInfo

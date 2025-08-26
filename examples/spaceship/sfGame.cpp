@@ -53,6 +53,39 @@ namespace sf
 		BufferComponent::VertexAO
 	});
 
+	BufferLayout particleBufferLayout = BufferLayout({
+		BufferComponent::ParticlePosition,
+		BufferComponent::ParticleRotation,
+		BufferComponent::ParticleScale,
+		BufferComponent::ParticleSpawnTime
+	});
+
+	namespace
+	{
+		glm::vec3 currentParticlePos = glm::vec3(0.0f, 0.0f, 0.3f);
+		Transform ParticleInitialTransform()
+		{
+			Transform outTransform;
+			static int initialTransformCounter;
+			outTransform.scale = 0.3f;
+			if (initialTransformCounter % 2)
+			{
+				outTransform.position = glm::vec3(-currentParticlePos.x, currentParticlePos.y, currentParticlePos.z);
+
+				currentParticlePos.x += Random::Float() * 0.5f;
+				if (currentParticlePos.x > 1.0f)
+					currentParticlePos.x -= 1.0f;
+			}
+			else
+			{
+				outTransform.position = currentParticlePos;
+			}
+
+			initialTransformCounter++;
+			return outTransform;
+		}
+	}
+
 	void Game::Initialize(int argc, char** argv)
 	{
 		shipSpeed = 5.0;
@@ -62,12 +95,25 @@ namespace sf
 		uint32_t colorsMaterial = Renderer::CreateMaterial(Material("examples/spaceship/randomColors.vert", "examples/spaceship/randomColors.frag"), generatedMeshesVertexLayout);
 		uint32_t noiseMaterial = Renderer::CreateMaterial(Material("examples/spaceship/noise.vert", "examples/spaceship/noise.frag"), generatedMeshesVertexLayout);
 
+		Material particleMaterialInfo = Material("examples/spaceship/particles.vert", "examples/spaceship/particles.frag");
+		particleMaterialInfo.blendMode = MaterialBlendMode::Multiply;
+		particleMaterialInfo.isDoubleSided = true;
+		uint32_t particleMaterial = Renderer::CreateMaterial(particleMaterialInfo, Defaults::MeshDataPlane().vertexBufferLayout, nullptr, &particleBufferLayout);
+
 		e_ship = scene.CreateEntity();
 
 		int gltfid = GltfImporter::Load("examples/spaceship/ship.glb");
 		GltfImporter::GenerateMeshData(gltfid, shipMesh);
 		Mesh& m_ship = e_ship.AddComponent<Mesh>(&shipMesh, uvMaterial);
 		Transform& t_ship = e_ship.AddComponent<Transform>();
+		ParticleSystem& ps_ship = e_ship.AddComponent<ParticleSystem>();
+		ps_ship.meshData = &Defaults::MeshDataPlane();
+		ps_ship.particleCount = 160;
+		ps_ship.timeBetweenEmissions = 0.05f;
+		ps_ship.particlesPerEmission = 8u;
+		ps_ship.material = particleMaterial;
+		ps_ship.initialTransform = ParticleInitialTransform;
+		ps_ship.emit = false;
 
 		e_mainCamera = scene.CreateEntity();
 		e_lookBackCamera = scene.CreateEntity();
@@ -141,9 +187,22 @@ namespace sf
 			else
 				Renderer::SetActiveCameraEntity(e_mainCamera);
 		}
-		shipSpeed += Input::MouseScrollUp() ? 1.0f : 0.0f;
-		shipSpeed -= Input::MouseScrollDown() ? 1.0f : 0.0f;
 
+		ParticleSystem& ps_ship = e_ship.GetComponent<ParticleSystem>();
+		ps_ship.emit = false;
+		if (Input::MouseScrollUp() || Input::Key(Input::KeyCode::W))
+		{
+			ps_ship.emit = true;
+			shipSpeed += 1.0f;
+		}
+		if (Input::MouseScrollDown() || Input::Key(Input::KeyCode::S))
+		{
+			ps_ship.emit = true;
+			shipSpeed -= 1.0f;
+		}
+
+		if (glm::abs(Input::MousePosDeltaY()) > 0.001f || glm::abs(Input::MousePosDeltaX()) > 0.001f)
+			ps_ship.emit = true;
 
 		Transform& t_ship = e_ship.GetComponent<Transform>();
 		Transform& t_mainCamera = e_mainCamera.GetComponent<Transform>();

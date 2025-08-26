@@ -52,16 +52,10 @@ namespace sf::Renderer
 		uint32_t gl_vao;
 	};
 
-
-	struct PerParticleGpuData
-	{
-		Transform transform;
-		float timeSpawned;
-	};
 	struct ParticleGpuData
 	{
 		uint32_t gl_ssbo;
-		std::vector<PerParticleGpuData> perParticleData;
+		std::vector<uint8_t> perParticleData;
 	};
 
 	struct ParticleSystemData
@@ -119,6 +113,8 @@ namespace sf::Renderer
 	std::unordered_map<void*, ParticleSystemData> particleSystemData;
 
 	std::unordered_map<const sf::VoxelVolumeData*, uint32_t> voxelVolumeSsbos;
+
+	std::unordered_map<uint32_t, const BufferLayout*> particleBufferLayouts;
 
 	std::vector<GlMaterial*> materials;
 	struct EnvironmentData
@@ -464,12 +460,14 @@ sf::Entity sf::Renderer::GetActiveCameraEntity()
 	return activeCameraEntity;
 }
 
-uint32_t sf::Renderer::CreateMaterial(const Material& material, const BufferLayout& vertexBufferLayout, const BufferLayout* voxelBufferLayout)
+uint32_t sf::Renderer::CreateMaterial(const Material& material, const BufferLayout& vertexBufferLayout, const BufferLayout* voxelBufferLayout, const BufferLayout* particleBufferLayout)
 {
 	GlMaterial* newMaterial = new GlMaterial();
-	newMaterial->Create(material, rendererUniformVector, vertexBufferLayout, voxelBufferLayout);
+	newMaterial->Create(material, rendererUniformVector, vertexBufferLayout, voxelBufferLayout, particleBufferLayout);
 	materials.push_back(newMaterial);
-	return materials.size() - 1;
+	uint32_t newId = materials.size() - 1;
+	particleBufferLayouts[newId] = particleBufferLayout;
+	return newId;
 }
 
 void sf::Renderer::SetEnvironment(const std::string& hdrFilePath, DataType hdrDataType)
@@ -575,6 +573,9 @@ void sf::Renderer::DrawParticleSystem(ParticleSystem& particleSystem, Transform&
 	if (!activeCameraEntity)
 		return;
 
+	GlMaterial* materialToUse = materials[particleSystem.material];
+	const BufferLayout* particleBufferLayout = particleBufferLayouts[particleSystem.material];
+
 	glDepthMask(GL_FALSE); // Do not write to depth buffer
 
 	if (meshGpuData.find(particleSystem.meshData) == meshGpuData.end()) // create mesh data if not there
@@ -583,15 +584,20 @@ void sf::Renderer::DrawParticleSystem(ParticleSystem& particleSystem, Transform&
 	float cycleTotalTime = particleSystem.timeBetweenEmissions * (particleSystem.particleCount / particleSystem.particlesPerEmission);
 	if (particleSystemData.find(&particleSystem) == particleSystemData.end())
 	{
+		ParticleGpuData& particleGpuData = particleSystemData[&particleSystem].gpuData;
 		assert((particleSystem.particleCount % particleSystem.particlesPerEmission) == 0);
-		particleSystemData[&particleSystem].gpuData = ParticleGpuData();
-		particleSystemData[&particleSystem].gpuData.perParticleData.resize(particleSystem.particleCount);
-		memset(particleSystemData[&particleSystem].gpuData.perParticleData.data(), 0, sizeof(PerParticleGpuData) * particleSystem.particleCount);
+		particleGpuData = ParticleGpuData();
+		uint32_t gpuDataSizeInBytes = particleSystem.particleCount * particleBufferLayout->GetSize();
+		particleGpuData.perParticleData.resize(gpuDataSizeInBytes);
+		memset(particleGpuData.perParticleData.data(), 0, gpuDataSizeInBytes);
 		cycleTotalTime = particleSystem.timeBetweenEmissions * particleSystem.particleCount;
-		glGenBuffers(1, &(particleSystemData[&particleSystem].gpuData.gl_ssbo));
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, particleSystemData[&particleSystem].gpuData.gl_ssbo);
-		glBufferData(GL_SHADER_STORAGE_BUFFER, particleSystemData[&particleSystem].gpuData.perParticleData.size() * sizeof(PerParticleGpuData), particleSystemData[&particleSystem].gpuData.perParticleData.data(), GL_DYNAMIC_DRAW);
+		glGenBuffers(1, &(particleGpuData.gl_ssbo));
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, particleGpuData.gl_ssbo);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, gpuDataSizeInBytes, particleGpuData.perParticleData.data(), GL_DYNAMIC_DRAW);
 	}
+
+	ParticleGpuData& particleGpuData = particleSystemData[&particleSystem].gpuData;
+	void* perParticleBuffer = particleGpuData.perParticleData.data();
 
 	if (particleSystemData[&particleSystem].emissionTimer < 0.0f)
 	{
@@ -600,14 +606,22 @@ void sf::Renderer::DrawParticleSystem(ParticleSystem& particleSystem, Transform&
 			for (uint32_t i = 0; i < particleSystem.particlesPerEmission; i++)
 			{
 				uint32_t emittingParticle = (particleSystemData[&particleSystem].currentParticle + i) % particleSystem.particleCount;
-				particleSystemData[&particleSystem].gpuData.perParticleData[emittingParticle].transform = transform;
-				particleSystemData[&particleSystem].gpuData.perParticleData[emittingParticle].timeSpawned = particleSystemData[&particleSystem].cycleCurrentTime;
+				glm::vec3& emittingParticlePosition = *((glm::vec3*)particleBufferLayout->Access(perParticleBuffer, BufferComponent::ParticlePosition, emittingParticle));
+				glm::quat& emittingParticleRotation = *((glm::quat*)particleBufferLayout->Access(perParticleBuffer, BufferComponent::ParticleRotation, emittingParticle));
+				float& emittingParticleScale = *((float*)particleBufferLayout->Access(perParticleBuffer, BufferComponent::ParticleScale, emittingParticle));
+				float& emittingParticleSpawnTime = *((float*)particleBufferLayout->Access(perParticleBuffer, BufferComponent::ParticleSpawnTime, emittingParticle));
+
+				emittingParticlePosition = transform.position;
+				emittingParticleRotation = transform.rotation;
+				emittingParticleScale = transform.scale;
+				emittingParticleSpawnTime = particleSystemData[&particleSystem].cycleCurrentTime;
+
 				if (particleSystem.initialTransform != nullptr)
 				{
 					Transform initial = particleSystem.initialTransform();
-					particleSystemData[&particleSystem].gpuData.perParticleData[emittingParticle].transform.scale *= initial.scale;
-					particleSystemData[&particleSystem].gpuData.perParticleData[emittingParticle].transform.rotation *= initial.rotation;
-					particleSystemData[&particleSystem].gpuData.perParticleData[emittingParticle].transform.position += transform.rotation * initial.position;
+					emittingParticlePosition += transform.rotation * initial.position;
+					emittingParticleRotation *= initial.rotation;
+					emittingParticleScale *= initial.scale;
 				}
 			}
 		}
@@ -616,16 +630,19 @@ void sf::Renderer::DrawParticleSystem(ParticleSystem& particleSystem, Transform&
 			for (uint32_t i = 0; i < particleSystem.particlesPerEmission; i++)
 			{
 				uint32_t disablingParticle = (particleSystemData[&particleSystem].currentParticle + i) % particleSystem.particleCount;
-				particleSystemData[&particleSystem].gpuData.perParticleData[disablingParticle].transform.scale = 0.0f;
-				particleSystemData[&particleSystem].gpuData.perParticleData[disablingParticle].timeSpawned = -1.0f;
+				float& disablingParticleScale = *((float*)particleBufferLayout->Access(perParticleBuffer, BufferComponent::ParticleScale, disablingParticle));
+				float& disablingParticleSpawnTime = *((float*)particleBufferLayout->Access(perParticleBuffer, BufferComponent::ParticleSpawnTime, disablingParticle));
+
+				disablingParticleScale = 0.0f;
+				disablingParticleSpawnTime = -1.0f;
 			}
 		}
 
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, particleSystemData[&particleSystem].gpuData.gl_ssbo);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, particleGpuData.gl_ssbo);
 		glBufferSubData(GL_SHADER_STORAGE_BUFFER,
-			sizeof(PerParticleGpuData) * particleSystemData[&particleSystem].currentParticle,
-			sizeof(PerParticleGpuData) * particleSystem.particlesPerEmission,
-			particleSystemData[&particleSystem].gpuData.perParticleData.data() + particleSystemData[&particleSystem].currentParticle);
+			particleBufferLayout->GetSize() * particleSystemData[&particleSystem].currentParticle,
+			particleBufferLayout->GetSize() * particleSystem.particlesPerEmission,
+			(uint8_t*)perParticleBuffer + particleBufferLayout->GetSize() * particleSystemData[&particleSystem].currentParticle);
 
 		particleSystemData[&particleSystem].emissionTimer += particleSystem.timeBetweenEmissions;
 		if (particleSystem.emit)
@@ -637,11 +654,10 @@ void sf::Renderer::DrawParticleSystem(ParticleSystem& particleSystem, Transform&
 
 	if (particleSystemData[&particleSystem].activeParticles != 0)
 	{
-		GlMaterial* materialToUse = materials[particleSystem.material];
 		materialToUse->Bind();
 
-		materialToUse->m_shader->SetUniform1f("cycleCurrentTime", particleSystemData[&particleSystem].cycleCurrentTime);
-		materialToUse->m_shader->SetUniform1f("cycleTotalTime", cycleTotalTime);
+		materialToUse->m_shader->SetUniform1f("PARTICLE_CYCLE_TIME", particleSystemData[&particleSystem].cycleCurrentTime);
+		materialToUse->m_shader->SetUniform1f("PARTICLE_LIFETIME", cycleTotalTime);
 
 		sharedGpuData.modelMatrix = transform.ComputeMatrix();
 		glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
@@ -649,7 +665,7 @@ void sf::Renderer::DrawParticleSystem(ParticleSystem& particleSystem, Transform&
 
 		glBindVertexArray(meshGpuData[particleSystem.meshData].gl_vao);
 		glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, particleSystemData[&particleSystem].gpuData.gl_ssbo);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, particleGpuData.gl_ssbo);
 		glDrawElementsInstanced(GL_TRIANGLES, particleSystem.meshData->indexVector.size(), GL_UNSIGNED_INT, (void*)0, particleSystem.particleCount);
 	}
 

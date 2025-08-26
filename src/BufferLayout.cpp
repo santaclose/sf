@@ -24,7 +24,7 @@ sf::DataType sf::BufferLayout::GetComponentDataType(BufferComponent component)
 		return DataType::vec4f32;
 	case BufferComponent::VertexAO:
 	case BufferComponent::ParticleScale:
-	case BufferComponent::ParticleTime:
+	case BufferComponent::ParticleSpawnTime:
 		return DataType::f32;
 	default:
 		assert(false);

@@ -1,5 +1,3 @@
-#include <assets/shaders/particle.h>
-
 layout(location = 4) out vec2 fTexCoords;
 
 

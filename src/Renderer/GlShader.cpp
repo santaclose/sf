@@ -113,6 +113,44 @@ namespace
 		}
 		return out;
 	}
+
+	std::string GenerateParticleShaderHeader(const sf::BufferLayout& particleBufferLayout)
+	{
+		std::string out = "";
+		for (const sf::BufferComponentInfo& bci : particleBufferLayout.GetComponentInfos())
+		{
+			assert(
+				(uint32_t)bci.component >= (uint32_t) sf::BufferComponent::ParticlePosition); // should be particle component
+			// assume buffer is only floats
+			uint32_t stride = particleBufferLayout.GetSize() / 4u;
+			uint32_t baseOffset = bci.byteOffset / 4u;
+			switch (bci.component)
+			{
+			case sf::BufferComponent::ParticlePosition:
+				out += "#define LOAD_PARTICLE_POSITION vec3("
+					"PARTICLE_BUFFER[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 0) + "], "
+					"PARTICLE_BUFFER[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 1) + "], "
+					"PARTICLE_BUFFER[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 2) + "])\n";
+				break;
+			case sf::BufferComponent::ParticleRotation:
+				out += "#define LOAD_PARTICLE_ROTATION vec4("
+					"PARTICLE_BUFFER[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 0) + "], "
+					"PARTICLE_BUFFER[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 1) + "], "
+					"PARTICLE_BUFFER[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 2) + "], "
+					"PARTICLE_BUFFER[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 3) + "])\n";
+				break;
+			case sf::BufferComponent::ParticleScale:
+				out += "#define LOAD_PARTICLE_SCALE "
+					"PARTICLE_BUFFER[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 0) + "]\n";
+				break;
+			case sf::BufferComponent::ParticleSpawnTime:
+				out += "#define LOAD_PARTICLE_SPAWN_TIME "
+					"PARTICLE_BUFFER[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 0) + "]\n";
+				break;
+			}
+		}
+		return out;
+	}
 }
 
 uint32_t sf::GlShader::CheckLinkStatusAndReturnProgram(uint32_t program, bool outputErrorMessages)
@@ -187,7 +225,8 @@ uint32_t sf::GlShader::CompileShader(uint32_t type, const std::string& source)
 
 void sf::GlShader::CreateFromFiles(const std::string& vertexShaderPath, const std::string& fragmentShaderPath,
 	const BufferLayout& vertexBufferLayout,
-	const BufferLayout* voxelBufferLayout)
+	const BufferLayout* voxelBufferLayout,
+	const BufferLayout* particleBufferLayout)
 {
 	m_vertFileName = vertexShaderPath + ".glsl";
 	m_fragFileName = fragmentShaderPath + ".glsl";
@@ -210,6 +249,8 @@ void sf::GlShader::CreateFromFiles(const std::string& vertexShaderPath, const st
 
 	if (voxelBufferLayout != nullptr)
 		vertexShaderSource = GenerateVoxelVolumeShaderHeader(*voxelBufferLayout) + vertexShaderSource;
+	if (particleBufferLayout != nullptr)
+		vertexShaderSource = GenerateParticleShaderHeader(*particleBufferLayout) + vertexShaderSource;
 	vertexShaderSource = GenerateVertexAttributeShaderHeader(vertexBufferLayout) + vertexShaderSource;
 	vertexShaderSource = "#version 460\n" + vertexShaderSource;
 

@@ -38,7 +38,8 @@ namespace sf {
 			const std::string& vertexShaderPath,
 			const std::string& fragmentShaderPath,
 			const BufferLayout& vertexBufferLayout,
-			const BufferLayout* voxelBufferLayout = nullptr);
+			const BufferLayout* voxelBufferLayout = nullptr,
+			const BufferLayout* particleBufferLayout = nullptr);
 
 		void CreateComputeFromFile(const std::string& computeShaderPath);
 

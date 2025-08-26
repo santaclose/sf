@@ -43,11 +43,12 @@ namespace sf {
 				offset.y + (voxelSize * (float)coords.y) + voxelSize / 2.0f,
 				offset.z + (voxelSize * (float)coords.z) + voxelSize / 2.0f);
 		}
-		inline void* AccessVoxelComponent(BufferComponent component, const glm::uvec3& coords) const
+		template <typename T>
+		inline T* AccessVoxelComponent(BufferComponent component, const glm::uvec3& coords) const
 		{
 			if (map.find(coords) == map.end())
 				return nullptr;
-			return voxelBufferLayout.Access((void*)voxelBuffer.data(), component, map.at(coords));
+			return voxelBufferLayout.Access<T>((void*)voxelBuffer.data(), component, map.at(coords));
 		}
 		inline void* GetVoxel(glm::uvec3 coords) const
 		{

@@ -17,7 +17,7 @@ namespace sf {
 		// set all normals to zero
 		for (uint32_t i = 0; i < mesh.vertexCount; i++)
 		{
-			NDT* targetPointer = (NDT*)mesh.AccessVertexComponent(BufferComponent::VertexNormal, i);
+			NDT* targetPointer = mesh.AccessVertexComponent<NDT>(BufferComponent::VertexNormal, i);
 			targetPointer->x = targetPointer->y = targetPointer->z = 0.0;
 		}
 
@@ -25,15 +25,15 @@ namespace sf {
 		for (int i = 0; i < mesh.indexVector.size(); i += 3)
 		{
 			NDT faceNormal;
-			PDT* a = (PDT*)mesh.AccessVertexComponent(BufferComponent::VertexPosition, mesh.indexVector[i + 0]);
-			PDT* b = (PDT*)mesh.AccessVertexComponent(BufferComponent::VertexPosition, mesh.indexVector[i + 1]);
-			PDT* c = (PDT*)mesh.AccessVertexComponent(BufferComponent::VertexPosition, mesh.indexVector[i + 2]);
+			PDT* a = mesh.AccessVertexComponent<PDT>(BufferComponent::VertexPosition, mesh.indexVector[i + 0]);
+			PDT* b = mesh.AccessVertexComponent<PDT>(BufferComponent::VertexPosition, mesh.indexVector[i + 1]);
+			PDT* c = mesh.AccessVertexComponent<PDT>(BufferComponent::VertexPosition, mesh.indexVector[i + 2]);
 			NDT ab = (*b) - (*a);
 			NDT ac = (*c) - (*a);
 			faceNormal = glm::normalize(glm::cross(ab, ac));
-			NDT* normalA = (NDT*)mesh.AccessVertexComponent(BufferComponent::VertexNormal, mesh.indexVector[i + 0]);
-			NDT* normalB = (NDT*)mesh.AccessVertexComponent(BufferComponent::VertexNormal, mesh.indexVector[i + 1]);
-			NDT* normalC = (NDT*)mesh.AccessVertexComponent(BufferComponent::VertexNormal, mesh.indexVector[i + 2]);
+			NDT* normalA = mesh.AccessVertexComponent<NDT>(BufferComponent::VertexNormal, mesh.indexVector[i + 0]);
+			NDT* normalB = mesh.AccessVertexComponent<NDT>(BufferComponent::VertexNormal, mesh.indexVector[i + 1]);
+			NDT* normalC = mesh.AccessVertexComponent<NDT>(BufferComponent::VertexNormal, mesh.indexVector[i + 2]);
 			*normalA += faceNormal;
 			*normalB += faceNormal;
 			*normalC += faceNormal;
@@ -43,7 +43,7 @@ namespace sf {
 		{
 			for (uint32_t i = 0; i < mesh.vertexCount; i++)
 			{
-				NDT* targetPointer = (NDT*)mesh.AccessVertexComponent(BufferComponent::VertexNormal, i);
+				NDT* targetPointer = mesh.AccessVertexComponent<NDT>(BufferComponent::VertexNormal, i);
 				*targetPointer = glm::normalize(*targetPointer);
 			}
 		}
@@ -56,21 +56,21 @@ namespace sf {
 		for (uint32_t i = 0; i < mesh.vertexCount; i++)
 		{
 			TDT* targetPointer;
-			targetPointer = (TDT*)mesh.AccessVertexComponent(BufferComponent::VertexTangent, i);
+			targetPointer = mesh.AccessVertexComponent<TDT>(BufferComponent::VertexTangent, i);
 			targetPointer->x = targetPointer->y = targetPointer->z = 0.0;
 		}
 
 		for (int i = 0; i < mesh.indexVector.size(); i += 3)
 		{
-			PDT* ap = (PDT*)mesh.AccessVertexComponent(BufferComponent::VertexPosition, mesh.indexVector[i + 0]);
-			PDT* bp = (PDT*)mesh.AccessVertexComponent(BufferComponent::VertexPosition, mesh.indexVector[i + 1]);
-			PDT* cp = (PDT*)mesh.AccessVertexComponent(BufferComponent::VertexPosition, mesh.indexVector[i + 2]);
-			UDT* au = (UDT*)mesh.AccessVertexComponent(BufferComponent::VertexUV, mesh.indexVector[i + 0]);
-			UDT* bu = (UDT*)mesh.AccessVertexComponent(BufferComponent::VertexUV, mesh.indexVector[i + 1]);
-			UDT* cu = (UDT*)mesh.AccessVertexComponent(BufferComponent::VertexUV, mesh.indexVector[i + 2]);
-			TDT* at = (TDT*)mesh.AccessVertexComponent(BufferComponent::VertexTangent, mesh.indexVector[i + 0]);
-			TDT* bt = (TDT*)mesh.AccessVertexComponent(BufferComponent::VertexTangent, mesh.indexVector[i + 1]);
-			TDT* ct = (TDT*)mesh.AccessVertexComponent(BufferComponent::VertexTangent, mesh.indexVector[i + 2]);
+			PDT* ap = mesh.AccessVertexComponent<PDT>(BufferComponent::VertexPosition, mesh.indexVector[i + 0]);
+			PDT* bp = mesh.AccessVertexComponent<PDT>(BufferComponent::VertexPosition, mesh.indexVector[i + 1]);
+			PDT* cp = mesh.AccessVertexComponent<PDT>(BufferComponent::VertexPosition, mesh.indexVector[i + 2]);
+			UDT* au = mesh.AccessVertexComponent<UDT>(BufferComponent::VertexUV, mesh.indexVector[i + 0]);
+			UDT* bu = mesh.AccessVertexComponent<UDT>(BufferComponent::VertexUV, mesh.indexVector[i + 1]);
+			UDT* cu = mesh.AccessVertexComponent<UDT>(BufferComponent::VertexUV, mesh.indexVector[i + 2]);
+			TDT* at = mesh.AccessVertexComponent<TDT>(BufferComponent::VertexTangent, mesh.indexVector[i + 0]);
+			TDT* bt = mesh.AccessVertexComponent<TDT>(BufferComponent::VertexTangent, mesh.indexVector[i + 1]);
+			TDT* ct = mesh.AccessVertexComponent<TDT>(BufferComponent::VertexTangent, mesh.indexVector[i + 2]);
 
 			glm::dvec3 edge1 = *bp - *ap;
 			glm::dvec3 edge2 = *cp - *ap;
@@ -206,10 +206,10 @@ void sf::MeshProcessor::ComputeVertexAmbientOcclusion(MeshData& mesh, const Voxe
 		else
 		{
 			glm::vec3 minvpos, maxvpos;
-			minvpos = maxvpos = *((glm::vec3*) mesh.AccessVertexComponent(BufferComponent::VertexPosition, 0));
+			minvpos = maxvpos = *mesh.AccessVertexComponent<glm::vec3>(BufferComponent::VertexPosition, 0);
 			for (int i = 1; i < mesh.vertexCount; i++)
 			{
-				glm::vec3 vertexPos = *((glm::vec3*) mesh.AccessVertexComponent(BufferComponent::VertexPosition, i));
+				glm::vec3 vertexPos = *mesh.AccessVertexComponent<glm::vec3>(BufferComponent::VertexPosition, i);
 				minvpos.x = std::min(vertexPos.x, minvpos.x);
 				minvpos.y = std::min(vertexPos.y, minvpos.y);
 				minvpos.z = std::min(vertexPos.z, minvpos.z);
@@ -228,8 +228,8 @@ void sf::MeshProcessor::ComputeVertexAmbientOcclusion(MeshData& mesh, const Voxe
 	#pragma omp parallel for
 	for (int q = 0; q < mesh.vertexCount; q++)
 	{
-		glm::vec3 vertexPos = *((glm::vec3*) mesh.AccessVertexComponent(BufferComponent::VertexPosition, q));
-		float* aoTarget = (float*) mesh.AccessVertexComponent(BufferComponent::VertexAO, q);
+		glm::vec3 vertexPos = *mesh.AccessVertexComponent<glm::vec3>(BufferComponent::VertexPosition, q);
+		float* aoTarget = mesh.AccessVertexComponent<float>(BufferComponent::VertexAO, q);
 
 		std::vector<std::pair<bool, float>> rayResults(config->rayCount);
 		for (int i = 0; i < config->rayCount; i++)
@@ -255,9 +255,9 @@ void sf::MeshProcessor::ComputeVertexAmbientOcclusion(MeshData& mesh, const Voxe
 						continue; // current vertex belongs to this face
 
 					didHit = Geometry::IntersectRayTriangle(vertexPos + (rayDir * config->rayOriginOffset), rayDir,
-						*((glm::vec3*) mesh.AccessVertexComponent(BufferComponent::VertexPosition, mesh.indexVector[j + 0])),
-						*((glm::vec3*) mesh.AccessVertexComponent(BufferComponent::VertexPosition, mesh.indexVector[j + 1])),
-						*((glm::vec3*) mesh.AccessVertexComponent(BufferComponent::VertexPosition, mesh.indexVector[j + 2])),
+						*mesh.AccessVertexComponent<glm::vec3>(BufferComponent::VertexPosition, mesh.indexVector[j + 0]),
+						*mesh.AccessVertexComponent<glm::vec3>(BufferComponent::VertexPosition, mesh.indexVector[j + 1]),
+						*mesh.AccessVertexComponent<glm::vec3>(BufferComponent::VertexPosition, mesh.indexVector[j + 2]),
 						&distance);
 				}
 				if (distance > config->rayDistance)
@@ -272,13 +272,13 @@ void sf::MeshProcessor::ComputeVertexAmbientOcclusion(MeshData& mesh, const Voxe
 		for (int i = 0; i < mesh.indexVector.size(); i += 3)
 		{
 			float average =
-				(*((float*) mesh.AccessVertexComponent(BufferComponent::VertexAO, mesh.indexVector[i + 0])) +
-					*((float*) mesh.AccessVertexComponent(BufferComponent::VertexAO, mesh.indexVector[i + 1])) +
-					*((float*) mesh.AccessVertexComponent(BufferComponent::VertexAO, mesh.indexVector[i + 2]))) / 3.0f;
+				(*mesh.AccessVertexComponent<float>(BufferComponent::VertexAO, mesh.indexVector[i + 0]) +
+					*mesh.AccessVertexComponent<float>(BufferComponent::VertexAO, mesh.indexVector[i + 1]) +
+					*mesh.AccessVertexComponent<float>(BufferComponent::VertexAO, mesh.indexVector[i + 2])) / 3.0f;
 
-			*((float*) mesh.AccessVertexComponent(BufferComponent::VertexAO, mesh.indexVector[i + 0])) = glm::mix(*((float*) mesh.AccessVertexComponent(BufferComponent::VertexAO, mesh.indexVector[i + 0])), average, config->denoiseWeight);
-			*((float*) mesh.AccessVertexComponent(BufferComponent::VertexAO, mesh.indexVector[i + 1])) = glm::mix(*((float*) mesh.AccessVertexComponent(BufferComponent::VertexAO, mesh.indexVector[i + 1])), average, config->denoiseWeight);
-			*((float*) mesh.AccessVertexComponent(BufferComponent::VertexAO, mesh.indexVector[i + 2])) = glm::mix(*((float*) mesh.AccessVertexComponent(BufferComponent::VertexAO, mesh.indexVector[i + 2])), average, config->denoiseWeight);
+			*mesh.AccessVertexComponent<float>(BufferComponent::VertexAO, mesh.indexVector[i + 0]) = glm::mix(*mesh.AccessVertexComponent<float>(BufferComponent::VertexAO, mesh.indexVector[i + 0]), average, config->denoiseWeight);
+			*mesh.AccessVertexComponent<float>(BufferComponent::VertexAO, mesh.indexVector[i + 1]) = glm::mix(*mesh.AccessVertexComponent<float>(BufferComponent::VertexAO, mesh.indexVector[i + 1]), average, config->denoiseWeight);
+			*mesh.AccessVertexComponent<float>(BufferComponent::VertexAO, mesh.indexVector[i + 2]) = glm::mix(*mesh.AccessVertexComponent<float>(BufferComponent::VertexAO, mesh.indexVector[i + 2]), average, config->denoiseWeight);
 		}
 	}
 }

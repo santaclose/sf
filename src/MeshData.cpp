@@ -23,8 +23,8 @@ void sf::MeshData::ChangeVertexBufferLayout(const sf::BufferLayout& newLayout)
 				continue; // cannot use the data in this component
 
 			uint32_t dataTypeSize = GetDataTypeSize(oldComponents[j].dataType);
-			void* targetPointer = newLayout.Access(newVertexBuffer, oldComponents[j].component, i);
-			void* sourcePointer = this->vertexBufferLayout.Access(this->vertexBuffer, oldComponents[j].component, i);
+			void* targetPointer = newLayout.Access<void>(newVertexBuffer, oldComponents[j].component, i);
+			void* sourcePointer = this->vertexBufferLayout.Access<void>(this->vertexBuffer, oldComponents[j].component, i);
 			memcpy(targetPointer, sourcePointer, dataTypeSize);
 		}
 	}

@@ -224,16 +224,16 @@ void sf::ObjImporter::GenerateMeshData(int id, MeshData& mesh)
 	mesh.vertexBuffer = malloc(mesh.vertexBufferLayout.GetSize() * finalVertices.size());
 	for (int i = 0; i < finalVertices.size(); i++)
 	{
-		glm::vec3* posPtr = (glm::vec3*) mesh.AccessVertexComponent(BufferComponent::VertexPosition, i);
+		glm::vec3* posPtr = mesh.AccessVertexComponent<glm::vec3>(BufferComponent::VertexPosition, i);
 		*posPtr = meshes[id]->positions[finalVertices[i].posID];
 		if (meshes[id]->normals.size() > 0 && meshHasNormals)
 		{
-			glm::vec3* normalPtr = (glm::vec3*)mesh.AccessVertexComponent(BufferComponent::VertexNormal, i);
+			glm::vec3* normalPtr = mesh.AccessVertexComponent<glm::vec3>(BufferComponent::VertexNormal, i);
 			*normalPtr = meshes[id]->normals[finalVertices[i].normalID];
 		}
 		if (meshes[id]->texCoords.size() > 0 && meshHasUVs)
 		{
-			glm::vec2* coordsPtr = (glm::vec2*)mesh.AccessVertexComponent(BufferComponent::VertexUV, i);
+			glm::vec2* coordsPtr = mesh.AccessVertexComponent<glm::vec2>(BufferComponent::VertexUV, i);
 			*coordsPtr = meshes[id]->texCoords[finalVertices[i].coordsID];
 		}
 	}

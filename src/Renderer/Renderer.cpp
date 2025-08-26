@@ -606,22 +606,22 @@ void sf::Renderer::DrawParticleSystem(ParticleSystem& particleSystem, Transform&
 			for (uint32_t i = 0; i < particleSystem.particlesPerEmission; i++)
 			{
 				uint32_t emittingParticle = (particleSystemData[&particleSystem].currentParticle + i) % particleSystem.particleCount;
-				glm::vec3& emittingParticlePosition = *((glm::vec3*)particleBufferLayout->Access(perParticleBuffer, BufferComponent::ParticlePosition, emittingParticle));
-				glm::quat& emittingParticleRotation = *((glm::quat*)particleBufferLayout->Access(perParticleBuffer, BufferComponent::ParticleRotation, emittingParticle));
-				float& emittingParticleScale = *((float*)particleBufferLayout->Access(perParticleBuffer, BufferComponent::ParticleScale, emittingParticle));
-				float& emittingParticleSpawnTime = *((float*)particleBufferLayout->Access(perParticleBuffer, BufferComponent::ParticleSpawnTime, emittingParticle));
+				glm::vec3* emittingParticlePosition = particleBufferLayout->Access<glm::vec3>(perParticleBuffer, BufferComponent::ParticlePosition, emittingParticle);
+				glm::quat* emittingParticleRotation = particleBufferLayout->Access<glm::quat>(perParticleBuffer, BufferComponent::ParticleRotation, emittingParticle);
+				float* emittingParticleScale = particleBufferLayout->Access<float>(perParticleBuffer, BufferComponent::ParticleScale, emittingParticle);
+				float* emittingParticleSpawnTime = particleBufferLayout->Access<float>(perParticleBuffer, BufferComponent::ParticleSpawnTime, emittingParticle);
 
-				emittingParticlePosition = transform.position;
-				emittingParticleRotation = transform.rotation;
-				emittingParticleScale = transform.scale;
-				emittingParticleSpawnTime = particleSystemData[&particleSystem].cycleCurrentTime;
+				*emittingParticlePosition = transform.position;
+				*emittingParticleRotation = transform.rotation;
+				*emittingParticleScale = transform.scale;
+				*emittingParticleSpawnTime = particleSystemData[&particleSystem].cycleCurrentTime;
 
 				if (particleSystem.initialTransform != nullptr)
 				{
 					Transform initial = particleSystem.initialTransform();
-					emittingParticlePosition += transform.rotation * initial.position;
-					emittingParticleRotation *= initial.rotation;
-					emittingParticleScale *= initial.scale;
+					*emittingParticlePosition += transform.rotation * initial.position;
+					*emittingParticleRotation *= initial.rotation;
+					*emittingParticleScale *= initial.scale;
 				}
 			}
 		}
@@ -630,11 +630,11 @@ void sf::Renderer::DrawParticleSystem(ParticleSystem& particleSystem, Transform&
 			for (uint32_t i = 0; i < particleSystem.particlesPerEmission; i++)
 			{
 				uint32_t disablingParticle = (particleSystemData[&particleSystem].currentParticle + i) % particleSystem.particleCount;
-				float& disablingParticleScale = *((float*)particleBufferLayout->Access(perParticleBuffer, BufferComponent::ParticleScale, disablingParticle));
-				float& disablingParticleSpawnTime = *((float*)particleBufferLayout->Access(perParticleBuffer, BufferComponent::ParticleSpawnTime, disablingParticle));
+				float* disablingParticleScale = particleBufferLayout->Access<float>(perParticleBuffer, BufferComponent::ParticleScale, disablingParticle);
+				float* disablingParticleSpawnTime = particleBufferLayout->Access<float>(perParticleBuffer, BufferComponent::ParticleSpawnTime, disablingParticle);
 
-				disablingParticleScale = 0.0f;
-				disablingParticleSpawnTime = -1.0f;
+				*disablingParticleScale = 0.0f;
+				*disablingParticleSpawnTime = -1.0f;
 			}
 		}
 

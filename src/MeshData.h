@@ -25,9 +25,10 @@ namespace sf {
 		void ChangeVertexBufferLayout(const BufferLayout& newLayout);
 		bool Initialized() { return vertexBuffer != nullptr; }
 
-		inline void* AccessVertexComponent(BufferComponent component, uint32_t index) const
+		template<typename T>
+		inline T* AccessVertexComponent(BufferComponent component, uint32_t index) const
 		{
-			return vertexBufferLayout.Access(vertexBuffer, component, index);
+			return vertexBufferLayout.Access<T>(vertexBuffer, component, index);
 		}
 
 		void SaveToFile(const char* targetFile);

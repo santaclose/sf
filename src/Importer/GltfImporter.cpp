@@ -151,16 +151,16 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 				// Create Vertices
 				for (uint32_t i = 0; i < primitiveVertexCount; i++)
 				{
-					glm::vec3* posPtr = (glm::vec3*)mesh.AccessVertexComponent(BufferComponent::VertexPosition, vertexStart + i);
+					glm::vec3* posPtr = mesh.AccessVertexComponent<glm::vec3>(BufferComponent::VertexPosition, vertexStart + i);
 					*posPtr = { positionBuffer[i * 3 + 0], positionBuffer[i * 3 + 1], positionBuffer[i * 3 + 2] };
 					if (normalsBuffer && meshHasNormals)
 					{
-						glm::vec3* normalPtr = (glm::vec3*)mesh.AccessVertexComponent(BufferComponent::VertexNormal, vertexStart + i);
+						glm::vec3* normalPtr = mesh.AccessVertexComponent<glm::vec3>(BufferComponent::VertexNormal, vertexStart + i);
 						*normalPtr = glm::normalize(glm::vec3(normalsBuffer[i * 3 + 0], normalsBuffer[i * 3 + 1], normalsBuffer[i * 3 + 2]));
 					}
 					if (texCoordsBuffer && meshHasUVs)
 					{
-						glm::vec2* uvsPtr = (glm::vec2*)mesh.AccessVertexComponent(BufferComponent::VertexUV, vertexStart + i);
+						glm::vec2* uvsPtr = mesh.AccessVertexComponent<glm::vec2>(BufferComponent::VertexUV, vertexStart + i);
 						*uvsPtr = { texCoordsBuffer[i * 2 + 0], 1.0 - texCoordsBuffer[i * 2 + 1] };
 					}
 					if (jointsBuffer && meshHasBoneIndices)
@@ -170,7 +170,7 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 						if (jointComponentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE)
 						{
 							const uint8_t* buf = static_cast<const uint8_t*>(jointsBuffer);
-							glm::vec4* boneIndicesPtr = (glm::vec4*)mesh.AccessVertexComponent(BufferComponent::VertexBoneIndices, vertexStart + i);
+							glm::vec4* boneIndicesPtr = mesh.AccessVertexComponent<glm::vec4>(BufferComponent::VertexBoneIndices, vertexStart + i);
 							*boneIndicesPtr = {
 								(float)nodeToBonePerModel[id][model.skins[0].joints[buf[i * 4 + 0]]],
 								(float)nodeToBonePerModel[id][model.skins[0].joints[buf[i * 4 + 1]]],
@@ -180,7 +180,7 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 						else // unsigned short
 						{
 							const uint16_t* buf = static_cast<const uint16_t*>(jointsBuffer);
-							glm::vec4* boneIndicesPtr = (glm::vec4*)mesh.AccessVertexComponent(BufferComponent::VertexBoneIndices, vertexStart + i);
+							glm::vec4* boneIndicesPtr = mesh.AccessVertexComponent<glm::vec4>(BufferComponent::VertexBoneIndices, vertexStart + i);
 							*boneIndicesPtr = {
 								(float)nodeToBonePerModel[id][model.skins[0].joints[buf[i * 4 + 0]]],
 								(float)nodeToBonePerModel[id][model.skins[0].joints[buf[i * 4 + 1]]],
@@ -190,7 +190,7 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 					}
 					if (boneWeightsBuffer && meshHasBoneWeights)
 					{
-						glm::vec4* boneWeightsPtr = (glm::vec4*)mesh.AccessVertexComponent(BufferComponent::VertexBoneWeights, vertexStart + i);
+						glm::vec4* boneWeightsPtr = mesh.AccessVertexComponent<glm::vec4>(BufferComponent::VertexBoneWeights, vertexStart + i);
 						*boneWeightsPtr = { boneWeightsBuffer[i * 4 + 0], boneWeightsBuffer[i * 4 + 1], boneWeightsBuffer[i * 4 + 2], boneWeightsBuffer[i * 4 + 3] };
 					}
 				}

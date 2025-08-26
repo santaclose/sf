@@ -9,7 +9,7 @@ layout(location = 5) in float fVertexAo;
 #define MAX_POINT_LIGHTS 10
 #define PI 3.14159265359
 
-layout(std140, binding = 0) uniform SharedGpuData
+layout (binding = 0) uniform SharedGpuData
 {
 	mat4 modelMatrix;
 	mat4 cameraMatrix;

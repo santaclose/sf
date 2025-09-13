@@ -35,7 +35,6 @@ namespace sf
 	glm::quat modelRotation;
 	float modelRotationY;
 
-	float cameraDistance;
 	bool rotationEnabled;
 
 	int selectedEnvironment;
@@ -55,7 +54,6 @@ namespace sf
 	{
 		modelRotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
 		modelRotationY = 0.0f;
-		cameraDistance = 3.0;
 		rotationEnabled = false;
 		selectedEnvironment = 0;
 		environments = { "examples/pbr/brown_photostudio_02_4k.hdr", "examples/pbr/aft_lounge_4k.hdr", };

@@ -38,7 +38,6 @@ namespace sf
 	glm::quat modelRotation;
 	float modelRotationY;
 
-	float cameraDistance;
 	bool rotationEnabled;
 
 	SkeletonData* skeletons;
@@ -57,7 +56,6 @@ namespace sf
 	{
 		modelRotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
 		modelRotationY = 0.0f;
-		cameraDistance = 3.0;
 		rotationEnabled = false;
 		selectedModel = 0;
 

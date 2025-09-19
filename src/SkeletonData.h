@@ -1,109 +1,52 @@
 #pragma once
 
-#include <vector>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
+#include <Animation.h>
+
 namespace sf
 {
-	struct Bone
+	struct BoneData
 	{
 		int32_t parent = -1;
 		glm::mat4 localMatrix = glm::mat4(1.0f);
 		glm::mat4 invModelMatrix;
-		glm::vec3 translation = glm::vec3(0.0f, 0.0f, 0.0f);
-		glm::quat rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
-		float scale = 1.0f;
 	};
-
-	struct AnimationChannel
-	{
-		enum PathType { TRANSLATION, ROTATION, SCALE };
-		PathType path;
-		uint32_t bone;
-		uint32_t samplerIndex;
-	};
-
-	struct AnimationSampler
-	{
-		enum InterpolationType { LINEAR, STEP, CUBICSPLINE };
-		InterpolationType interpolation;
-		std::vector<float> inputs;
-		std::vector<glm::vec4> outputsVec4;
-	};
-
-	struct SkeletalAnimation
-	{
-		const char* name;
-		std::vector<AnimationSampler> samplers;
-		std::vector<AnimationChannel> channels;
-		float start = std::numeric_limits<float>::max();
-		float end = std::numeric_limits<float>::min();
-	};
-
-	struct BlendSpacePoint1D
+	struct BlendSpacePoint1DCreateInfo
 	{
 		uint32_t animationIndex;
-		float animationSpeed;
-		float x;
+		float speed;
+		float pos;
 	};
-
-	struct BlendSpace1D
-	{
-		std::vector<BlendSpacePoint1D> points;
-		float x;
-		float animationBlendingTimer = 0.0f;
-	};
-
-	struct BlendSpacePoint2D
+	struct BlendSpacePoint2DCreateInfo
 	{
 		uint32_t animationIndex;
-		float animationSpeed;
+		float speed;
 		glm::vec2 pos;
-	};
-
-	struct BlendSpace2D
-	{
-		std::vector<BlendSpacePoint2D> points;
-		glm::vec2 pos;
-		float animationBlendingTimer = 0.0f;
-		std::vector<float> blendMatrix;
 	};
 
 	struct SkeletonData
 	{
+		uint32_t AddNodeSingle(uint32_t animationIndex, float speed = 1.0f);
+		uint32_t AddNodeBlendSpace1D(const std::vector<BlendSpacePoint1DCreateInfo>& points, float pos, float* weightsQuery = nullptr);
+		uint32_t AddNodeBlendSpace2D(const std::vector<BlendSpacePoint2DCreateInfo>& points, const glm::vec2& pos, float* weightsQuery = nullptr);
+
 		inline bool GetAnimate() { return m_animate; }
 		inline void SetAnimate(bool value) { m_animate = value; }
-		inline uint32_t GetAnimationIndex() { return m_animationIndex; }
-		inline uint32_t GetAnimationCount() { return m_animations.size(); }
-		inline void SetAnimationIndex(uint32_t value) { m_animationIndex = value; }
-		inline int AddBlendSpace1D(const std::vector<BlendSpacePoint1D>& points, float x) { m_blendSpaces1D.push_back({ points, x }); return m_blendSpaces1D.size() - 1; }
-		inline int AddBlendSpace2D(const std::vector<BlendSpacePoint2D>& points, const glm::vec2& pos) { m_blendSpaces2D.push_back({ points, pos }); return m_blendSpaces2D.size() - 1; }
-		inline void SetBlendSpace1D(int id) { m_selectedBlendSpace = id; m_selectedBlendSpaceD = 1; }
-		inline void SetBlendSpace2D(int id) { m_selectedBlendSpace = id; m_selectedBlendSpaceD = 2; }
-		inline void SetCurrentBlendSpaceX(float x) { assert(m_selectedBlendSpaceD != -1); if (m_selectedBlendSpaceD == 1) m_blendSpaces1D[m_selectedBlendSpace].x = x; else m_blendSpaces2D[m_selectedBlendSpace].pos.x = x; }
-		inline void SetCurrentBlendSpaceY(float y) { assert(m_selectedBlendSpaceD == 2); m_blendSpaces2D[m_selectedBlendSpace].pos.y = y; }
-		inline void SetCurrentBlendSpacePos(const glm::vec2& pos) { assert(m_selectedBlendSpaceD == 2); m_blendSpaces2D[m_selectedBlendSpace].pos = pos; }
-		inline const BlendSpace1D& GetCurrentBlendSpace1D() { assert(m_selectedBlendSpaceD == 1); return m_blendSpaces1D[m_selectedBlendSpace]; }
-		inline const BlendSpace2D& GetCurrentBlendSpace2D() { assert(m_selectedBlendSpaceD == 2); return m_blendSpaces2D[m_selectedBlendSpace]; }
+		inline void SetBlendSpace1DPosition(uint32_t node, float pos) { assert(m_nodes[node].single.type == Animation::NodeType::BlendSpace1D); m_nodes[node].bs1d.pos = pos; }
+		inline void SetBlendSpace2DPosition(uint32_t node, const glm::vec2& pos) { assert(m_nodes[node].single.type == Animation::NodeType::BlendSpace2D); m_nodes[node].bs2d.pos = pos; }
 
-		inline SkeletalAnimation& GetCurrentAnimation() { return m_animations[m_animationIndex]; }
-		void UpdateAnimation(float deltaTime, float* outWeights = nullptr);
-		void UpdateAnimationUsingBlendspace(float deltaTime, float* outWeights = nullptr);
-		void UpdateAnimationBlended(const std::vector<float>& weights, const std::vector<float>& speeds, const std::vector<uint32_t>& indices, const std::vector<float>& durations, float& timer, float deltaTime);
+		void UpdateAnimation(float deltaTime);
 
 		bool m_animate = false;
-		uint32_t m_animationIndex = 0;
-		float m_animationTime = 0.0f;
-		int m_selectedBlendSpace = -1;
-		int m_selectedBlendSpaceD = -1;
-		float m_previousBlendedDuration = -1.0f;
 
-		std::vector<Bone> m_bones;
-		std::vector<SkeletalAnimation> m_animations;
+		std::vector<Transform> m_boneTransforms;
+		std::vector<BoneData> m_boneData;
 		std::vector<glm::mat4> m_skinningMatrices;
 
-		std::vector<BlendSpace1D> m_blendSpaces1D;
-		std::vector<BlendSpace2D> m_blendSpaces2D;
+		std::vector<Animation::SkeletalAnimation> m_animations;
+
+		std::vector<Animation::Node> m_nodes;
 	};
 }

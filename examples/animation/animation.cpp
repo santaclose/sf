@@ -42,6 +42,7 @@ namespace sf
 
 	SkeletonData* skeletons;
 	MeshData* meshes;
+	int* currentAnimation;
 
 	int selectedModel;
 
@@ -70,6 +71,8 @@ namespace sf
 		int gltfid;
 		skeletons = new SkeletonData[2];
 		meshes = new MeshData[2];
+		currentAnimation = new int[2];
+		memset(currentAnimation, 0, sizeof(int) * 2);
 		{
 			galleryObjects.push_back(scene.CreateEntity());
 			Transform& e_t = galleryObjects.back().AddComponent<Transform>();
@@ -82,6 +85,8 @@ namespace sf
 			GltfImporter::GenerateMeshData(gltfid, meshes[0]);
 			MeshProcessor::ComputeNormals(meshes[0]);
 			SkinnedMesh& objectMesh = galleryObjects.back().AddComponent<SkinnedMesh>(&(meshes[0]), meshMaterial, &(skeletons[0]));
+			for (int i = 0; i < skeletons[0].m_animations.size(); i++)
+				skeletons[0].AddNodeSingle(i);
 			skeletons[0].SetAnimate(true);
 		}
 		{
@@ -96,6 +101,8 @@ namespace sf
 			meshes[1] = MeshData(vertexLayout);
 			GltfImporter::GenerateMeshData(gltfid, meshes[1]);
 			SkinnedMesh& objectMesh = galleryObjects.back().AddComponent<SkinnedMesh>(&(meshes[1]), meshMaterial, &(skeletons[1]));
+			for (int i = 0; i < skeletons[1].m_animations.size(); i++)
+				skeletons[1].AddNodeSingle(i);
 			skeletons[1].SetAnimate(true);
 		}
 
@@ -107,6 +114,7 @@ namespace sf
 	{
 		delete[] meshes;
 		delete[] skeletons;
+		delete[] currentAnimation;
 		for (Entity e : galleryObjects)
 			scene.DestroyEntity(e);
 		galleryObjects.clear();
@@ -124,9 +132,9 @@ namespace sf
 
 	void AnimationChange(bool next)
 	{
-		skeletons[selectedModel].SetAnimationIndex(Math::Mod(
-			skeletons[selectedModel].GetAnimationIndex() + (next ? 1 : -1),
-			skeletons[selectedModel].GetAnimationCount()));
+		currentAnimation[selectedModel] = Math::Mod(currentAnimation[selectedModel] + (next ? 1 : -1), skeletons[selectedModel].m_animations.size());
+		for (int i = 0; i < skeletons[selectedModel].m_nodes.size(); i++)
+			skeletons[selectedModel].m_nodes[i].single.weight = i == currentAnimation[selectedModel] ? 1.0f : 0.0f;
 	}
 
 	void Game::OnUpdate(float deltaTime, float time)

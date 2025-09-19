@@ -9,6 +9,8 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <Animation.h>
+
 namespace sf::GltfImporter
 {
 	std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t>> nodeToBonePerModel;
@@ -313,21 +315,23 @@ namespace sf::GltfImporter
 			return;
 		}
 
-		skeleton.m_bones.emplace_back();
-		Bone& currentBone = skeleton.m_bones.back();
+		skeleton.m_boneData.emplace_back();
+		skeleton.m_boneTransforms.emplace_back();
+		BoneData& currentBone = skeleton.m_boneData.back();
+		Transform& currentBoneTransform = skeleton.m_boneTransforms.back();
 
 		if (model.nodes[node].scale.size() == 3)
-			currentBone.scale = glm::max(glm::max(model.nodes[node].scale[0], model.nodes[node].scale[1]), model.nodes[node].scale[2]);
+			currentBoneTransform.scale = glm::max(glm::max(model.nodes[node].scale[0], model.nodes[node].scale[1]), model.nodes[node].scale[2]);
 		if (model.nodes[node].translation.size() == 3)
-			currentBone.translation = glm::make_vec3(model.nodes[node].translation.data());
+			currentBoneTransform.position = glm::make_vec3(model.nodes[node].translation.data());
 		if (model.nodes[node].rotation.size() == 4)
-			currentBone.rotation = glm::make_quat(model.nodes[node].rotation.data());
+			currentBoneTransform.rotation = glm::make_quat(model.nodes[node].rotation.data());
 		if (model.nodes[node].matrix.size() == 16)
 			currentBone.localMatrix = glm::make_mat4x4(model.nodes[node].matrix.data());
 		else
-			currentBone.localMatrix = glm::translate(glm::mat4(1.0f), currentBone.translation) * glm::mat4(currentBone.rotation) * glm::scale(glm::mat4(1.0f), glm::vec3(currentBone.scale));
+			currentBone.localMatrix = currentBoneTransform.ComputeMatrix();
 
-		int currentBoneIndex = skeleton.m_bones.size() - 1;
+		int currentBoneIndex = skeleton.m_boneData.size() - 1;
 		nodeToBone[node] = currentBoneIndex;
 		currentBone.parent = parentBone;
 
@@ -338,7 +342,8 @@ namespace sf::GltfImporter
 
 void sf::GltfImporter::GenerateSkeleton(int id, SkeletonData& skeleton, int index)
 {
-	skeleton.m_bones.clear();
+	skeleton.m_boneData.clear();
+	skeleton.m_boneTransforms.clear();
 
 	tinygltf::Model& model = *(models[id]);
 
@@ -355,31 +360,32 @@ void sf::GltfImporter::GenerateSkeleton(int id, SkeletonData& skeleton, int inde
 	invModelMatricesTemp.resize(accessor.count);
 	memcpy(invModelMatricesTemp.data(), &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(glm::mat4));
 	for (size_t i = 0; i < model.skins[index].joints.size(); i++)
-		skeleton.m_bones[nodeToBonePerModel[id][model.skins[index].joints[i]]].invModelMatrix = invModelMatricesTemp[i];
+		skeleton.m_boneData[nodeToBonePerModel[id][model.skins[index].joints[i]]].invModelMatrix = invModelMatricesTemp[i];
 
-	std::cout << "[GltfImporter] Generated skeleton with " << skeleton.m_bones.size() << " bones\n";
+	std::cout << "[GltfImporter] Generated skeleton with " << skeleton.m_boneData.size() << " bones\n";
 
 	// reserve space for skinning matrices
-	skeleton.m_skinningMatrices.resize(skeleton.m_bones.size());
+	skeleton.m_skinningMatrices.resize(skeleton.m_boneData.size());
 
 	// load animations
+	skeleton.m_animations.clear();
 	for (tinygltf::Animation& anim : model.animations)
 	{
 		skeleton.m_animations.emplace_back();
-		SkeletalAnimation& skeletonAnimation = skeleton.m_animations.back();
+		Animation::SkeletalAnimation& skeletonAnimation = skeleton.m_animations.back();
 		skeletonAnimation.name = anim.name.c_str();
 		std::cout << "[GltfImporter] Importing animation " << skeletonAnimation.name << std::endl;
 		for (auto& samp : anim.samplers)
 		{
 			skeletonAnimation.samplers.emplace_back();
-			AnimationSampler& skeletonAnimationSampler = skeletonAnimation.samplers.back();
+			Animation::Sampler& sampler = skeletonAnimation.samplers.back();
 
 			if (samp.interpolation == "LINEAR")
-				skeletonAnimationSampler.interpolation = AnimationSampler::InterpolationType::LINEAR;
+				sampler.interpolation = Animation::Sampler::InterpolationType::LINEAR;
 			if (samp.interpolation == "STEP")
-				skeletonAnimationSampler.interpolation = AnimationSampler::InterpolationType::STEP;
+				sampler.interpolation = Animation::Sampler::InterpolationType::STEP;
 			if (samp.interpolation == "CUBICSPLINE")
-				skeletonAnimationSampler.interpolation = AnimationSampler::InterpolationType::CUBICSPLINE;
+				sampler.interpolation = Animation::Sampler::InterpolationType::CUBICSPLINE;
 
 			// Read sampler input time values
 			{
@@ -392,9 +398,9 @@ void sf::GltfImporter::GenerateSkeleton(int id, SkeletonData& skeleton, int inde
 				const void* dataPtr = &buffer.data[accessor.byteOffset + bufferView.byteOffset];
 				const float* buf = static_cast<const float*>(dataPtr);
 				for (size_t index = 0; index < accessor.count; index++)
-					skeletonAnimationSampler.inputs.push_back(buf[index]);
+					sampler.inputs.push_back(buf[index]);
 
-				for (auto input : skeletonAnimationSampler.inputs)
+				for (auto input : sampler.inputs)
 				{
 					if (input < skeletonAnimation.start)
 						skeletonAnimation.start = input;
@@ -419,14 +425,14 @@ void sf::GltfImporter::GenerateSkeleton(int id, SkeletonData& skeleton, int inde
 				{
 					const glm::vec3* buf = static_cast<const glm::vec3*>(dataPtr);
 					for (size_t index = 0; index < accessor.count; index++)
-						skeletonAnimationSampler.outputsVec4.push_back(glm::vec4(buf[index], 0.0f));
+						sampler.outputsVec4.push_back(glm::vec4(buf[index], 0.0f));
 					break;
 				}
 				case TINYGLTF_TYPE_VEC4:
 				{
 					const glm::vec4* buf = static_cast<const glm::vec4*>(dataPtr);
 					for (size_t index = 0; index < accessor.count; index++)
-						skeletonAnimationSampler.outputsVec4.push_back(buf[index]);
+						sampler.outputsVec4.push_back(buf[index]);
 					break;
 				}
 				default:
@@ -442,22 +448,22 @@ void sf::GltfImporter::GenerateSkeleton(int id, SkeletonData& skeleton, int inde
 		for (auto& source : anim.channels)
 		{
 			skeletonAnimation.channels.emplace_back();
-			AnimationChannel& skeletonAnimationChannel = skeletonAnimation.channels.back();
+			Animation::Channel& channel = skeletonAnimation.channels.back();
 
 			if (source.target_path == "rotation")
-				skeletonAnimationChannel.path = AnimationChannel::PathType::ROTATION;
+				channel.path = Animation::Channel::PathType::ROTATION;
 			if (source.target_path == "translation")
-				skeletonAnimationChannel.path = AnimationChannel::PathType::TRANSLATION;
+				channel.path = Animation::Channel::PathType::TRANSLATION;
 			if (source.target_path == "scale")
-				skeletonAnimationChannel.path = AnimationChannel::PathType::SCALE;
+				channel.path = Animation::Channel::PathType::SCALE;
 			if (source.target_path == "weights")
 			{
 				std::cout << "[GltfImporter] Animated weights not supported, skipping channel" << std::endl;
 				continue;
 			}
-			skeletonAnimationChannel.samplerIndex = source.sampler;
+			channel.samplerIndex = source.sampler;
 			if (nodeToBonePerModel[id].find(source.target_node) != nodeToBonePerModel[id].end())
-				skeletonAnimationChannel.bone = nodeToBonePerModel[id][source.target_node];
+				channel.bone = nodeToBonePerModel[id][source.target_node];
 			else
 				std::cout << "[GltfImporter] Target node not found\n";
 		}

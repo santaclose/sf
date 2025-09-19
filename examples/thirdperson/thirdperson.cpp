@@ -55,14 +55,14 @@ namespace sf
 	});
 	SkeletonData* shanyungSkeleton;
 	MeshData* shanyungMesh;
-	int shanyungBlendSpace;
+	uint32_t shanyungBlendSpace;
 	glm::vec2 shanyungBlendSpaceCurrentPos;
 	std::vector<float> shanyungWeights;
 	std::vector<glm::vec2> shanyungSpeedPerAnimation;
 
 	SkeletonData* foxSkeleton;
 	MeshData* foxMesh;
-	int foxBlendSpace;
+	uint32_t foxBlendSpace;
 	float foxBlendSpaceCurrentX;
 	std::vector<float> foxWeights;
 	std::vector<float> foxSpeedPerAnimation;
@@ -106,12 +106,13 @@ namespace sf
 			GltfImporter::GenerateMeshData(gltfid, *shanyungMesh);
 			shanyung.AddComponent<SkinnedMesh>(shanyungMesh, characterMaterial, shanyungSkeleton);
 
-			shanyungBlendSpace = shanyungSkeleton->AddBlendSpace2D({ {0, 1.0f, {0.0f, 0.0f}}, {1, 1.0f, {0.0f, 1.0f}}, {2, 1.0f, {-1.0f, 0.0f}}, {3, 1.0f, {1.0f, 0.0f}}, {4, 1.0f, {0.0f, 0.5f}}, {5, 1.0f, {0.0f, -0.5f}}, {6, 1.0f, {-0.5f, -0.5f}}, {7, 1.0f, {0.5f, -0.5f}}, {8, 1.0f, {-0.5f, 0.0f}}, {9, 1.0f, {0.5f, 0.0f}} }, { 0.0f, 0.0f });
-			shanyungSkeleton->SetBlendSpace2D(shanyungBlendSpace);
-			shanyungSkeleton->SetCurrentBlendSpacePos(shanyungBlendSpaceCurrentPos);
-			shanyungSkeleton->SetAnimate(true);
 			shanyungWeights.resize(10);
 			shanyungSpeedPerAnimation = { {0.0f, 0.0f}, {0.0f, 6.0f}, {-6.0f, 0.0f}, {6.0f, 0.0f}, {0.0f, 1.68f}, {0.0f, -1.08f}, {-0.763f, -0.763f}, {0.763f, -0.763f}, {-1.68f, 0.0f}, {1.68f, 0.0f} };
+			shanyungBlendSpace = shanyungSkeleton->AddNodeBlendSpace2D(
+				{ {0, 1.0f, {0.0f, 0.0f}}, {1, 1.0f, {0.0f, 1.0f}}, {2, 1.0f, {-1.0f, 0.0f}}, {3, 1.0f, {1.0f, 0.0f}}, {4, 1.0f, {0.0f, 0.5f}}, {5, 1.0f, {0.0f, -0.5f}}, {6, 1.0f, {-0.5f, -0.5f}}, {7, 1.0f, {0.5f, -0.5f}}, {8, 1.0f, {-0.5f, 0.0f}}, {9, 1.0f, {0.5f, 0.0f}} },
+				{ 0.0f, 0.0f },
+				shanyungWeights.data());
+			shanyungSkeleton->SetAnimate(true);
 		}
 		{
 			fox = scene.CreateEntity();
@@ -127,12 +128,10 @@ namespace sf
 			MeshProcessor::ComputeNormals(*foxMesh);
 			fox.AddComponent<SkinnedMesh>(foxMesh, characterMaterial, foxSkeleton);
 
-			foxBlendSpace = foxSkeleton->AddBlendSpace1D({ {0, 1.0f, 0.0f}, {1, 1.0f, 0.5f}, {2, 2.3f, 1.0f} }, 0.0f);
-			foxSkeleton->SetBlendSpace1D(foxBlendSpace);
-			foxSkeleton->SetCurrentBlendSpaceX(foxBlendSpaceCurrentX);
-			foxSkeleton->SetAnimate(true);
 			foxWeights.resize(4);
 			foxSpeedPerAnimation = { 0.0f, 1.5f, 6.0f };
+			foxBlendSpace = foxSkeleton->AddNodeBlendSpace1D({ {0, 1.0f, 0.0f}, {1, 1.0f, 0.5f}, {2, 2.3f, 1.0f} }, 0.0f, foxWeights.data());
+			foxSkeleton->SetAnimate(true);
 			fox.SetEnabled(false);
 		}
 
@@ -205,8 +204,8 @@ namespace sf
 				targetBlendSpacePos *= 2.0f;
 
 			shanyungBlendSpaceCurrentPos = glm::mix(shanyungBlendSpaceCurrentPos, targetBlendSpacePos, deltaTime * 7.0f);
-			shanyungSkeleton->SetCurrentBlendSpacePos(shanyungBlendSpaceCurrentPos);
-			shanyungSkeleton->UpdateAnimation(deltaTime, shanyungWeights.data());
+			shanyungSkeleton->SetBlendSpace2DPosition(shanyungBlendSpace, shanyungBlendSpaceCurrentPos);
+			shanyungSkeleton->UpdateAnimation(deltaTime);
 			Transform& e_t = shanyung.GetComponent<Transform>();
 			glm::vec2 targetSpeed;
 			Math::WeightedBlend(shanyungSpeedPerAnimation.data(), shanyungWeights.data(), shanyungWeights.size(), targetSpeed);
@@ -235,8 +234,8 @@ namespace sf
 				targetBlendSpaceX *= 2.0f;
 
 			foxBlendSpaceCurrentX = glm::mix(foxBlendSpaceCurrentX, targetBlendSpaceX, deltaTime * 7.0f);
-			foxSkeleton->SetCurrentBlendSpaceX(foxBlendSpaceCurrentX);
-			foxSkeleton->UpdateAnimation(deltaTime, foxWeights.data());
+			foxSkeleton->SetBlendSpace1DPosition(foxBlendSpace, foxBlendSpaceCurrentX);
+			foxSkeleton->UpdateAnimation(deltaTime);
 			Transform& e_t = fox.GetComponent<Transform>();
 			float targetSpeed;
 			Math::WeightedBlend(foxSpeedPerAnimation.data(), foxWeights.data(), foxWeights.size(), targetSpeed);

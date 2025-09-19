@@ -31,6 +31,7 @@ SOFTWARE.
 #include <glm/glm.hpp>
 #include <unordered_map>
 #include <stdio.h>
+#include <cstring>
 
 namespace BlendMatrixInterpolation
 {

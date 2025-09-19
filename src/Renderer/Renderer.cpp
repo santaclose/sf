@@ -858,11 +858,11 @@ void sf::Renderer::DebugDrawSkeleton(SkinnedMesh& mesh, Transform& transform)
 		CreateMeshGpuData(&Defaults::MeshDataCube());
 
 	glm::mat4 worldMatrix = transform.ComputeMatrix();
-	glm::mat4* boneMatrices = (glm::mat4*)alloca(sizeof(glm::mat4) * mesh.skeletonData->m_bones.size());
+	glm::mat4* boneMatrices = (glm::mat4*)alloca(sizeof(glm::mat4) * mesh.skeletonData->m_boneData.size());
 
-	for (uint32_t i = 0; i < mesh.skeletonData->m_bones.size(); i++)
+	for (uint32_t i = 0; i < mesh.skeletonData->m_boneData.size(); i++)
 	{
-		const Bone* currentBone = &(mesh.skeletonData->m_bones[i]);
+		const BoneData* currentBone = &(mesh.skeletonData->m_boneData[i]);
 		if (currentBone->parent < 0)
 			boneMatrices[i] = worldMatrix * currentBone->localMatrix;
 		else

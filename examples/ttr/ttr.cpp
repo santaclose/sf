@@ -93,7 +93,7 @@ namespace sf
 		for (int i = 0; i < UNIQUE_COUNT; i++)
 		{
 			errt::seed = i;
-			errt::GenerateModel(uniqueErrts[i]);
+			errt::GenerateModel(uniqueErrts[i], 6, 1);
 		}
 
 		uint32_t whiteMaterial, blackMaterial;

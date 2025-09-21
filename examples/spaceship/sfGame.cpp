@@ -152,11 +152,10 @@ namespace sf
 		}
 
 		things = new Entity[COUNT];
-		uint32_t materialsToChooseFrom[3] = { colorsMaterial, noiseMaterial, aoMaterial };
 		for (unsigned int i = 0; i < COUNT; i++)
 		{
 			things[i] = scene.CreateEntity();
-			Mesh& m_thing = things[i].AddComponent<Mesh>(&generatedMeshes[Random::Int(UNIQUE_COUNT)], materialsToChooseFrom[Random::Int(3)]);
+			Mesh& m_thing = things[i].AddComponent<Mesh>(&generatedMeshes[Random::Int(UNIQUE_COUNT)], aoMaterial);
 
 			Transform& t_thing = things[i].AddComponent<Transform>();
 

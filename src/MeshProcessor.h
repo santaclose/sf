@@ -24,8 +24,6 @@ namespace sf {
 	public:
 		static void ComputeNormals(MeshData& mesh, bool normalize = false);
 		static void ComputeTangentSpace(MeshData& mesh);
-
-		static void GenerateMeshWithFunction(MeshData& mesh, void (*functionPointer)());
 		static void ComputeVertexAmbientOcclusion(MeshData& mesh, const VoxelVolumeData* voxelVolume = nullptr, const VertexAmbientOcclusionBakerConfig* config = nullptr);
 	};
 }

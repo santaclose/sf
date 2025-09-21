@@ -1,5 +1,6 @@
 #include <MeshData.h>
 #include <cstring>
+#include <cassert>
 #include <fstream>
 
 void sf::MeshData::ChangeVertexBufferLayout(const sf::BufferLayout& newLayout)
@@ -46,14 +47,12 @@ void sf::MeshData::SaveToFile(const char* targetFile)
 		file.write((char*) &comp.component, sizeof(comp.component));
 
 	// Indices
-	uint32_t indexCount = indexVector.size();
 	file.write((char*) &indexCount, sizeof(indexCount));
-	file.write((char*) indexVector.data(), indexCount * sizeof(uint32_t));
+	file.write((char*) indexBuffer, indexCount * sizeof(uint32_t));
 
 	// Pieces
-	uint32_t pieceCount = pieces.size();
 	file.write((char*) &pieceCount, sizeof(pieceCount));
-	file.write((char*) pieces.data(), pieceCount * sizeof(uint32_t));
+	file.write((char*) pieces, pieceCount * sizeof(uint32_t));
 
 	// Vertices
 	file.write((char*) &vertexCount, sizeof(vertexCount));
@@ -65,6 +64,7 @@ void sf::MeshData::SaveToFile(const char* targetFile)
 
 bool sf::MeshData::LoadFromFile(const char* targetFile)
 {
+	assert(pieces == nullptr && vertexBuffer == nullptr && indexBuffer == nullptr);
 	std::ifstream file;
 	file.open(targetFile, std::ios::binary);
 	if (!file)
@@ -79,23 +79,19 @@ bool sf::MeshData::LoadFromFile(const char* targetFile)
 	vertexBufferLayout = BufferLayout(components);
 
 	// Indices
-	uint32_t indexCount;
 	file.read((char*) &indexCount, sizeof(indexCount));
-	indexVector.resize(indexCount);
-	file.read((char*) indexVector.data(), indexCount * sizeof(uint32_t));
+	indexBuffer = new uint32_t[indexCount];
+	file.read((char*) indexBuffer, indexCount * sizeof(uint32_t));
 
 	// Pieces
-	uint32_t pieceCount;
 	file.read((char*) &pieceCount, sizeof(pieceCount));
-	pieces.resize(pieceCount);
-	file.read((char*) pieces.data(), pieceCount * sizeof(uint32_t));
+	pieces = new uint32_t[pieceCount];
+	file.read((char*) pieces, pieceCount * sizeof(uint32_t));
 
 	// Vertices
 	file.read((char*) &vertexCount, sizeof(vertexCount));
 	uint32_t vertexBufferSizeInBytes = vertexBufferLayout.GetSize() * vertexCount;
-	if (vertexBuffer != nullptr)
-		free(vertexBuffer);
-	vertexBuffer = malloc(vertexBufferSizeInBytes);
+	vertexBuffer = new char[vertexBufferSizeInBytes];
 	file.read((char*) vertexBuffer, vertexBufferSizeInBytes);
 
 	file.close();

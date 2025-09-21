@@ -16,7 +16,7 @@
 
 #include <MeshProcessor.h>
 
-#include "errt.h"
+#include "../errt.hpp"
 
 #define SENSITIVITY 0.007
 
@@ -46,7 +46,6 @@ namespace sf
 	float animation1B, animation2B;
 	float animation1C, animation2C;
 	float animation1D, animation2D;
-
 	MeshData uniqueErrts[UNIQUE_COUNT];
 	Entity* errts;
 
@@ -63,8 +62,6 @@ namespace sf
 	float speed;
 	float posY;
 	float cameraRadius;
-
-	BufferLayout vertexBufferLayout = BufferLayout({BufferComponent::VertexPosition});
 
 	void Game::Initialize(int argc, char** argv)
 	{
@@ -93,6 +90,11 @@ namespace sf
 		t_camera.position = { -15.0f, 15.0f, 5.0f };
 		t_camera.rotation = glm::quat(glm::vec3(-0.1f, -0.4f, 0.0f));
 
+		for (int i = 0; i < UNIQUE_COUNT; i++)
+		{
+			errt::seed = i;
+			errt::GenerateModel(uniqueErrts[i]);
+		}
 
 		uint32_t whiteMaterial, blackMaterial;
 		{
@@ -100,15 +102,9 @@ namespace sf
 			static glm::vec3 colorb(0.0, 0.0, 0.0);
 			Material materialTemplate("assets/shaders/default.vert", "assets/shaders/solidColor.frag");
 			materialTemplate.uniforms["color"] = { (uint32_t)DataType::vec3f32, &color };
-			whiteMaterial = Renderer::CreateMaterial(materialTemplate, vertexBufferLayout);
+			whiteMaterial = Renderer::CreateMaterial(materialTemplate, uniqueErrts[0].vertexBufferLayout);
 			materialTemplate.uniforms["color"] = { (uint32_t)DataType::vec3f32, &colorb };
-			blackMaterial = Renderer::CreateMaterial(materialTemplate, vertexBufferLayout);
-		}
-
-		for (int i = 0; i < UNIQUE_COUNT; i++)
-		{
-			errt::seed = i;
-			MeshProcessor::GenerateMeshWithFunction(uniqueErrts[i], errt::GenerateModel);
+			blackMaterial = Renderer::CreateMaterial(materialTemplate, uniqueErrts[0].vertexBufferLayout);
 		}
 
 		errts = new Entity[ERRT_COUNT];

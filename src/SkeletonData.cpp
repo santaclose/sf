@@ -12,7 +12,7 @@ uint32_t sf::SkeletonData::AddNodeSingle(uint32_t animationIndex, float speed)
 	m_nodes.back().single.animation = &m_animations[animationIndex];
 	m_nodes.back().single.speed = speed;
 	m_nodes.back().single.pose = new Transform[m_boneData.size()];
-	memcpy(m_nodes.back().single.pose, m_boneTransforms.data(), m_boneTransforms.size() * sizeof(Transform));
+	memcpy(m_nodes.back().single.pose, m_boneTransforms.data(), m_boneTransforms.size() * sizeof(Transform)); /* Not all data comes from animation samplers */
 	m_nodes.back().single.boneCount = m_boneData.size();
 	return m_nodes.size() - 1;
 }
@@ -34,7 +34,7 @@ uint32_t sf::SkeletonData::AddNodeBlendSpace1D(const std::vector<BlendSpacePoint
 		m_nodes.back().bs1d.points[i].pos = points[i].pos;
 		m_nodes.back().bs1d.points[i].speed = points[i].speed;
 		m_nodes.back().bs1d.points[i].pose = new Transform[m_boneData.size()];
-		memcpy(m_nodes.back().bs1d.points[i].pose, m_boneTransforms.data(), m_boneTransforms.size() * sizeof(Transform));
+		memcpy(m_nodes.back().bs1d.points[i].pose, m_boneTransforms.data(), m_boneTransforms.size() * sizeof(Transform)); /* Not all data comes from animation samplers */
 	}
 	m_nodes.back().bs1d.pos = pos;
 	m_nodes.back().bs1d.pose = new Transform[m_boneData.size()];
@@ -60,7 +60,7 @@ uint32_t sf::SkeletonData::AddNodeBlendSpace2D(const std::vector<BlendSpacePoint
 		m_nodes.back().bs2d.points[i].pos = points[i].pos;
 		m_nodes.back().bs2d.points[i].speed = points[i].speed;
 		m_nodes.back().bs2d.points[i].pose = new Transform[m_boneData.size()];
-		memcpy(m_nodes.back().bs2d.points[i].pose, m_boneTransforms.data(), m_boneTransforms.size() * sizeof(Transform));
+		memcpy(m_nodes.back().bs2d.points[i].pose, m_boneTransforms.data(), m_boneTransforms.size() * sizeof(Transform)); /* Not all data comes from animation samplers */
 	}
 	m_nodes.back().bs2d.pos = pos;
 	m_nodes.back().bs2d.pose = new Transform[m_boneData.size()];

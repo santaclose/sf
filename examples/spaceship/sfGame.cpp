@@ -21,7 +21,7 @@
 #include <Input.h>
 #include <Importer/GltfImporter.h>
 
-#include "errt.h"
+#include "../errt.hpp"
 
 #define SENSITIVITY 0.007
 
@@ -143,7 +143,7 @@ namespace sf
 			if (generatedMeshes[i].LoadFromFile(cahedMeshesPath))
 				continue;
 			errt::seed = i;
-			MeshProcessor::GenerateMeshWithFunction(generatedMeshes[i], errt::GenerateModel);
+			errt::GenerateModel(generatedMeshes[i]);
 			generatedMeshes[i].ChangeVertexBufferLayout(generatedMeshesVertexLayout);
 			VoxelVolumeData vv;
 			vv.BuildFromMesh(generatedMeshes[i], 0.01f);

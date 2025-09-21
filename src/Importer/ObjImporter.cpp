@@ -1,5 +1,6 @@
 #include "ObjImporter.h"
 
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <unordered_map>
@@ -166,6 +167,7 @@ void sf::ObjImporter::Destroy(int id)
 
 void sf::ObjImporter::GenerateMeshData(int id, MeshData& mesh)
 {
+	assert(mesh.pieces == nullptr && mesh.vertexBuffer == nullptr && mesh.indexBuffer == nullptr);
 	bool meshHasNormals = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexNormal) != nullptr;
 	bool meshHasUVs = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexUV) != nullptr;
 
@@ -186,13 +188,16 @@ void sf::ObjImporter::GenerateMeshData(int id, MeshData& mesh)
 	assert(id > -1 && id < meshes.size());
 	assert(meshes[id] != nullptr);
 
+	std::vector<uint32_t> indices;
+	std::vector<uint32_t> pieces;
+
 	// triangulate
 	std::vector<ObjVertex> triangulatedVtxSequence;
 
 	for (int fi = 0; fi < meshes[id]->faces.size(); fi++)
 	{
 		if (meshes[id]->pieces.find(fi) != meshes[id]->pieces.end())
-			mesh.pieces.push_back(triangulatedVtxSequence.size());
+			pieces.push_back(triangulatedVtxSequence.size());
 
 		const ObjFace& f = meshes[id]->faces[fi];
 		for (int i = 2; i < f.vertices.size(); i++)
@@ -216,11 +221,9 @@ void sf::ObjImporter::GenerateMeshData(int id, MeshData& mesh)
 			finalVertices.push_back(v);
 			uniqueVertices.insert({ v, finalVertices.size() - 1 });
 		}
-		mesh.indexVector.push_back(uniqueVertices[v]);
+		indices.push_back(uniqueVertices[v]);
 	}
 
-	if (mesh.vertexBuffer != nullptr)
-		free(mesh.vertexBuffer);
 	mesh.vertexBuffer = malloc(mesh.vertexBufferLayout.GetSize() * finalVertices.size());
 	for (int i = 0; i < finalVertices.size(); i++)
 	{
@@ -238,4 +241,22 @@ void sf::ObjImporter::GenerateMeshData(int id, MeshData& mesh)
 		}
 	}
 	mesh.vertexCount = finalVertices.size();
+	mesh.indexBuffer = new uint32_t[indices.size() + pieces.size()];
+	mesh.indexCount = indices.size();
+	mesh.pieces = mesh.indexBuffer + indices.size();
+	mesh.pieceCount = pieces.size();
+	memcpy(mesh.indexBuffer, indices.data(), indices.size() * sizeof(uint32_t));
+	memcpy(mesh.pieces, pieces.data(), pieces.size() * sizeof(uint32_t));
+}
+
+void sf::ObjImporter::FreeMeshData(MeshData& mesh)
+{
+	free(mesh.vertexBuffer);
+	delete[] mesh.indexBuffer;
+	mesh.vertexBuffer = nullptr;
+	mesh.indexBuffer = nullptr;
+	mesh.pieces = nullptr;
+	mesh.vertexCount = 0;
+	mesh.indexCount = 0;
+	mesh.pieceCount = 0;
 }

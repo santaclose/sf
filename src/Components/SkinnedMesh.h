@@ -16,13 +16,13 @@ namespace sf {
 		{
 			this->meshData = meshData;
 			this->skeletonData = skeletonData;
-			this->materials.resize(meshData->pieces.size(), ~0U);
+			this->materials.resize(meshData->pieceCount, ~0U);
 		}
 		inline SkinnedMesh(const MeshData* meshData, uint32_t material, const SkeletonData* skeletonData)
 		{
 			this->meshData = meshData;
 			this->skeletonData = skeletonData;
-			this->materials.resize(meshData->pieces.size(), material);
+			this->materials.resize(meshData->pieceCount, material);
 		}
 	};
 }

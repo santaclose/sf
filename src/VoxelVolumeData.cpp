@@ -47,11 +47,11 @@ void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, c
 
 	// voxelize
 	std::unordered_map<uint32_t, uint32_t> voxelCollisions;
-	for (int indexI = 0; indexI < mesh.indexVector.size(); indexI += 3)
+	for (int indexI = 0; indexI < mesh.indexCount; indexI += 3)
 	{
-		uint32_t indexA = mesh.indexVector[indexI + 0];
-		uint32_t indexB = mesh.indexVector[indexI + 1];
-		uint32_t indexC = mesh.indexVector[indexI + 2];
+		uint32_t indexA = mesh.indexBuffer[indexI + 0];
+		uint32_t indexB = mesh.indexBuffer[indexI + 1];
+		uint32_t indexC = mesh.indexBuffer[indexI + 2];
 
 		glm::vec3* posPtrA = mesh.AccessVertexComponent<glm::vec3>(BufferComponent::VertexPosition, indexA);
 		glm::vec3* posPtrB = mesh.AccessVertexComponent<glm::vec3>(BufferComponent::VertexPosition, indexB);

@@ -63,6 +63,7 @@ void sf::GltfImporter::Destroy(int id)
 // https://github.com/SaschaWillems/Vulkan/blob/master/examples/gltfloading/gltfloading.cpp
 void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 {
+	assert(mesh.pieces == nullptr && mesh.vertexBuffer == nullptr && mesh.indexBuffer == nullptr);
 	bool meshHasNormals = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexNormal) != nullptr;
 	bool meshHasUVs = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexUV) != nullptr;
 	bool meshHasBoneIndices = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexBoneIndices) != nullptr;
@@ -87,9 +88,8 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 
 	tinygltf::Model& model = *(models[id]);
 
-	std::vector<glm::vec3> vertex_positions;
-	std::vector<glm::vec3> vertex_normals;
-	std::vector<glm::vec2> vertex_uv;
+	std::vector<uint32_t> indices;
+	std::vector<uint32_t> pieces;
 
 	for (const tinygltf::Mesh& gltfMesh : model.meshes)
 	{
@@ -201,11 +201,11 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 			{
 				if (prim.indices < 0)
 				{
-					int startIndex = mesh.indexVector.size();
-					mesh.pieces.push_back(startIndex);
-					mesh.indexVector.resize(startIndex + primitiveVertexCount);
-					for (int i = startIndex; i < mesh.indexVector.size(); i++)
-						mesh.indexVector[i] = vertexStart + (i - startIndex);
+					uint32_t startIndex = indices.size();
+					pieces.push_back(startIndex);
+					indices.resize(startIndex + primitiveVertexCount);
+					for (uint32_t i = startIndex; i < indices.size(); i++)
+						indices[i] = vertexStart + (i - startIndex);
 				}
 				else
 				{
@@ -222,9 +222,9 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 					{
 						uint32_t* buf = new uint32_t[accessor.count];
 						memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint32_t));
-						mesh.pieces.push_back(mesh.indexVector.size());
+						pieces.push_back(indices.size());
 						for (size_t index = 0; index < accessor.count; index++)
-							mesh.indexVector.push_back(buf[index] + vertexStart);
+							indices.push_back(buf[index] + vertexStart);
 						delete[] buf;
 						break;
 					}
@@ -232,9 +232,9 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 					{
 						uint16_t* buf = new uint16_t[accessor.count];
 						memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint16_t));
-						mesh.pieces.push_back(mesh.indexVector.size());
+						pieces.push_back(indices.size());
 						for (size_t index = 0; index < accessor.count; index++)
-							mesh.indexVector.push_back(buf[index] + vertexStart);
+							indices.push_back(buf[index] + vertexStart);
 						delete[] buf;
 						break;
 					}
@@ -242,9 +242,9 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 					{
 						uint8_t* buf = new uint8_t[accessor.count];
 						memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint8_t));
-						mesh.pieces.push_back(mesh.indexVector.size());
+						pieces.push_back(indices.size());
 						for (size_t index = 0; index < accessor.count; index++)
-							mesh.indexVector.push_back(buf[index] + vertexStart);
+							indices.push_back(buf[index] + vertexStart);
 						delete[] buf;
 						break;
 					}
@@ -256,11 +256,29 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 			}
 		}
 	}
+	mesh.indexBuffer = new uint32_t[indices.size() + pieces.size()];
+	mesh.indexCount = indices.size();
+	mesh.pieces = mesh.indexBuffer + indices.size();
+	mesh.pieceCount = pieces.size();
+	memcpy(mesh.indexBuffer, indices.data(), indices.size() * sizeof(uint32_t));
+	memcpy(mesh.pieces, pieces.data(), pieces.size() * sizeof(uint32_t));
+}
+
+void sf::GltfImporter::FreeMeshData(MeshData& mesh)
+{
+	free(mesh.vertexBuffer);
+	delete[] mesh.indexBuffer;
+	mesh.vertexBuffer = nullptr;
+	mesh.indexBuffer = nullptr;
+	mesh.pieces = nullptr;
+	mesh.vertexCount = 0;
+	mesh.indexCount = 0;
+	mesh.pieceCount = 0;
 }
 
 void sf::GltfImporter::GenerateBitmap(int id, int index, Bitmap& bitmap)
 {
-	assert(id > -1 && id < models.size());
+	assert(id > -1 && id < models.size() && bitmap.buffer == nullptr);
 
 	tinygltf::Image& image = models[id]->images[models[id]->textures[index].source];
 
@@ -299,9 +317,17 @@ void sf::GltfImporter::GenerateBitmap(int id, int index, Bitmap& bitmap)
 	bitmap.height = image.height;
 
 	uint32_t dataTypeSize = GetDataTypeSize(dataType);
-	free(bitmap.buffer);
 	bitmap.buffer = malloc(dataTypeSize * (bitmap.width) * (bitmap.height) * (bitmap.channelCount));
 	memcpy(bitmap.buffer, &image.image.at(0), dataTypeSize * bitmap.width * bitmap.height * bitmap.channelCount);
+}
+
+void sf::GltfImporter::FreeBitmap(Bitmap& bitmap)
+{
+	free(bitmap.buffer);
+	bitmap.buffer = nullptr;
+	bitmap.channelCount = 0;
+	bitmap.width = 0;
+	bitmap.height = 0;
 }
 
 namespace sf::GltfImporter
@@ -342,9 +368,7 @@ namespace sf::GltfImporter
 
 void sf::GltfImporter::GenerateSkeleton(int id, SkeletonData& skeleton, int index)
 {
-	skeleton.m_boneData.clear();
-	skeleton.m_boneTransforms.clear();
-
+	assert(skeleton.m_boneTransforms.size() == 0 && skeleton.m_boneData.size() == 0 && skeleton.m_skinningMatrices.size() == 0 && skeleton.m_animations.size() == 0 && skeleton.m_nodes.size() == 0);
 	tinygltf::Model& model = *(models[id]);
 
 	// generate skeleton
@@ -368,7 +392,6 @@ void sf::GltfImporter::GenerateSkeleton(int id, SkeletonData& skeleton, int inde
 	skeleton.m_skinningMatrices.resize(skeleton.m_boneData.size());
 
 	// load animations
-	skeleton.m_animations.clear();
 	for (tinygltf::Animation& anim : model.animations)
 	{
 		skeleton.m_animations.emplace_back();
@@ -471,4 +494,13 @@ void sf::GltfImporter::GenerateSkeleton(int id, SkeletonData& skeleton, int inde
 	}
 
 	std::cout << "[GltfImporter] Imported " << skeleton.m_animations.size() << " animations\n";
+}
+
+void sf::GltfImporter::FreeSkeleton(SkeletonData& skeleton)
+{
+	skeleton.m_boneTransforms.clear();
+	skeleton.m_boneData.clear();
+	skeleton.m_skinningMatrices.clear();
+	skeleton.m_animations.clear();
+	skeleton.m_nodes.clear();
 }

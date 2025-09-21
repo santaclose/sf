@@ -8,13 +8,14 @@ namespace sf {
 
 	struct MeshData
 	{
-		void* vertexBuffer = nullptr;
 		BufferLayout vertexBufferLayout;
 
+		void* vertexBuffer = nullptr;
 		uint32_t vertexCount = 0;
-
-		std::vector<uint32_t> indexVector;
-		std::vector<uint32_t> pieces;
+		uint32_t* indexBuffer = nullptr;
+		uint32_t indexCount = 0;
+		uint32_t* pieces = nullptr;
+		uint32_t pieceCount = 0;
 
 		MeshData() = default;
 		inline MeshData(const BufferLayout& newLayout)

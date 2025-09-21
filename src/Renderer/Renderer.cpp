@@ -146,7 +146,7 @@ namespace sf::Renderer
 		glBufferData(GL_ARRAY_BUFFER, mesh->vertexCount * mesh->vertexBufferLayout.GetSize(), mesh->vertexBuffer, GL_STATIC_DRAW);
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshGpuData[mesh].gl_indexBuffer);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->indexVector.size() * sizeof(uint32_t), &mesh->indexVector[0], GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->indexCount * sizeof(uint32_t), mesh->indexBuffer, GL_STATIC_DRAW);
 	}
 
 	void CreateMeshGpuData(const sf::MeshData* mesh)
@@ -164,7 +164,7 @@ namespace sf::Renderer
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshGpuData[mesh].gl_indexBuffer);
 		// update indices to draw
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->indexVector.size() * sizeof(uint32_t), &mesh->indexVector[0], GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->indexCount * sizeof(uint32_t), mesh->indexBuffer, GL_STATIC_DRAW);
 
 		const std::vector<BufferComponentInfo>& components = mesh->vertexBufferLayout.GetComponentInfos();
 		for (int i = 0; i < components.size(); i++)
@@ -504,7 +504,7 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 	glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
 
-	for (uint32_t i = 0; i < mesh.meshData->pieces.size(); i++)
+	for (uint32_t i = 0; i < mesh.meshData->pieceCount; i++)
 	{
 		GlMaterial* materialToUse = materials[mesh.materials[i]];
 
@@ -512,7 +512,7 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 
 		uint32_t drawEnd, drawStart;
 		drawStart = mesh.meshData->pieces[i];
-		drawEnd = mesh.meshData->pieces.size() > i + 1 ? mesh.meshData->pieces[i + 1] : mesh.meshData->indexVector.size();
+		drawEnd = mesh.meshData->pieceCount > i + 1 ? mesh.meshData->pieces[i + 1] : mesh.meshData->indexCount;
 
 		glBindVertexArray(meshGpuData[mesh.meshData].gl_vao);
 		glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
@@ -547,7 +547,7 @@ void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, skeletonSsbos[mesh.skeletonData]);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, mesh.skeletonData->m_skinningMatrices.size() * sizeof(glm::mat4), &(mesh.skeletonData->m_skinningMatrices[0][0][0]), GL_DYNAMIC_DRAW);
 
-	for (uint32_t i = 0; i < mesh.meshData->pieces.size(); i++)
+	for (uint32_t i = 0; i < mesh.meshData->pieceCount; i++)
 	{
 		GlMaterial* materialToUse = materials[mesh.materials[i]];
 
@@ -556,7 +556,7 @@ void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 
 		uint32_t drawEnd, drawStart;
 		drawStart = mesh.meshData->pieces[i];
-		drawEnd = mesh.meshData->pieces.size() > i + 1 ? mesh.meshData->pieces[i + 1] : mesh.meshData->indexVector.size();
+		drawEnd = mesh.meshData->pieceCount > i + 1 ? mesh.meshData->pieces[i + 1] : mesh.meshData->indexCount;
 
 		glBindVertexArray(meshGpuData[mesh.meshData].gl_vao);
 		glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
@@ -666,7 +666,7 @@ void sf::Renderer::DrawParticleSystem(ParticleSystem& particleSystem, Transform&
 		glBindVertexArray(meshGpuData[particleSystem.meshData].gl_vao);
 		glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, particleGpuData.gl_ssbo);
-		glDrawElementsInstanced(GL_TRIANGLES, particleSystem.meshData->indexVector.size(), GL_UNSIGNED_INT, (void*)0, particleSystem.particleCount);
+		glDrawElementsInstanced(GL_TRIANGLES, particleSystem.meshData->indexCount, GL_UNSIGNED_INT, (void*)0, particleSystem.particleCount);
 	}
 
 	particleSystemData[&particleSystem].emissionTimer -= deltaTime;
@@ -705,7 +705,7 @@ void sf::Renderer::DrawVoxelVolume(VoxelVolume& voxelVolume, Transform& transfor
 	glBindVertexArray(meshGpuData[&Defaults::MeshDataCube()].gl_vao);
 	glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, voxelVolumeSsbos[voxelVolume.voxelVolumeData]);
-	glDrawElementsInstanced(GL_TRIANGLES, Defaults::MeshDataCube().indexVector.size(), GL_UNSIGNED_INT, (void*)0, voxelVolume.voxelVolumeData->GetVoxelCount());
+	glDrawElementsInstanced(GL_TRIANGLES, Defaults::MeshDataCube().indexCount, GL_UNSIGNED_INT, (void*)0, voxelVolume.voxelVolumeData->GetVoxelCount());
 }
 
 void sf::Renderer::DrawSprite(Sprite& sprite, ScreenCoordinates& screenCoordinates)

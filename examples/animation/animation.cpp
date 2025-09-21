@@ -82,6 +82,7 @@ namespace sf
 			GltfImporter::GenerateMeshData(gltfid, meshes[0]);
 			MeshProcessor::ComputeNormals(meshes[0]);
 			SkinnedMesh& objectMesh = galleryObjects.back().AddComponent<SkinnedMesh>(&(meshes[0]), meshMaterial, &(skeletons[0]));
+			skeletons[0].SetAnimate(true);
 		}
 		{
 			galleryObjects.push_back(scene.CreateEntity());
@@ -95,6 +96,7 @@ namespace sf
 			meshes[1] = MeshData(vertexLayout);
 			GltfImporter::GenerateMeshData(gltfid, meshes[1]);
 			SkinnedMesh& objectMesh = galleryObjects.back().AddComponent<SkinnedMesh>(&(meshes[1]), meshMaterial, &(skeletons[1]));
+			skeletons[1].SetAnimate(true);
 		}
 
 		for (int i = 0; i < galleryObjects.size(); i++)

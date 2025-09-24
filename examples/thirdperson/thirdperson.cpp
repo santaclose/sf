@@ -8,7 +8,6 @@
 #include <MeshProcessor.h>
 #include <Math.hpp>
 #include <Input.h>
-#include <GameInitializationData.h>
 #include <FileUtils.h>
 
 #include <Renderer/Renderer.h>
@@ -37,8 +36,6 @@
 
 namespace sf
 {
-	std::string Game::ConfigFilePath = "examples/thirdperson/config.json";
-
 	Scene scene;
 	Entity gimbal, cameraObject;
 	Entity shanyung, fox;
@@ -69,6 +66,14 @@ namespace sf
 
 	Entity floorPlanes[9];
 #define FLOOR_PLANE_SCALE 19.0f
+
+	Game::InitData Game::GetInitData()
+	{
+		InitData id;
+		id.windowCursorEnabled = false;
+		id.toolBarEnabled = false;
+		return id;
+	}
 
 	void Game::Initialize(int argc, char** argv)
 	{
@@ -187,8 +192,18 @@ namespace sf
 			co_t.position += co_t.Forward() * ((CAMERA_COLLISION_Y - co_t.position.y) / co_t.Forward().y);
 	}
 
+	void SwitchCharacter()
+	{
+		bool f = fox.IsEnabled();
+		fox.SetEnabled(!f);
+		shanyung.SetEnabled(f);
+	}
+
 	void Game::OnUpdate(float deltaTime, float time)
 	{
+		if (Input::KeyDown(Input::KeyCode::Left) || Input::KeyDown(Input::KeyCode::Right))
+			SwitchCharacter();
+
 		if (shanyung.IsEnabled())
 		{
 			glm::vec2 targetBlendSpacePos = { 0.0f, 0.0f };
@@ -247,7 +262,6 @@ namespace sf
 				e_t.rotation = glm::slerp(e_t.rotation, glm::quatLookAt(camForwardFlat * -inputVector.y + camRightFlat * -inputVector.x, glm::vec3(0.0f, 1.0f, 0.0f)), deltaTime * 5.0f);
 			e_t.position += -e_t.Forward() * targetSpeed * deltaTime;
 
-
 			UpdateCamera(deltaTime, fox, GIMBAL_OFFSET_FOX);
 		}
 	}
@@ -258,8 +272,10 @@ namespace sf
 		{
 			if (ImGui::BeginMenu("Character"))
 			{
-				if (ImGui::MenuItem("Shanyung", nullptr, shanyung.IsEnabled())) { bool f = fox.IsEnabled(); shanyung.SetEnabled(f); fox.SetEnabled(!f); }
-				if (ImGui::MenuItem("Fox", nullptr, fox.IsEnabled())) { bool f = fox.IsEnabled(); shanyung.SetEnabled(f); fox.SetEnabled(!f); }
+				if (ImGui::MenuItem("Shanyung", "Right/Left arrow", shanyung.IsEnabled()))
+					SwitchCharacter();
+				if (ImGui::MenuItem("Fox", "Right/Left arrow", fox.IsEnabled()))
+					SwitchCharacter();
 				ImGui::EndMenu();
 			}
 			ImGui::EndMainMenuBar();

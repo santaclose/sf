@@ -8,7 +8,6 @@
 #include <MeshProcessor.h>
 #include <Math.hpp>
 #include <Input.h>
-#include <GameInitializationData.h>
 #include <FileUtils.h>
 
 #include <Renderer/Renderer.h>
@@ -30,8 +29,6 @@
 
 namespace sf
 {
-	std::string Game::ConfigFilePath = "examples/animation/config.json";
-
 	Scene scene;
 	std::vector<Entity> galleryObjects;
 
@@ -52,6 +49,11 @@ namespace sf
 		BufferComponent::VertexBoneIndices,
 		BufferComponent::VertexBoneWeights
 	});
+
+	Game::InitData Game::GetInitData()
+	{
+		return InitData();
+	}
 
 	void Game::Initialize(int argc, char** argv)
 	{

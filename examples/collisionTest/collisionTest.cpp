@@ -32,8 +32,6 @@
 
 namespace sf
 {
-	std::string Game::ConfigFilePath = "examples/pbr/config.json";
-
 	enum class TestCase
 	{
 		PointLineClosestPoint,
@@ -427,6 +425,11 @@ namespace sf
 				break;
 			}
 		}
+	}
+
+	Game::InitData Game::GetInitData()
+	{
+		return InitData();
 	}
 
 	void Game::Initialize(int argc, char** argv)

@@ -27,8 +27,6 @@
 
 namespace sf
 {
-	std::string Game::ConfigFilePath = "examples/pbr/config.json";
-
 	Scene scene;
 	std::vector<Entity> galleryObjects;
 
@@ -49,6 +47,11 @@ namespace sf
 	});
 
 	int selectedModel;
+
+	Game::InitData Game::GetInitData()
+	{
+		return InitData();
+	}
 
 	void Game::Initialize(int argc, char** argv)
 	{

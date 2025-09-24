@@ -6,7 +6,6 @@
 #include <Math.hpp>
 #include <Random.h>
 #include <Input.h>
-#include <GameInitializationData.h>
 
 #include <Components/Transform.h>
 #include <Components/Mesh.h>
@@ -37,8 +36,6 @@
 
 namespace sf
 {
-	std::string Game::ConfigFilePath = "examples/ttr/config.json";
-
 	Scene scene;
 	Entity e_camera;
 
@@ -62,6 +59,14 @@ namespace sf
 	float speed;
 	float posY;
 	float cameraRadius;
+
+	Game::InitData Game::GetInitData()
+	{
+		InitData id;
+		id.toolBarEnabled = false;
+		id.msaaCount = 8;
+		return id;
+	}
 
 	void Game::Initialize(int argc, char** argv)
 	{

@@ -8,7 +8,6 @@
 #include <Random.h>
 #include <Input.h>
 #include <MeshProcessor.h>
-#include <GameInitializationData.h>
 #include <FileUtils.h>
 
 #include <Renderer/Renderer.h>
@@ -30,8 +29,6 @@
 
 namespace sf
 {
-	std::string Game::ConfigFilePath = "examples/vertexAo/config.json";
-
 	Scene scene;
 	std::vector<Entity> galleryObjects;
 
@@ -48,6 +45,11 @@ namespace sf
 		BufferComponent::VertexPosition,
 		BufferComponent::VertexAO
 	});
+
+	Game::InitData Game::GetInitData()
+	{
+		return InitData();
+	}
 
 	void Game::Initialize(int argc, char** argv)
 	{

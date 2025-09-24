@@ -7,7 +7,6 @@
 #include <Random.h>
 #include <Input.h>
 #include <Defaults.h>
-#include <GameInitializationData.h>
 
 #include <Renderer/Renderer.h>
 
@@ -22,13 +21,9 @@
 
 #include "../Viewer.hpp"
 
-
 namespace sf
 {
-	std::string Game::ConfigFilePath = "examples/animEditor/config.json";
-
 	Scene scene;
-
 	Entity modelEntity;
 	SkeletonData* modelSkeleton;
 	MeshData* modelMesh;
@@ -95,6 +90,11 @@ namespace sf
 		for (int i = 0; i < modelSkeleton->m_animations.size(); i++)
 			animNames[i] = modelSkeleton->m_animations[i].name;
 
+	}
+
+	Game::InitData Game::GetInitData()
+	{
+		return InitData();
 	}
 
 	void Game::Initialize(int argc, char** argv)

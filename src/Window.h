@@ -5,7 +5,7 @@
 #include <vector>
 #include <unordered_map>
 
-#include <GameInitializationData.h>
+#include <Game.h>
 
 #ifdef SF_PLATFORM_WINDOWS
 struct HWND__;
@@ -30,7 +30,7 @@ namespace sf
 {
 	struct Window
 	{
-		Window(const GameInitializationData& gameInitData);
+		Window(const Game::InitData& gameInitData);
 		~Window();
 		void PollEvents();
 		void SwapBuffers();

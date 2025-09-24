@@ -31,8 +31,6 @@
 
 namespace sf
 {
-	std::string Game::ConfigFilePath = "examples/spaceship/config.json";
-
 	Scene scene;
 	Entity e_ship, e_mainCamera, e_lookBackCamera;
 
@@ -84,6 +82,15 @@ namespace sf
 			initialTransformCounter++;
 			return outTransform;
 		}
+	}
+
+	Game::InitData Game::GetInitData()
+	{
+		InitData id;
+		id.windowCursorEnabled = false;
+		id.toolBarEnabled = false;
+		id.msaaCount = 8;
+		return id;
 	}
 
 	void Game::Initialize(int argc, char** argv)

@@ -26,7 +26,7 @@
 
 std::unordered_map<GLFWwindow*, sf::Window*> sf::Window::windowMappingForCallbacks;
 
-sf::Window::Window(const GameInitializationData& gameInitData)
+sf::Window::Window(const Game::InitData& gameInitData)
 {
 	if (!glfwInit())
 	{

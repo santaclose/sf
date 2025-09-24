@@ -7,7 +7,6 @@
 #include <Random.h>
 #include <Input.h>
 #include <Defaults.h>
-#include <GameInitializationData.h>
 
 #include <Renderer/Renderer.h>
 
@@ -29,8 +28,6 @@
 
 namespace sf
 {
-	std::string Game::ConfigFilePath = "examples/voxels/config.json";
-
 	Scene scene;
 	std::vector<Entity> galleryObjects;
 
@@ -48,6 +45,11 @@ namespace sf
 
 	uint32_t meshMaterial;
 	uint32_t voxelVolumeMaterial;
+
+	Game::InitData Game::GetInitData()
+	{
+		return InitData();
+	}
 
 	void Game::Initialize(int argc, char** argv)
 	{

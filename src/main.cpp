@@ -8,7 +8,6 @@
 #include <Game.h>
 #include <Defaults.h>
 #include <Renderer/Renderer.h>
-#include <GameInitializationData.h>
 
 #include <Scene/Scene.h>
 #include <Scene/Entity.h>
@@ -49,12 +48,12 @@ int main(int argc, char** argv)
 		std::cout << "Adjusting working directory\n";
 	}
 
-	sf::GameInitializationData gameInitData(sf::Game::ConfigFilePath);
-	sf::Window window = sf::Window(gameInitData);
+	sf::Game::InitData initData = sf::Game::GetInitData();
+	sf::Window window = sf::Window(initData);
 
 	sf::ImGuiController::Initialize(window);
 
-	if (!sf::Renderer::Initialize(window, gameInitData.clearColor))
+	if (!sf::Renderer::Initialize(window, initData.clearColor))
 		std::cout << "Failed to initialize renderer\n";
 
 	sf::Entity::SetOnComponentAddCallback(sf::OnComponentAddedToEntity);

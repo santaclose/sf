@@ -8,7 +8,6 @@
 #include <Random.h>
 #include <Input.h>
 #include <MeshProcessor.h>
-#include <GameInitializationData.h>
 #include <FileUtils.h>
 
 #include <Renderer/Renderer.h>
@@ -22,8 +21,6 @@
 
 namespace sf
 {
-	std::string Game::ConfigFilePath = "examples/ui/config.json";
-
 	Scene scene;
 	Entity textA, textB, textC, spriteTest;
 
@@ -45,6 +42,13 @@ namespace sf
 				system(commandString.c_str());
 			}
 		}
+	}
+
+	Game::InitData Game::GetInitData()
+	{
+		InitData id;
+		id.clearColor = { 0.0f, 0.0f, 0.0f };
+		return id;
 	}
 
 	void Game::Initialize(int argc, char** argv)

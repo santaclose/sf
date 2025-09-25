@@ -1,5 +1,6 @@
 #include "Bitmap.h"
 
+#include <iostream>
 #include <fstream>
 #include <cstring>
 #include <assert.h>
@@ -44,6 +45,11 @@ sf::Bitmap::Bitmap(const std::string& filePath, bool flipVertically, bool limitR
 	{
 		stb_buffer = stbi_load(filePath.c_str(), &x, &y, &c, 0);
 		this->dataType = DataType::u8;
+	}
+	if (!stb_buffer)
+	{
+		std::cout << "[Bitmap] Failed to load file: " << filePath << std::endl;
+		return;
 	}
 
 	this->width = x;

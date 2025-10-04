@@ -16,7 +16,10 @@ void sf::Animation::ComputeNodeWeights(sf::Animation::Node& node)
 		assert(pointCount > 1);
 		if (outWeights == nullptr)
 			outWeights = (float*)alloca(sizeof(float) * pointCount);
-		assert(node.bs1d.pos >= node.bs1d.points[0].pos && node.bs1d.pos <= node.bs1d.points[pointCount - 1].pos);
+		if (node.bs1d.pos < node.bs1d.points[0].pos)
+			node.bs1d.pos = node.bs1d.points[0].pos;
+		else if (node.bs1d.pos > node.bs1d.points[pointCount - 1].pos)
+			node.bs1d.pos = node.bs1d.points[pointCount - 1].pos;
 		for (int i = 0; i < pointCount; i++)
 		{
 			assert(i == 0 || node.bs1d.points[i].pos > node.bs1d.points[i - 1].pos);

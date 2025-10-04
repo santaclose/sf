@@ -330,18 +330,15 @@ int sf::GlShader::GetUniformLocation(const std::string& name)
 	return location;
 }
 
-void sf::GlShader::AssignTextureNumberToUniform(const std::string& name)
+int sf::GlShader::GetOrAssignTextureIndex(const std::string& name)
 {
-	if (m_uniformCache[name].textureIndex == -1)
+	if (m_uniformCache[name].textureIndex != -1)
 	{
-		m_uniformCache[name].textureIndex = m_textureIndexCounter;
-		m_textureIndexCounter++;
+		return m_uniformCache[name].textureIndex;
 	}
-}
-
-int sf::GlShader::GetTextureIndex(const std::string& name)
-{
-	return m_uniformCache[name].textureIndex;
+	m_uniformCache[name].textureIndex = m_textureIndexCounter;
+	m_textureIndexCounter++;
+	return m_textureIndexCounter - 1;
 }
 
 void sf::GlShader::SetUniformMatrix4fv(const std::string& name, const float* pointer, uint32_t number)
@@ -364,11 +361,14 @@ void sf::GlShader::SetUniform4fv(const std::string& name, const float* pointer, 
 {
 	glUniform4fv(GetUniformLocation(name), number, pointer);
 }
-void sf::GlShader::SetUniform1i(const std::string& name, int value)
+void sf::GlShader::SetUniform1u(const std::string& name, uint32_t value)
+{
+	glUniform1ui(GetUniformLocation(name), value);
+}
+void sf::GlShader::SetUniform1i(const std::string& name, int32_t value)
 {
 	glUniform1i(GetUniformLocation(name), value);
 }
-
 void sf::GlShader::SetUniform1f(const std::string& name, float value)
 {
 	glUniform1f(GetUniformLocation(name), value);

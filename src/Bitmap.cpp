@@ -4,10 +4,12 @@
 #include <fstream>
 #include <cstring>
 #include <assert.h>
+#include <filesystem>
+#include <glm/glm.hpp>
 #include <stb_image.h>
 #include <stb_image_write.h>
 
-sf::Bitmap::Bitmap(DataType dataType, uint8_t channelCount, uint32_t width, uint32_t height, const void* pixelValue)
+void sf::Bitmap::CreateSolid(DataType dataType, uint8_t channelCount, uint32_t width, uint32_t height, const void* pixelValue)
 {
 	uint32_t dataTypeSize = GetDataTypeSize(dataType);
 
@@ -27,7 +29,7 @@ sf::Bitmap::Bitmap(DataType dataType, uint8_t channelCount, uint32_t width, uint
 	}
 }
 
-sf::Bitmap::Bitmap(const std::string& filePath, bool flipVertically, bool limitRangeTo16bitFloat)
+void sf::Bitmap::CreateFromFile(const std::string& filePath, bool flipVertically, bool limitRangeTo16bitFloat)
 {
 	assert(GetDataTypeSize(DataType::f32) == sizeof(float));
 	assert(GetDataTypeSize(DataType::u8) == sizeof(stbi_uc));

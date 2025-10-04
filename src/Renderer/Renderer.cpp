@@ -114,9 +114,8 @@ namespace sf::Renderer
 
 	std::unordered_map<const sf::VoxelVolumeData*, uint32_t> voxelVolumeSsbos;
 
-	std::unordered_map<uint32_t, const BufferLayout*> particleBufferLayouts;
+	std::unordered_map<const Material*, std::unordered_map<const BufferLayout*, GlMaterial*>> materials;
 
-	std::vector<GlMaterial*> materials;
 	struct EnvironmentData
 	{
 		GlTexture envTexture;
@@ -143,7 +142,7 @@ namespace sf::Renderer
 	void TransferVertexData(const sf::MeshData* mesh)
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, meshGpuData[mesh].gl_vertexBuffer);
-		glBufferData(GL_ARRAY_BUFFER, mesh->vertexCount * mesh->vertexBufferLayout.GetSize(), mesh->vertexBuffer, GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, mesh->vertexCount * mesh->vertexBufferLayout->GetSize(), mesh->vertexBuffer, GL_STATIC_DRAW);
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshGpuData[mesh].gl_indexBuffer);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->indexCount * sizeof(uint32_t), mesh->indexBuffer, GL_STATIC_DRAW);
@@ -160,35 +159,35 @@ namespace sf::Renderer
 		glBindBuffer(GL_ARRAY_BUFFER, meshGpuData[mesh].gl_vertexBuffer);
 
 		// update vertices
-		glBufferData(GL_ARRAY_BUFFER, mesh->vertexCount * mesh->vertexBufferLayout.GetSize(), mesh->vertexBuffer, GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, mesh->vertexCount * mesh->vertexBufferLayout->GetSize(), mesh->vertexBuffer, GL_STATIC_DRAW);
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshGpuData[mesh].gl_indexBuffer);
 		// update indices to draw
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->indexCount * sizeof(uint32_t), mesh->indexBuffer, GL_STATIC_DRAW);
 
-		const std::vector<BufferComponentInfo>& components = mesh->vertexBufferLayout.GetComponentInfos();
+		const std::vector<BufferComponentInfo>& components = mesh->vertexBufferLayout->GetComponentInfos();
 		for (int i = 0; i < components.size(); i++)
 		{
 			glEnableVertexAttribArray(i);
 			switch (components[i].dataType)
 			{
 				case DataType::f32:
-					glVertexAttribPointer(i, 1, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(uint64_t)components[i].byteOffset);
+					glVertexAttribPointer(i, 1, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout->GetSize(), (void*)(uint64_t)components[i].byteOffset);
 					break;
 				case DataType::vec2f32:
-					glVertexAttribPointer(i, 2, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(uint64_t)components[i].byteOffset);
+					glVertexAttribPointer(i, 2, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout->GetSize(), (void*)(uint64_t)components[i].byteOffset);
 					break;
 				case DataType::vec3f32:
-					glVertexAttribPointer(i, 3, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(uint64_t)components[i].byteOffset);
+					glVertexAttribPointer(i, 3, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout->GetSize(), (void*)(uint64_t)components[i].byteOffset);
 					break;
 				case DataType::vec4f32:
-					glVertexAttribPointer(i, 4, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(uint64_t)components[i].byteOffset);
+					glVertexAttribPointer(i, 4, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout->GetSize(), (void*)(uint64_t)components[i].byteOffset);
 					break;
 				case DataType::vec4u8:
-					glVertexAttribPointer(i, 4, GL_UNSIGNED_BYTE, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(uint64_t)components[i].byteOffset);
+					glVertexAttribPointer(i, 4, GL_UNSIGNED_BYTE, GL_FALSE, mesh->vertexBufferLayout->GetSize(), (void*)(uint64_t)components[i].byteOffset);
 					break;
 				case DataType::vec4u16:
-					glVertexAttribPointer(i, 4, GL_UNSIGNED_SHORT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(uint64_t)components[i].byteOffset);
+					glVertexAttribPointer(i, 4, GL_UNSIGNED_SHORT, GL_FALSE, mesh->vertexBufferLayout->GetSize(), (void*)(uint64_t)components[i].byteOffset);
 					break;
 				default:
 					std::cout << "[Renderer] Vertex attribute skipped" << std::endl;
@@ -266,6 +265,13 @@ namespace sf::Renderer
 		glGenBuffers(1, &(fontPathAndStringToTextData[fontPathHash].at(stringHash).gl_ubo_layoutData));
 		glBindBuffer(GL_UNIFORM_BUFFER, fontPathAndStringToTextData[fontPathHash].at(stringHash).gl_ubo_layoutData);
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(SebText::LayoutSettings), &textLayoutSettings, GL_DYNAMIC_DRAW);
+	}
+
+	void CreateMaterial(const Material& material, const BufferLayout& vertexBufferLayout)
+	{
+		GlMaterial* newMaterial = new GlMaterial();
+		newMaterial->Create(&material, vertexBufferLayout, material.voxelBufferLayout, material.particleBufferLayout);
+		materials[&material][&vertexBufferLayout] = newMaterial;
 	}
 
 #ifdef SF_DEBUG
@@ -460,16 +466,6 @@ sf::Entity sf::Renderer::GetActiveCameraEntity()
 	return activeCameraEntity;
 }
 
-uint32_t sf::Renderer::CreateMaterial(const Material& material, const BufferLayout& vertexBufferLayout, const BufferLayout* voxelBufferLayout, const BufferLayout* particleBufferLayout)
-{
-	GlMaterial* newMaterial = new GlMaterial();
-	newMaterial->Create(material, rendererUniformVector, vertexBufferLayout, voxelBufferLayout, particleBufferLayout);
-	materials.push_back(newMaterial);
-	uint32_t newId = materials.size() - 1;
-	particleBufferLayouts[newId] = particleBufferLayout;
-	return newId;
-}
-
 void sf::Renderer::SetEnvironment(const std::string& hdrFilePath, DataType hdrDataType)
 {
 	std::cout << "[Renderer] Loading environment: " << hdrFilePath << std::endl;
@@ -506,9 +502,11 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 
 	for (uint32_t i = 0; i < mesh.meshData->pieceCount; i++)
 	{
-		GlMaterial* materialToUse = materials[mesh.materials[i]];
+		if (materials.find(mesh.materials[i]) == materials.end() || materials[mesh.materials[i]].find(mesh.meshData->vertexBufferLayout) == materials[mesh.materials[i]].end())
+			CreateMaterial(*mesh.materials[i], *mesh.meshData->vertexBufferLayout);
+		GlMaterial* materialToUse = materials[mesh.materials[i]][mesh.meshData->vertexBufferLayout];
 
-		materialToUse->Bind();
+		materialToUse->Bind(rendererUniformVector);
 
 		uint32_t drawEnd, drawStart;
 		drawStart = mesh.meshData->pieces[i];
@@ -549,9 +547,11 @@ void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 
 	for (uint32_t i = 0; i < mesh.meshData->pieceCount; i++)
 	{
-		GlMaterial* materialToUse = materials[mesh.materials[i]];
+		if (materials.find(mesh.materials[i]) == materials.end() || materials[mesh.materials[i]].find(mesh.meshData->vertexBufferLayout) == materials[mesh.materials[i]].end())
+			CreateMaterial(*mesh.materials[i], *mesh.meshData->vertexBufferLayout);
+		GlMaterial* materialToUse = materials[mesh.materials[i]][mesh.meshData->vertexBufferLayout];
 
-		materialToUse->Bind();
+		materialToUse->Bind(rendererUniformVector);
 		materialToUse->m_shader->SetUniform1i("animate", mesh.skeletonData->m_animate);
 
 		uint32_t drawEnd, drawStart;
@@ -573,8 +573,10 @@ void sf::Renderer::DrawParticleSystem(ParticleSystem& particleSystem, Transform&
 	if (!activeCameraEntity)
 		return;
 
-	GlMaterial* materialToUse = materials[particleSystem.material];
-	const BufferLayout* particleBufferLayout = particleBufferLayouts[particleSystem.material];
+	if (materials.find(particleSystem.material) == materials.end() || materials[particleSystem.material].find(particleSystem.meshData->vertexBufferLayout) == materials[particleSystem.material].end())
+		CreateMaterial(*particleSystem.material, *particleSystem.meshData->vertexBufferLayout);
+	GlMaterial* materialToUse = materials[particleSystem.material][particleSystem.meshData->vertexBufferLayout];
+	const BufferLayout* particleBufferLayout = particleSystem.material->particleBufferLayout;
 
 	glDepthMask(GL_FALSE); // Do not write to depth buffer
 
@@ -654,7 +656,7 @@ void sf::Renderer::DrawParticleSystem(ParticleSystem& particleSystem, Transform&
 
 	if (particleSystemData[&particleSystem].activeParticles != 0)
 	{
-		materialToUse->Bind();
+		materialToUse->Bind(rendererUniformVector);
 
 		materialToUse->m_shader->SetUniform1f("PARTICLE_CYCLE_TIME", particleSystemData[&particleSystem].cycleCurrentTime);
 		materialToUse->m_shader->SetUniform1f("PARTICLE_LIFETIME", cycleTotalTime);
@@ -680,8 +682,10 @@ void sf::Renderer::DrawVoxelVolume(VoxelVolume& voxelVolume, Transform& transfor
 	if (!activeCameraEntity)
 		return;
 
-	if (meshGpuData.find(&Defaults::MeshDataCube()) == meshGpuData.end()) // create mesh data if not there
-		CreateMeshGpuData(&Defaults::MeshDataCube());
+	const MeshData& meshData = Defaults::MeshDataCube();
+
+	if (meshGpuData.find(&meshData) == meshGpuData.end()) // create mesh data if not there
+		CreateMeshGpuData(&meshData);
 
 	if (voxelVolumeSsbos.find(voxelVolume.voxelVolumeData) == voxelVolumeSsbos.end())
 	{
@@ -692,9 +696,11 @@ void sf::Renderer::DrawVoxelVolume(VoxelVolume& voxelVolume, Transform& transfor
 		glBufferData(GL_SHADER_STORAGE_BUFFER, voxelVolume.voxelVolumeData->voxelBuffer.size(), voxelVolume.voxelVolumeData->voxelBuffer.data(), GL_STATIC_DRAW);
 	}
 
-	GlMaterial* materialToUse = materials[voxelVolume.material];
+	if (materials.find(voxelVolume.material) == materials.end() || materials[voxelVolume.material].find(meshData.vertexBufferLayout) == materials[voxelVolume.material].end())
+		CreateMaterial(*voxelVolume.material, *meshData.vertexBufferLayout);
+	GlMaterial* materialToUse = materials[voxelVolume.material][meshData.vertexBufferLayout];
 
-	materialToUse->Bind();
+	materialToUse->Bind(rendererUniformVector);
 	materialToUse->m_shader->SetUniform1f("voxelSize", voxelVolume.voxelVolumeData->voxelSize);
 
 	// draw instanced box
@@ -702,10 +708,10 @@ void sf::Renderer::DrawVoxelVolume(VoxelVolume& voxelVolume, Transform& transfor
 	glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
 
-	glBindVertexArray(meshGpuData[&Defaults::MeshDataCube()].gl_vao);
+	glBindVertexArray(meshGpuData[&meshData].gl_vao);
 	glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, voxelVolumeSsbos[voxelVolume.voxelVolumeData]);
-	glDrawElementsInstanced(GL_TRIANGLES, Defaults::MeshDataCube().indexCount, GL_UNSIGNED_INT, (void*)0, voxelVolume.voxelVolumeData->GetVoxelCount());
+	glDrawElementsInstanced(GL_TRIANGLES, meshData.indexCount, GL_UNSIGNED_INT, (void*)0, voxelVolume.voxelVolumeData->GetVoxelCount());
 }
 
 void sf::Renderer::DrawSprite(Sprite& sprite, ScreenCoordinates& screenCoordinates)
@@ -967,9 +973,10 @@ void sf::Renderer::Terminate()
 		glDeleteBuffers(1, &(pair.second.gl_vertexBuffer));
 	}
 
-	for (GlMaterial* material : materials)
+	for (auto& pair : materials)
 	{
-		delete material;
+		for (auto& p : pair.second)
+			delete p.second;
 	}
 	drawLineShader.Delete();
 

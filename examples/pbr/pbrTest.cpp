@@ -48,6 +48,11 @@ namespace sf
 
 	int selectedModel;
 
+	Material damagedHelmetMaterial;
+	Bitmap damagedHelmetAlbedo, damagedHelmetNormalmap, damagedHelmetEmissive, damagedHelmetMetal, damagedHelmetRoughness, damagedHelmetAO;
+
+	Material sciFiHelmetMaterial;
+
 	Game::InitData Game::GetInitData()
 	{
 		return InitData();
@@ -87,40 +92,41 @@ namespace sf
 
 			gltfid = GltfImporter::Load("examples/pbr/DamagedHelmet.glb");
 
-			Bitmap albedo, metalRoughness, normalmap, emissive, ao;
-			GltfImporter::GenerateBitmap(gltfid, 0, albedo);
-			GltfImporter::GenerateBitmap(gltfid, 1, metalRoughness);
-			GltfImporter::GenerateBitmap(gltfid, 4, normalmap);
-			GltfImporter::GenerateBitmap(gltfid, 2, emissive);
-			GltfImporter::GenerateBitmap(gltfid, 3, ao);
-			Bitmap metal(metalRoughness.dataType, 1, metalRoughness.width, metalRoughness.height);
-			Bitmap roughness(metalRoughness.dataType, 1, metalRoughness.width, metalRoughness.height);
-			roughness.CopyChannel(metalRoughness, 1, 0);
-			metal.CopyChannel(metalRoughness, 2, 0);
+			Bitmap tempMetalRoughness;
+			GltfImporter::GenerateBitmap(gltfid, 0, damagedHelmetAlbedo);
+			GltfImporter::GenerateBitmap(gltfid, 1, tempMetalRoughness);
+			GltfImporter::GenerateBitmap(gltfid, 4, damagedHelmetNormalmap);
+			GltfImporter::GenerateBitmap(gltfid, 2, damagedHelmetEmissive);
+			GltfImporter::GenerateBitmap(gltfid, 3, damagedHelmetAO);
+			damagedHelmetMetal.CreateSolid(tempMetalRoughness.dataType, 1, tempMetalRoughness.width, tempMetalRoughness.height);
+			damagedHelmetRoughness.CreateSolid(tempMetalRoughness.dataType, 1, tempMetalRoughness.width, tempMetalRoughness.height);
+			damagedHelmetMetal.CopyChannel(tempMetalRoughness, 2, 0);
+			damagedHelmetRoughness.CopyChannel(tempMetalRoughness, 1, 0);
 
-			Material damagedHelmetMaterial("examples/pbr/DamagedHelmet.mat");
-			damagedHelmetMaterial.uniforms["albedoTexture"] = { (uint32_t)ShaderDataType::bitmap, &albedo };
-			damagedHelmetMaterial.uniforms["normalTexture"] = { (uint32_t)ShaderDataType::bitmap, &normalmap };
-			damagedHelmetMaterial.uniforms["metalnessTexture"] = { (uint32_t)ShaderDataType::bitmap, &metal };
-			damagedHelmetMaterial.uniforms["roughnessTexture"] = { (uint32_t)ShaderDataType::bitmap, &roughness };
-			damagedHelmetMaterial.uniforms["aoTexture"] = { (uint32_t)ShaderDataType::bitmap, &ao };
-			damagedHelmetMaterial.uniforms["emissiveTexture"] = { (uint32_t)ShaderDataType::bitmap, &emissive };
+			damagedHelmetMaterial.CreateFromFile("examples/pbr/DamagedHelmet.mat");
+			damagedHelmetMaterial.uniforms["albedoTexture"] = { DataType::bitmap, &damagedHelmetAlbedo };
+			damagedHelmetMaterial.uniforms["normalTexture"] = { DataType::bitmap, &damagedHelmetNormalmap };
+			damagedHelmetMaterial.uniforms["metalnessTexture"] = { DataType::bitmap, &damagedHelmetMetal };
+			damagedHelmetMaterial.uniforms["roughnessTexture"] = { DataType::bitmap, &damagedHelmetRoughness };
+			damagedHelmetMaterial.uniforms["aoTexture"] = { DataType::bitmap, &damagedHelmetAO };
+			damagedHelmetMaterial.uniforms["emissiveTexture"] = { DataType::bitmap, &damagedHelmetEmissive };
 
-			meshes[0] = MeshData(meshVertexLayout);
+			meshes[0] = MeshData(&meshVertexLayout);
 			GltfImporter::GenerateMeshData(gltfid, meshes[0]);
 			MeshProcessor::ComputeTangentSpace(meshes[0]);
-			Mesh& objectMesh = galleryObjects.back().AddComponent<Mesh>(&meshes[0], Renderer::CreateMaterial(damagedHelmetMaterial, meshVertexLayout));
+			Mesh& objectMesh = galleryObjects.back().AddComponent<Mesh>(&meshes[0], &damagedHelmetMaterial);
 		}
 		{
 			galleryObjects.push_back(scene.CreateEntity());
 			galleryObjects.back().AddComponent<Transform>();
 
 			gltfid = GltfImporter::Load("examples/pbr/SciFiHelmet.gltf");
-			meshes[1] = MeshData(meshVertexLayout);
+			meshes[1] = MeshData(&meshVertexLayout);
 			GltfImporter::GenerateMeshData(gltfid, meshes[1]);
-
 			MeshProcessor::ComputeTangentSpace(meshes[1]);
-			Mesh& objectMesh = galleryObjects.back().AddComponent<Mesh>(&meshes[1], Renderer::CreateMaterial(Material("examples/pbr/SciFiHelmet.mat"), meshVertexLayout));
+
+			sciFiHelmetMaterial.CreateFromFile("examples/pbr/SciFiHelmet.mat");
+			Mesh& objectMesh = galleryObjects.back().AddComponent<Mesh>(&meshes[1], &sciFiHelmetMaterial);
 		}
 
 		for (int i = 0; i < galleryObjects.size(); i++)

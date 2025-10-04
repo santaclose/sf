@@ -96,6 +96,9 @@ namespace sf {
 		case DataType::mat2f64: return 32;
 		case DataType::mat3f64: return 72;
 		case DataType::mat4f64: return 128;
+
+		case DataType::bitmap: return sizeof(void*);
+		case DataType::cubemap: return sizeof(void*);
 		default: assert(false); return ~0;
 		}
 	}

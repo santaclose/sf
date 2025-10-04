@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Material.h>
 #include <MeshData.h>
 #include <SkeletonData.h>
 #include <vector>
@@ -10,15 +11,15 @@ namespace sf {
 	{
 		const MeshData* meshData = nullptr;
 		const SkeletonData* skeletonData = nullptr;
-		std::vector<uint32_t> materials;
+		std::vector<const Material*> materials;
 
 		inline SkinnedMesh(const MeshData* meshData, const SkeletonData* skeletonData)
 		{
 			this->meshData = meshData;
 			this->skeletonData = skeletonData;
-			this->materials.resize(meshData->pieceCount, ~0U);
+			this->materials.resize(meshData->pieceCount, nullptr);
 		}
-		inline SkinnedMesh(const MeshData* meshData, uint32_t material, const SkeletonData* skeletonData)
+		inline SkinnedMesh(const MeshData* meshData, const Material* material, const SkeletonData* skeletonData)
 		{
 			this->meshData = meshData;
 			this->skeletonData = skeletonData;

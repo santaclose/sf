@@ -31,11 +31,6 @@ namespace sf::Renderer {
 	void SetClearColor(const glm::vec3& clearColorArg);
 	const glm::vec3& GetClearColor();
 
-	uint32_t CreateMaterial(const Material& material,
-		const BufferLayout& vertexBufferLayout,
-		const BufferLayout* voxelBufferLayout = nullptr,
-		const BufferLayout* particleBufferLayout = nullptr);
-
 	void SetActiveCameraEntity(Entity cameraEntity);
 	Entity GetActiveCameraEntity();
 

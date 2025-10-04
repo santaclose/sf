@@ -10,9 +10,6 @@ namespace sf {
 	class GlTexture
 	{
 	public:
-		enum StorageType {
-			UnsignedByte, Float16, Float32
-		};
 		enum WrapMode {
 			Repeat, ClampToEdge
 		};
@@ -20,21 +17,14 @@ namespace sf {
 		bool isInitialized = false;
 		uint32_t gl_id;
 		int width, height, channelCount;
-		StorageType storageType;
+		DataType storageDataType;
 		WrapMode wrapMode;
-
-		void GetGlEnums(
-			int channelCount,
-			StorageType storageType,
-			GLenum& type,
-			int& internalFormat,
-			GLenum& format);
 
 		void Create(
 			uint32_t width,
 			uint32_t height,
 			int channelCount = 3,
-			StorageType storageType = StorageType::UnsignedByte,
+			DataType storageDataType = DataType::u8,
 			WrapMode wrapMode = WrapMode::Repeat,
 			bool mipmap = true);
 
@@ -54,4 +44,6 @@ namespace sf {
 		void Bind(uint32_t slot = 0) const;
 		void Unbind() const;
 	};
+
+	void DeduceGlTextureEnums(int channelCount, DataType storageDataType, GLenum& type, int& internalFormat, GLenum& format);
 }

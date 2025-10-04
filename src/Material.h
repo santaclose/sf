@@ -5,12 +5,19 @@
 #include <unordered_map>
 #include <cstdint>
 
+#include <BufferLayout.h>
+
 namespace sf
 {
 	struct Uniform
 	{
-		uint32_t dataType; // one of those in DataTypes.h
-		void* data = nullptr;
+		DataType dataType;
+		union {
+			void* p;
+			float f32;
+			int32_t i32;
+			uint32_t u32;
+		} data;
 	};
 
 	enum class RendererUniformData
@@ -21,7 +28,7 @@ namespace sf
 	};
 	struct RendererUniform
 	{
-		uint32_t dataType;
+		DataType dataType;
 		RendererUniformData data;
 	};
 	enum class MaterialBlendMode
@@ -41,10 +48,14 @@ namespace sf
 		bool isDoubleSided = false;
 		MaterialDrawMode drawMode = MaterialDrawMode::Fill;
 		MaterialBlendMode blendMode = MaterialBlendMode::Alpha;
+		BufferLayout* particleBufferLayout = nullptr;
+		BufferLayout* voxelBufferLayout = nullptr;
+	private:
 		std::unordered_set<void*> allocatedBitmaps;
-
-		Material(const std::string& filePath);
-		Material(const std::string& vertexShaderFilePath, const std::string& fragmentShaderFilePath);
+	public:
+		Material() = default;
+		void CreateFromFile(const std::string& filePath);
+		void CreateFromShaderFiles(const std::string& vertexShaderFilePath, const std::string& fragmentShaderFilePath);
 		~Material();
 	};
 }

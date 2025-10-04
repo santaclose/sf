@@ -38,6 +38,7 @@ namespace sf
 	bool rotationEnabled;
 
 	MeshData* sampleMeshes;
+	Material aoMaterial;
 
 	int selectedModel;
 
@@ -62,7 +63,7 @@ namespace sf
 
 		ExampleViewer::Initialize(scene);
 
-		uint32_t aoMaterial = Renderer::CreateMaterial(Material("assets/shaders/default.vert", "assets/shaders/vertexAo.frag"), meshVertexBufferLayout);
+		aoMaterial.CreateFromShaderFiles("assets/shaders/default.vert", "assets/shaders/vertexAo.frag");
 
 		std::vector<std::string> meshFilePaths = { "examples/vertexAo/bunny/bunny.obj", "assets/meshes/monke.obj" };
 		sampleMeshes = new MeshData[meshFilePaths.size()];
@@ -71,7 +72,7 @@ namespace sf
 			std::string& filePath = meshFilePaths[i];
 			galleryObjects.push_back(scene.CreateEntity());
 
-			sampleMeshes[i] = MeshData(meshVertexBufferLayout);
+			sampleMeshes[i] = MeshData(&meshVertexBufferLayout);
 			int objid = ObjImporter::Load(filePath);
 			ObjImporter::GenerateMeshData(objid, sampleMeshes[i]);
 			VoxelVolumeData vv;
@@ -82,7 +83,7 @@ namespace sf
 			if (i == 0)
 				e_t.position += glm::vec3(0.3f, -0.6f, 0.0f);
 
-			Mesh& objectMesh = galleryObjects.back().AddComponent<Mesh>(&sampleMeshes[i], aoMaterial);
+			Mesh& objectMesh = galleryObjects.back().AddComponent<Mesh>(&sampleMeshes[i], &aoMaterial);
 
 			if (i != selectedModel)
 				galleryObjects[i].SetEnabled(false);

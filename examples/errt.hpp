@@ -9,6 +9,7 @@ namespace errt
 	int seed = 0;
 	int maxCount = 40;
 
+	sf::BufferLayout vertexBufferLayout = sf::BufferLayout({sf::BufferComponent::VertexPosition});
 	std::vector<glm::vec3> vertices;
 	std::vector<uint32_t> indices;
 
@@ -184,7 +185,7 @@ namespace errt
 			vectors.push_back(newPosB);
 		}
 
-		mesh.vertexBufferLayout = sf::BufferLayout({sf::BufferComponent::VertexPosition});
+		mesh.vertexBufferLayout = &vertexBufferLayout;
 		mesh.vertexBuffer = malloc(vertices.size() * sizeof(glm::vec3));
 		memcpy(mesh.vertexBuffer, vertices.data(), vertices.size() * sizeof(glm::vec3));
 		mesh.vertexCount = vertices.size();

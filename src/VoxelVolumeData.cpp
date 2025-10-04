@@ -16,7 +16,7 @@ void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, c
 {
 	if (voxelBufferLayout != nullptr)
 		this->voxelBufferLayout = *voxelBufferLayout;
-	DataType positionDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexPosition)->dataType;
+	DataType positionDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::VertexPosition)->dataType;
 	assert(positionDataType == DataType::vec3f32);
 	assert(mesh.vertexCount > 0);
 	assert(voxelSize > 0.0f);
@@ -125,7 +125,7 @@ void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, c
 							default:
 								continue;
 						}
-						if (mesh.vertexBufferLayout.GetComponentInfo(targetVertexComponent) == nullptr)
+						if (mesh.vertexBufferLayout->GetComponentInfo(targetVertexComponent) == nullptr)
 							continue;
 
 						glm::vec2 toBlendVec2[3];

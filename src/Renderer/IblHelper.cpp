@@ -46,7 +46,6 @@ namespace sf::IblHelper
 	{
 		assert(dataType == DataType::f16 || dataType == DataType::f32);
 		int internalFormat = dataType == DataType::f16 ? GL_RG16F : GL_RG32F;
-		GlTexture::StorageType textureStorageType = dataType == DataType::f16 ? GlTexture::StorageType::Float16 : GlTexture::StorageType::Float32;
 
 		GlShader lutComputeShader;
 		lutComputeShader.CreateComputeFromFile("assets/shaders/ibl/spbrdf.comp");
@@ -64,7 +63,7 @@ namespace sf::IblHelper
 		lut.width = m_spBRDF_LUT.width;
 		lut.height = m_spBRDF_LUT.height;
 		lut.channelCount = 2;
-		lut.storageType = textureStorageType;
+		lut.storageDataType = dataType;
 		if (lut.isInitialized)
 			glDeleteTextures(1, &lut.gl_id);
 		lut.gl_id = m_spBRDF_LUT.id;
@@ -75,9 +74,9 @@ namespace sf::IblHelper
 	{
 		assert(dataType == DataType::f16 || dataType == DataType::f32);
 		int internalFormat = dataType == DataType::f16 ? GL_RGBA16F : GL_RGBA32F;
-		GlCubemap::StorageType cubemapStorageType = dataType == DataType::f16 ? GlCubemap::StorageType::Float16 : GlCubemap::StorageType::Float32;
 
-		Bitmap equirectBitmap(hdrFilePath, true, dataType == DataType::f16);
+		Bitmap equirectBitmap;
+		equirectBitmap.CreateFromFile(hdrFilePath, true, dataType == DataType::f16);
 		GlTexture equirectTexture;
 		equirectTexture.CreateFromBitmap(equirectBitmap, GlTexture::ClampToEdge, true, internalFormat);
 
@@ -94,7 +93,7 @@ namespace sf::IblHelper
 
 		glGenerateTextureMipmap(envTextureUnfiltered.id);
 		environmentCubemap.size = envTextureUnfiltered.width;
-		environmentCubemap.storageType = cubemapStorageType;
+		environmentCubemap.storageDataType = dataType;
 		if (environmentCubemap.isInitialized)
 			glDeleteTextures(1, &environmentCubemap.gl_id);
 		environmentCubemap.gl_id = envTextureUnfiltered.id;
@@ -104,7 +103,6 @@ namespace sf::IblHelper
 	{
 		assert(dataType == DataType::f16 || dataType == DataType::f32);
 		int internalFormat = dataType == DataType::f16 ? GL_RGBA16F : GL_RGBA32F;
-		GlCubemap::StorageType cubemapStorageType = dataType == DataType::f16 ? GlCubemap::StorageType::Float16 : GlCubemap::StorageType::Float32;
 
 		GlShader spmapComputeShader;
 		spmapComputeShader.CreateComputeFromFile("assets/shaders/ibl/spmap.comp");
@@ -132,7 +130,7 @@ namespace sf::IblHelper
 		}
 
 		prefilterCubemap.size = m_envTexture.width;
-		prefilterCubemap.storageType = cubemapStorageType;
+		prefilterCubemap.storageDataType = dataType;
 		if (prefilterCubemap.isInitialized)
 			glDeleteTextures(1, &prefilterCubemap.gl_id);
 		prefilterCubemap.gl_id = m_envTexture.id;
@@ -142,7 +140,6 @@ namespace sf::IblHelper
 	{
 		assert(dataType == DataType::f16 || dataType == DataType::f32);
 		int internalFormat = dataType == DataType::f16 ? GL_RGBA16F : GL_RGBA32F;
-		GlCubemap::StorageType cubemapStorageType = dataType == DataType::f16 ? GlCubemap::StorageType::Float16 : GlCubemap::StorageType::Float32;
 
 		static constexpr int kIrradianceMapSize = 32;
 		GlShader irmapComputeShader;
@@ -157,7 +154,7 @@ namespace sf::IblHelper
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
 		irradianceCubemap.size = m_irmapTexture.width;
-		irradianceCubemap.storageType = cubemapStorageType;
+		irradianceCubemap.storageDataType = dataType;
 		if (irradianceCubemap.isInitialized)
 			glDeleteTextures(1, &irradianceCubemap.gl_id);
 		irradianceCubemap.gl_id = m_irmapTexture.id;

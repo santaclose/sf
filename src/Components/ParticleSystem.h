@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Material.h>
 #include <MeshData.h>
 #include <Components/Transform.h>
 #include <glm/glm.hpp>
@@ -9,7 +10,7 @@ namespace sf
 	struct ParticleSystem
 	{
 		const MeshData* meshData;
-		uint32_t material;
+		const Material* material;
 		uint32_t particleCount;
 		float timeBetweenEmissions;
 		uint32_t particlesPerEmission = 1U;

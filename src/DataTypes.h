@@ -94,10 +94,9 @@ namespace sf
 		vec4f64 = 74,
 		mat2f64 = 75,
 		mat3f64 = 76,
-		mat4f64 = 77
-	};
+		mat4f64 = 77,
 
-	enum class ShaderDataType {
+		/* Shader specific types */
 		bitmap = 78,
 		cubemap = 79
 	};

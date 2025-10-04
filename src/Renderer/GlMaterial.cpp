@@ -5,82 +5,36 @@
 #include <Renderer/GlTexture.h>
 #include <Renderer/GlCubemap.h>
 
-void sf::GlMaterial::Create(const Material& material, const std::vector<void*>& rendererUniformVector, const BufferLayout& vertexBufferLayout, const BufferLayout* voxelBufferLayout, const BufferLayout* particleBufferLayout)
+void sf::GlMaterial::Create(const Material* material,
+	const BufferLayout& vertexBufferLayout,
+	const BufferLayout* voxelBufferLayout,
+	const BufferLayout* particleBufferLayout)
 {
-	assert(material.vertexShaderFilePath.length() > 0 && material.fragmentShaderFilePath.length() > 0);
+	m_material = material;
+	assert(m_material != nullptr);
+	assert(m_material->vertexShaderFilePath.length() > 0 && m_material->fragmentShaderFilePath.length() > 0);
 	m_shader = new GlShader();
-	m_shader->CreateFromFiles(material.vertexShaderFilePath, material.fragmentShaderFilePath, vertexBufferLayout, voxelBufferLayout, particleBufferLayout);
-	m_isDoubleSided = material.isDoubleSided;
-	m_drawMode = material.drawMode;
-	m_blendMode = material.blendMode;
+	m_shader->CreateFromFiles(m_material->vertexShaderFilePath, m_material->fragmentShaderFilePath, vertexBufferLayout, voxelBufferLayout, particleBufferLayout);
 
-	for (const std::pair<std::string, Uniform>& uniformPair : material.uniforms)
+	for (const std::pair<std::string, Uniform>& uniformPair : m_material->uniforms)
 	{
-		switch (uniformPair.second.dataType)
+		if (uniformPair.second.dataType == DataType::bitmap)
 		{
-		case (uint32_t)DataType::b:
-			SetUniform(uniformPair.first, uniformPair.second.data, UniformType::_1i);
-			break;
-		case (uint32_t)DataType::vec2f32:
-			SetUniform(uniformPair.first, uniformPair.second.data, UniformType::_2f);
-			break;
-		case (uint32_t)DataType::vec3f32:
-			SetUniform(uniformPair.first, uniformPair.second.data, UniformType::_3f);
-			break;
-		case (uint32_t)DataType::vec4f32:
-			SetUniform(uniformPair.first, uniformPair.second.data, UniformType::_4f);
-			break;
-		case (uint32_t)ShaderDataType::bitmap:
 			GlTexture* newTexture = new GlTexture();
-			newTexture->CreateFromBitmap(*((Bitmap*)uniformPair.second.data));
-			SetUniform(uniformPair.first, newTexture, UniformType::_Texture);
-			break;
-		}
-	}
-
-	for (const std::pair<std::string, RendererUniform>& uniformPair : material.rendererUniforms)
-	{
-		switch (uniformPair.second.dataType)
-		{
-		case (uint32_t)DataType::b:
-			SetUniform(uniformPair.first, rendererUniformVector[(uint32_t)uniformPair.second.data], UniformType::_1i);
-			break;
-		case (uint32_t)ShaderDataType::bitmap:
-			SetUniform(uniformPair.first, rendererUniformVector[(uint32_t)uniformPair.second.data], UniformType::_Texture);
-			break;
-		case (uint32_t)ShaderDataType::cubemap:
-			SetUniform(uniformPair.first, rendererUniformVector[(uint32_t)uniformPair.second.data], UniformType::_Cubemap);
-			break;
+			newTexture->CreateFromBitmap(*((Bitmap*)uniformPair.second.data.p));
+			m_textures[uniformPair.second.data.p] = newTexture;
 		}
 	}
 }
 
-void sf::GlMaterial::CreateFromShader(GlShader* theShader, bool isDoubleSided, MaterialDrawMode drawMode, MaterialBlendMode blendMode)
+void sf::GlMaterial::Bind(const std::vector<void*>& rendererUniformVector)
 {
-	m_shader = theShader;
-	m_isDoubleSided = isDoubleSided;
-	m_drawMode = drawMode;
-	m_blendMode = blendMode;
-}
-
-void sf::GlMaterial::SetUniform(const std::string& name, void* data, UniformType type)
-{
-	m_uniformNames.push_back(name);
-	m_uniformData.push_back(data);
-	m_uniformTypes.push_back(type);
-
-	if (type == UniformType::_Texture || type == UniformType::_Cubemap)
-		m_shader->AssignTextureNumberToUniform(name);
-}
-
-void sf::GlMaterial::Bind()
-{
-	if (m_isDoubleSided)
+	if (m_material->isDoubleSided)
 		glDisable(GL_CULL_FACE);
 	else
 		glEnable(GL_CULL_FACE);
 
-	switch (m_drawMode)
+	switch (m_material->drawMode)
 	{
 	case MaterialDrawMode::Fill:
 		glPolygonMode(GL_FRONT, GL_FILL);
@@ -91,10 +45,12 @@ void sf::GlMaterial::Bind()
 	case MaterialDrawMode::Points:
 		glPolygonMode(GL_FRONT, GL_POINT);
 		break;
-
+	default:
+		assert(!"Invalid draw mode");
+		break;
 	}
 
-	switch (m_blendMode)
+	switch (m_material->blendMode)
 	{
 	case MaterialBlendMode::Alpha:
 		glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
@@ -108,63 +64,111 @@ void sf::GlMaterial::Bind()
 		glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
 		glBlendFuncSeparate(GL_ONE, GL_ONE, GL_ONE, GL_ONE);
 		break;
+	default:
+		assert(!"Invalid blend mode");
+		break;
 	}
 
 	m_shader->Bind();
 
-	for (int i = 0; i < m_uniformData.size(); i++)
+	for (const std::pair<std::string, Uniform>& uniform : m_material->uniforms)
 	{
-		int uniformTextureIndex = m_shader->GetTextureIndex(m_uniformNames[i]);
-		switch (m_uniformTypes[i])
+		int uniformTextureIndex;
+		switch (uniform.second.dataType)
 		{
-		case UniformType::_Texture:
-		{
-			if (m_uniformData[i] == nullptr) // clear uniform if not provided
+		case DataType::bitmap:
+			uniformTextureIndex = m_shader->GetOrAssignTextureIndex(uniform.first);
+			if (uniform.second.data.p == nullptr) // clear uniform if not provided
 			{
 				glActiveTexture(GL_TEXTURE0 + uniformTextureIndex);
 				glBindTexture(GL_TEXTURE_2D, 0);
-				m_shader->SetUniform1i(m_uniformNames[i], uniformTextureIndex);
-				continue;
+				m_shader->SetUniform1i(uniform.first, uniformTextureIndex);
 			}
-			GlTexture* currentTexture = (GlTexture*)m_uniformData[i];
-			currentTexture->Bind(uniformTextureIndex);
-			m_shader->SetUniform1i(m_uniformNames[i], uniformTextureIndex);
+			else
+			{
+				GlTexture* texture = (GlTexture*)m_textures[uniform.second.data.p];
+				texture->Bind(uniformTextureIndex);
+				m_shader->SetUniform1i(uniform.first, uniformTextureIndex);
+			}
 			break;
-		}
-		case UniformType::_Cubemap:
-		{
-			if (m_uniformData[i] == nullptr) // clear uniform if not provided
+		case DataType::cubemap:
+			uniformTextureIndex = m_shader->GetOrAssignTextureIndex(uniform.first);
+			if (uniform.second.data.p == nullptr) // clear uniform if not provided
 			{
 				glActiveTexture(GL_TEXTURE0 + uniformTextureIndex);
 				glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-				m_shader->SetUniform1i(m_uniformNames[i], uniformTextureIndex);
-				continue;
+				m_shader->SetUniform1i(uniform.first, uniformTextureIndex);
 			}
-			GlCubemap* currentCubemap = (GlCubemap*)m_uniformData[i];
-			currentCubemap->Bind(uniformTextureIndex);
-			m_shader->SetUniform1i(m_uniformNames[i], uniformTextureIndex);
+			else
+			{
+				GlCubemap* cubemap = (GlCubemap*)m_textures[uniform.second.data.p];
+				cubemap->Bind(uniformTextureIndex);
+				m_shader->SetUniform1i(uniform.first, uniformTextureIndex);
+			}
+			break;
+		case DataType::b:
+		case DataType::u32:
+			m_shader->SetUniform1u(uniform.first, uniform.second.data.u32);
+			break;
+		case DataType::i32:
+			m_shader->SetUniform1i(uniform.first, uniform.second.data.i32);
+			break;
+		case DataType::f32:
+			m_shader->SetUniform1f(uniform.first, uniform.second.data.f32);
+			break;
+		case DataType::vec2f32:
+			m_shader->SetUniform2fv(uniform.first, (float*)uniform.second.data.p);
+			break;
+		case DataType::vec3f32:
+			m_shader->SetUniform3fv(uniform.first, (float*)uniform.second.data.p);
+			break;
+		case DataType::vec4f32:
+			m_shader->SetUniform4fv(uniform.first, (float*)uniform.second.data.p);
+			break;
+		default:
+			assert(!"Data type not handled");
 			break;
 		}
-		case UniformType::_1i:
+	}
+
+	for (const std::pair<std::string, RendererUniform>& uniform : m_material->rendererUniforms)
+	{
+		int uniformTextureIndex;
+		switch (uniform.second.dataType)
 		{
-			m_shader->SetUniform1i(m_uniformNames[i], (int)(unsigned long long)m_uniformData[i]);
+		case DataType::bitmap:
+			uniformTextureIndex = m_shader->GetOrAssignTextureIndex(uniform.first);
+			if (rendererUniformVector[(uint32_t)uniform.second.data] == nullptr) // clear uniform if not provided
+			{
+				glActiveTexture(GL_TEXTURE0 + uniformTextureIndex);
+				glBindTexture(GL_TEXTURE_2D, 0);
+				m_shader->SetUniform1i(uniform.first, uniformTextureIndex);
+			}
+			else
+			{
+				GlTexture* texture = (GlTexture*)rendererUniformVector[(uint32_t)uniform.second.data];
+				texture->Bind(uniformTextureIndex);
+				m_shader->SetUniform1i(uniform.first, uniformTextureIndex);
+			}
 			break;
-		}
-		case UniformType::_2f:
-		{
-			m_shader->SetUniform2fv(m_uniformNames[i], (float*)m_uniformData[i]);
+		case DataType::cubemap:
+			uniformTextureIndex = m_shader->GetOrAssignTextureIndex(uniform.first);
+			if (rendererUniformVector[(uint32_t)uniform.second.data] == nullptr) // clear uniform if not provided
+			{
+				glActiveTexture(GL_TEXTURE0 + uniformTextureIndex);
+				glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+				m_shader->SetUniform1i(uniform.first, uniformTextureIndex);
+			}
+			else
+			{
+				GlCubemap* cubemap = (GlCubemap*)rendererUniformVector[(uint32_t)uniform.second.data];
+				cubemap->Bind(uniformTextureIndex);
+				m_shader->SetUniform1i(uniform.first, uniformTextureIndex);
+			}
 			break;
-		}
-		case UniformType::_3f:
-		{
-			m_shader->SetUniform3fv(m_uniformNames[i], (float*)m_uniformData[i]);
+		default:
+			assert(!"Data type not handled");
 			break;
-		}
-		case UniformType::_4f:
-		{
-			m_shader->SetUniform4fv(m_uniformNames[i], (float*)m_uniformData[i]);
-			break;
-		}
 		}
 	}
 }

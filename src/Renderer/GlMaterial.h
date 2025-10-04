@@ -10,36 +10,18 @@
 
 namespace sf {
 
-	class GlMaterial
+	struct GlMaterial
 	{
-	public:
-		enum UniformType {
-			_1i,
-			_2f,
-			_3f,
-			_4f,
-			_Texture,
-			_Cubemap
-		};
-
 		GlShader* m_shader;
 	private:
-		std::vector<std::string> m_uniformNames;
-		std::vector<void*> m_uniformData;
-		std::vector<UniformType> m_uniformTypes;
-		bool m_isDoubleSided;
-		MaterialDrawMode m_drawMode;
-		MaterialBlendMode m_blendMode;
+		const Material* m_material;
+		std::unordered_map<void*, void*> m_textures;
 
 	public:
-		void Create(const Material& material, const std::vector<void*>& rendererUniformVector,
+		void Create(const Material* material,
 			const BufferLayout& vertexBufferLayout,
 			const BufferLayout* voxelBufferLayout = nullptr,
 			const BufferLayout* particleBufferLayout = nullptr);
-		void CreateFromShader(GlShader* theShader, bool isDoubleSided = false,
-			MaterialDrawMode drawMode = MaterialDrawMode::Fill,
-			MaterialBlendMode blendMode = MaterialBlendMode::Alpha);
-		void SetUniform(const std::string& name, void* data, UniformType type);
-		void Bind();
+		void Bind(const std::vector<void*>& rendererUniformVector);
 	};
 }

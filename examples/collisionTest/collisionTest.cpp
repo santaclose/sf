@@ -69,6 +69,7 @@ namespace sf
 	std::vector<Entity> boxes;
 
 	Entity monkey;
+	Material monkeyMaterial;
 
 	void GenerateShapesForCurrentCase()
 	{
@@ -463,10 +464,10 @@ namespace sf
 			boxes[i].AddComponent<BoxCollider>();
 		}
 
-		uint32_t monkeyMaterial = Renderer::CreateMaterial(Material("assets/shaders/default.vert", "assets/shaders/default.frag"), Defaults::MeshDataMonkey().vertexBufferLayout);
+		monkeyMaterial.CreateFromShaderFiles("assets/shaders/default.vert", "assets/shaders/default.frag");
 		monkey = scene.CreateEntity();
 		monkey.AddComponent<Transform>();
-		monkey.AddComponent<Mesh>(&Defaults::MeshDataMonkey(), monkeyMaterial);
+		monkey.AddComponent<Mesh>(&Defaults::MeshDataMonkey(), &monkeyMaterial);
 		monkey.AddComponent<MeshCollider>(&Defaults::MeshDataMonkey());
 
 		GenerateShapesForCurrentCase();

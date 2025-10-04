@@ -1,4 +1,5 @@
 #include "GlCubemap.h"
+#include "GlTexture.h"
 
 #include <stb_image.h>
 #include <glm/gtc/matrix_transform.hpp>
@@ -6,94 +7,22 @@
 
 #include <Renderer/GlShader.h>
 
-void sf::GlCubemap::GetGlEnums(int channelCount, StorageType storageType, GLenum& type, int& internalFormat, GLenum& format)
-{
-	switch (storageType)
-	{
-	case StorageType::UnsignedByte:
-		type = GL_UNSIGNED_BYTE;
-		switch (channelCount)
-		{
-		case 1:
-			format = GL_RED;
-			internalFormat = GL_R8;
-			break;
-		case 2:
-			format = GL_RG;
-			internalFormat = GL_RG8;
-			break;
-		case 3:
-			format = GL_RGB;
-			internalFormat = GL_RGB8;
-			break;
-		case 4:
-			format = GL_RGBA;
-			internalFormat = GL_RGBA8;
-			break;
-		}
-		break;
-	case StorageType::Float16:
-		type = GL_FLOAT;
-		switch (channelCount)
-		{
-		case 1:
-			format = GL_RED;
-			internalFormat = GL_R16F;
-			break;
-		case 2:
-			format = GL_RG;
-			internalFormat = GL_RG16F;
-			break;
-		case 3:
-			format = GL_RGB;
-			internalFormat = GL_RGB16F;
-			break;
-		case 4:
-			format = GL_RGBA;
-			internalFormat = GL_RGBA16F;
-			break;
-		}
-		break;
-	case StorageType::Float32:
-		type = GL_FLOAT;
-		switch (channelCount)
-		{
-		case 1:
-			format = GL_RED;
-			internalFormat = GL_R32F;
-			break;
-		case 2:
-			format = GL_RG;
-			internalFormat = GL_RG32F;
-			break;
-		case 3:
-			format = GL_RGB;
-			internalFormat = GL_RGB32F;
-			break;
-		case 4:
-			format = GL_RGBA;
-			internalFormat = GL_RGBA32F;
-			break;
-		}
-		break;
-	}
-}
-
-void sf::GlCubemap::Create(uint32_t size, int channelCount, StorageType storageType, bool mipmap)
+void sf::GlCubemap::Create(uint32_t size, int channelCount, DataType storageDataType, bool mipmap)
 {
 	if (this->isInitialized)
 		glDeleteTextures(1, &gl_id);
 	
 	this->isInitialized = true;
 	this->size = size;
-	this->storageType = storageType;
+	this->storageDataType = storageDataType;
 
 	int internalFormat;
 	GLenum type, format;
-	GetGlEnums(channelCount, this->storageType, type, internalFormat, format);
+	DeduceGlTextureEnums(channelCount, this->storageDataType, type, internalFormat, format);
 
 	glGenTextures(1, &gl_id);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, gl_id);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	for (uint32_t i = 0; i < 6; ++i)
 	{
 		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalFormat, size, size, 0, format, type, nullptr);
@@ -107,21 +36,22 @@ void sf::GlCubemap::Create(uint32_t size, int channelCount, StorageType storageT
 	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }
 
-void sf::GlCubemap::CreateFromFiles(const std::vector<std::string>& files, int channelCount, StorageType storageType, bool mipmap)
+void sf::GlCubemap::CreateFromFiles(const std::vector<std::string>& files, int channelCount, DataType storageDataType, bool mipmap)
 {
 	if (this->isInitialized)
 		glDeleteTextures(1, &gl_id);
 	
 	this->isInitialized = true;
-	this->storageType = storageType;
+	this->storageDataType = storageDataType;
 
 	stbi_set_flip_vertically_on_load(0);
 
-	bool isHdr = storageType == StorageType::Float16 || storageType == StorageType::Float32;
+	bool isHdr = storageDataType == DataType::f16 || storageDataType == DataType::f32;
 	isHdr = stbi_is_hdr(files[0].c_str());
 
 	glGenTextures(1, &gl_id);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, gl_id);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
 	int width, height, nrChannels;
 	if (!isHdr)
@@ -181,14 +111,14 @@ void sf::GlCubemap::CreateFromFiles(const std::vector<std::string>& files, int c
 	"_4.jpg",
 	"_5.jpg"
 */
-void sf::GlCubemap::CreateFromFiles(const std::string& name, const std::string& extension, int channelCount, StorageType storageType, bool mipmap)
+void sf::GlCubemap::CreateFromFiles(const std::string& name, const std::string& extension, int channelCount, DataType storageDataType, bool mipmap)
 {
 	std::vector<std::string> files;
 	files.resize(6);
 	for (int i = 0; i < 6; i++)
 		files[i] = name + "_" + std::to_string(i) + extension;
 
-	CreateFromFiles(files, channelCount, storageType, mipmap);
+	CreateFromFiles(files, channelCount, storageDataType, mipmap);
 }
 
 void sf::GlCubemap::ComputeMipmap()

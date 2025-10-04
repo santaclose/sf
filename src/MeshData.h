@@ -8,7 +8,7 @@ namespace sf {
 
 	struct MeshData
 	{
-		BufferLayout vertexBufferLayout;
+		const BufferLayout* vertexBufferLayout = nullptr;
 
 		void* vertexBuffer = nullptr;
 		uint32_t vertexCount = 0;
@@ -18,18 +18,18 @@ namespace sf {
 		uint32_t pieceCount = 0;
 
 		MeshData() = default;
-		inline MeshData(const BufferLayout& newLayout)
+		inline MeshData(const BufferLayout* newLayout)
 		{
 			vertexBufferLayout = newLayout;
 		}
 
-		void ChangeVertexBufferLayout(const BufferLayout& newLayout);
+		void ChangeVertexBufferLayout(const BufferLayout* newLayout);
 		bool Initialized() { return vertexBuffer != nullptr; }
 
 		template<typename T>
 		inline T* AccessVertexComponent(BufferComponent component, uint32_t index) const
 		{
-			return vertexBufferLayout.Access<T>(vertexBuffer, component, index);
+			return vertexBufferLayout->Access<T>(vertexBuffer, component, index);
 		}
 
 		void SaveToFile(const char* targetFile);

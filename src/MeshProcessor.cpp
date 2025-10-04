@@ -98,8 +98,8 @@ namespace sf {
 
 void sf::MeshProcessor::ComputeNormals(MeshData& mesh, bool normalize)
 {
-	DataType positionDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexPosition)->dataType;
-	DataType normalDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexNormal)->dataType;
+	DataType positionDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::VertexPosition)->dataType;
+	DataType normalDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::VertexNormal)->dataType;
 
 	assert(positionDataType == DataType::vec3f32 || positionDataType == DataType::vec3f64);
 	assert(normalDataType == DataType::vec3f32 || normalDataType == DataType::vec3f64);
@@ -122,9 +122,9 @@ void sf::MeshProcessor::ComputeNormals(MeshData& mesh, bool normalize)
 
 void sf::MeshProcessor::ComputeTangentSpace(MeshData& mesh)
 {
-	DataType positionDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexPosition)->dataType;
-	DataType uvsDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexUV)->dataType;
-	DataType tangentDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexTangent)->dataType;
+	DataType positionDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::VertexPosition)->dataType;
+	DataType uvsDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::VertexUV)->dataType;
+	DataType tangentDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::VertexTangent)->dataType;
 
 	assert(positionDataType == DataType::vec3f32 || positionDataType == DataType::vec3f64);
 	assert(uvsDataType == DataType::vec2f32 || uvsDataType == DataType::vec2f64);
@@ -187,8 +187,8 @@ float sf::MeshProcessor::ComputeOcclusion(const std::vector<std::pair<bool, floa
 
 void sf::MeshProcessor::ComputeVertexAmbientOcclusion(MeshData& mesh, const VoxelVolumeData* voxelVolume, const VertexAmbientOcclusionBakerConfig* config)
 {
-	DataType positionDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexPosition)->dataType;
-	DataType aoDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::VertexAO)->dataType;
+	DataType positionDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::VertexPosition)->dataType;
+	DataType aoDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::VertexAO)->dataType;
 
 	assert(positionDataType == DataType::vec3f32);
 	assert(aoDataType == DataType::f32);

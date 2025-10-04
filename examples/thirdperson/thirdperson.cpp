@@ -64,6 +64,9 @@ namespace sf
 	std::vector<float> foxWeights;
 	std::vector<float> foxSpeedPerAnimation;
 
+	Material characterMaterial;
+	Material floorMaterial;
+
 	Entity floorPlanes[9];
 #define FLOOR_PLANE_SCALE 19.0f
 
@@ -95,7 +98,7 @@ namespace sf
 
 		cameraObject.AddComponent<Camera>();
 		cameraObject.AddComponent<Transform>();
-		uint32_t characterMaterial = Renderer::CreateMaterial(Material("assets/shaders/default.vert", "assets/shaders/default.frag"), characterVertexLayout);
+		characterMaterial.CreateFromShaderFiles("assets/shaders/default.vert", "assets/shaders/default.frag");
 
 		int gltfid;
 		{
@@ -105,11 +108,11 @@ namespace sf
 			e_t.rotation *= glm::quat(glm::vec3(0.0f, 0.0f, glm::radians(180.0f)));
 
 			shanyungSkeleton = new SkeletonData();
-			shanyungMesh = new MeshData(characterVertexLayout);
+			shanyungMesh = new MeshData(&characterVertexLayout);
 			gltfid = GltfImporter::Load("examples/thirdperson/shanyung_blendspace2d.glb");
 			GltfImporter::GenerateSkeleton(gltfid, *shanyungSkeleton);
 			GltfImporter::GenerateMeshData(gltfid, *shanyungMesh);
-			shanyung.AddComponent<SkinnedMesh>(shanyungMesh, characterMaterial, shanyungSkeleton);
+			shanyung.AddComponent<SkinnedMesh>(shanyungMesh, &characterMaterial, shanyungSkeleton);
 
 			shanyungWeights.resize(10);
 			shanyungSpeedPerAnimation = { {0.0f, 0.0f}, {0.0f, 6.0f}, {-6.0f, 0.0f}, {6.0f, 0.0f}, {0.0f, 1.68f}, {0.0f, -1.08f}, {-0.763f, -0.763f}, {0.763f, -0.763f}, {-1.68f, 0.0f}, {1.68f, 0.0f} };
@@ -126,12 +129,12 @@ namespace sf
 			e_t.scale = 0.01f;
 
 			foxSkeleton = new SkeletonData();
-			foxMesh = new MeshData(characterVertexLayout);
+			foxMesh = new MeshData(&characterVertexLayout);
 			gltfid = GltfImporter::Load("examples/thirdperson/Fox.glb");
 			GltfImporter::GenerateSkeleton(gltfid, *foxSkeleton);
 			GltfImporter::GenerateMeshData(gltfid, *foxMesh);
 			MeshProcessor::ComputeNormals(*foxMesh);
-			fox.AddComponent<SkinnedMesh>(foxMesh, characterMaterial, foxSkeleton);
+			fox.AddComponent<SkinnedMesh>(foxMesh, &characterMaterial, foxSkeleton);
 
 			foxWeights.resize(4);
 			foxSpeedPerAnimation = { 0.0f, 1.5f, 6.0f };
@@ -146,15 +149,14 @@ namespace sf
 		cameraObject.GetComponent<Transform>().position = glm::vec3(0.0, GIMBAL_OFFSET_SHANYUNG, cameraDistance);
 		cameraObject.GetComponent<Transform>().LookAt(glm::vec3(0.0, GIMBAL_OFFSET_SHANYUNG, 0.0), glm::vec3(0.0, 1.0, 0.0));
 
-		Material floorMaterial("examples/thirdperson/Floor.mat");
-		uint32_t floorMaterialId = Renderer::CreateMaterial(floorMaterial, Defaults::MeshDataPlane().vertexBufferLayout);
+		floorMaterial.CreateFromFile("examples/thirdperson/Floor.mat");
 		for (int i = 0; i < 9; i++)
 		{
 			floorPlanes[i] = scene.CreateEntity();
 			Transform& e_t = floorPlanes[i].AddComponent<Transform>();
 			e_t.scale = FLOOR_PLANE_SCALE;
 			e_t.position = glm::vec3(-FLOOR_PLANE_SCALE + ((int)(i / 3)) * FLOOR_PLANE_SCALE, 0.0f, -FLOOR_PLANE_SCALE + ((int)(i % 3)) * FLOOR_PLANE_SCALE);
-			Mesh& objectMesh = floorPlanes[i].AddComponent<Mesh>(&Defaults::MeshDataPlane(), floorMaterialId);
+			Mesh& objectMesh = floorPlanes[i].AddComponent<Mesh>(&Defaults::MeshDataPlane(), &floorMaterial);
 		}
 	}
 

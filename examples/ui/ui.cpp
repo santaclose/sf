@@ -108,7 +108,8 @@ namespace sf
 			ScreenCoordinates& e_sc = spriteTest.AddComponent<ScreenCoordinates>();
 			e_sc.origin = { 0.5f, 0.5f };
 			e_sc.offset = { 0.0f, 0.0f };
-			testSpriteBitmap = new Bitmap("examples/ui/Wikipedia-logo-v2.png");
+			testSpriteBitmap = new Bitmap();
+			testSpriteBitmap->CreateFromFile("examples/ui/Wikipedia-logo-v2.png");
 			Sprite& e_spt = spriteTest.AddComponent<Sprite>(testSpriteBitmap);
 			e_spt.alignmentH = ALIGNMENT_CENTER;
 			e_spt.alignmentV = ALIGNMENT_CENTER;

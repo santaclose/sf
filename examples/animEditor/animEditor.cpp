@@ -27,7 +27,7 @@ namespace sf
 	Entity modelEntity;
 	SkeletonData* modelSkeleton;
 	MeshData* modelMesh;
-	uint32_t modelMaterial;
+	Material modelMaterial;
 	BufferLayout modelVertexLayout = BufferLayout({
 		BufferComponent::VertexPosition,
 		BufferComponent::VertexNormal,
@@ -79,13 +79,13 @@ namespace sf
 		modelEntity = scene.CreateEntity();
 		modelEntity.AddComponent<Transform>();
 
-		modelMaterial = Renderer::CreateMaterial(Material("assets/shaders/default.vert", "assets/shaders/default.frag"), modelVertexLayout);
+		modelMaterial.CreateFromShaderFiles("assets/shaders/default.vert", "assets/shaders/default.frag");
 		modelSkeleton = new SkeletonData();
-		modelMesh = new MeshData(modelVertexLayout);
+		modelMesh = new MeshData(&modelVertexLayout);
 		uint32_t gltfid = GltfImporter::Load(filePath);
 		GltfImporter::GenerateSkeleton(gltfid, *modelSkeleton);
 		GltfImporter::GenerateMeshData(gltfid, *modelMesh);
-		modelEntity.AddComponent<SkinnedMesh>(modelMesh, modelMaterial, modelSkeleton);
+		modelEntity.AddComponent<SkinnedMesh>(modelMesh, &modelMaterial, modelSkeleton);
 		animNames.resize(modelSkeleton->m_animations.size());
 		for (int i = 0; i < modelSkeleton->m_animations.size(); i++)
 			animNames[i] = modelSkeleton->m_animations[i].name;

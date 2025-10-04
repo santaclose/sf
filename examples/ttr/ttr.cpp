@@ -45,6 +45,7 @@ namespace sf
 	float animation1D, animation2D;
 	MeshData uniqueErrts[UNIQUE_COUNT];
 	Entity* errts;
+	Material whiteMaterial, blackMaterial;
 
 	float tFreq;
 	float tStrength;
@@ -101,15 +102,13 @@ namespace sf
 			errt::GenerateModel(uniqueErrts[i], 6, 1);
 		}
 
-		uint32_t whiteMaterial, blackMaterial;
 		{
 			static glm::vec3 color(1.0, 1.0, 1.0);
 			static glm::vec3 colorb(0.0, 0.0, 0.0);
-			Material materialTemplate("assets/shaders/default.vert", "assets/shaders/solidColor.frag");
-			materialTemplate.uniforms["color"] = { (uint32_t)DataType::vec3f32, &color };
-			whiteMaterial = Renderer::CreateMaterial(materialTemplate, uniqueErrts[0].vertexBufferLayout);
-			materialTemplate.uniforms["color"] = { (uint32_t)DataType::vec3f32, &colorb };
-			blackMaterial = Renderer::CreateMaterial(materialTemplate, uniqueErrts[0].vertexBufferLayout);
+			whiteMaterial.CreateFromShaderFiles("assets/shaders/default.vert", "assets/shaders/solidColor.frag");
+			blackMaterial.CreateFromShaderFiles("assets/shaders/default.vert", "assets/shaders/solidColor.frag");
+			whiteMaterial.uniforms["color"] = { DataType::vec3f32, &color };
+			blackMaterial.uniforms["color"] = { DataType::vec3f32, &colorb };
 		}
 
 		errts = new Entity[ERRT_COUNT];
@@ -117,7 +116,7 @@ namespace sf
 		{
 			errts[i] = scene.CreateEntity();
 			Transform& t_errt = errts[i].AddComponent<Transform>();
-			Mesh& m_errt = errts[i].AddComponent<Mesh>(&uniqueErrts[Random::Int(UNIQUE_COUNT)], Random::Float() > 0.5f ? whiteMaterial : blackMaterial);
+			Mesh& m_errt = errts[i].AddComponent<Mesh>(&uniqueErrts[Random::Int(UNIQUE_COUNT)], Random::Float() > 0.5f ? &whiteMaterial : &blackMaterial);
 
 			glm::vec2 randCircle = Random::PointInCircle();
 			t_errt.position.x = randCircle.x * 200.0f;

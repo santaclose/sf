@@ -36,10 +36,11 @@ namespace sf
 
 	float shipSpeed;
 	
-	MeshData shipMesh = MeshData(BufferLayout({
+	BufferLayout shipVertexLayout = BufferLayout({
 		BufferComponent::VertexPosition,
 		BufferComponent::VertexUV
-	}));
+	});
+	MeshData shipMesh = MeshData(&shipVertexLayout);
 
 	Entity* things;
 
@@ -57,6 +58,10 @@ namespace sf
 		BufferComponent::ParticleScale,
 		BufferComponent::ParticleSpawnTime
 	});
+
+	Material particleMaterial;
+	Material errtMaterial;
+	Material spaceshipMaterial;
 
 	namespace
 	{
@@ -97,28 +102,26 @@ namespace sf
 	{
 		shipSpeed = 5.0;
 
-		uint32_t uvMaterial = Renderer::CreateMaterial(Material("assets/shaders/default.vert", "assets/shaders/uv.frag"), shipMesh.vertexBufferLayout);
-		uint32_t aoMaterial = Renderer::CreateMaterial(Material("assets/shaders/default.vert", "assets/shaders/vertexAo.frag"), generatedMeshesVertexLayout);
-		uint32_t colorsMaterial = Renderer::CreateMaterial(Material("examples/spaceship/randomColors.vert", "examples/spaceship/randomColors.frag"), generatedMeshesVertexLayout);
-		uint32_t noiseMaterial = Renderer::CreateMaterial(Material("examples/spaceship/noise.vert", "examples/spaceship/noise.frag"), generatedMeshesVertexLayout);
+		spaceshipMaterial.CreateFromShaderFiles("assets/shaders/default.vert", "assets/shaders/uv.frag");
+		errtMaterial.CreateFromShaderFiles("assets/shaders/default.vert", "assets/shaders/vertexAo.frag");
 
-		Material particleMaterialInfo = Material("examples/spaceship/particles.vert", "examples/spaceship/particles.frag");
-		particleMaterialInfo.blendMode = MaterialBlendMode::Multiply;
-		particleMaterialInfo.isDoubleSided = true;
-		uint32_t particleMaterial = Renderer::CreateMaterial(particleMaterialInfo, Defaults::MeshDataPlane().vertexBufferLayout, nullptr, &particleBufferLayout);
+		particleMaterial.CreateFromShaderFiles("examples/spaceship/particles.vert", "examples/spaceship/particles.frag");
+		particleMaterial.blendMode = MaterialBlendMode::Multiply;
+		particleMaterial.isDoubleSided = true;
+		particleMaterial.particleBufferLayout = &particleBufferLayout;
 
 		e_ship = scene.CreateEntity();
 
 		int gltfid = GltfImporter::Load("examples/spaceship/ship.glb");
 		GltfImporter::GenerateMeshData(gltfid, shipMesh);
-		Mesh& m_ship = e_ship.AddComponent<Mesh>(&shipMesh, uvMaterial);
+		Mesh& m_ship = e_ship.AddComponent<Mesh>(&shipMesh, &spaceshipMaterial);
 		Transform& t_ship = e_ship.AddComponent<Transform>();
 		ParticleSystem& ps_ship = e_ship.AddComponent<ParticleSystem>();
 		ps_ship.meshData = &Defaults::MeshDataPlane();
 		ps_ship.particleCount = 160;
 		ps_ship.timeBetweenEmissions = 0.05f;
 		ps_ship.particlesPerEmission = 8u;
-		ps_ship.material = particleMaterial;
+		ps_ship.material = &particleMaterial;
 		ps_ship.initialTransform = ParticleInitialTransform;
 		ps_ship.emit = false;
 
@@ -147,11 +150,13 @@ namespace sf
 		{
 			cahedMeshesPath[28] = '0' + (i / 10);
 			cahedMeshesPath[29] = '0' + (i % 10);
+			/* Assign layout to avoid creating a new one per model when loading */
+			generatedMeshes[i].vertexBufferLayout = &generatedMeshesVertexLayout;
 			if (generatedMeshes[i].LoadFromFile(cahedMeshesPath))
 				continue;
 			errt::seed = i;
 			errt::GenerateModel(generatedMeshes[i]);
-			generatedMeshes[i].ChangeVertexBufferLayout(generatedMeshesVertexLayout);
+			generatedMeshes[i].ChangeVertexBufferLayout(&generatedMeshesVertexLayout);
 			VoxelVolumeData vv;
 			vv.BuildFromMesh(generatedMeshes[i], 0.01f);
 			MeshProcessor::ComputeVertexAmbientOcclusion(generatedMeshes[i], &vv);
@@ -162,7 +167,7 @@ namespace sf
 		for (unsigned int i = 0; i < COUNT; i++)
 		{
 			things[i] = scene.CreateEntity();
-			Mesh& m_thing = things[i].AddComponent<Mesh>(&generatedMeshes[Random::Int(UNIQUE_COUNT)], aoMaterial);
+			Mesh& m_thing = things[i].AddComponent<Mesh>(&generatedMeshes[Random::Int(UNIQUE_COUNT)], &errtMaterial);
 
 			Transform& t_thing = things[i].AddComponent<Transform>();
 

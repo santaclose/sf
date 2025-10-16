@@ -9,10 +9,10 @@ namespace sf
 {
 	struct ParticleSystem
 	{
-		const MeshData* meshData;
-		const Material* material;
-		uint32_t particleCount;
-		float timeBetweenEmissions;
+		const MeshData* meshData = nullptr;
+		const Material* material = nullptr;
+		uint32_t particleCount = 16U;
+		float timeBetweenEmissions = 0.1f;
 		uint32_t particlesPerEmission = 1U;
 		bool emit = true;
 

@@ -38,7 +38,20 @@ void sf::Bitmap::CreateFromFile(const std::string& filePath, bool flipVertically
 	stbi_set_flip_vertically_on_load(flipVertically);
 	std::string fileExtension = filePath.substr(filePath.find_last_of('.') + 1);
 	int x, y, c;
-	if (fileExtension == "hdr")
+	if (fileExtension == "r16")
+	{
+		this->dataType = DataType::u16;
+		uint32_t fileSize = std::filesystem::file_size(filePath);
+		uint32_t imageSize = (uint32_t) glm::sqrt((float)fileSize / 2.0f);
+		this->width = this->height = imageSize;
+		this->channelCount = 1;
+		this->buffer = malloc(fileSize);
+		std::ifstream file(filePath, std::ios::binary);
+		if (!file.read((char*) this->buffer, fileSize))
+			std::cout << "[Bitmap] Failed to load file: " << filePath << std::endl;
+		return;
+	}
+	else if (fileExtension == "hdr")
 	{
 		stb_buffer = stbi_loadf(filePath.c_str(), &x, &y, &c, 0);
 		this->dataType = DataType::f32;

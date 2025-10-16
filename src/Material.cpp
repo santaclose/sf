@@ -38,12 +38,6 @@ namespace sf {
 	};
 }
 
-void sf::Material::CreateFromShaderFiles(const std::string& vertexShaderFilePath, const std::string& fragmentShaderFilePath)
-{
-	this->vertexShaderFilePath = vertexShaderFilePath;
-	this->fragmentShaderFilePath = fragmentShaderFilePath;
-}
-
 void sf::Material::CreateFromFile(const std::string& filePath)
 {
 	std::ifstream ifs(filePath);
@@ -59,16 +53,36 @@ void sf::Material::CreateFromFile(const std::string& filePath)
 	{
 		if (fileContents.substr(i, 8) == "shader: ")
 		{
+			int spaces[3] = { -1, -1, -1 };
+			int p;
+			int currentSpace = 0;
+			for (p = i + 9; fileContents[p] != '\n'; p++)
+				if (fileContents[p] == ' ')
+					spaces[currentSpace++] = p;
+
+			if (spaces[2] == -1)
+			{
+				vertShaderFilePath = fileContents.substr(i + 9, spaces[0] - 1 - i - 9);
+				fragShaderFilePath = fileContents.substr(spaces[0] + 2, p - spaces[0] - 1 - 2);
+			}
+			else
+			{
+				vertShaderFilePath = fileContents.substr(i + 9, spaces[0] - 1 - i - 9);
+				tescShaderFilePath = fileContents.substr(spaces[0] + 2, spaces[1] - spaces[0] - 1 - 2);
+				teseShaderFilePath = fileContents.substr(spaces[1] + 2, spaces[2] - spaces[1] - 1 - 2);
+				fragShaderFilePath = fileContents.substr(spaces[2] + 2, p - spaces[2] - 1 - 2);
+			}
+		}
+		else if (fileContents.substr(i, 14) == "tessellation: ")
+		{
 			int q, p;
-			q = p = i + 9;
-			while (fileContents[p] != '\"') { p++; }
-			vertexShaderFilePath = fileContents.substr(q, p - q);
-			q = p + 1;
-			while (fileContents[q] != '\"') { q++; }
-			q++;
-			p = q;
-			while (fileContents[p] != '\"') { p++; }
-			fragmentShaderFilePath = fileContents.substr(q, p - q);
+			q = p = i + 14;
+			for (; fileContents[p] != ' '; p++);
+			tessPatchVertexCount = std::stoi(fileContents.substr(q, p - q));
+			for (p = q = p + 1; fileContents[p] != ' '; p++);
+			tessSpacing = fileContents.substr(q, p - q);
+			for (p = q = p + 1; fileContents[p] != '\n'; p++);
+			tessWinding = fileContents.substr(q, p - q);
 		}
 		else if (
 			fileContents[i] >= 'A' && fileContents[i] <= 'Z' ||
@@ -138,7 +152,7 @@ void sf::Material::CreateFromFile(const std::string& filePath)
 			i++;
 			if (i >= fileContents.length())
 				break;
-			if (fileContents[i - 1] == '\n')
+			if (fileContents[i - 1] == '\n' && fileContents[i] != '#')
 				break;
 		}
 	}

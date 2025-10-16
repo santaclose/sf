@@ -27,46 +27,49 @@ namespace
 		}
 	}
 
-	std::string GenerateVertexAttributeShaderHeader(const sf::BufferLayout& vertexBufferLayout)
+	std::string GenerateVertexAttributeShaderHeader(const sf::BufferLayout& vertexBufferLayout, bool isVertexShader = true)
 	{
 		uint32_t currentLocation = 0;
 		std::string out = "";
 		for (const sf::BufferComponentInfo& bci : vertexBufferLayout.GetComponentInfos())
 		{
 			assert((uint32_t)bci.component < (uint32_t) sf::BufferComponent::VoxelPosition); // should be vertex component
-			out += "layout(location = " + std::to_string(currentLocation) + ") in ";
-			switch (bci.dataType)
+			if (isVertexShader)
 			{
-				case sf::DataType::f32:
-					out += "float"; break;
-				case sf::DataType::vec2f32:
-					out += "vec2"; break;
-				case sf::DataType::vec3f32:
-					out += "vec3"; break;
-				case sf::DataType::vec4f32:
-					out += "vec4"; break;
-				default:
-					assert(false); // missing type, should add to this switch
+				out += "layout(location = " + std::to_string(currentLocation) + ") in ";
+				switch (bci.dataType)
+				{
+					case sf::DataType::f32:
+						out += "float"; break;
+					case sf::DataType::vec2f32:
+						out += "vec2"; break;
+					case sf::DataType::vec3f32:
+						out += "vec3"; break;
+					case sf::DataType::vec4f32:
+						out += "vec4"; break;
+					default:
+						assert(false); // missing type, should add to this switch
+				}
+				out += " ";
 			}
-			out += " ";
 			switch (bci.component)
 			{
 				case sf::BufferComponent::VertexPosition:
-					out += "VA_Position;\n#define HAS_VA_Position 1\n"; break;
+					out += (isVertexShader ? "VA_Position;\n#define HAS_VA_Position 1\n" : "#define HAS_VA_Position 1\n"); break;
 				case sf::BufferComponent::VertexNormal:
-					out += "VA_Normal;\n#define HAS_VA_Normal 1\n"; break;
+					out += (isVertexShader ? "VA_Normal;\n#define HAS_VA_Normal 1\n" : "#define HAS_VA_Normal 1\n"); break;
 				case sf::BufferComponent::VertexTangent:
-					out += "VA_Tangent;\n#define HAS_VA_Tangent 1\n"; break;
+					out += (isVertexShader ? "VA_Tangent;\n#define HAS_VA_Tangent 1\n" : "#define HAS_VA_Tangent 1\n"); break;
 				case sf::BufferComponent::VertexColor:
-					out += "VA_Color;\n#define HAS_VA_Color 1\n"; break;
+					out += (isVertexShader ? "VA_Color;\n#define HAS_VA_Color 1\n" : "#define HAS_VA_Color 1\n"); break;
 				case sf::BufferComponent::VertexUV:
-					out += "VA_UV;\n#define HAS_VA_UV 1\n"; break;
+					out += (isVertexShader ? "VA_UV;\n#define HAS_VA_UV 1\n" : "#define HAS_VA_UV 1\n"); break;
 				case sf::BufferComponent::VertexAO:
-					out += "VA_AO;\n#define HAS_VA_AO 1\n"; break;
+					out += (isVertexShader ? "VA_AO;\n#define HAS_VA_AO 1\n" : "#define HAS_VA_AO 1\n"); break;
 				case sf::BufferComponent::VertexBoneWeights:
-					out += "VA_BoneWeights;\n#define HAS_VA_BoneWeights 1\n"; break;
+					out += (isVertexShader ? "VA_BoneWeights;\n#define HAS_VA_BoneWeights 1\n" : "#define HAS_VA_BoneWeights 1\n"); break;
 				case sf::BufferComponent::VertexBoneIndices:
-					out += "VA_BoneIndices;\n#define HAS_VA_BoneIndices 1\n"; break;
+					out += (isVertexShader ? "VA_BoneIndices;\n#define HAS_VA_BoneIndices 1\n" : "#define HAS_VA_BoneIndices 1\n"); break;
 			}
 			currentLocation++;
 		}
@@ -223,59 +226,123 @@ uint32_t sf::GlShader::CompileShader(uint32_t type, const std::string& source)
 	return id;
 }
 
-void sf::GlShader::CreateFromFiles(const std::string& vertexShaderPath, const std::string& fragmentShaderPath,
+void sf::GlShader::Create(const Material& material,
 	const BufferLayout& vertexBufferLayout,
 	const BufferLayout* voxelBufferLayout,
 	const BufferLayout* particleBufferLayout)
 {
-	m_vertFileName = vertexShaderPath + ".glsl";
-	m_fragFileName = fragmentShaderPath + ".glsl";
-	std::cout << "[GlShader] Creating shader from files: " << m_vertFileName << ", " << m_fragFileName << std::endl;
+	m_vertFileName = material.vertShaderFilePath + ".glsl";
+	if (material.UsesTessellation())
+	{
+		m_tescFileName = material.tescShaderFilePath + ".glsl";
+		m_teseFileName = material.teseShaderFilePath + ".glsl";
+	}
+	m_fragFileName = material.fragShaderFilePath + ".glsl";
+	std::cout << "[GlShader] Creating shader from files: " << m_vertFileName << ", " << (material.UsesTessellation() ? m_tescFileName + ", " + m_teseFileName + ", " : "") << m_fragFileName << std::endl;
 
 	Delete();
 
-	std::ifstream ifs(m_vertFileName);
-	std::ifstream ifs2(m_fragFileName);
+	std::ifstream ifs, ifs2, ifs3, ifs4;
+	ifs = std::ifstream(m_vertFileName);
+	if (material.UsesTessellation())
+	{
+		ifs2 = std::ifstream(m_tescFileName);
+		ifs3 = std::ifstream(m_teseFileName);
+	}
+	ifs4 = std::ifstream(m_fragFileName);
 
 	if (ifs.fail())
 		std::cout << "[GlShader] Could not read vertex shader file: " << m_vertFileName << std::endl;
-	if (ifs2.fail())
+	if (material.UsesTessellation())
+	{
+		if (ifs2.fail())
+			std::cout << "[GlShader] Could not read tessellation control shader file: " << m_tescFileName << std::endl;
+		if (ifs3.fail())
+			std::cout << "[GlShader] Could not read tessellation evaluation shader file: " << m_teseFileName << std::endl;
+	}
+	if (ifs4.fail())
 		std::cout << "[GlShader] Could not read fragment shader file: " << m_fragFileName << std::endl;
 
-	std::string vertexShaderSource((std::istreambuf_iterator<char>(ifs)),
+	std::string vertShaderSource, tescShaderSource, teseShaderSource, fragShaderSource;
+	vertShaderSource = std::string((std::istreambuf_iterator<char>(ifs)),
 		(std::istreambuf_iterator<char>()));
-	std::string fragmentShaderSource((std::istreambuf_iterator<char>(ifs2)),
+	if (material.UsesTessellation())
+	{
+		tescShaderSource = std::string((std::istreambuf_iterator<char>(ifs2)),
+			(std::istreambuf_iterator<char>()));
+		teseShaderSource = std::string((std::istreambuf_iterator<char>(ifs3)),
+			(std::istreambuf_iterator<char>()));
+	}
+	fragShaderSource = std::string((std::istreambuf_iterator<char>(ifs4)),
 		(std::istreambuf_iterator<char>()));
 
 	if (voxelBufferLayout != nullptr)
-		vertexShaderSource = GenerateVoxelVolumeShaderHeader(*voxelBufferLayout) + vertexShaderSource;
+		vertShaderSource = GenerateVoxelVolumeShaderHeader(*voxelBufferLayout) + vertShaderSource;
 	if (particleBufferLayout != nullptr)
-		vertexShaderSource = GenerateParticleShaderHeader(*particleBufferLayout) + vertexShaderSource;
-	vertexShaderSource = GenerateVertexAttributeShaderHeader(vertexBufferLayout) + vertexShaderSource;
-	vertexShaderSource = "#version 460\n" + vertexShaderSource;
+		vertShaderSource = GenerateParticleShaderHeader(*particleBufferLayout) + vertShaderSource;
+	vertShaderSource = GenerateVertexAttributeShaderHeader(vertexBufferLayout) + vertShaderSource;
+	vertShaderSource = "#version 460\n" + vertShaderSource;
+	if (material.UsesTessellation())
+	{
+		tescShaderSource = GenerateVertexAttributeShaderHeader(vertexBufferLayout, false) + tescShaderSource;
+		tescShaderSource = "layout (vertices=" + std::to_string(material.tessPatchVertexCount) + ") out;\n#define VERTICES_PER_PATCH " +
+			std::to_string(material.tessPatchVertexCount) + std::string("\n") + tescShaderSource;
+		tescShaderSource = "#version 460\n" + tescShaderSource;
+		teseShaderSource = GenerateVertexAttributeShaderHeader(vertexBufferLayout, false) + teseShaderSource;
+		teseShaderSource = "layout (" + std::string(material.tessPatchVertexCount == 3 ? "triangles" : "quads") + ", " + material.tessSpacing + ", " + material.tessWinding + ") in;\n#define VERTICES_PER_PATCH " +
+			std::to_string(material.tessPatchVertexCount) + std::string("\n") + teseShaderSource;
+		teseShaderSource = "#version 460\n" + teseShaderSource;
+	}
+	fragShaderSource = "#version 460\nlayout(location = 0) out vec4 OUT_COLOR;\n" + fragShaderSource;
 
-	fragmentShaderSource = "#version 460\nlayout(location = 0) out vec4 OUT_COLOR;\n" + fragmentShaderSource;
-
-	ResolveIncludes(vertexShaderSource);
-	ResolveIncludes(fragmentShaderSource);
+	ResolveIncludes(vertShaderSource);
+	if (material.UsesTessellation())
+	{
+		ResolveIncludes(tescShaderSource);
+		ResolveIncludes(teseShaderSource);
+	}
+	ResolveIncludes(fragShaderSource);
 
 	gl_id = glCreateProgram();
 	std::cout << "[GlShader] Created program with id " << gl_id << std::endl;
-	uint32_t vs = CompileShader(GL_VERTEX_SHADER, vertexShaderSource);
-	uint32_t fs = CompileShader(GL_FRAGMENT_SHADER, fragmentShaderSource);
+	uint32_t vs, tcs, tes, fs;
+	vs = CompileShader(GL_VERTEX_SHADER, vertShaderSource);
+	if (material.UsesTessellation())
+	{
+		tcs = CompileShader(GL_TESS_CONTROL_SHADER, tescShaderSource);
+		tes = CompileShader(GL_TESS_EVALUATION_SHADER, teseShaderSource);
+	}
+	fs = CompileShader(GL_FRAGMENT_SHADER, fragShaderSource);
 
 	if (!vs)
-		std::cout << vertexShaderSource << std::endl;
+		std::cout << vertShaderSource << std::endl;
+	if (material.UsesTessellation())
+	{
+		if (!tcs)
+			std::cout << tescShaderSource << std::endl;
+		if (!tes)
+			std::cout << teseShaderSource << std::endl;
+	}
 	if (!fs)
-		std::cout << fragmentShaderSource << std::endl;
+		std::cout << fragShaderSource << std::endl;
 
 	glAttachShader(gl_id, vs);
+	if (material.UsesTessellation())
+	{
+		glAttachShader(gl_id, tcs);
+		glAttachShader(gl_id, tes);
+	}
 	glAttachShader(gl_id, fs);
 	glLinkProgram(gl_id);
 	CheckLinkStatusAndReturnProgram(gl_id, true);
 	glValidateProgram(gl_id);
 
 	glDeleteShader(vs);
+	if (material.UsesTessellation())
+	{
+		glDeleteShader(tcs);
+		glDeleteShader(tes);
+	}
 	glDeleteShader(fs);
 }
 
@@ -324,7 +391,7 @@ int sf::GlShader::GetUniformLocation(const std::string& name)
 
 	int location = glGetUniformLocation(gl_id, name.c_str());
 	if (location == -1)
-		std::cout << "[GlShader] Could not get uniform location for " << name << " in shader " << m_vertFileName << "-" << m_fragFileName << std::endl;
+		std::cout << "[GlShader] Could not get uniform location for '" << name << "' in shader " << m_vertFileName << "-" << m_fragFileName << std::endl;
 
 	m_uniformCache[name].location = location;
 	return location;

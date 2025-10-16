@@ -4,6 +4,8 @@
 #include <glad/glad.h>
 #include <unordered_map>
 
+#include <Material.h>
+
 #include <BufferLayout.h>
 
 namespace sf {
@@ -22,6 +24,8 @@ namespace sf {
 		friend GlMaterial;
 	private:
 		std::string m_vertFileName;
+		std::string m_tescFileName;
+		std::string m_teseFileName;
 		std::string m_fragFileName;
 		std::unordered_map<std::string, ShaderUniformData> m_uniformCache;
 		int m_textureIndexCounter = 0;
@@ -33,9 +37,7 @@ namespace sf {
 		int GetUniformLocation(const std::string& name);
 		int GetOrAssignTextureIndex(const std::string& uniform);
 	public:
-		void CreateFromFiles(
-			const std::string& vertexShaderPath,
-			const std::string& fragmentShaderPath,
+		void Create(const Material& material,
 			const BufferLayout& vertexBufferLayout,
 			const BufferLayout* voxelBufferLayout = nullptr,
 			const BufferLayout* particleBufferLayout = nullptr);

@@ -102,10 +102,13 @@ namespace sf
 	{
 		shipSpeed = 5.0;
 
-		spaceshipMaterial.CreateFromShaderFiles("assets/shaders/default.vert", "assets/shaders/uv.frag");
-		errtMaterial.CreateFromShaderFiles("assets/shaders/default.vert", "assets/shaders/vertexAo.frag");
+		spaceshipMaterial.vertShaderFilePath = "assets/shaders/default.vert";
+		spaceshipMaterial.fragShaderFilePath = "assets/shaders/uv.frag";
+		errtMaterial.vertShaderFilePath = "assets/shaders/default.vert";
+		errtMaterial.fragShaderFilePath = "assets/shaders/vertexAo.frag";
 
-		particleMaterial.CreateFromShaderFiles("examples/spaceship/particles.vert", "examples/spaceship/particles.frag");
+		particleMaterial.vertShaderFilePath = "examples/spaceship/particles.vert";
+		particleMaterial.fragShaderFilePath = "examples/spaceship/particles.frag";
 		particleMaterial.blendMode = MaterialBlendMode::Multiply;
 		particleMaterial.isDoubleSided = true;
 		particleMaterial.particleBufferLayout = &particleBufferLayout;

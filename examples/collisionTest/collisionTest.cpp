@@ -464,7 +464,8 @@ namespace sf
 			boxes[i].AddComponent<BoxCollider>();
 		}
 
-		monkeyMaterial.CreateFromShaderFiles("assets/shaders/default.vert", "assets/shaders/default.frag");
+		monkeyMaterial.vertShaderFilePath = "assets/shaders/default.vert";
+		monkeyMaterial.fragShaderFilePath = "assets/shaders/default.frag";
 		monkey = scene.CreateEntity();
 		monkey.AddComponent<Transform>();
 		monkey.AddComponent<Mesh>(&Defaults::MeshDataMonkey(), &monkeyMaterial);

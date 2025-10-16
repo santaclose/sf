@@ -12,9 +12,9 @@ void sf::GlMaterial::Create(const Material* material,
 {
 	m_material = material;
 	assert(m_material != nullptr);
-	assert(m_material->vertexShaderFilePath.length() > 0 && m_material->fragmentShaderFilePath.length() > 0);
+	assert(m_material->vertShaderFilePath.length() > 0 && m_material->fragShaderFilePath.length() > 0);
 	m_shader = new GlShader();
-	m_shader->CreateFromFiles(m_material->vertexShaderFilePath, m_material->fragmentShaderFilePath, vertexBufferLayout, voxelBufferLayout, particleBufferLayout);
+	m_shader->Create(*m_material, vertexBufferLayout, voxelBufferLayout, particleBufferLayout);
 
 	for (const std::pair<std::string, Uniform>& uniformPair : m_material->uniforms)
 	{

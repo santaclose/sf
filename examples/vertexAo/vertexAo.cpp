@@ -63,7 +63,8 @@ namespace sf
 
 		ExampleViewer::Initialize(scene);
 
-		aoMaterial.CreateFromShaderFiles("assets/shaders/default.vert", "assets/shaders/vertexAo.frag");
+		aoMaterial.vertShaderFilePath = "assets/shaders/default.vert";
+		aoMaterial.fragShaderFilePath = "assets/shaders/vertexAo.frag";
 
 		std::vector<std::string> meshFilePaths = { "examples/vertexAo/bunny/bunny.obj", "assets/meshes/monke.obj" };
 		sampleMeshes = new MeshData[meshFilePaths.size()];

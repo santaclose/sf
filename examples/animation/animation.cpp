@@ -69,7 +69,8 @@ namespace sf
 			}, "examples/animation/");
 
 		ExampleViewer::Initialize(scene);
-		meshMaterial.CreateFromShaderFiles("assets/shaders/default.vert", "assets/shaders/default.frag");
+		meshMaterial.vertShaderFilePath = "assets/shaders/default.vert";
+		meshMaterial.fragShaderFilePath = "assets/shaders/default.frag";
 
 		int gltfid;
 		skeletons = new SkeletonData[2];

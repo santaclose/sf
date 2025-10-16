@@ -105,8 +105,10 @@ namespace sf
 		{
 			static glm::vec3 color(1.0, 1.0, 1.0);
 			static glm::vec3 colorb(0.0, 0.0, 0.0);
-			whiteMaterial.CreateFromShaderFiles("assets/shaders/default.vert", "assets/shaders/solidColor.frag");
-			blackMaterial.CreateFromShaderFiles("assets/shaders/default.vert", "assets/shaders/solidColor.frag");
+			whiteMaterial.vertShaderFilePath = "assets/shaders/default.vert";
+			whiteMaterial.fragShaderFilePath = "assets/shaders/solidColor.frag";
+			blackMaterial.vertShaderFilePath = "assets/shaders/default.vert";
+			blackMaterial.fragShaderFilePath = "assets/shaders/solidColor.frag";
 			whiteMaterial.uniforms["color"] = { DataType::vec3f32, &color };
 			blackMaterial.uniforms["color"] = { DataType::vec3f32, &colorb };
 		}

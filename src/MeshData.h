@@ -16,6 +16,7 @@ namespace sf {
 		uint32_t indexCount = 0;
 		uint32_t* pieces = nullptr;
 		uint32_t pieceCount = 0;
+		uint8_t vertexCountPerPrimitive = 3;
 
 		MeshData() = default;
 		inline MeshData(const BufferLayout* newLayout)

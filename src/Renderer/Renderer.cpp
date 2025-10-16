@@ -202,7 +202,10 @@ namespace sf::Renderer
 
 	void CreateSpriteGpuData()
 	{
-		spriteShader.CreateFromFiles("assets/shaders/sprite.vert", "assets/shaders/sprite.frag", positionUvVertexLayout);
+		Material spriteMat;
+		spriteMat.vertShaderFilePath = "assets/shaders/sprite.vert";
+		spriteMat.fragShaderFilePath = "assets/shaders/sprite.frag";
+		spriteShader.Create(spriteMat, positionUvVertexLayout);
 
 		// quad uvs and indices won't change
 		spriteQuad.vertices[1] = { 0.0f, 0.0f };
@@ -514,7 +517,17 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 
 		glBindVertexArray(meshGpuData[mesh.meshData].gl_vao);
 		glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
-		glDrawElements(GL_TRIANGLES, drawEnd - drawStart, GL_UNSIGNED_INT, (void*)(drawStart * sizeof(uint32_t)));
+		if (mesh.materials[i]->UsesTessellation())
+		{
+			assert(mesh.meshData->vertexCountPerPrimitive == mesh.materials[i]->tessPatchVertexCount);
+			glPatchParameteri(GL_PATCH_VERTICES, mesh.materials[i]->tessPatchVertexCount);
+			glDrawElements(GL_PATCHES, drawEnd - drawStart, GL_UNSIGNED_INT, (void*)(drawStart * sizeof(uint32_t)));
+		}
+		else
+		{
+			assert(mesh.meshData->vertexCountPerPrimitive == 3);
+			glDrawElements(GL_TRIANGLES, drawEnd - drawStart, GL_UNSIGNED_INT, (void*)(drawStart * sizeof(uint32_t)));
+		}
 	}
 }
 
@@ -561,6 +574,7 @@ void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 		glBindVertexArray(meshGpuData[mesh.meshData].gl_vao);
 		glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, skeletonSsbos[mesh.skeletonData]);
+		assert(mesh.meshData->vertexCountPerPrimitive == 3);
 		glDrawElements(GL_TRIANGLES, drawEnd - drawStart, GL_UNSIGNED_INT, (void*)(drawStart * sizeof(uint32_t)));
 	}
 
@@ -812,7 +826,12 @@ void sf::Renderer::DrawText(Text& text, ScreenCoordinates& screenCoordinates)
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(SebText::LayoutSettings), &textLayoutSettings, GL_DYNAMIC_DRAW);
 
 	if (!textShader.Initialized())
-		textShader.CreateFromFiles("vendor/sebtext/shader.vert", "vendor/sebtext/shader.frag", positionUvVertexLayout);
+	{
+		Material textMat;
+		textMat.vertShaderFilePath = "vendor/sebtext/shader.vert";
+		textMat.fragShaderFilePath = "vendor/sebtext/shader.frag";
+		textShader.Create(textMat, positionUvVertexLayout);
+	}
 
 	textShader.Bind();
 	glPolygonMode(GL_FRONT, GL_FILL);
@@ -937,7 +956,10 @@ void sf::Renderer::DrawLines()
 		glEnableVertexAttribArray(1);
 		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(LineVertex), (void*)offsetof(LineVertex, color));
 
-		drawLineShader.CreateFromFiles("assets/shaders/drawLines.vert", "assets/shaders/drawLines.frag", positionColorVertexLayout);
+		Material lineMat;
+		lineMat.vertShaderFilePath = "assets/shaders/drawLines.vert";
+		lineMat.fragShaderFilePath = "assets/shaders/drawLines.frag";
+		drawLineShader.Create(lineMat, positionColorVertexLayout);
 
 		drawLineDataInitialized = true;
 	}

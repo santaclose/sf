@@ -64,8 +64,10 @@ namespace sf
 		monkevbd2.BuildFromMesh(Defaults::MeshDataMonkey(), 0.02f, &voxelLayout);
 		monkevbd3.BuildFromMesh(Defaults::MeshDataMonkey(), 0.07, &voxelLayout);
 
-		meshMaterial.CreateFromShaderFiles("assets/shaders/default.vert", "assets/shaders/default.frag");
-		voxelVolumeMaterial.CreateFromShaderFiles("assets/shaders/voxelVolume.vert", "assets/shaders/uv.frag");
+		meshMaterial.vertShaderFilePath = "assets/shaders/default.vert";
+		meshMaterial.fragShaderFilePath = "assets/shaders/default.frag";
+		voxelVolumeMaterial.vertShaderFilePath = "assets/shaders/voxelVolume.vert";
+		voxelVolumeMaterial.fragShaderFilePath = "assets/shaders/uv.frag";
 		voxelVolumeMaterial.voxelBufferLayout = &voxelLayout;
 
 		{

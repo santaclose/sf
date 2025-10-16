@@ -280,3 +280,51 @@ void sf::MeshProcessor::ComputeVertexAmbientOcclusion(MeshData& mesh, const Voxe
 		}
 	}
 }
+
+void sf::MeshProcessor::GenerateGrid(MeshData& mesh, uint32_t sizeX, uint32_t sizeY, uint32_t texResX, uint32_t texResY, float cellSize, bool useQuads)
+{
+	assert(sizeX > 1u && sizeY > 1u);
+	float uvAdjustX = 1.0f / texResX / 2.0f;
+	float uvAdjustY = 1.0f / texResY / 2.0f;
+	DataType positionDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::VertexPosition)->dataType;
+	DataType uvDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::VertexUV)->dataType;
+	assert(positionDataType == DataType::vec3f32);
+	assert(uvDataType == DataType::vec2f32);
+	uint32_t indicesPerCell = useQuads ? 4u : 6u;
+	mesh.vertexCountPerPrimitive = useQuads ? 4u : 3u;
+	mesh.vertexCount = sizeX * sizeY;
+	mesh.indexCount = (sizeX - 1u) * (sizeY - 1u) * indicesPerCell;
+	mesh.vertexBuffer = malloc(mesh.vertexCount * mesh.vertexBufferLayout->GetSize());
+	mesh.indexBuffer = new uint32_t[mesh.indexCount + 1u];
+	mesh.pieces = mesh.indexBuffer + mesh.indexCount;
+	mesh.pieceCount = 1u;
+	mesh.pieces[0] = 0u;
+
+	uint32_t currentIndex = 0u;
+	for (int32_t y = 0; y < sizeY; y++)
+	{
+		for (int32_t x = 0; x < sizeX; x++)
+		{
+			glm::vec3* currentVertexPos = mesh.AccessVertexComponent<glm::vec3>(BufferComponent::VertexPosition, y * sizeX + x);
+			glm::vec2* currentVertexUV = mesh.AccessVertexComponent<glm::vec2>(BufferComponent::VertexUV, y * sizeX + x);
+			currentVertexPos->x = (float) x * cellSize;
+			currentVertexPos->z = (float) (-y) * cellSize;
+			currentVertexPos->y = 0.0f;
+			currentVertexUV->x = (float)x / (float)(sizeX - 1) * ((float)(texResX - 1) / (float)texResX) + uvAdjustX;
+			currentVertexUV->y = (float)y / (float)(sizeY - 1) * ((float)(texResY - 1) / (float)texResY) + uvAdjustY;
+			if (x > 0u && y > 0u)
+			{
+				assert(useQuads && currentIndex + 3u < mesh.indexCount || currentIndex + 5u < mesh.indexCount);
+				mesh.indexBuffer[currentIndex++] = (y - 1u) * sizeX + (x - 1u);
+				mesh.indexBuffer[currentIndex++] = (y - 1u) * sizeX + (x - 0u);
+				mesh.indexBuffer[currentIndex++] = (y - 0u) * sizeX + (x - 0u);
+				if (!useQuads)
+				{
+					mesh.indexBuffer[currentIndex++] = (y - 1u) * sizeX + (x - 1u);
+					mesh.indexBuffer[currentIndex++] = (y - 0u) * sizeX + (x - 0u);
+				}
+				mesh.indexBuffer[currentIndex++] = (y - 0u) * sizeX + (x - 1u);
+			}
+		}
+	}
+}

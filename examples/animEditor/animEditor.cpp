@@ -79,7 +79,8 @@ namespace sf
 		modelEntity = scene.CreateEntity();
 		modelEntity.AddComponent<Transform>();
 
-		modelMaterial.CreateFromShaderFiles("assets/shaders/default.vert", "assets/shaders/default.frag");
+		modelMaterial.vertShaderFilePath = "assets/shaders/default.vert";
+		modelMaterial.fragShaderFilePath = "assets/shaders/default.frag";
 		modelSkeleton = new SkeletonData();
 		modelMesh = new MeshData(&modelVertexLayout);
 		uint32_t gltfid = GltfImporter::Load(filePath);

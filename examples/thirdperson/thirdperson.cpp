@@ -32,8 +32,6 @@
 #define GIMBAL_OFFSET_SHANYUNG 1.0f
 #define GIMBAL_OFFSET_FOX 0.5f
 
-#define CAMERA_COLLISION_Y 0.1f
-
 namespace sf
 {
 	Scene scene;
@@ -65,10 +63,99 @@ namespace sf
 	std::vector<float> foxSpeedPerAnimation;
 
 	Material characterMaterial;
-	Material floorMaterial;
 
-	Entity floorPlanes[9];
-#define FLOOR_PLANE_SCALE 19.0f
+	BufferLayout terrainVertexBufferLayout({BufferComponent::VertexPosition, BufferComponent::VertexUV});
+	Bitmap terrainHeightmap;
+	glm::vec3 terrainOrigin;
+	Material terrainMaterial;
+	Entity terrainEntity;
+	MeshData terrainMesh;
+	uint32_t terrainHeightmapResolution;
+	float terrainHeightmapPixelSize;
+	float terrainMaxHeight;
+
+	namespace Game
+	{
+		void CreateTerrain(const std::string& heightmapFilePath, float heightmapPixelSize, float maxHeight, uint32_t heightmapPixelsPerPatch)
+		{
+			terrainMaxHeight = maxHeight;
+			terrainHeightmapPixelSize = heightmapPixelSize;
+			terrainHeightmap.CreateFromFile(heightmapFilePath);
+			assert(terrainHeightmap.width == terrainHeightmap.height);
+			terrainHeightmapResolution = terrainHeightmap.width;
+			uint32_t patchCount = terrainHeightmapResolution / heightmapPixelsPerPatch;
+
+			terrainMaterial.vertShaderFilePath = "assets/shaders/terrain.vert";
+			terrainMaterial.tescShaderFilePath = "assets/shaders/terrain.tesc";
+			terrainMaterial.teseShaderFilePath = "assets/shaders/terrain.tese";
+			terrainMaterial.fragShaderFilePath = "assets/shaders/terrain.frag";
+			terrainMaterial.tessSpacing = "equal_spacing";
+			terrainMaterial.tessWinding = "ccw";
+			terrainMaterial.tessPatchVertexCount = 4;
+			terrainMaterial.uniforms["heightmapTexture"].dataType = DataType::bitmap;
+			terrainMaterial.uniforms["heightmapTexture"].data.p = &terrainHeightmap;
+			// terrainMaterial.uniforms["heightmapRes"].dataType = DataType::u32;
+			// terrainMaterial.uniforms["heightmapRes"].data.u32 = terrainHeightmapResolution;
+			terrainMaterial.uniforms["maxHeight"].dataType = DataType::f32;
+			terrainMaterial.uniforms["maxHeight"].data.f32 = terrainMaxHeight;
+			terrainMaterial.drawMode = MaterialDrawMode::Lines;
+
+			terrainOrigin = glm::vec3(-(float)(terrainHeightmapResolution - 1) * 0.5f * heightmapPixelSize, 0.0f, (float)(terrainHeightmapResolution - 1) * 0.5f * heightmapPixelSize);
+
+			terrainMesh.vertexBufferLayout = &terrainVertexBufferLayout;
+			MeshProcessor::GenerateGrid(terrainMesh, patchCount + 1, patchCount + 1, terrainHeightmapResolution, terrainHeightmapResolution, heightmapPixelSize * ((float)(terrainHeightmapResolution - 1) / (float)patchCount), true);
+
+			terrainEntity = scene.CreateEntity();
+			Transform& e_t = terrainEntity.AddComponent<Transform>();
+			e_t.position = terrainOrigin;
+			terrainEntity.AddComponent<Mesh>(&terrainMesh, &terrainMaterial);
+		}
+
+		bool SampleTerrain(const glm::vec3 point, float& outHeight)
+		{
+			float terrainSize = (float)(terrainHeightmapResolution - 1) * terrainHeightmapPixelSize;
+			glm::vec2 heightmapUV;
+			heightmapUV.x = (point.x - terrainOrigin.x) / terrainSize;
+			heightmapUV.y = -(point.z - terrainOrigin.z) / terrainSize;
+			heightmapUV.x = heightmapUV.x * ((float)(terrainHeightmapResolution - 1) / (float)terrainHeightmapResolution) + 0.5f / (float)terrainHeightmapResolution;
+			heightmapUV.y = heightmapUV.y * ((float)(terrainHeightmapResolution - 1) / (float)terrainHeightmapResolution) + 0.5f / (float)terrainHeightmapResolution;
+			if (heightmapUV.x > 0.0f && heightmapUV.x < 1.0f && heightmapUV.y > 0.0f && heightmapUV.y < 1.0f)
+			{
+				float heightSample = terrainHeightmap.Sample<uint16_t>(heightmapUV, 0);
+				outHeight = heightSample * terrainMaxHeight;
+				return true;
+			}
+			return false;
+		}
+
+		void UpdateCamera(float deltaTime, Entity targetCharacter, float gimbalOffsetY)
+		{
+			cameraDistance -= glm::sqrt(cameraDistance) * (Input::Key(Input::KeyCode::LeftShift) ? 0.5f : 1.0f) * (Input::MouseScrollUp() ? SCROLL_SENSITIVITY : 0.0f);
+			cameraDistance += glm::sqrt(cameraDistance) * (Input::Key(Input::KeyCode::LeftShift) ? 0.5f : 1.0f) * (Input::MouseScrollDown() ? SCROLL_SENSITIVITY : 0.0f);
+			cameraDistance = glm::max(MIN_CAMERA_DISTANCE, cameraDistance);
+
+			gimbal.GetComponent<Transform>().position = targetCharacter.GetComponent<Transform>().position + glm::vec3(0.0f, gimbalOffsetY, 0.0f);
+			targetGimbalRotation.y -= Input::MousePosDeltaX() * MOUSE_SENSITIVITY;
+			targetGimbalRotation.x += Input::MousePosDeltaY() * MOUSE_SENSITIVITY;
+			targetGimbalRotation.x = glm::clamp(targetGimbalRotation.x, -Math::Pi * 0.499f, Math::Pi * 0.499f);
+
+			gimbal.GetComponent<Transform>().rotation = glm::slerp(gimbal.GetComponent<Transform>().rotation, glm::quat(targetGimbalRotation), deltaTime * GIMBAL_ROTATION_SPEED);
+			Transform& co_t = cameraObject.GetComponent<Transform>();
+			co_t.position = glm::vec3(gimbal.GetComponent<Transform>().position + gimbal.GetComponent<Transform>().Forward() * cameraDistance);
+			co_t.LookAt(gimbal.GetComponent<Transform>().position, glm::vec3(0.0, 1.0, 0.0));
+
+			float terrainY;
+			SampleTerrain(co_t.position, terrainY);
+			co_t.position.y = glm::max(co_t.position.y, terrainY);
+		}
+
+		void SwitchCharacter()
+		{
+			bool f = fox.IsEnabled();
+			fox.SetEnabled(!f);
+			shanyung.SetEnabled(f);
+		}
+	}
 
 	Game::InitData Game::GetInitData()
 	{
@@ -98,7 +185,10 @@ namespace sf
 
 		cameraObject.AddComponent<Camera>();
 		cameraObject.AddComponent<Transform>();
-		characterMaterial.CreateFromShaderFiles("assets/shaders/default.vert", "assets/shaders/default.frag");
+		characterMaterial.vertShaderFilePath = "assets/shaders/default.vert";
+		characterMaterial.fragShaderFilePath = "assets/shaders/default.frag";
+
+		CreateTerrain("../Downloads/Telegram Desktop/test.r16", 0.5566f, 152.0f, 41);
 
 		int gltfid;
 		{
@@ -148,16 +238,6 @@ namespace sf
 
 		cameraObject.GetComponent<Transform>().position = glm::vec3(0.0, GIMBAL_OFFSET_SHANYUNG, cameraDistance);
 		cameraObject.GetComponent<Transform>().LookAt(glm::vec3(0.0, GIMBAL_OFFSET_SHANYUNG, 0.0), glm::vec3(0.0, 1.0, 0.0));
-
-		floorMaterial.CreateFromFile("examples/thirdperson/Floor.mat");
-		for (int i = 0; i < 9; i++)
-		{
-			floorPlanes[i] = scene.CreateEntity();
-			Transform& e_t = floorPlanes[i].AddComponent<Transform>();
-			e_t.scale = FLOOR_PLANE_SCALE;
-			e_t.position = glm::vec3(-FLOOR_PLANE_SCALE + ((int)(i / 3)) * FLOOR_PLANE_SCALE, 0.0f, -FLOOR_PLANE_SCALE + ((int)(i % 3)) * FLOOR_PLANE_SCALE);
-			Mesh& objectMesh = floorPlanes[i].AddComponent<Mesh>(&Defaults::MeshDataPlane(), &floorMaterial);
-		}
 	}
 
 	void Game::Terminate()
@@ -166,39 +246,12 @@ namespace sf
 		scene.DestroyEntity(cameraObject);
 		scene.DestroyEntity(shanyung);
 		scene.DestroyEntity(fox);
-		for (int i = 0; i < 9; i++)
-			scene.DestroyEntity(floorPlanes[i]);
+		scene.DestroyEntity(terrainEntity);
 
 		delete shanyungMesh;
 		delete shanyungSkeleton;
 		delete foxMesh;
 		delete foxSkeleton;
-	}
-
-	void UpdateCamera(float deltaTime, Entity targetCharacter, float gimbalOffsetY)
-	{
-		cameraDistance -= glm::sqrt(cameraDistance) * (Input::Key(Input::KeyCode::LeftShift) ? 0.5f : 1.0f) * (Input::MouseScrollUp() ? SCROLL_SENSITIVITY : 0.0f);
-		cameraDistance += glm::sqrt(cameraDistance) * (Input::Key(Input::KeyCode::LeftShift) ? 0.5f : 1.0f) * (Input::MouseScrollDown() ? SCROLL_SENSITIVITY : 0.0f);
-		cameraDistance = glm::max(MIN_CAMERA_DISTANCE, cameraDistance);
-
-		gimbal.GetComponent<Transform>().position = targetCharacter.GetComponent<Transform>().position + glm::vec3(0.0f, gimbalOffsetY, 0.0f);
-		targetGimbalRotation.y -= Input::MousePosDeltaX() * MOUSE_SENSITIVITY;
-		targetGimbalRotation.x += Input::MousePosDeltaY() * MOUSE_SENSITIVITY;
-		targetGimbalRotation.x = glm::clamp(targetGimbalRotation.x, -Math::Pi * 0.499f, Math::Pi * 0.499f);
-
-		gimbal.GetComponent<Transform>().rotation = glm::slerp(gimbal.GetComponent<Transform>().rotation, glm::quat(targetGimbalRotation), deltaTime * GIMBAL_ROTATION_SPEED);
-		Transform& co_t = cameraObject.GetComponent<Transform>();
-		co_t.position = glm::vec3(gimbal.GetComponent<Transform>().position + gimbal.GetComponent<Transform>().Forward() * cameraDistance);
-		co_t.LookAt(gimbal.GetComponent<Transform>().position, glm::vec3(0.0, 1.0, 0.0));
-		if (co_t.position.y < CAMERA_COLLISION_Y)
-			co_t.position += co_t.Forward() * ((CAMERA_COLLISION_Y - co_t.position.y) / co_t.Forward().y);
-	}
-
-	void SwitchCharacter()
-	{
-		bool f = fox.IsEnabled();
-		fox.SetEnabled(!f);
-		shanyung.SetEnabled(f);
 	}
 
 	void Game::OnUpdate(float deltaTime, float time)
@@ -230,6 +283,8 @@ namespace sf
 			e_t.position += -e_t.Up() * targetSpeed.y * deltaTime;
 			e_t.position += -e_t.Right() * targetSpeed.x * deltaTime;
 
+			SampleTerrain(e_t.position, e_t.position.y);
+
 			UpdateCamera(deltaTime, shanyung, GIMBAL_OFFSET_SHANYUNG);
 		}
 		if (fox.IsEnabled())
@@ -260,9 +315,17 @@ namespace sf
 			camForwardFlat.y = 0;
 			glm::normalize(camForwardFlat);
 			glm::vec3 camRightFlat = glm::cross(camForwardFlat, glm::vec3(0.0f, 1.0f, 0.0f));
-			if (targetBlendSpaceX > 0.0f)
-				e_t.rotation = glm::slerp(e_t.rotation, glm::quatLookAt(camForwardFlat * -inputVector.y + camRightFlat * -inputVector.x, glm::vec3(0.0f, 1.0f, 0.0f)), deltaTime * 5.0f);
 			e_t.position += -e_t.Forward() * targetSpeed * deltaTime;
+
+			SampleTerrain(e_t.position, e_t.position.y);
+			glm::vec3 deltaForward = e_t.position + e_t.Forward() * 0.001f;
+			SampleTerrain(deltaForward, deltaForward.y);
+			deltaForward -= e_t.position;
+			if (targetBlendSpaceX > 0.0f)
+				e_t.rotation = glm::slerp(e_t.rotation,
+					glm::quatLookAt(camForwardFlat * -inputVector.y + camRightFlat * -inputVector.x, glm::vec3(0.0f, 1.0f, 0.0f)) *
+					glm::quatLookAt(glm::normalize(glm::vec3(0.0f, deltaForward.y, -0.001f)),
+						glm::vec3(0.0f, 1.0f, 0.0f)), deltaTime * 5.0f);
 
 			UpdateCamera(deltaTime, fox, GIMBAL_OFFSET_FOX);
 		}

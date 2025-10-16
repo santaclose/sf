@@ -92,7 +92,7 @@ namespace sf
 	Game::InitData Game::GetInitData()
 	{
 		InitData id;
-		id.windowCursorEnabled = false;
+		id.cursorRequired = false;
 		id.toolBarEnabled = false;
 		id.msaaCount = 8;
 		return id;

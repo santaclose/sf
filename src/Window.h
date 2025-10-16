@@ -38,13 +38,13 @@ namespace sf
 		bool ShouldClose();
 
 		void SetFullScreenEnabled(bool enabled);
-		void SetCursorEnabled(bool enabled);
 		void SetVsyncEnabled(bool enabled);
 		void SetToolBarEnabled(bool enabled);
+		void SetCursorRequired(bool enabled);
 		inline bool GetFullScreenEnabled() const { return fullscreenEnabled; }
-		inline bool GetCursorEnabled() const { return cursorEnabled; }
 		inline bool GetVsyncEnabled() const { return vsyncEnabled; }
 		inline bool GetToolBarEnabled() const { return toolBarEnabled; }
+		inline bool GetCursorRequired() const { return cursorRequired; }
 
 		void AddOnResizeCallback(void (*newCallback)(void)) const;
 
@@ -74,6 +74,7 @@ namespace sf
 		uint32_t msaaCount = 4;
 		bool fullscreenEnabled = false;
 		bool toolBarEnabled = true;
+		bool cursorRequired = true;
 		bool cursorEnabled = true;
 		bool vsyncEnabled = true;
 

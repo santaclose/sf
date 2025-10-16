@@ -52,10 +52,10 @@ bool sf::ImGuiController::HasControl()
 
 void sf::ImGuiController::Tick(float deltaTime)
 {
-	if (Input::KeyDown(Input::F1))
+	if (Input::KeyDown(Input::Escape))
 		window->SetToolBarEnabled(!window->GetToolBarEnabled());
 	if (Input::KeyDown(Input::F2))
-		window->SetCursorEnabled(!window->GetCursorEnabled());
+		window->SetCursorRequired(!window->GetCursorRequired());
 	if (Input::KeyDown(Input::F3))
 		window->SetVsyncEnabled(!window->GetVsyncEnabled());
 	if (Input::KeyDown(Input::Enter) && (Input::Key(Input::LeftAlt) || Input::Key(Input::RightAlt)))
@@ -74,10 +74,10 @@ void sf::ImGuiController::Tick(float deltaTime)
 				ImGui::MenuItem("Logs", NULL, &logsEnabled);
 				if (ImGui::MenuItem("Debug Draw", NULL, &debugDrawEnabled))
 					Renderer::SetDebugDrawEnabled(debugDrawEnabled);
-				if (ImGui::MenuItem("Menu bar", "F1", window->GetToolBarEnabled()))
+				if (ImGui::MenuItem("Menu bar", "Esc", window->GetToolBarEnabled()))
 					window->SetToolBarEnabled(false);
-				if (ImGui::MenuItem("Cursor enabled", "F2", window->GetCursorEnabled()))
-					window->SetCursorEnabled(!window->GetCursorEnabled());
+				if (ImGui::MenuItem("Cursor required", "F2", window->GetCursorRequired()))
+					window->SetCursorRequired(!window->GetCursorRequired());
 				if (ImGui::MenuItem("Vsync enabled", "F3", window->GetVsyncEnabled()))
 					window->SetVsyncEnabled(!window->GetVsyncEnabled());
 				if (ImGui::MenuItem("Fullscreen", "Alt+Enter", window->GetFullScreenEnabled()))

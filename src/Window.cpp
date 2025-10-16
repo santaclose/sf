@@ -38,7 +38,7 @@ sf::Window::Window(const Game::InitData& gameInitData)
 	msaaCount = gameInitData.msaaCount;
 	fullscreenEnabled = gameInitData.windowFullscreenEnabled;
 	toolBarEnabled = gameInitData.toolBarEnabled;
-	cursorEnabled = gameInitData.windowCursorEnabled;
+	cursorEnabled = cursorRequired = gameInitData.cursorRequired;
 	vsyncEnabled = gameInitData.vsyncEnabled;
 
 
@@ -158,15 +158,6 @@ void sf::Window::SetFullScreenEnabled(bool enabled)
 	Input::UpdateFullScreenEnabled();
 }
 
-void sf::Window::SetCursorEnabled(bool enabled)
-{
-	if (cursorEnabled == enabled)
-		return;
-	cursorEnabled = enabled;
-	glfwSetInputMode(windowHandle, GLFW_CURSOR, cursorEnabled ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
-	Input::UpdateCursorEnabled(cursorEnabled);
-}
-
 void sf::Window::SetVsyncEnabled(bool enabled)
 {
 	vsyncEnabled = enabled;
@@ -176,6 +167,23 @@ void sf::Window::SetVsyncEnabled(bool enabled)
 void sf::Window::SetToolBarEnabled(bool enabled)
 {
 	toolBarEnabled = enabled;
+	bool cursorShouldBeEnabled = toolBarEnabled || cursorRequired;
+	if (cursorEnabled == cursorShouldBeEnabled)
+		return;
+	cursorEnabled = cursorShouldBeEnabled;
+	glfwSetInputMode(windowHandle, GLFW_CURSOR, cursorEnabled ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+	Input::UpdateCursorEnabled(cursorEnabled);
+}
+
+void sf::Window::SetCursorRequired(bool enabled)
+{
+	cursorRequired = enabled;
+	bool cursorShouldBeEnabled = toolBarEnabled || cursorRequired;
+	if (cursorEnabled == cursorShouldBeEnabled)
+		return;
+	cursorEnabled = cursorShouldBeEnabled;
+	glfwSetInputMode(windowHandle, GLFW_CURSOR, cursorEnabled ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+	Input::UpdateCursorEnabled(cursorEnabled);
 }
 
 void sf::Window::AddOnResizeCallback(void(*newCallback)(void)) const

@@ -9,8 +9,8 @@ namespace sf::Game
 	{
 		const char* windowTitle = "";
 		glm::uvec2 windowSize = { 1280, 720 };
-		bool windowCursorEnabled = true;
 		bool windowFullscreenEnabled = false;
+		bool cursorRequired = true;
 		uint32_t msaaCount = 4;
 		glm::vec3 clearColor = { 1.0f, 1.0f, 1.0f };
 		bool toolBarEnabled = true;

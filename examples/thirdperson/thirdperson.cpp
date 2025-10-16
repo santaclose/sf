@@ -160,7 +160,7 @@ namespace sf
 	Game::InitData Game::GetInitData()
 	{
 		InitData id;
-		id.windowCursorEnabled = false;
+		id.cursorRequired = false;
 		id.toolBarEnabled = false;
 		return id;
 	}

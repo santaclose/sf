@@ -32,398 +32,401 @@
 
 namespace sf
 {
-	enum class TestCase
+	namespace Game
 	{
-		PointLineClosestPoint,
-		PointTriangleClosestPoint,
-		PointBoxClosestPoint,
-		LineLineClosestPoints,
-		LineTriangleClosestPoints,
-		LineAABBClosestPoints,
-		LineTriangleIntersection,
-		SphereSphereIntersection,
-		SphereCapsuleIntersection,
-		SphereBoxIntersection,
-		CapsuleCapsuleIntersection,
-		CapsuleBoxIntersection,
-		BoxBoxIntersection,
-		BoxTriangleIntersection,
-		TriangleTriangleIntersection,
-		MeshSphereIntersection,
-		MeshCapsuleIntersection,
-		MeshBoxIntersection
-	};
-	TestCase currentTestCase;
-
-	glm::vec3 aabbMin;
-	glm::vec3 aabbMax;
-
-	Scene scene;
-
-	uint32_t testCount;
-	std::vector<glm::vec3> points;
-	std::vector<glm::vec3> lines;
-	std::vector<glm::vec3> triangles;
-	std::vector<Entity> spheres;
-	std::vector<Entity> capsules;
-	std::vector<Entity> boxes;
-
-	Entity monkey;
-	Material monkeyMaterial;
-
-	void GenerateShapesForCurrentCase()
-	{
-		monkey.SetEnabled(false);
-		switch (currentTestCase)
+		enum class TestCase
 		{
-			case TestCase::PointLineClosestPoint:
-			{
-				glm::quat lineRotation = Random::Rotation();
-				float lineLength = Random::Float() + 0.2f;
-				lines[0] = lineRotation * glm::vec3(0.0f, +lineLength * 0.5f, 0.0f);
-				lines[1] = lineRotation * glm::vec3(0.0f, -lineLength * 0.5f, 0.0f);
-				for (int i = 0; i < MAX_TEST_COUNT; i++)
-					points[i] = glm::mix(lines[0], lines[1], Random::Float()) + Random::UnitVec3() * 0.3f;
-				break;
-			}
-			case TestCase::PointTriangleClosestPoint:
-			{
-				triangles[0] = Random::UnitVec3() * 0.5f;
-				triangles[1] = Random::UnitVec3() * 0.5f;
-				triangles[2] = Random::UnitVec3() * 0.5f;
-				for (int i = 0; i < MAX_TEST_COUNT; i++)
-					points[i] = Random::UnitVec3();
-				break;
-			}
-			case TestCase::PointBoxClosestPoint:
-			{
-				boxes[0].GetComponent<BoxCollider>().center = glm::vec3(0.0f, 0.0f, 0.0f);
-				boxes[0].GetComponent<BoxCollider>().orientation = Random::Rotation();
-				boxes[0].GetComponent<BoxCollider>().size = glm::vec3(
-					Random::Float() * 1.5f + 0.5f,
-					Random::Float() * 1.5f + 0.5f,
-					Random::Float() * 1.5f + 0.5f);
+			PointLineClosestPoint,
+			PointTriangleClosestPoint,
+			PointBoxClosestPoint,
+			LineLineClosestPoints,
+			LineTriangleClosestPoints,
+			LineAABBClosestPoints,
+			LineTriangleIntersection,
+			SphereSphereIntersection,
+			SphereCapsuleIntersection,
+			SphereBoxIntersection,
+			CapsuleCapsuleIntersection,
+			CapsuleBoxIntersection,
+			BoxBoxIntersection,
+			BoxTriangleIntersection,
+			TriangleTriangleIntersection,
+			MeshSphereIntersection,
+			MeshCapsuleIntersection,
+			MeshBoxIntersection
+		};
+		TestCase currentTestCase;
 
-				boxes[0].GetComponent<Transform>().position = glm::vec3(0.0f, 0.0f, 0.0f);
-				boxes[0].GetComponent<Transform>().rotation = Random::Rotation();
-				boxes[0].GetComponent<Transform>().scale = Random::Float() + 0.5f;
-				for (int i = 0; i < MAX_TEST_COUNT; i++)
-					points[i] = Random::UnitVec3();
-				break;
-			}
-			case TestCase::LineLineClosestPoints:
-			{
-				glm::quat lineRotation = Random::Rotation();
-				float lineLength = Random::Float() + 2.2f;
-				lines[0] = lineRotation * glm::vec3(0.0f, +lineLength * 0.5f, 0.0f);
-				lines[1] = lineRotation * glm::vec3(0.0f, -lineLength * 0.5f, 0.0f);
-				for (int i = 0; i < MAX_TEST_COUNT; i++)
-				{
-					float randomValue = Random::Float();
-					glm::vec3 randomVec = Random::UnitVec3();
-					lines[i * 2 + 2] = glm::mix(lines[0], lines[1], randomValue) + randomVec * 0.3f + Random::UnitVec3() * 0.3f;
-					lines[i * 2 + 2 + 1] = glm::mix(lines[0], lines[1], randomValue) + randomVec * 0.3f + Random::UnitVec3() * 0.3f;
-				}
-				break;
-			}
-			case TestCase::LineTriangleClosestPoints:
-			{
-				triangles[0] = Random::UnitVec3() * 0.5f;
-				triangles[1] = Random::UnitVec3() * 0.5f;
-				triangles[2] = Random::UnitVec3() * 0.5f;
-				for (int i = 0; i < MAX_TEST_COUNT; i++)
-				{
-					lines[i * 2] = Random::UnitVec3();
-					lines[i * 2 + 1] = lines[i * 2] + Random::UnitVec3() * 0.3f;
-				}
-				break;
-			}
-			case TestCase::LineAABBClosestPoints:
-			{
-				aabbMin = glm::vec3(-0.5f, -0.5f, -0.5f);
-				aabbMax = glm::vec3(+0.5f, +0.5f, +0.5f);
-				for (int i = 0; i < MAX_TEST_COUNT; i++)
-				{
-					lines[i * 2] = Random::UnitVec3();
-					lines[i * 2 + 1] = lines[i * 2] + Random::UnitVec3() * 0.3f;
-				}
-				break;
-			}
-			case TestCase::LineTriangleIntersection:
-			{
-				glm::vec3 planeNormal = Random::UnitVec3();
-				glm::vec3 planeY = glm::normalize(glm::cross(glm::vec3(0.0f, 1.0f, 0.0f), planeNormal));
-				glm::vec3 planeX = glm::normalize(glm::cross(planeY, planeNormal));
+		glm::vec3 aabbMin;
+		glm::vec3 aabbMax;
 
-				glm::vec2 triA2d = Random::UnitVec2();
-				glm::vec2 triB2d = Random::UnitVec2();
-				glm::vec2 triC2d = Random::UnitVec2();
-				triangles[0] = planeX * triA2d.x + planeY * triA2d.y;
-				triangles[1] = planeX * triB2d.x + planeY * triB2d.y;
-				triangles[2] = planeX * triC2d.x + planeY * triC2d.y;
-				glm::vec3 lineDirection = Random::UnitVec3();
-				for (int i = 0; i < MAX_TEST_COUNT; i++)
-				{
-					glm::vec2 pointInPlane = Random::PointInCircle() * 1.2f;
-					lines[i * 2 + 0] = planeX * pointInPlane.x + planeY * pointInPlane.y + lineDirection * (Random::Float() - 0.5f);
-					lines[i * 2 + 1] = planeX * pointInPlane.x + planeY * pointInPlane.y + lineDirection * (Random::Float() - 0.5f);
-				}
-				break;
-			}
-			case TestCase::SphereSphereIntersection:
-			{
-				spheres[0].GetComponent<SphereCollider>().radius = 1.0f;
-				spheres[0].GetComponent<SphereCollider>().center = { 0.0f, 0.0f, 0.0f };
-				spheres[0].GetComponent<Transform>().position = { 0.0f, 0.0f, 0.0f };
-				spheres[0].GetComponent<Transform>().scale = 1.0f;
-				for (int i = 0; i < MAX_TEST_COUNT; i++)
-				{
-					spheres[i + 1].GetComponent<Transform>().position = Random::UnitVec3();
-					spheres[i + 1].GetComponent<Transform>().scale = Random::Float() * 0.2f + 0.05f;
-					spheres[i + 1].GetComponent<SphereCollider>().radius = Random::Float() * 0.2f + 0.05f;
-					spheres[i + 1].GetComponent<SphereCollider>().center = Random::UnitVec3() * 0.3f;
-				}
-				break;
-			}
-			case TestCase::SphereCapsuleIntersection:
-			{
-				glm::quat lineRotation = Random::Rotation();
-				float lineLength = Random::Float() * 2.0f + 1.0f;
+		Scene scene;
 
-				capsules[0].GetComponent<Transform>().position = { 0.0f, 0.0f, 0.0f };
-				capsules[0].GetComponent<Transform>().rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
-				capsules[0].GetComponent<Transform>().scale = 1.0f;
-				glm::vec3 centerA = lineRotation * glm::vec3(0.0f, +lineLength * 0.5f, 0.0f);
-				glm::vec3 centerB = lineRotation * glm::vec3(0.0f, -lineLength * 0.5f, 0.0f);
-				float radius = Random::Float() * 0.5 + 0.1f;
-				capsules[0].GetComponent<CapsuleCollider>().centerA = centerA;
-				capsules[0].GetComponent<CapsuleCollider>().centerB = centerB;
-				capsules[0].GetComponent<CapsuleCollider>().radius = radius;
-				for (int i = 0; i < MAX_TEST_COUNT; i++)
-				{
-					spheres[i].GetComponent<SphereCollider>().radius = Random::Float() * 0.1f + 0.1f;
-					spheres[i].GetComponent<SphereCollider>().center = glm::mix(centerA, centerB, Random::Float()) + Random::UnitVec3() * radius + Random::UnitVec3() * 0.5f;
-				}
-				break;
-			}
-			case TestCase::SphereBoxIntersection:
-			{
-				glm::quat transformRot = Random::Rotation();
-				glm::quat colliderRot = Random::Rotation();
-				glm::quat finalRot = transformRot * colliderRot;
-				glm::vec3 finalSize = glm::vec3(
-					Random::Float() * 1.5f + 0.5f,
-					Random::Float() * 1.5f + 0.5f,
-					Random::Float() * 1.5f + 0.5f);
-				boxes[0].GetComponent<Transform>().position = { 0.0f, 0.0f, 0.0f };
-				boxes[0].GetComponent<Transform>().rotation = transformRot;
-				boxes[0].GetComponent<Transform>().scale = 1.0f;
-				boxes[0].GetComponent<BoxCollider>().center = { 0.0f, 0.0f, 0.0f };
-				boxes[0].GetComponent<BoxCollider>().orientation = colliderRot;
-				boxes[0].GetComponent<BoxCollider>().size = finalSize;
-				for (int i = 0; i < MAX_TEST_COUNT; i++)
-				{
-					int faceAxis = Random::Int(3);
-					int faceWhich = Random::Int(2);
-					glm::vec3 localPos = glm::vec3{
-						faceAxis == 0 ? (faceWhich == 0 ? -finalSize.x * 0.5f : finalSize.x * 0.5f) : (Random::Float() - 0.5f) * finalSize.x,
-						faceAxis == 1 ? (faceWhich == 0 ? -finalSize.y * 0.5f : finalSize.y * 0.5f) : (Random::Float() - 0.5f) * finalSize.y,
-						faceAxis == 2 ? (faceWhich == 0 ? -finalSize.z * 0.5f : finalSize.z * 0.5f) : (Random::Float() - 0.5f) * finalSize.z };
-					spheres[i].GetComponent<Transform>().position = finalRot * localPos + Random::UnitVec3() * 0.3f;
-					spheres[i].GetComponent<Transform>().scale = 1.0f;
-					spheres[i].GetComponent<SphereCollider>().center = { 0.0f, 0.0f, 0.0f };
-					spheres[i].GetComponent<SphereCollider>().radius = glm::mix(0.01f, 0.15f, Random::Float());
-				}
-				break;
-			}
-			case TestCase::CapsuleCapsuleIntersection:
-			{
-				glm::quat lineRotation = Random::Rotation();
-				float lineLength = Random::Float() + 2.2f;
-				glm::vec3 a = lineRotation * glm::vec3(0.0f, +lineLength * 0.5f, 0.0f);
-				glm::vec3 b = lineRotation * glm::vec3(0.0f, -lineLength * 0.5f, 0.0f);
-				float radius = Random::Float() + 0.5f;
-				capsules[0].GetComponent<CapsuleCollider>().centerA = a;
-				capsules[0].GetComponent<CapsuleCollider>().centerB = b;
-				capsules[0].GetComponent<CapsuleCollider>().radius = radius;
-				for (int i = 0; i < MAX_TEST_COUNT; i++)
-				{
-					float randomValue = Random::Float();
-					glm::vec3 randomVec = Random::UnitVec3() * (radius + 0.3f);
-					capsules[i + 1].GetComponent<CapsuleCollider>().radius = Random::Float() * 0.1f + 0.1f;
-					capsules[i + 1].GetComponent<CapsuleCollider>().centerA = glm::mix(a, b, randomValue) + randomVec + Random::UnitVec3() * 0.3f;
-					capsules[i + 1].GetComponent<CapsuleCollider>().centerB = glm::mix(a, b, randomValue) + randomVec + Random::UnitVec3() * 0.3f;
-				}
-				break;
-			}
-			case TestCase::CapsuleBoxIntersection:
-			{
-				glm::quat transformRot = Random::Rotation();
-				glm::quat colliderRot = Random::Rotation();
-				glm::quat finalRot = transformRot * colliderRot;
-				glm::vec3 finalSize = glm::vec3(
-					Random::Float() * 1.5f + 0.5f,
-					Random::Float() * 1.5f + 0.5f,
-					Random::Float() * 1.5f + 0.5f);
-				boxes[0].GetComponent<Transform>().position = { 0.0f, 0.0f, 0.0f };
-				boxes[0].GetComponent<Transform>().rotation = transformRot;
-				boxes[0].GetComponent<Transform>().scale = 1.0f;
-				boxes[0].GetComponent<BoxCollider>().center = { 0.0f, 0.0f, 0.0f };
-				boxes[0].GetComponent<BoxCollider>().orientation = colliderRot;
-				boxes[0].GetComponent<BoxCollider>().size = finalSize;
-				for (int i = 0; i < MAX_TEST_COUNT; i++)
-				{
-					int faceAxis = Random::Int(3);
-					int faceWhich = Random::Int(2);
-					glm::vec3 localPos = glm::vec3{
-						faceAxis == 0 ? (faceWhich == 0 ? -finalSize.x * 0.5f : finalSize.x * 0.5f) : (Random::Float() - 0.5f) * finalSize.x,
-						faceAxis == 1 ? (faceWhich == 0 ? -finalSize.y * 0.5f : finalSize.y * 0.5f) : (Random::Float() - 0.5f) * finalSize.y,
-						faceAxis == 2 ? (faceWhich == 0 ? -finalSize.z * 0.5f : finalSize.z * 0.5f) : (Random::Float() - 0.5f) * finalSize.z };
-					capsules[i].GetComponent<Transform>().position = finalRot * localPos + Random::UnitVec3() * 0.3f;
-					capsules[i].GetComponent<Transform>().scale = 1.0f;
-					float capsuleLength = Random::Float() * 0.3f;
-					glm::quat capsuleRot = Random::Rotation();
-					capsules[i].GetComponent<CapsuleCollider>().centerA = capsuleRot * glm::vec3(+capsuleLength / 2.0f, 0.0f, 0.0f);
-					capsules[i].GetComponent<CapsuleCollider>().centerB = capsuleRot * glm::vec3(-capsuleLength / 2.0f, 0.0f, 0.0f);
-					capsules[i].GetComponent<CapsuleCollider>().radius = glm::mix(0.01f, 0.15f, Random::Float());
-				}
-				break;
-			}
-			case TestCase::BoxBoxIntersection:
-			{
-				glm::quat transformRot = Random::Rotation();
-				glm::quat colliderRot = Random::Rotation();
-				glm::quat finalRot = transformRot * colliderRot;
-				glm::vec3 finalSize = glm::vec3(
-					Random::Float() * 1.5f + 0.5f,
-					Random::Float() * 1.5f + 0.5f,
-					Random::Float() * 1.5f + 0.5f);
-				boxes[0].GetComponent<Transform>().position = { 0.0f, 0.0f, 0.0f };
-				boxes[0].GetComponent<Transform>().rotation = transformRot;
-				boxes[0].GetComponent<Transform>().scale = 1.0f;
-				boxes[0].GetComponent<BoxCollider>().center = { 0.0f, 0.0f, 0.0f };
-				boxes[0].GetComponent<BoxCollider>().orientation = colliderRot;
-				boxes[0].GetComponent<BoxCollider>().size = finalSize;
-				for (int i = 0; i < MAX_TEST_COUNT; i++)
-				{
-					int faceAxis = Random::Int(3);
-					int faceWhich = Random::Int(2);
-					glm::vec3 localPos = glm::vec3{
-						faceAxis == 0 ? (faceWhich == 0 ? -finalSize.x * 0.5f : finalSize.x * 0.5f) : (Random::Float() - 0.5f) * finalSize.x,
-						faceAxis == 1 ? (faceWhich == 0 ? -finalSize.y * 0.5f : finalSize.y * 0.5f) : (Random::Float() - 0.5f) * finalSize.y,
-						faceAxis == 2 ? (faceWhich == 0 ? -finalSize.z * 0.5f : finalSize.z * 0.5f) : (Random::Float() - 0.5f) * finalSize.z };
-					boxes[i + 1].GetComponent<Transform>().position = finalRot * localPos + Random::UnitVec3() * 0.3f;
-					boxes[i + 1].GetComponent<Transform>().rotation = Random::Rotation();
-					boxes[i + 1].GetComponent<Transform>().scale = 1.0f;
-					boxes[i + 1].GetComponent<BoxCollider>().center = { 0.0f, 0.0f, 0.0f };
-					boxes[i + 1].GetComponent<BoxCollider>().orientation = Random::Rotation();
-					boxes[i + 1].GetComponent<BoxCollider>().size = glm::vec3(
-						Random::Float() * 0.05f + 0.05f,
-						Random::Float() * 0.05f + 0.05f,
-						Random::Float() * 0.05f + 0.05f);
-				}
-				break;
-			}
-			case TestCase::BoxTriangleIntersection:
-			{
-				glm::quat transformRot = Random::Rotation();
-				glm::quat colliderRot = Random::Rotation();
-				glm::quat finalRot = transformRot * colliderRot;
-				glm::vec3 finalSize = glm::vec3(
-					Random::Float() * 1.5f + 0.5f,
-					Random::Float() * 1.5f + 0.5f,
-					Random::Float() * 1.5f + 0.5f);
-				boxes[0].GetComponent<Transform>().position = { 0.0f, 0.0f, 0.0f };
-				boxes[0].GetComponent<Transform>().rotation = transformRot;
-				boxes[0].GetComponent<Transform>().scale = 1.0f;
-				boxes[0].GetComponent<BoxCollider>().center = { 0.0f, 0.0f, 0.0f };
-				boxes[0].GetComponent<BoxCollider>().orientation = colliderRot;
-				boxes[0].GetComponent<BoxCollider>().size = finalSize;
-				for (int i = 0; i < MAX_TEST_COUNT; i++)
-				{
-					int faceAxis = Random::Int(3);
-					int faceWhich = Random::Int(2);
-					glm::vec3 localPos = glm::vec3{
-						faceAxis == 0 ? (faceWhich == 0 ? -finalSize.x * 0.5f : finalSize.x * 0.5f) : (Random::Float() - 0.5f) * finalSize.x,
-						faceAxis == 1 ? (faceWhich == 0 ? -finalSize.y * 0.5f : finalSize.y * 0.5f) : (Random::Float() - 0.5f) * finalSize.y,
-						faceAxis == 2 ? (faceWhich == 0 ? -finalSize.z * 0.5f : finalSize.z * 0.5f) : (Random::Float() - 0.5f) * finalSize.z };
-					glm::vec3 triangleCenter = finalRot * localPos + Random::UnitVec3() * 0.15f;
-					triangles[i * 3 + 0] = triangleCenter + Random::UnitVec3() * 0.15f;
-					triangles[i * 3 + 1] = triangleCenter + Random::UnitVec3() * 0.15f;
-					triangles[i * 3 + 2] = triangleCenter + Random::UnitVec3() * 0.15f;
-				}
-				break;
-			}
-			case TestCase::TriangleTriangleIntersection:
-			{
-				glm::vec3 planeNormal = Random::UnitVec3();
-				glm::vec3 planeY = glm::normalize(glm::cross(glm::vec3(0.0f, 1.0f, 0.0f), planeNormal));
-				glm::vec3 planeX = glm::normalize(glm::cross(planeY, planeNormal));
+		uint32_t testCount;
+		std::vector<glm::vec3> points;
+		std::vector<glm::vec3> lines;
+		std::vector<glm::vec3> triangles;
+		std::vector<Entity> spheres;
+		std::vector<Entity> capsules;
+		std::vector<Entity> boxes;
 
-				glm::vec2 triA2d = Random::UnitVec2();
-				glm::vec2 triB2d = Random::UnitVec2();
-				glm::vec2 triC2d = Random::UnitVec2();
-				triangles[0] = planeX * triA2d.x + planeY * triA2d.y;
-				triangles[1] = planeX * triB2d.x + planeY * triB2d.y;
-				triangles[2] = planeX * triC2d.x + planeY * triC2d.y;
-				for (int i = 0; i < MAX_TEST_COUNT; i++)
-				{
-					glm::vec2 pointInPlane = Random::PointInCircle() * 1.2f;
-					triangles[i * 3 + 0 + 3] = planeX * pointInPlane.x + planeY * pointInPlane.y + Random::UnitVec3() * 0.3f;
-					triangles[i * 3 + 1 + 3] = planeX * pointInPlane.x + planeY * pointInPlane.y + Random::UnitVec3() * 0.3f;
-					triangles[i * 3 + 2 + 3] = planeX * pointInPlane.x + planeY * pointInPlane.y + Random::UnitVec3() * 0.3f;
-				}
-				break;
-			}
-			case TestCase::MeshSphereIntersection:
+		Entity monkey;
+		Material monkeyMaterial;
+
+		void GenerateShapesForCurrentCase()
+		{
+			monkey.SetEnabled(false);
+			switch (currentTestCase)
 			{
-				monkey.SetEnabled(true);
-				monkey.GetComponent<Transform>().rotation = Random::Rotation();
-				monkey.GetComponent<Transform>().scale = Random::Float() * 0.4f + 0.3f;
-				monkey.GetComponent<Transform>().position = Random::UnitVec3() * 0.3f;
-				for (int i = 0; i < MAX_TEST_COUNT; i++)
+				case TestCase::PointLineClosestPoint:
 				{
-					spheres[i].GetComponent<Transform>().position = Random::PointInSphere();
-					spheres[i].GetComponent<Transform>().scale = Random::Float() * 0.1f + 0.2f;
-					spheres[i].GetComponent<SphereCollider>().center = { 0.0f, 0.0f, 0.0f };
-					spheres[i].GetComponent<SphereCollider>().radius = Random::Float() * 0.8f;
+					glm::quat lineRotation = Random::Rotation();
+					float lineLength = Random::Float() + 0.2f;
+					lines[0] = lineRotation * glm::vec3(0.0f, +lineLength * 0.5f, 0.0f);
+					lines[1] = lineRotation * glm::vec3(0.0f, -lineLength * 0.5f, 0.0f);
+					for (int i = 0; i < MAX_TEST_COUNT; i++)
+						points[i] = glm::mix(lines[0], lines[1], Random::Float()) + Random::UnitVec3() * 0.3f;
+					break;
 				}
-				break;
-			}
-			case TestCase::MeshCapsuleIntersection:
-			{
-				monkey.SetEnabled(true);
-				monkey.GetComponent<Transform>().rotation = Random::Rotation();
-				monkey.GetComponent<Transform>().scale = Random::Float() * 0.4f + 0.3f;
-				monkey.GetComponent<Transform>().position = Random::UnitVec3() * 0.3f;
-				for (int i = 0; i < MAX_TEST_COUNT; i++)
+				case TestCase::PointTriangleClosestPoint:
 				{
-					glm::quat rotation = Random::Rotation();
-					float length = Random::Float() * 0.5f;
-					capsules[i].GetComponent<Transform>().position = Random::PointInSphere();
-					capsules[i].GetComponent<Transform>().rotation = Random::Rotation();
-					capsules[i].GetComponent<Transform>().scale = Random::Float() * 0.1f + 0.2f;
-					capsules[i].GetComponent<CapsuleCollider>().centerA = rotation * glm::vec3{ 0.0f, +length * 0.5f, 0.0f };
-					capsules[i].GetComponent<CapsuleCollider>().centerB = rotation * glm::vec3{ 0.0f, -length * 0.5f, 0.0f };
-					capsules[i].GetComponent<CapsuleCollider>().radius = Random::Float() * 0.5f;
+					triangles[0] = Random::UnitVec3() * 0.5f;
+					triangles[1] = Random::UnitVec3() * 0.5f;
+					triangles[2] = Random::UnitVec3() * 0.5f;
+					for (int i = 0; i < MAX_TEST_COUNT; i++)
+						points[i] = Random::UnitVec3();
+					break;
 				}
-				break;
-			}
-			case TestCase::MeshBoxIntersection:
-			{
-				monkey.SetEnabled(true);
-				monkey.GetComponent<Transform>().rotation = Random::Rotation();
-				monkey.GetComponent<Transform>().scale = Random::Float() * 0.4f + 0.3f;
-				monkey.GetComponent<Transform>().position = Random::UnitVec3() * 0.3f;
-				for (int i = 0; i < MAX_TEST_COUNT; i++)
+				case TestCase::PointBoxClosestPoint:
 				{
-					boxes[i].GetComponent<Transform>().position = Random::PointInSphere();
-					boxes[i].GetComponent<Transform>().scale = Random::Float() * 0.1f + 0.2f;
-					boxes[i].GetComponent<BoxCollider>().center = { 0.0f, 0.0f, 0.0f };
-					boxes[i].GetComponent<BoxCollider>().size = glm::abs(Random::UnitVec3());
-					boxes[i].GetComponent<BoxCollider>().orientation = Random::Rotation();
+					boxes[0].GetComponent<BoxCollider>().center = glm::vec3(0.0f, 0.0f, 0.0f);
+					boxes[0].GetComponent<BoxCollider>().orientation = Random::Rotation();
+					boxes[0].GetComponent<BoxCollider>().size = glm::vec3(
+						Random::Float() * 1.5f + 0.5f,
+						Random::Float() * 1.5f + 0.5f,
+						Random::Float() * 1.5f + 0.5f);
+
+					boxes[0].GetComponent<Transform>().position = glm::vec3(0.0f, 0.0f, 0.0f);
+					boxes[0].GetComponent<Transform>().rotation = Random::Rotation();
+					boxes[0].GetComponent<Transform>().scale = Random::Float() + 0.5f;
+					for (int i = 0; i < MAX_TEST_COUNT; i++)
+						points[i] = Random::UnitVec3();
+					break;
 				}
-				break;
+				case TestCase::LineLineClosestPoints:
+				{
+					glm::quat lineRotation = Random::Rotation();
+					float lineLength = Random::Float() + 2.2f;
+					lines[0] = lineRotation * glm::vec3(0.0f, +lineLength * 0.5f, 0.0f);
+					lines[1] = lineRotation * glm::vec3(0.0f, -lineLength * 0.5f, 0.0f);
+					for (int i = 0; i < MAX_TEST_COUNT; i++)
+					{
+						float randomValue = Random::Float();
+						glm::vec3 randomVec = Random::UnitVec3();
+						lines[i * 2 + 2] = glm::mix(lines[0], lines[1], randomValue) + randomVec * 0.3f + Random::UnitVec3() * 0.3f;
+						lines[i * 2 + 2 + 1] = glm::mix(lines[0], lines[1], randomValue) + randomVec * 0.3f + Random::UnitVec3() * 0.3f;
+					}
+					break;
+				}
+				case TestCase::LineTriangleClosestPoints:
+				{
+					triangles[0] = Random::UnitVec3() * 0.5f;
+					triangles[1] = Random::UnitVec3() * 0.5f;
+					triangles[2] = Random::UnitVec3() * 0.5f;
+					for (int i = 0; i < MAX_TEST_COUNT; i++)
+					{
+						lines[i * 2] = Random::UnitVec3();
+						lines[i * 2 + 1] = lines[i * 2] + Random::UnitVec3() * 0.3f;
+					}
+					break;
+				}
+				case TestCase::LineAABBClosestPoints:
+				{
+					aabbMin = glm::vec3(-0.5f, -0.5f, -0.5f);
+					aabbMax = glm::vec3(+0.5f, +0.5f, +0.5f);
+					for (int i = 0; i < MAX_TEST_COUNT; i++)
+					{
+						lines[i * 2] = Random::UnitVec3();
+						lines[i * 2 + 1] = lines[i * 2] + Random::UnitVec3() * 0.3f;
+					}
+					break;
+				}
+				case TestCase::LineTriangleIntersection:
+				{
+					glm::vec3 planeNormal = Random::UnitVec3();
+					glm::vec3 planeY = glm::normalize(glm::cross(glm::vec3(0.0f, 1.0f, 0.0f), planeNormal));
+					glm::vec3 planeX = glm::normalize(glm::cross(planeY, planeNormal));
+
+					glm::vec2 triA2d = Random::UnitVec2();
+					glm::vec2 triB2d = Random::UnitVec2();
+					glm::vec2 triC2d = Random::UnitVec2();
+					triangles[0] = planeX * triA2d.x + planeY * triA2d.y;
+					triangles[1] = planeX * triB2d.x + planeY * triB2d.y;
+					triangles[2] = planeX * triC2d.x + planeY * triC2d.y;
+					glm::vec3 lineDirection = Random::UnitVec3();
+					for (int i = 0; i < MAX_TEST_COUNT; i++)
+					{
+						glm::vec2 pointInPlane = Random::PointInCircle() * 1.2f;
+						lines[i * 2 + 0] = planeX * pointInPlane.x + planeY * pointInPlane.y + lineDirection * (Random::Float() - 0.5f);
+						lines[i * 2 + 1] = planeX * pointInPlane.x + planeY * pointInPlane.y + lineDirection * (Random::Float() - 0.5f);
+					}
+					break;
+				}
+				case TestCase::SphereSphereIntersection:
+				{
+					spheres[0].GetComponent<SphereCollider>().radius = 1.0f;
+					spheres[0].GetComponent<SphereCollider>().center = { 0.0f, 0.0f, 0.0f };
+					spheres[0].GetComponent<Transform>().position = { 0.0f, 0.0f, 0.0f };
+					spheres[0].GetComponent<Transform>().scale = 1.0f;
+					for (int i = 0; i < MAX_TEST_COUNT; i++)
+					{
+						spheres[i + 1].GetComponent<Transform>().position = Random::UnitVec3();
+						spheres[i + 1].GetComponent<Transform>().scale = Random::Float() * 0.2f + 0.05f;
+						spheres[i + 1].GetComponent<SphereCollider>().radius = Random::Float() * 0.2f + 0.05f;
+						spheres[i + 1].GetComponent<SphereCollider>().center = Random::UnitVec3() * 0.3f;
+					}
+					break;
+				}
+				case TestCase::SphereCapsuleIntersection:
+				{
+					glm::quat lineRotation = Random::Rotation();
+					float lineLength = Random::Float() * 2.0f + 1.0f;
+
+					capsules[0].GetComponent<Transform>().position = { 0.0f, 0.0f, 0.0f };
+					capsules[0].GetComponent<Transform>().rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+					capsules[0].GetComponent<Transform>().scale = 1.0f;
+					glm::vec3 centerA = lineRotation * glm::vec3(0.0f, +lineLength * 0.5f, 0.0f);
+					glm::vec3 centerB = lineRotation * glm::vec3(0.0f, -lineLength * 0.5f, 0.0f);
+					float radius = Random::Float() * 0.5 + 0.1f;
+					capsules[0].GetComponent<CapsuleCollider>().centerA = centerA;
+					capsules[0].GetComponent<CapsuleCollider>().centerB = centerB;
+					capsules[0].GetComponent<CapsuleCollider>().radius = radius;
+					for (int i = 0; i < MAX_TEST_COUNT; i++)
+					{
+						spheres[i].GetComponent<SphereCollider>().radius = Random::Float() * 0.1f + 0.1f;
+						spheres[i].GetComponent<SphereCollider>().center = glm::mix(centerA, centerB, Random::Float()) + Random::UnitVec3() * radius + Random::UnitVec3() * 0.5f;
+					}
+					break;
+				}
+				case TestCase::SphereBoxIntersection:
+				{
+					glm::quat transformRot = Random::Rotation();
+					glm::quat colliderRot = Random::Rotation();
+					glm::quat finalRot = transformRot * colliderRot;
+					glm::vec3 finalSize = glm::vec3(
+						Random::Float() * 1.5f + 0.5f,
+						Random::Float() * 1.5f + 0.5f,
+						Random::Float() * 1.5f + 0.5f);
+					boxes[0].GetComponent<Transform>().position = { 0.0f, 0.0f, 0.0f };
+					boxes[0].GetComponent<Transform>().rotation = transformRot;
+					boxes[0].GetComponent<Transform>().scale = 1.0f;
+					boxes[0].GetComponent<BoxCollider>().center = { 0.0f, 0.0f, 0.0f };
+					boxes[0].GetComponent<BoxCollider>().orientation = colliderRot;
+					boxes[0].GetComponent<BoxCollider>().size = finalSize;
+					for (int i = 0; i < MAX_TEST_COUNT; i++)
+					{
+						int faceAxis = Random::Int(3);
+						int faceWhich = Random::Int(2);
+						glm::vec3 localPos = glm::vec3{
+							faceAxis == 0 ? (faceWhich == 0 ? -finalSize.x * 0.5f : finalSize.x * 0.5f) : (Random::Float() - 0.5f) * finalSize.x,
+							faceAxis == 1 ? (faceWhich == 0 ? -finalSize.y * 0.5f : finalSize.y * 0.5f) : (Random::Float() - 0.5f) * finalSize.y,
+							faceAxis == 2 ? (faceWhich == 0 ? -finalSize.z * 0.5f : finalSize.z * 0.5f) : (Random::Float() - 0.5f) * finalSize.z };
+						spheres[i].GetComponent<Transform>().position = finalRot * localPos + Random::UnitVec3() * 0.3f;
+						spheres[i].GetComponent<Transform>().scale = 1.0f;
+						spheres[i].GetComponent<SphereCollider>().center = { 0.0f, 0.0f, 0.0f };
+						spheres[i].GetComponent<SphereCollider>().radius = glm::mix(0.01f, 0.15f, Random::Float());
+					}
+					break;
+				}
+				case TestCase::CapsuleCapsuleIntersection:
+				{
+					glm::quat lineRotation = Random::Rotation();
+					float lineLength = Random::Float() + 2.2f;
+					glm::vec3 a = lineRotation * glm::vec3(0.0f, +lineLength * 0.5f, 0.0f);
+					glm::vec3 b = lineRotation * glm::vec3(0.0f, -lineLength * 0.5f, 0.0f);
+					float radius = Random::Float() + 0.5f;
+					capsules[0].GetComponent<CapsuleCollider>().centerA = a;
+					capsules[0].GetComponent<CapsuleCollider>().centerB = b;
+					capsules[0].GetComponent<CapsuleCollider>().radius = radius;
+					for (int i = 0; i < MAX_TEST_COUNT; i++)
+					{
+						float randomValue = Random::Float();
+						glm::vec3 randomVec = Random::UnitVec3() * (radius + 0.3f);
+						capsules[i + 1].GetComponent<CapsuleCollider>().radius = Random::Float() * 0.1f + 0.1f;
+						capsules[i + 1].GetComponent<CapsuleCollider>().centerA = glm::mix(a, b, randomValue) + randomVec + Random::UnitVec3() * 0.3f;
+						capsules[i + 1].GetComponent<CapsuleCollider>().centerB = glm::mix(a, b, randomValue) + randomVec + Random::UnitVec3() * 0.3f;
+					}
+					break;
+				}
+				case TestCase::CapsuleBoxIntersection:
+				{
+					glm::quat transformRot = Random::Rotation();
+					glm::quat colliderRot = Random::Rotation();
+					glm::quat finalRot = transformRot * colliderRot;
+					glm::vec3 finalSize = glm::vec3(
+						Random::Float() * 1.5f + 0.5f,
+						Random::Float() * 1.5f + 0.5f,
+						Random::Float() * 1.5f + 0.5f);
+					boxes[0].GetComponent<Transform>().position = { 0.0f, 0.0f, 0.0f };
+					boxes[0].GetComponent<Transform>().rotation = transformRot;
+					boxes[0].GetComponent<Transform>().scale = 1.0f;
+					boxes[0].GetComponent<BoxCollider>().center = { 0.0f, 0.0f, 0.0f };
+					boxes[0].GetComponent<BoxCollider>().orientation = colliderRot;
+					boxes[0].GetComponent<BoxCollider>().size = finalSize;
+					for (int i = 0; i < MAX_TEST_COUNT; i++)
+					{
+						int faceAxis = Random::Int(3);
+						int faceWhich = Random::Int(2);
+						glm::vec3 localPos = glm::vec3{
+							faceAxis == 0 ? (faceWhich == 0 ? -finalSize.x * 0.5f : finalSize.x * 0.5f) : (Random::Float() - 0.5f) * finalSize.x,
+							faceAxis == 1 ? (faceWhich == 0 ? -finalSize.y * 0.5f : finalSize.y * 0.5f) : (Random::Float() - 0.5f) * finalSize.y,
+							faceAxis == 2 ? (faceWhich == 0 ? -finalSize.z * 0.5f : finalSize.z * 0.5f) : (Random::Float() - 0.5f) * finalSize.z };
+						capsules[i].GetComponent<Transform>().position = finalRot * localPos + Random::UnitVec3() * 0.3f;
+						capsules[i].GetComponent<Transform>().scale = 1.0f;
+						float capsuleLength = Random::Float() * 0.3f;
+						glm::quat capsuleRot = Random::Rotation();
+						capsules[i].GetComponent<CapsuleCollider>().centerA = capsuleRot * glm::vec3(+capsuleLength / 2.0f, 0.0f, 0.0f);
+						capsules[i].GetComponent<CapsuleCollider>().centerB = capsuleRot * glm::vec3(-capsuleLength / 2.0f, 0.0f, 0.0f);
+						capsules[i].GetComponent<CapsuleCollider>().radius = glm::mix(0.01f, 0.15f, Random::Float());
+					}
+					break;
+				}
+				case TestCase::BoxBoxIntersection:
+				{
+					glm::quat transformRot = Random::Rotation();
+					glm::quat colliderRot = Random::Rotation();
+					glm::quat finalRot = transformRot * colliderRot;
+					glm::vec3 finalSize = glm::vec3(
+						Random::Float() * 1.5f + 0.5f,
+						Random::Float() * 1.5f + 0.5f,
+						Random::Float() * 1.5f + 0.5f);
+					boxes[0].GetComponent<Transform>().position = { 0.0f, 0.0f, 0.0f };
+					boxes[0].GetComponent<Transform>().rotation = transformRot;
+					boxes[0].GetComponent<Transform>().scale = 1.0f;
+					boxes[0].GetComponent<BoxCollider>().center = { 0.0f, 0.0f, 0.0f };
+					boxes[0].GetComponent<BoxCollider>().orientation = colliderRot;
+					boxes[0].GetComponent<BoxCollider>().size = finalSize;
+					for (int i = 0; i < MAX_TEST_COUNT; i++)
+					{
+						int faceAxis = Random::Int(3);
+						int faceWhich = Random::Int(2);
+						glm::vec3 localPos = glm::vec3{
+							faceAxis == 0 ? (faceWhich == 0 ? -finalSize.x * 0.5f : finalSize.x * 0.5f) : (Random::Float() - 0.5f) * finalSize.x,
+							faceAxis == 1 ? (faceWhich == 0 ? -finalSize.y * 0.5f : finalSize.y * 0.5f) : (Random::Float() - 0.5f) * finalSize.y,
+							faceAxis == 2 ? (faceWhich == 0 ? -finalSize.z * 0.5f : finalSize.z * 0.5f) : (Random::Float() - 0.5f) * finalSize.z };
+						boxes[i + 1].GetComponent<Transform>().position = finalRot * localPos + Random::UnitVec3() * 0.3f;
+						boxes[i + 1].GetComponent<Transform>().rotation = Random::Rotation();
+						boxes[i + 1].GetComponent<Transform>().scale = 1.0f;
+						boxes[i + 1].GetComponent<BoxCollider>().center = { 0.0f, 0.0f, 0.0f };
+						boxes[i + 1].GetComponent<BoxCollider>().orientation = Random::Rotation();
+						boxes[i + 1].GetComponent<BoxCollider>().size = glm::vec3(
+							Random::Float() * 0.05f + 0.05f,
+							Random::Float() * 0.05f + 0.05f,
+							Random::Float() * 0.05f + 0.05f);
+					}
+					break;
+				}
+				case TestCase::BoxTriangleIntersection:
+				{
+					glm::quat transformRot = Random::Rotation();
+					glm::quat colliderRot = Random::Rotation();
+					glm::quat finalRot = transformRot * colliderRot;
+					glm::vec3 finalSize = glm::vec3(
+						Random::Float() * 1.5f + 0.5f,
+						Random::Float() * 1.5f + 0.5f,
+						Random::Float() * 1.5f + 0.5f);
+					boxes[0].GetComponent<Transform>().position = { 0.0f, 0.0f, 0.0f };
+					boxes[0].GetComponent<Transform>().rotation = transformRot;
+					boxes[0].GetComponent<Transform>().scale = 1.0f;
+					boxes[0].GetComponent<BoxCollider>().center = { 0.0f, 0.0f, 0.0f };
+					boxes[0].GetComponent<BoxCollider>().orientation = colliderRot;
+					boxes[0].GetComponent<BoxCollider>().size = finalSize;
+					for (int i = 0; i < MAX_TEST_COUNT; i++)
+					{
+						int faceAxis = Random::Int(3);
+						int faceWhich = Random::Int(2);
+						glm::vec3 localPos = glm::vec3{
+							faceAxis == 0 ? (faceWhich == 0 ? -finalSize.x * 0.5f : finalSize.x * 0.5f) : (Random::Float() - 0.5f) * finalSize.x,
+							faceAxis == 1 ? (faceWhich == 0 ? -finalSize.y * 0.5f : finalSize.y * 0.5f) : (Random::Float() - 0.5f) * finalSize.y,
+							faceAxis == 2 ? (faceWhich == 0 ? -finalSize.z * 0.5f : finalSize.z * 0.5f) : (Random::Float() - 0.5f) * finalSize.z };
+						glm::vec3 triangleCenter = finalRot * localPos + Random::UnitVec3() * 0.15f;
+						triangles[i * 3 + 0] = triangleCenter + Random::UnitVec3() * 0.15f;
+						triangles[i * 3 + 1] = triangleCenter + Random::UnitVec3() * 0.15f;
+						triangles[i * 3 + 2] = triangleCenter + Random::UnitVec3() * 0.15f;
+					}
+					break;
+				}
+				case TestCase::TriangleTriangleIntersection:
+				{
+					glm::vec3 planeNormal = Random::UnitVec3();
+					glm::vec3 planeY = glm::normalize(glm::cross(glm::vec3(0.0f, 1.0f, 0.0f), planeNormal));
+					glm::vec3 planeX = glm::normalize(glm::cross(planeY, planeNormal));
+
+					glm::vec2 triA2d = Random::UnitVec2();
+					glm::vec2 triB2d = Random::UnitVec2();
+					glm::vec2 triC2d = Random::UnitVec2();
+					triangles[0] = planeX * triA2d.x + planeY * triA2d.y;
+					triangles[1] = planeX * triB2d.x + planeY * triB2d.y;
+					triangles[2] = planeX * triC2d.x + planeY * triC2d.y;
+					for (int i = 0; i < MAX_TEST_COUNT; i++)
+					{
+						glm::vec2 pointInPlane = Random::PointInCircle() * 1.2f;
+						triangles[i * 3 + 0 + 3] = planeX * pointInPlane.x + planeY * pointInPlane.y + Random::UnitVec3() * 0.3f;
+						triangles[i * 3 + 1 + 3] = planeX * pointInPlane.x + planeY * pointInPlane.y + Random::UnitVec3() * 0.3f;
+						triangles[i * 3 + 2 + 3] = planeX * pointInPlane.x + planeY * pointInPlane.y + Random::UnitVec3() * 0.3f;
+					}
+					break;
+				}
+				case TestCase::MeshSphereIntersection:
+				{
+					monkey.SetEnabled(true);
+					monkey.GetComponent<Transform>().rotation = Random::Rotation();
+					monkey.GetComponent<Transform>().scale = Random::Float() * 0.4f + 0.3f;
+					monkey.GetComponent<Transform>().position = Random::UnitVec3() * 0.3f;
+					for (int i = 0; i < MAX_TEST_COUNT; i++)
+					{
+						spheres[i].GetComponent<Transform>().position = Random::PointInSphere();
+						spheres[i].GetComponent<Transform>().scale = Random::Float() * 0.1f + 0.2f;
+						spheres[i].GetComponent<SphereCollider>().center = { 0.0f, 0.0f, 0.0f };
+						spheres[i].GetComponent<SphereCollider>().radius = Random::Float() * 0.8f;
+					}
+					break;
+				}
+				case TestCase::MeshCapsuleIntersection:
+				{
+					monkey.SetEnabled(true);
+					monkey.GetComponent<Transform>().rotation = Random::Rotation();
+					monkey.GetComponent<Transform>().scale = Random::Float() * 0.4f + 0.3f;
+					monkey.GetComponent<Transform>().position = Random::UnitVec3() * 0.3f;
+					for (int i = 0; i < MAX_TEST_COUNT; i++)
+					{
+						glm::quat rotation = Random::Rotation();
+						float length = Random::Float() * 0.5f;
+						capsules[i].GetComponent<Transform>().position = Random::PointInSphere();
+						capsules[i].GetComponent<Transform>().rotation = Random::Rotation();
+						capsules[i].GetComponent<Transform>().scale = Random::Float() * 0.1f + 0.2f;
+						capsules[i].GetComponent<CapsuleCollider>().centerA = rotation * glm::vec3{ 0.0f, +length * 0.5f, 0.0f };
+						capsules[i].GetComponent<CapsuleCollider>().centerB = rotation * glm::vec3{ 0.0f, -length * 0.5f, 0.0f };
+						capsules[i].GetComponent<CapsuleCollider>().radius = Random::Float() * 0.5f;
+					}
+					break;
+				}
+				case TestCase::MeshBoxIntersection:
+				{
+					monkey.SetEnabled(true);
+					monkey.GetComponent<Transform>().rotation = Random::Rotation();
+					monkey.GetComponent<Transform>().scale = Random::Float() * 0.4f + 0.3f;
+					monkey.GetComponent<Transform>().position = Random::UnitVec3() * 0.3f;
+					for (int i = 0; i < MAX_TEST_COUNT; i++)
+					{
+						boxes[i].GetComponent<Transform>().position = Random::PointInSphere();
+						boxes[i].GetComponent<Transform>().scale = Random::Float() * 0.1f + 0.2f;
+						boxes[i].GetComponent<BoxCollider>().center = { 0.0f, 0.0f, 0.0f };
+						boxes[i].GetComponent<BoxCollider>().size = glm::abs(Random::UnitVec3());
+						boxes[i].GetComponent<BoxCollider>().orientation = Random::Rotation();
+					}
+					break;
+				}
 			}
 		}
 	}

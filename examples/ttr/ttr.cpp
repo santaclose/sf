@@ -36,30 +36,47 @@
 
 namespace sf
 {
-	Scene scene;
-	Entity e_camera;
+	namespace Game
+	{
+		Scene scene;
+		Entity e_camera;
 
-	float animation1A, animation2A;
-	float animation1B, animation2B;
-	float animation1C, animation2C;
-	float animation1D, animation2D;
-	MeshData uniqueErrts[UNIQUE_COUNT];
-	Entity* errts;
-	Material whiteMaterial, blackMaterial;
+		float animation1A, animation2A;
+		float animation1B, animation2B;
+		float animation1C, animation2C;
+		float animation1D, animation2D;
+		MeshData uniqueErrts[UNIQUE_COUNT];
+		Entity* errts;
+		Material whiteMaterial, blackMaterial;
 
-	float tFreq;
-	float tStrength;
-	float zFrequency;
-	float xFrequency;
-	float zWaveStrength;
-	float xWaveStrength;
+		float tFreq;
+		float tStrength;
+		float zFrequency;
+		float xFrequency;
+		float zWaveStrength;
+		float xWaveStrength;
 
-	float cameraRot;
+		float cameraRot;
 
-	float tSpeed;
-	float speed;
-	float posY;
-	float cameraRadius;
+		float tSpeed;
+		float speed;
+		float posY;
+		float cameraRadius;
+
+		inline void Animate(Transform& transform, float time, float deltaTime)
+		{
+			animation1D = time * speed * 10;
+			animation1B = time * speed * 3.21;
+			animation2D = time * speed * 12.32;
+			animation2B = time * speed * 2.23;
+
+			float x = transform.position.z * zFrequency;
+			float x2 = transform.position.x * xFrequency;
+			transform.position.y =
+				zWaveStrength * sin(CONTANTEA + x) * sin(x * animation1A + animation1B) * sin(x * animation1C + animation1B) *
+				xWaveStrength * sin(CONTANTEB + x2) * sin(x2 * animation2A + animation2B) * sin(x2 * animation2C + animation2B);
+		}
+	}
 
 	Game::InitData Game::GetInitData()
 	{
@@ -135,20 +152,6 @@ namespace sf
 		for (int i = 0; i < ERRT_COUNT; i++)
 			scene.DestroyEntity(errts[i]);
 		delete[] errts;
-	}
-
-	inline void Animate(Transform& transform, float time, float deltaTime)
-	{
-		animation1D = time * speed * 10;
-		animation1B = time * speed * 3.21;
-		animation2D = time * speed * 12.32;
-		animation2B = time * speed * 2.23;
-
-		float x = transform.position.z * zFrequency;
-		float x2 = transform.position.x * xFrequency;
-		transform.position.y =
-			zWaveStrength * sin(CONTANTEA + x) * sin(x * animation1A + animation1B) * sin(x * animation1C + animation1B) *
-			xWaveStrength * sin(CONTANTEB + x2) * sin(x2 * animation2A + animation2B) * sin(x2 * animation2C + animation2B);
 	}
 
 	void Game::OnUpdate(float deltaTime, float time)

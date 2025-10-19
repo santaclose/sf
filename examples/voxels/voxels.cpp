@@ -28,23 +28,35 @@
 
 namespace sf
 {
-	Scene scene;
-	std::vector<Entity> galleryObjects;
+	namespace Game
+	{
+		Scene scene;
+		std::vector<Entity> galleryObjects;
 
-	glm::quat modelRotation;
-	float modelRotationY;
+		glm::quat modelRotation;
+		float modelRotationY;
 
-	bool rotationEnabled;
+		bool rotationEnabled;
 
-	BufferLayout voxelLayout = BufferLayout({BufferComponent::VoxelPosition});
-	VoxelVolumeData monkevbd;
-	VoxelVolumeData monkevbd2;
-	VoxelVolumeData monkevbd3;
+		BufferLayout voxelLayout = BufferLayout({BufferComponent::VoxelPosition});
+		VoxelVolumeData monkevbd;
+		VoxelVolumeData monkevbd2;
+		VoxelVolumeData monkevbd3;
 
-	int selectedModel;
+		int selectedModel;
 
-	Material meshMaterial;
-	Material voxelVolumeMaterial;
+		Material meshMaterial;
+		Material voxelVolumeMaterial;
+
+		void GalleryChange(bool next)
+		{
+			int prevModel = selectedModel;
+			selectedModel += next ? 1 : -1;
+			selectedModel = Math::Mod(selectedModel, (int)galleryObjects.size());
+			galleryObjects[prevModel].SetEnabled(false);
+			galleryObjects[selectedModel].SetEnabled(true);
+		}
+	}
 
 	Game::InitData Game::GetInitData()
 	{
@@ -104,15 +116,6 @@ namespace sf
 			scene.DestroyEntity(e);
 		galleryObjects.clear();
 		ExampleViewer::Terminate(scene);
-	}
-
-	void GalleryChange(bool next)
-	{
-		int prevModel = selectedModel;
-		selectedModel += next ? 1 : -1;
-		selectedModel = Math::Mod(selectedModel, (int)galleryObjects.size());
-		galleryObjects[prevModel].SetEnabled(false);
-		galleryObjects[selectedModel].SetEnabled(true);
 	}
 
 	void Game::OnUpdate(float deltaTime, float time)

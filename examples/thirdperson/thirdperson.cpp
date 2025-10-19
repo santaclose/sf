@@ -5,7 +5,6 @@
 
 #include <Defaults.h>
 #include <Game.h>
-#include <MeshProcessor.h>
 #include <Math.hpp>
 #include <Input.h>
 #include <FileUtils.h>
@@ -22,6 +21,8 @@
 #include <Components/Camera.h>
 #include <Components/Transform.h>
 
+#include "../Terrain.hpp"
+
 #define MOUSE_SENSITIVITY 0.003
 #define SCROLL_SENSITIVITY 0.12
 
@@ -34,99 +35,38 @@
 
 namespace sf
 {
-	Scene scene;
-	Entity gimbal, cameraObject;
-	Entity shanyung, fox;
-
-	glm::vec3 targetGimbalRotation;
-
-	float cameraDistance;
-
-	BufferLayout characterVertexLayout = BufferLayout({
-		BufferComponent::VertexPosition,
-		BufferComponent::VertexNormal,
-		BufferComponent::VertexBoneIndices,
-		BufferComponent::VertexBoneWeights
-	});
-	SkeletonData* shanyungSkeleton;
-	MeshData* shanyungMesh;
-	uint32_t shanyungBlendSpace;
-	glm::vec2 shanyungBlendSpaceCurrentPos;
-	std::vector<float> shanyungWeights;
-	std::vector<glm::vec2> shanyungSpeedPerAnimation;
-
-	SkeletonData* foxSkeleton;
-	MeshData* foxMesh;
-	uint32_t foxBlendSpace;
-	float foxBlendSpaceCurrentX;
-	std::vector<float> foxWeights;
-	std::vector<float> foxSpeedPerAnimation;
-
-	Material characterMaterial;
-
-	BufferLayout terrainVertexBufferLayout({BufferComponent::VertexPosition, BufferComponent::VertexUV});
-	Bitmap terrainHeightmap;
-	glm::vec3 terrainOrigin;
-	Material terrainMaterial;
-	Entity terrainEntity;
-	MeshData terrainMesh;
-	uint32_t terrainHeightmapResolution;
-	float terrainHeightmapPixelSize;
-	float terrainMaxHeight;
-
 	namespace Game
 	{
-		void CreateTerrain(const std::string& heightmapFilePath, float heightmapPixelSize, float maxHeight, uint32_t heightmapPixelsPerPatch)
-		{
-			terrainMaxHeight = maxHeight;
-			terrainHeightmapPixelSize = heightmapPixelSize;
-			terrainHeightmap.CreateFromFile(heightmapFilePath);
-			assert(terrainHeightmap.width == terrainHeightmap.height);
-			terrainHeightmapResolution = terrainHeightmap.width;
-			uint32_t patchCount = terrainHeightmapResolution / heightmapPixelsPerPatch;
+		Scene scene;
+		Entity gimbal, cameraObject;
+		Entity shanyung, fox;
 
-			terrainMaterial.vertShaderFilePath = "assets/shaders/terrain.vert";
-			terrainMaterial.tescShaderFilePath = "assets/shaders/terrain.tesc";
-			terrainMaterial.teseShaderFilePath = "assets/shaders/terrain.tese";
-			terrainMaterial.fragShaderFilePath = "assets/shaders/terrain.frag";
-			terrainMaterial.tessSpacing = "equal_spacing";
-			terrainMaterial.tessWinding = "ccw";
-			terrainMaterial.tessPatchVertexCount = 4;
-			terrainMaterial.uniforms["heightmapTexture"].dataType = DataType::bitmap;
-			terrainMaterial.uniforms["heightmapTexture"].data.p = &terrainHeightmap;
-			// terrainMaterial.uniforms["heightmapRes"].dataType = DataType::u32;
-			// terrainMaterial.uniforms["heightmapRes"].data.u32 = terrainHeightmapResolution;
-			terrainMaterial.uniforms["maxHeight"].dataType = DataType::f32;
-			terrainMaterial.uniforms["maxHeight"].data.f32 = terrainMaxHeight;
-			terrainMaterial.drawMode = MaterialDrawMode::Lines;
+		glm::vec3 targetGimbalRotation;
 
-			terrainOrigin = glm::vec3(-(float)(terrainHeightmapResolution - 1) * 0.5f * heightmapPixelSize, 0.0f, (float)(terrainHeightmapResolution - 1) * 0.5f * heightmapPixelSize);
+		float cameraDistance;
 
-			terrainMesh.vertexBufferLayout = &terrainVertexBufferLayout;
-			MeshProcessor::GenerateGrid(terrainMesh, patchCount + 1, patchCount + 1, terrainHeightmapResolution, terrainHeightmapResolution, heightmapPixelSize * ((float)(terrainHeightmapResolution - 1) / (float)patchCount), true);
+		BufferLayout characterVertexLayout = BufferLayout({
+			BufferComponent::VertexPosition,
+			BufferComponent::VertexNormal,
+			BufferComponent::VertexBoneIndices,
+			BufferComponent::VertexBoneWeights
+		});
+		SkeletonData* shanyungSkeleton;
+		MeshData* shanyungMesh;
+		uint32_t shanyungBlendSpace;
+		glm::vec2 shanyungBlendSpaceCurrentPos;
+		std::vector<float> shanyungWeights;
+		std::vector<glm::vec2> shanyungSpeedPerAnimation;
 
-			terrainEntity = scene.CreateEntity();
-			Transform& e_t = terrainEntity.AddComponent<Transform>();
-			e_t.position = terrainOrigin;
-			terrainEntity.AddComponent<Mesh>(&terrainMesh, &terrainMaterial);
-		}
+		SkeletonData* foxSkeleton;
+		MeshData* foxMesh;
+		uint32_t foxBlendSpace;
+		float foxBlendSpaceCurrentX;
+		std::vector<float> foxWeights;
+		std::vector<float> foxSpeedPerAnimation;
 
-		bool SampleTerrain(const glm::vec3 point, float& outHeight)
-		{
-			float terrainSize = (float)(terrainHeightmapResolution - 1) * terrainHeightmapPixelSize;
-			glm::vec2 heightmapUV;
-			heightmapUV.x = (point.x - terrainOrigin.x) / terrainSize;
-			heightmapUV.y = -(point.z - terrainOrigin.z) / terrainSize;
-			heightmapUV.x = heightmapUV.x * ((float)(terrainHeightmapResolution - 1) / (float)terrainHeightmapResolution) + 0.5f / (float)terrainHeightmapResolution;
-			heightmapUV.y = heightmapUV.y * ((float)(terrainHeightmapResolution - 1) / (float)terrainHeightmapResolution) + 0.5f / (float)terrainHeightmapResolution;
-			if (heightmapUV.x > 0.0f && heightmapUV.x < 1.0f && heightmapUV.y > 0.0f && heightmapUV.y < 1.0f)
-			{
-				float heightSample = terrainHeightmap.Sample<uint16_t>(heightmapUV, 0);
-				outHeight = heightSample * terrainMaxHeight;
-				return true;
-			}
-			return false;
-		}
+		Material characterMaterial;
+		Terrain terrain;
 
 		void UpdateCamera(float deltaTime, Entity targetCharacter, float gimbalOffsetY)
 		{
@@ -145,7 +85,7 @@ namespace sf
 			co_t.LookAt(gimbal.GetComponent<Transform>().position, glm::vec3(0.0, 1.0, 0.0));
 
 			float terrainY;
-			SampleTerrain(co_t.position, terrainY);
+			terrain.Sample(co_t.position, terrainY);
 			co_t.position.y = glm::max(co_t.position.y, terrainY);
 		}
 
@@ -188,7 +128,7 @@ namespace sf
 		characterMaterial.vertShaderFilePath = "assets/shaders/default.vert";
 		characterMaterial.fragShaderFilePath = "assets/shaders/default.frag";
 
-		CreateTerrain("../Downloads/Telegram Desktop/test.r16", 0.5566f, 152.0f, 41);
+		terrain.Create(scene, "../Downloads/Telegram Desktop/test.r16", 0.5566f, 152.0f, 41);
 
 		int gltfid;
 		{
@@ -246,7 +186,7 @@ namespace sf
 		scene.DestroyEntity(cameraObject);
 		scene.DestroyEntity(shanyung);
 		scene.DestroyEntity(fox);
-		scene.DestroyEntity(terrainEntity);
+		terrain.Destroy(scene);
 
 		delete shanyungMesh;
 		delete shanyungSkeleton;
@@ -283,7 +223,7 @@ namespace sf
 			e_t.position += -e_t.Up() * targetSpeed.y * deltaTime;
 			e_t.position += -e_t.Right() * targetSpeed.x * deltaTime;
 
-			SampleTerrain(e_t.position, e_t.position.y);
+			terrain.Sample(e_t.position, e_t.position.y);
 
 			UpdateCamera(deltaTime, shanyung, GIMBAL_OFFSET_SHANYUNG);
 		}
@@ -317,9 +257,9 @@ namespace sf
 			glm::vec3 camRightFlat = glm::cross(camForwardFlat, glm::vec3(0.0f, 1.0f, 0.0f));
 			e_t.position += -e_t.Forward() * targetSpeed * deltaTime;
 
-			SampleTerrain(e_t.position, e_t.position.y);
+			terrain.Sample(e_t.position, e_t.position.y);
 			glm::vec3 deltaForward = e_t.position + e_t.Forward() * 0.001f;
-			SampleTerrain(deltaForward, deltaForward.y);
+			terrain.Sample(deltaForward, deltaForward.y);
 			deltaForward -= e_t.position;
 			if (targetBlendSpaceX > 0.0f)
 				e_t.rotation = glm::slerp(e_t.rotation,

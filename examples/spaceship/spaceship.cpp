@@ -31,40 +31,40 @@
 
 namespace sf
 {
-	Scene scene;
-	Entity e_ship, e_mainCamera, e_lookBackCamera;
-
-	float shipSpeed;
-	
-	BufferLayout shipVertexLayout = BufferLayout({
-		BufferComponent::VertexPosition,
-		BufferComponent::VertexUV
-	});
-	MeshData shipMesh = MeshData(&shipVertexLayout);
-
-	Entity* things;
-
-	MeshData* generatedMeshes;
-	BufferLayout generatedMeshesVertexLayout = BufferLayout({
-		BufferComponent::VertexPosition,
-		BufferComponent::VertexNormal,
-		BufferComponent::VertexUV,
-		BufferComponent::VertexAO
-	});
-
-	BufferLayout particleBufferLayout = BufferLayout({
-		BufferComponent::ParticlePosition,
-		BufferComponent::ParticleRotation,
-		BufferComponent::ParticleScale,
-		BufferComponent::ParticleSpawnTime
-	});
-
-	Material particleMaterial;
-	Material errtMaterial;
-	Material spaceshipMaterial;
-
-	namespace
+	namespace Game
 	{
+		Scene scene;
+		Entity e_ship, e_mainCamera, e_lookBackCamera;
+
+		float shipSpeed;
+		
+		BufferLayout shipVertexLayout = BufferLayout({
+			BufferComponent::VertexPosition,
+			BufferComponent::VertexUV
+		});
+		MeshData shipMesh = MeshData(&shipVertexLayout);
+
+		Entity* things;
+
+		MeshData* generatedMeshes;
+		BufferLayout generatedMeshesVertexLayout = BufferLayout({
+			BufferComponent::VertexPosition,
+			BufferComponent::VertexNormal,
+			BufferComponent::VertexUV,
+			BufferComponent::VertexAO
+		});
+
+		BufferLayout particleBufferLayout = BufferLayout({
+			BufferComponent::ParticlePosition,
+			BufferComponent::ParticleRotation,
+			BufferComponent::ParticleScale,
+			BufferComponent::ParticleSpawnTime
+		});
+
+		Material particleMaterial;
+		Material errtMaterial;
+		Material spaceshipMaterial;
+
 		glm::vec3 currentParticlePos = glm::vec3(0.0f, 0.0f, 0.3f);
 		Transform ParticleInitialTransform()
 		{

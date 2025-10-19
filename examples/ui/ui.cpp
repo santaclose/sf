@@ -21,25 +21,28 @@
 
 namespace sf
 {
-	Scene scene;
-	Entity textA, textB, textC, spriteTest;
-
-	char textStringA[256];
-	char textStringB[256];
-	char textStringC[256];
-
-	Bitmap* testSpriteBitmap;
-
-	void DownloadAssetDependencies(const std::vector<std::string>& urls, const std::string& targetPath)
+	namespace Game
 	{
-		for (const std::string& url : urls)
+		Scene scene;
+		Entity textA, textB, textC, spriteTest;
+
+		char textStringA[256];
+		char textStringB[256];
+		char textStringC[256];
+
+		Bitmap* testSpriteBitmap;
+
+		void DownloadAssetDependencies(const std::vector<std::string>& urls, const std::string& targetPath)
 		{
-			const std::string fileName = url.substr(url.find_last_of('/') + 1);
-			std::ifstream f(targetPath + fileName);
-			if (!f.good()) // download if file doesn't exist
+			for (const std::string& url : urls)
 			{
-				std::string commandString = "curl " + url + " --output " + targetPath + fileName;
-				system(commandString.c_str());
+				const std::string fileName = url.substr(url.find_last_of('/') + 1);
+				std::ifstream f(targetPath + fileName);
+				if (!f.good()) // download if file doesn't exist
+				{
+					std::string commandString = "curl " + url + " --output " + targetPath + fileName;
+					system(commandString.c_str());
+				}
 			}
 		}
 	}

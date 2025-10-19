@@ -27,31 +27,50 @@
 
 namespace sf
 {
-	Scene scene;
-	std::vector<Entity> galleryObjects;
+	namespace Game
+	{
+		Scene scene;
+		std::vector<Entity> galleryObjects;
 
-	glm::quat modelRotation;
-	float modelRotationY;
+		glm::quat modelRotation;
+		float modelRotationY;
 
-	bool rotationEnabled;
+		bool rotationEnabled;
 
-	int selectedEnvironment;
-	std::vector<std::string> environments;
+		int selectedEnvironment;
+		std::vector<std::string> environments;
 
-	MeshData* meshes;
-	BufferLayout meshVertexLayout = BufferLayout({
-		BufferComponent::VertexPosition,
-		BufferComponent::VertexNormal,
-		BufferComponent::VertexTangent,
-		BufferComponent::VertexUV
-	});
+		MeshData* meshes;
+		BufferLayout meshVertexLayout = BufferLayout({
+			BufferComponent::VertexPosition,
+			BufferComponent::VertexNormal,
+			BufferComponent::VertexTangent,
+			BufferComponent::VertexUV
+		});
 
-	int selectedModel;
+		int selectedModel;
 
-	Material damagedHelmetMaterial;
-	Bitmap damagedHelmetAlbedo, damagedHelmetNormalmap, damagedHelmetEmissive, damagedHelmetMetal, damagedHelmetRoughness, damagedHelmetAO;
+		Material damagedHelmetMaterial;
+		Bitmap damagedHelmetAlbedo, damagedHelmetNormalmap, damagedHelmetEmissive, damagedHelmetMetal, damagedHelmetRoughness, damagedHelmetAO;
 
-	Material sciFiHelmetMaterial;
+		Material sciFiHelmetMaterial;
+
+		void ChangeEnvironment()
+		{
+			selectedEnvironment++;
+			selectedEnvironment = Math::Mod(selectedEnvironment, (int)environments.size());
+			Renderer::SetEnvironment(environments[selectedEnvironment]);
+		}
+
+		void GalleryChange(bool next)
+		{
+			int prevModel = selectedModel;
+			selectedModel += next ? 1 : -1;
+			selectedModel = Math::Mod(selectedModel, (int)galleryObjects.size());
+			galleryObjects[prevModel].SetEnabled(false);
+			galleryObjects[selectedModel].SetEnabled(true);
+		}
+	}
 
 	Game::InitData Game::GetInitData()
 	{
@@ -140,22 +159,6 @@ namespace sf
 			scene.DestroyEntity(e);
 		galleryObjects.clear();
 		ExampleViewer::Terminate(scene);
-	}
-
-	void ChangeEnvironment()
-	{
-		selectedEnvironment++;
-		selectedEnvironment = Math::Mod(selectedEnvironment, (int)environments.size());
-		Renderer::SetEnvironment(environments[selectedEnvironment]);
-	}
-
-	void GalleryChange(bool next)
-	{
-		int prevModel = selectedModel;
-		selectedModel += next ? 1 : -1;
-		selectedModel = Math::Mod(selectedModel, (int)galleryObjects.size());
-		galleryObjects[prevModel].SetEnabled(false);
-		galleryObjects[selectedModel].SetEnabled(true);
 	}
 
 	void Game::OnUpdate(float deltaTime, float time)

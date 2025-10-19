@@ -23,74 +23,76 @@
 
 namespace sf
 {
-	Scene scene;
-	Entity modelEntity;
-	SkeletonData* modelSkeleton;
-	MeshData* modelMesh;
-	Material modelMaterial;
-	BufferLayout modelVertexLayout = BufferLayout({
-		BufferComponent::VertexPosition,
-		BufferComponent::VertexNormal,
-		BufferComponent::VertexBoneIndices,
-		BufferComponent::VertexBoneWeights
-	});
-	glm::vec3 modelBaseRotation;
-
-	float animSpeedSelection = 1.0f;
-	int animSelection = 0;
-	std::vector<const char*> animNames;
-	std::vector<BlendSpacePoint1DCreateInfo> bs1dpoints;
-	std::vector<BlendSpacePoint2DCreateInfo> bs2dpoints;
-	std::vector<std::pair<float, float>> bs1dPosMinMax;
-	std::vector<std::pair<glm::vec2, glm::vec2>> bs2dPosMinMax;
-
-	void ComputeBs1dMinMaxPos(int node)
+	namespace Game
 	{
-		bs1dPosMinMax[node].first = bs1dPosMinMax[node].second = modelSkeleton->m_nodes[node].bs1d.points[0].pos;
-		for (int k = 1; k < modelSkeleton->m_nodes[node].bs1d.pointCount; k++)
+		Scene scene;
+		Entity modelEntity;
+		SkeletonData* modelSkeleton;
+		MeshData* modelMesh;
+		Material modelMaterial;
+		BufferLayout modelVertexLayout = BufferLayout({
+			BufferComponent::VertexPosition,
+			BufferComponent::VertexNormal,
+			BufferComponent::VertexBoneIndices,
+			BufferComponent::VertexBoneWeights
+		});
+		glm::vec3 modelBaseRotation;
+
+		float animSpeedSelection = 1.0f;
+		int animSelection = 0;
+		std::vector<const char*> animNames;
+		std::vector<BlendSpacePoint1DCreateInfo> bs1dpoints;
+		std::vector<BlendSpacePoint2DCreateInfo> bs2dpoints;
+		std::vector<std::pair<float, float>> bs1dPosMinMax;
+		std::vector<std::pair<glm::vec2, glm::vec2>> bs2dPosMinMax;
+
+		void ComputeBs1dMinMaxPos(int node)
 		{
-			if (modelSkeleton->m_nodes[node].bs1d.points[k].pos < bs1dPosMinMax[node].first)
-				bs1dPosMinMax[node].first = modelSkeleton->m_nodes[node].bs1d.points[k].pos;
-			if (modelSkeleton->m_nodes[node].bs1d.points[k].pos > bs1dPosMinMax[node].second)
-				bs1dPosMinMax[node].second = modelSkeleton->m_nodes[node].bs1d.points[k].pos;
+			bs1dPosMinMax[node].first = bs1dPosMinMax[node].second = modelSkeleton->m_nodes[node].bs1d.points[0].pos;
+			for (int k = 1; k < modelSkeleton->m_nodes[node].bs1d.pointCount; k++)
+			{
+				if (modelSkeleton->m_nodes[node].bs1d.points[k].pos < bs1dPosMinMax[node].first)
+					bs1dPosMinMax[node].first = modelSkeleton->m_nodes[node].bs1d.points[k].pos;
+				if (modelSkeleton->m_nodes[node].bs1d.points[k].pos > bs1dPosMinMax[node].second)
+					bs1dPosMinMax[node].second = modelSkeleton->m_nodes[node].bs1d.points[k].pos;
+			}
 		}
-	}
 
-	void ComputeBs2dMinMaxPos(int node)
-	{
-		bs2dPosMinMax[node].first = bs2dPosMinMax[node].second = modelSkeleton->m_nodes[node].bs2d.points[0].pos;
-		for (int k = 1; k < modelSkeleton->m_nodes[node].bs2d.pointCount; k++)
+		void ComputeBs2dMinMaxPos(int node)
 		{
-			if (modelSkeleton->m_nodes[node].bs2d.points[k].pos.x < bs2dPosMinMax[node].first.x)
-				bs2dPosMinMax[node].first.x = modelSkeleton->m_nodes[node].bs2d.points[k].pos.x;
-			if (modelSkeleton->m_nodes[node].bs2d.points[k].pos.y < bs2dPosMinMax[node].first.y)
-				bs2dPosMinMax[node].first.y = modelSkeleton->m_nodes[node].bs2d.points[k].pos.y;
-			if (modelSkeleton->m_nodes[node].bs2d.points[k].pos.x > bs2dPosMinMax[node].second.x)
-				bs2dPosMinMax[node].second.x = modelSkeleton->m_nodes[node].bs2d.points[k].pos.x;
-			if (modelSkeleton->m_nodes[node].bs2d.points[k].pos.y > bs2dPosMinMax[node].second.y)
-				bs2dPosMinMax[node].second.y = modelSkeleton->m_nodes[node].bs2d.points[k].pos.y;
+			bs2dPosMinMax[node].first = bs2dPosMinMax[node].second = modelSkeleton->m_nodes[node].bs2d.points[0].pos;
+			for (int k = 1; k < modelSkeleton->m_nodes[node].bs2d.pointCount; k++)
+			{
+				if (modelSkeleton->m_nodes[node].bs2d.points[k].pos.x < bs2dPosMinMax[node].first.x)
+					bs2dPosMinMax[node].first.x = modelSkeleton->m_nodes[node].bs2d.points[k].pos.x;
+				if (modelSkeleton->m_nodes[node].bs2d.points[k].pos.y < bs2dPosMinMax[node].first.y)
+					bs2dPosMinMax[node].first.y = modelSkeleton->m_nodes[node].bs2d.points[k].pos.y;
+				if (modelSkeleton->m_nodes[node].bs2d.points[k].pos.x > bs2dPosMinMax[node].second.x)
+					bs2dPosMinMax[node].second.x = modelSkeleton->m_nodes[node].bs2d.points[k].pos.x;
+				if (modelSkeleton->m_nodes[node].bs2d.points[k].pos.y > bs2dPosMinMax[node].second.y)
+					bs2dPosMinMax[node].second.y = modelSkeleton->m_nodes[node].bs2d.points[k].pos.y;
+			}
 		}
-	}
 
-	void OpenFile(const char* filePath)
-	{
-		if (modelEntity)
-			scene.DestroyEntity(modelEntity);
-		modelEntity = scene.CreateEntity();
-		modelEntity.AddComponent<Transform>();
+		void OpenFile(const char* filePath)
+		{
+			if (modelEntity)
+				scene.DestroyEntity(modelEntity);
+			modelEntity = scene.CreateEntity();
+			modelEntity.AddComponent<Transform>();
 
-		modelMaterial.vertShaderFilePath = "assets/shaders/default.vert";
-		modelMaterial.fragShaderFilePath = "assets/shaders/default.frag";
-		modelSkeleton = new SkeletonData();
-		modelMesh = new MeshData(&modelVertexLayout);
-		uint32_t gltfid = GltfImporter::Load(filePath);
-		GltfImporter::GenerateSkeleton(gltfid, *modelSkeleton);
-		GltfImporter::GenerateMeshData(gltfid, *modelMesh);
-		modelEntity.AddComponent<SkinnedMesh>(modelMesh, &modelMaterial, modelSkeleton);
-		animNames.resize(modelSkeleton->m_animations.size());
-		for (int i = 0; i < modelSkeleton->m_animations.size(); i++)
-			animNames[i] = modelSkeleton->m_animations[i].name;
-
+			modelMaterial.vertShaderFilePath = "assets/shaders/default.vert";
+			modelMaterial.fragShaderFilePath = "assets/shaders/default.frag";
+			modelSkeleton = new SkeletonData();
+			modelMesh = new MeshData(&modelVertexLayout);
+			uint32_t gltfid = GltfImporter::Load(filePath);
+			GltfImporter::GenerateSkeleton(gltfid, *modelSkeleton);
+			GltfImporter::GenerateMeshData(gltfid, *modelMesh);
+			modelEntity.AddComponent<SkinnedMesh>(modelMesh, &modelMaterial, modelSkeleton);
+			animNames.resize(modelSkeleton->m_animations.size());
+			for (int i = 0; i < modelSkeleton->m_animations.size(); i++)
+				animNames[i] = modelSkeleton->m_animations[i].name;
+		}
 	}
 
 	Game::InitData Game::GetInitData()

@@ -29,27 +29,46 @@
 
 namespace sf
 {
-	Scene scene;
-	std::vector<Entity> galleryObjects;
+	namespace Game
+	{
+		Scene scene;
+		std::vector<Entity> galleryObjects;
 
-	glm::quat modelRotation;
-	float modelRotationY;
+		glm::quat modelRotation;
+		float modelRotationY;
 
-	bool rotationEnabled;
+		bool rotationEnabled;
 
-	Material meshMaterial;
-	SkeletonData* skeletons;
-	MeshData* meshes;
-	int* currentAnimation;
+		Material meshMaterial;
+		SkeletonData* skeletons;
+		MeshData* meshes;
+		int* currentAnimation;
 
-	int selectedModel;
+		int selectedModel;
 
-	BufferLayout vertexLayout = BufferLayout({
-		BufferComponent::VertexPosition,
-		BufferComponent::VertexNormal,
-		BufferComponent::VertexBoneIndices,
-		BufferComponent::VertexBoneWeights
-	});
+		BufferLayout vertexLayout = BufferLayout({
+			BufferComponent::VertexPosition,
+			BufferComponent::VertexNormal,
+			BufferComponent::VertexBoneIndices,
+			BufferComponent::VertexBoneWeights
+		});
+
+		void GalleryChange(bool next)
+		{
+			int prevModel = selectedModel;
+			selectedModel += next ? 1 : -1;
+			selectedModel = Math::Mod(selectedModel, (int)galleryObjects.size());
+			galleryObjects[prevModel].SetEnabled(false);
+			galleryObjects[selectedModel].SetEnabled(true);
+		}
+
+		void AnimationChange(bool next)
+		{
+			currentAnimation[selectedModel] = Math::Mod(currentAnimation[selectedModel] + (next ? 1 : -1), skeletons[selectedModel].m_animations.size());
+			for (int i = 0; i < skeletons[selectedModel].m_nodes.size(); i++)
+				skeletons[selectedModel].m_nodes[i].single.weight = i == currentAnimation[selectedModel] ? 1.0f : 0.0f;
+		}
+	}
 
 	Game::InitData Game::GetInitData()
 	{
@@ -123,22 +142,6 @@ namespace sf
 			scene.DestroyEntity(e);
 		galleryObjects.clear();
 		ExampleViewer::Terminate(scene);
-	}
-
-	void GalleryChange(bool next)
-	{
-		int prevModel = selectedModel;
-		selectedModel += next ? 1 : -1;
-		selectedModel = Math::Mod(selectedModel, (int)galleryObjects.size());
-		galleryObjects[prevModel].SetEnabled(false);
-		galleryObjects[selectedModel].SetEnabled(true);
-	}
-
-	void AnimationChange(bool next)
-	{
-		currentAnimation[selectedModel] = Math::Mod(currentAnimation[selectedModel] + (next ? 1 : -1), skeletons[selectedModel].m_animations.size());
-		for (int i = 0; i < skeletons[selectedModel].m_nodes.size(); i++)
-			skeletons[selectedModel].m_nodes[i].single.weight = i == currentAnimation[selectedModel] ? 1.0f : 0.0f;
 	}
 
 	void Game::OnUpdate(float deltaTime, float time)

@@ -43,6 +43,8 @@ namespace sf
 	struct Material
 	{
 		std::string vertShaderFilePath, fragShaderFilePath, tescShaderFilePath, teseShaderFilePath;
+		std::string taskShaderFilePath, meshShaderFilePath;
+
 		std::unordered_map<std::string, Uniform> uniforms;
 		std::unordered_map<std::string, RendererUniform> rendererUniforms;
 		bool isDoubleSided = false;
@@ -53,12 +55,15 @@ namespace sf
 		uint32_t tessPatchVertexCount;
 		std::string tessSpacing;
 		std::string tessWinding;
+		uint32_t meshWorkGroupCount;
 	private:
 		std::unordered_set<void*> allocatedBitmaps;
 	public:
 		Material() = default;
 		void CreateFromFile(const std::string& filePath);
 		inline bool UsesTessellation() const { return tescShaderFilePath.length() > 0; }
+		inline bool UsesMeshShader() const { return meshShaderFilePath.length() > 0; }
+		inline bool UsesTaskShader() const { return taskShaderFilePath.length() > 0; }
 		~Material();
 	};
 }

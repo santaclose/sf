@@ -27,6 +27,8 @@ namespace sf {
 		std::string m_tescFileName;
 		std::string m_teseFileName;
 		std::string m_fragFileName;
+		std::string m_taskFileName;
+		std::string m_meshFileName;
 		std::unordered_map<std::string, ShaderUniformData> m_uniformCache;
 		int m_textureIndexCounter = 0;
 	public:
@@ -38,7 +40,7 @@ namespace sf {
 		int GetOrAssignTextureIndex(const std::string& uniform);
 	public:
 		void Create(const Material& material,
-			const BufferLayout& vertexBufferLayout,
+			const BufferLayout* vertexBufferLayout,
 			const BufferLayout* voxelBufferLayout = nullptr,
 			const BufferLayout* particleBufferLayout = nullptr);
 

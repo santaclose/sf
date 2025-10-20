@@ -19,7 +19,7 @@ namespace sf {
 
 	public:
 		void Create(const Material* material,
-			const BufferLayout& vertexBufferLayout,
+			const BufferLayout* vertexBufferLayout,
 			const BufferLayout* voxelBufferLayout = nullptr,
 			const BufferLayout* particleBufferLayout = nullptr);
 		void Bind(const std::vector<void*>& rendererUniformVector);

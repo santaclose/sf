@@ -21,7 +21,8 @@ namespace sf {
 		{
 			this->meshData = meshData;
 			this->materials.clear();
-			this->materials.resize(meshData->pieceCount, material);
+			/* If material uses task/mesh shaders, no need to have mesh data */
+			this->materials.resize(meshData == nullptr ? 1 : meshData->pieceCount, material);
 		}
 	};
 }

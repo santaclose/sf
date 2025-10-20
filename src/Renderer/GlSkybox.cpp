@@ -75,7 +75,7 @@ void sf::GlSkybox::SetCubemap(GlCubemap* cubemap)
 	Material skyboxMat;
 	skyboxMat.vertShaderFilePath = "assets/shaders/skybox.vert";
 	skyboxMat.fragShaderFilePath = cubemap->IsHDR() ? "assets/shaders/skyboxHdr.frag" : "assets/shaders/skybox.frag";
-	shader.Create(skyboxMat, vertexBufferLayout);
+	shader.Create(skyboxMat, &vertexBufferLayout);
 
 	sf::GlSkybox::cubemap = cubemap;
 }

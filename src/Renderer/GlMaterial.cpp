@@ -6,13 +6,14 @@
 #include <Renderer/GlCubemap.h>
 
 void sf::GlMaterial::Create(const Material* material,
-	const BufferLayout& vertexBufferLayout,
+	const BufferLayout* vertexBufferLayout,
 	const BufferLayout* voxelBufferLayout,
 	const BufferLayout* particleBufferLayout)
 {
 	m_material = material;
 	assert(m_material != nullptr);
-	assert(m_material->vertShaderFilePath.length() > 0 && m_material->fragShaderFilePath.length() > 0);
+	assert((m_material->vertShaderFilePath.length() > 0 || m_material->meshShaderFilePath.length() > 0) &&
+		   (m_material->fragShaderFilePath.length() > 0));
 	m_shader = new GlShader();
 	m_shader->Create(*m_material, vertexBufferLayout, voxelBufferLayout, particleBufferLayout);
 

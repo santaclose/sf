@@ -227,10 +227,80 @@ uint32_t sf::GlShader::CompileShader(uint32_t type, const std::string& source)
 }
 
 void sf::GlShader::Create(const Material& material,
-	const BufferLayout& vertexBufferLayout,
+	const BufferLayout* vertexBufferLayout,
 	const BufferLayout* voxelBufferLayout,
 	const BufferLayout* particleBufferLayout)
 {
+	if (material.UsesMeshShader())
+	{
+		if (material.UsesTaskShader())
+			m_taskFileName = material.taskShaderFilePath + ".glsl";
+		m_meshFileName = material.meshShaderFilePath + ".glsl";
+		m_fragFileName = material.fragShaderFilePath + ".glsl";
+		if (material.UsesTaskShader())
+			std::cout << "[GlShader] Creating shader from files: " << m_taskFileName << ", " << m_meshFileName + ", " << m_fragFileName << std::endl;
+		else
+			std::cout << "[GlShader] Creating shader from files: " << m_meshFileName + ", " << m_fragFileName << std::endl;
+		Delete();
+		std::ifstream ifs, ifs2, ifs3;
+		if (material.UsesTaskShader())
+			ifs = std::ifstream(m_taskFileName);
+		ifs2 = std::ifstream(m_meshFileName);
+		ifs3 = std::ifstream(m_fragFileName);
+		if (material.UsesTaskShader())
+			if (ifs.fail())
+				std::cout << "[GlShader] Could not read task shader file: " << m_taskFileName << std::endl;
+		if (ifs2.fail())
+			std::cout << "[GlShader] Could not read mesh shader file: " << m_meshFileName << std::endl;
+		if (ifs3.fail())
+			std::cout << "[GlShader] Could not read fragment shader file: " << m_fragFileName << std::endl;
+		std::string taskShaderSource, meshShaderSource, fragShaderSource;
+		if (material.UsesTaskShader())
+			taskShaderSource = std::string((std::istreambuf_iterator<char>(ifs)),
+				(std::istreambuf_iterator<char>()));
+		meshShaderSource = std::string((std::istreambuf_iterator<char>(ifs2)),
+			(std::istreambuf_iterator<char>()));
+		fragShaderSource = std::string((std::istreambuf_iterator<char>(ifs3)),
+			(std::istreambuf_iterator<char>()));
+		if (material.UsesTaskShader())
+			taskShaderSource = "#version 460\n#extension GL_NV_mesh_shader : require\n" + taskShaderSource;
+		meshShaderSource = "#version 460\n#extension GL_NV_mesh_shader : require\n" + meshShaderSource;
+		fragShaderSource = "#version 460\nlayout(location = 0) out vec4 OUT_COLOR;\n" + fragShaderSource;
+		if (material.UsesTaskShader())
+			ResolveIncludes(taskShaderSource);
+		ResolveIncludes(meshShaderSource);
+		ResolveIncludes(fragShaderSource);
+
+		gl_id = glCreateProgram();
+		std::cout << "[GlShader] Created program with id " << gl_id << std::endl;
+		uint32_t ts, ms, fs;
+		if (material.UsesTaskShader())
+			ts = CompileShader(GL_TASK_SHADER_NV, taskShaderSource);
+		ms = CompileShader(GL_MESH_SHADER_NV, meshShaderSource);
+		fs = CompileShader(GL_FRAGMENT_SHADER, fragShaderSource);
+
+		if (material.UsesTaskShader())
+			if (!ts)
+				std::cout << taskShaderSource << std::endl;
+		if (!ms)
+			std::cout << meshShaderSource << std::endl;
+		if (!fs)
+			std::cout << fragShaderSource << std::endl;
+
+		if (material.UsesTaskShader())
+			glAttachShader(gl_id, ts);
+		glAttachShader(gl_id, ms);
+		glAttachShader(gl_id, fs);
+		glLinkProgram(gl_id);
+		CheckLinkStatusAndReturnProgram(gl_id, true);
+		glValidateProgram(gl_id);
+
+		if (material.UsesTaskShader())
+			glDeleteShader(ts);
+		glDeleteShader(ms);
+		glDeleteShader(fs);
+		return;
+	}
 	m_vertFileName = material.vertShaderFilePath + ".glsl";
 	if (material.UsesTessellation())
 	{
@@ -280,15 +350,15 @@ void sf::GlShader::Create(const Material& material,
 		vertShaderSource = GenerateVoxelVolumeShaderHeader(*voxelBufferLayout) + vertShaderSource;
 	if (particleBufferLayout != nullptr)
 		vertShaderSource = GenerateParticleShaderHeader(*particleBufferLayout) + vertShaderSource;
-	vertShaderSource = GenerateVertexAttributeShaderHeader(vertexBufferLayout) + vertShaderSource;
+	vertShaderSource = GenerateVertexAttributeShaderHeader(*vertexBufferLayout) + vertShaderSource;
 	vertShaderSource = "#version 460\n" + vertShaderSource;
 	if (material.UsesTessellation())
 	{
-		tescShaderSource = GenerateVertexAttributeShaderHeader(vertexBufferLayout, false) + tescShaderSource;
+		tescShaderSource = GenerateVertexAttributeShaderHeader(*vertexBufferLayout, false) + tescShaderSource;
 		tescShaderSource = "layout (vertices=" + std::to_string(material.tessPatchVertexCount) + ") out;\n#define VERTICES_PER_PATCH " +
 			std::to_string(material.tessPatchVertexCount) + std::string("\n") + tescShaderSource;
 		tescShaderSource = "#version 460\n" + tescShaderSource;
-		teseShaderSource = GenerateVertexAttributeShaderHeader(vertexBufferLayout, false) + teseShaderSource;
+		teseShaderSource = GenerateVertexAttributeShaderHeader(*vertexBufferLayout, false) + teseShaderSource;
 		teseShaderSource = "layout (" + std::string(material.tessPatchVertexCount == 3 ? "triangles" : "quads") + ", " + material.tessSpacing + ", " + material.tessWinding + ") in;\n#define VERTICES_PER_PATCH " +
 			std::to_string(material.tessPatchVertexCount) + std::string("\n") + teseShaderSource;
 		teseShaderSource = "#version 460\n" + teseShaderSource;

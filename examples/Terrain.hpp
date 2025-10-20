@@ -17,9 +17,10 @@ namespace sf
 		float heightmapPixelSize;
 		float maxHeight;
 
-		void Create(Scene& scene, const std::string& heightmapFilePath, float heightmapPixelSize, float maxHeight, uint32_t heightmapPixelsPerPatch)
+		void Create(Scene& scene, const std::string& heightmapFilePath, float heightmapPixelSize, float maxHeight, uint32_t heightmapPixelsPerPatch, const glm::vec3& origin)
 		{
 			this->vertexBufferLayout = BufferLayout({BufferComponent::VertexPosition, BufferComponent::VertexUV});
+			this->origin = origin;
 			this->maxHeight = maxHeight;
 			this->heightmapPixelSize = heightmapPixelSize;
 			this->heightmap.CreateFromFile(heightmapFilePath);
@@ -41,8 +42,6 @@ namespace sf
 			this->material.uniforms["maxHeight"].dataType = DataType::f32;
 			this->material.uniforms["maxHeight"].data.f32 = this->maxHeight;
 			this->material.drawMode = MaterialDrawMode::Lines;
-
-			this->origin = glm::vec3(-(float)(this->heightmapResolution - 1) * 0.5f * heightmapPixelSize, 0.0f, (float)(this->heightmapResolution - 1) * 0.5f * heightmapPixelSize);
 
 			this->mesh.vertexBufferLayout = &this->vertexBufferLayout;
 			MeshProcessor::GenerateGrid(this->mesh, patchCount + 1, patchCount + 1, this->heightmapResolution, this->heightmapResolution, heightmapPixelSize * ((float)(this->heightmapResolution - 1) / (float)patchCount), true);

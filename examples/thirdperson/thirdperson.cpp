@@ -128,7 +128,8 @@ namespace sf
 		characterMaterial.vertShaderFilePath = "assets/shaders/default.vert";
 		characterMaterial.fragShaderFilePath = "assets/shaders/default.frag";
 
-		terrain.Create(scene, "../Downloads/Telegram Desktop/test.r16", 0.5566f, 152.0f, 41);
+		terrain.Create(scene, "../Downloads/Telegram Desktop/test.r16", 0.5566f, 152.0f, 41,
+			glm::vec3(-(float)(1025 - 1) * 0.5f * 0.5566f, 0.0f, (float)(1025 - 1) * 0.5f * 0.5566f));
 
 		int gltfid;
 		{

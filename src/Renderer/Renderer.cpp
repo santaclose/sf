@@ -270,11 +270,17 @@ namespace sf::Renderer
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(SebText::LayoutSettings), &textLayoutSettings, GL_DYNAMIC_DRAW);
 	}
 
-	void CreateMaterial(const Material& material, const BufferLayout* vertexBufferLayout)
+	GlMaterial* GetOrCreateMaterial(const Material* material, const BufferLayout* vertexBufferLayout)
 	{
+		assert(material != nullptr);
+		/* vertexBufferLayout can be null if using mesh shading */
+		if (materials.find(material) != materials.end() && materials[material].find(vertexBufferLayout) != materials[material].end())
+			return materials[material][vertexBufferLayout];
+
 		GlMaterial* newMaterial = new GlMaterial();
-		newMaterial->Create(&material, vertexBufferLayout, material.voxelBufferLayout, material.particleBufferLayout);
-		materials[&material][vertexBufferLayout] = newMaterial;
+		newMaterial->Create(material, vertexBufferLayout, material->voxelBufferLayout, material->particleBufferLayout);
+		materials[material][vertexBufferLayout] = newMaterial;
+		return newMaterial;
 	}
 
 #ifdef SF_DEBUG
@@ -503,9 +509,7 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 	if (mesh.meshData == nullptr)
 	{
 		assert(mesh.materials.size() == 1);
-		if (materials.find(mesh.materials[0]) == materials.end() || materials[mesh.materials[0]].find(nullptr) == materials[mesh.materials[0]].end())
-			CreateMaterial(*mesh.materials[0], nullptr);
-		GlMaterial* materialToUse = materials[mesh.materials[0]][nullptr];
+		GlMaterial* materialToUse = GetOrCreateMaterial(mesh.materials[0], nullptr);
 		materialToUse->Bind(rendererUniformVector);
 		assert(mesh.materials[0]->UsesMeshShader());
 		glDrawMeshTasksNV(0, mesh.materials[0]->meshWorkGroupCount);
@@ -517,10 +521,7 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 
 	for (uint32_t i = 0; i < mesh.meshData->pieceCount; i++)
 	{
-		if (materials.find(mesh.materials[i]) == materials.end() || materials[mesh.materials[i]].find(mesh.meshData->vertexBufferLayout) == materials[mesh.materials[i]].end())
-			CreateMaterial(*mesh.materials[i], mesh.meshData->vertexBufferLayout);
-		GlMaterial* materialToUse = materials[mesh.materials[i]][mesh.meshData->vertexBufferLayout];
-
+		GlMaterial* materialToUse = GetOrCreateMaterial(mesh.materials[i], mesh.meshData->vertexBufferLayout);
 		materialToUse->Bind(rendererUniformVector);
 
 		uint32_t drawEnd, drawStart;
@@ -572,10 +573,7 @@ void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 
 	for (uint32_t i = 0; i < mesh.meshData->pieceCount; i++)
 	{
-		if (materials.find(mesh.materials[i]) == materials.end() || materials[mesh.materials[i]].find(mesh.meshData->vertexBufferLayout) == materials[mesh.materials[i]].end())
-			CreateMaterial(*mesh.materials[i], mesh.meshData->vertexBufferLayout);
-		GlMaterial* materialToUse = materials[mesh.materials[i]][mesh.meshData->vertexBufferLayout];
-
+		GlMaterial* materialToUse = GetOrCreateMaterial(mesh.materials[i], mesh.meshData->vertexBufferLayout);
 		materialToUse->Bind(rendererUniformVector);
 		materialToUse->m_shader->SetUniform1i("animate", mesh.skeletonData->m_animate);
 
@@ -599,9 +597,7 @@ void sf::Renderer::DrawParticleSystem(ParticleSystem& particleSystem, Transform&
 	if (!activeCameraEntity)
 		return;
 
-	if (materials.find(particleSystem.material) == materials.end() || materials[particleSystem.material].find(particleSystem.meshData->vertexBufferLayout) == materials[particleSystem.material].end())
-		CreateMaterial(*particleSystem.material, particleSystem.meshData->vertexBufferLayout);
-	GlMaterial* materialToUse = materials[particleSystem.material][particleSystem.meshData->vertexBufferLayout];
+	GlMaterial* materialToUse = GetOrCreateMaterial(particleSystem.material, particleSystem.meshData->vertexBufferLayout);
 	const BufferLayout* particleBufferLayout = particleSystem.material->particleBufferLayout;
 
 	glDepthMask(GL_FALSE); // Do not write to depth buffer
@@ -722,10 +718,7 @@ void sf::Renderer::DrawVoxelVolume(VoxelVolume& voxelVolume, Transform& transfor
 		glBufferData(GL_SHADER_STORAGE_BUFFER, voxelVolume.voxelVolumeData->voxelBuffer.size(), voxelVolume.voxelVolumeData->voxelBuffer.data(), GL_STATIC_DRAW);
 	}
 
-	if (materials.find(voxelVolume.material) == materials.end() || materials[voxelVolume.material].find(meshData.vertexBufferLayout) == materials[voxelVolume.material].end())
-		CreateMaterial(*voxelVolume.material, meshData.vertexBufferLayout);
-	GlMaterial* materialToUse = materials[voxelVolume.material][meshData.vertexBufferLayout];
-
+	GlMaterial* materialToUse = GetOrCreateMaterial(voxelVolume.material, meshData.vertexBufferLayout);
 	materialToUse->Bind(rendererUniformVector);
 	materialToUse->m_shader->SetUniform1f("voxelSize", voxelVolume.voxelVolumeData->voxelSize);
 

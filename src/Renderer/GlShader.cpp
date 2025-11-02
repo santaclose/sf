@@ -498,15 +498,47 @@ void sf::GlShader::SetUniform4fv(const std::string& name, const float* pointer, 
 {
 	glUniform4fv(GetUniformLocation(name), number, pointer);
 }
-void sf::GlShader::SetUniform1u(const std::string& name, uint32_t value)
+void sf::GlShader::SetUniform1iv(const std::string& name, const int32_t* pointer, uint32_t number)
 {
-	glUniform1ui(GetUniformLocation(name), value);
+	glUniform1iv(GetUniformLocation(name), number, pointer);
+}
+void sf::GlShader::SetUniform2iv(const std::string& name, const int32_t* pointer, uint32_t number)
+{
+	glUniform2iv(GetUniformLocation(name), number, pointer);
+}
+void sf::GlShader::SetUniform3iv(const std::string& name, const int32_t* pointer, uint32_t number)
+{
+	glUniform3iv(GetUniformLocation(name), number, pointer);
+}
+void sf::GlShader::SetUniform4iv(const std::string& name, const int32_t* pointer, uint32_t number)
+{
+	glUniform4iv(GetUniformLocation(name), number, pointer);
+}
+void sf::GlShader::SetUniform1uiv(const std::string& name, const uint32_t* pointer, uint32_t number)
+{
+	glUniform1uiv(GetUniformLocation(name), number, pointer);
+}
+void sf::GlShader::SetUniform2uiv(const std::string& name, const uint32_t* pointer, uint32_t number)
+{
+	glUniform2uiv(GetUniformLocation(name), number, pointer);
+}
+void sf::GlShader::SetUniform3uiv(const std::string& name, const uint32_t* pointer, uint32_t number)
+{
+	glUniform3uiv(GetUniformLocation(name), number, pointer);
+}
+void sf::GlShader::SetUniform4uiv(const std::string& name, const uint32_t* pointer, uint32_t number)
+{
+	glUniform4uiv(GetUniformLocation(name), number, pointer);
+}
+void sf::GlShader::SetUniform1f(const std::string& name, float value)
+{
+	glUniform1f(GetUniformLocation(name), value);
 }
 void sf::GlShader::SetUniform1i(const std::string& name, int32_t value)
 {
 	glUniform1i(GetUniformLocation(name), value);
 }
-void sf::GlShader::SetUniform1f(const std::string& name, float value)
+void sf::GlShader::SetUniform1u(const std::string& name, uint32_t value)
 {
-	glUniform1f(GetUniformLocation(name), value);
+	glUniform1ui(GetUniformLocation(name), value);
 }

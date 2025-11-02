@@ -58,8 +58,16 @@ namespace sf {
 		void SetUniform2fv(const std::string& name, const float* pointer, uint32_t number = 1);
 		void SetUniform3fv(const std::string& name, const float* pointer, uint32_t number = 1);
 		void SetUniform4fv(const std::string& name, const float* pointer, uint32_t number = 1);
-		void SetUniform1u(const std::string& name, uint32_t value);
-		void SetUniform1i(const std::string& name, int32_t value);
+		void SetUniform1iv(const std::string& name, const int32_t* pointer, uint32_t number = 1);
+		void SetUniform2iv(const std::string& name, const int32_t* pointer, uint32_t number = 1);
+		void SetUniform3iv(const std::string& name, const int32_t* pointer, uint32_t number = 1);
+		void SetUniform4iv(const std::string& name, const int32_t* pointer, uint32_t number = 1);
+		void SetUniform1uiv(const std::string& name, const uint32_t* pointer, uint32_t number = 1);
+		void SetUniform2uiv(const std::string& name, const uint32_t* pointer, uint32_t number = 1);
+		void SetUniform3uiv(const std::string& name, const uint32_t* pointer, uint32_t number = 1);
+		void SetUniform4uiv(const std::string& name, const uint32_t* pointer, uint32_t number = 1);
 		void SetUniform1f(const std::string& name, float value);
+		void SetUniform1i(const std::string& name, int32_t value);
+		void SetUniform1u(const std::string& name, uint32_t value);
 	};
 }

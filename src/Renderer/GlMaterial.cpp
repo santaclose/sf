@@ -108,14 +108,14 @@ void sf::GlMaterial::Bind(const std::vector<void*>& rendererUniformVector)
 			}
 			break;
 		case DataType::b:
-		case DataType::u32:
-			m_shader->SetUniform1u(uniform.first, uniform.second.data.u32);
+		case DataType::f32:
+			m_shader->SetUniform1f(uniform.first, uniform.second.data.f32);
 			break;
 		case DataType::i32:
 			m_shader->SetUniform1i(uniform.first, uniform.second.data.i32);
 			break;
-		case DataType::f32:
-			m_shader->SetUniform1f(uniform.first, uniform.second.data.f32);
+		case DataType::u32:
+			m_shader->SetUniform1u(uniform.first, uniform.second.data.u32);
 			break;
 		case DataType::vec2f32:
 			m_shader->SetUniform2fv(uniform.first, (float*)uniform.second.data.p);
@@ -125,6 +125,24 @@ void sf::GlMaterial::Bind(const std::vector<void*>& rendererUniformVector)
 			break;
 		case DataType::vec4f32:
 			m_shader->SetUniform4fv(uniform.first, (float*)uniform.second.data.p);
+			break;
+		case DataType::vec2i32:
+			m_shader->SetUniform2iv(uniform.first, (int32_t*)uniform.second.data.p);
+			break;
+		case DataType::vec3i32:
+			m_shader->SetUniform3iv(uniform.first, (int32_t*)uniform.second.data.p);
+			break;
+		case DataType::vec4i32:
+			m_shader->SetUniform4iv(uniform.first, (int32_t*)uniform.second.data.p);
+			break;
+		case DataType::vec2u32:
+			m_shader->SetUniform2uiv(uniform.first, (uint32_t*)uniform.second.data.p);
+			break;
+		case DataType::vec3u32:
+			m_shader->SetUniform3uiv(uniform.first, (uint32_t*)uniform.second.data.p);
+			break;
+		case DataType::vec4u32:
+			m_shader->SetUniform4uiv(uniform.first, (uint32_t*)uniform.second.data.p);
 			break;
 		default:
 			assert(!"Data type not handled");

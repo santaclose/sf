@@ -314,7 +314,7 @@ void sf::MeshProcessor::GenerateGrid(MeshData& mesh, uint32_t sizeX, uint32_t si
 			currentVertexUV->y = (float)y / (float)(sizeY - 1) * ((float)(texResY - 1) / (float)texResY) + uvAdjustY;
 			if (x > 0u && y > 0u)
 			{
-				assert(useQuads && currentIndex + 3u < mesh.indexCount || currentIndex + 5u < mesh.indexCount);
+				assert(useQuads && currentIndex + 3u < mesh.indexCount || !useQuads && currentIndex + 5u < mesh.indexCount);
 				mesh.indexBuffer[currentIndex++] = (y - 1u) * sizeX + (x - 1u);
 				mesh.indexBuffer[currentIndex++] = (y - 1u) * sizeX + (x - 0u);
 				mesh.indexBuffer[currentIndex++] = (y - 0u) * sizeX + (x - 0u);

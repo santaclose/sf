@@ -10,22 +10,17 @@ namespace sf
 {
 	enum class BufferComponent
 	{
-		VertexPosition,
-		VertexNormal,
-		VertexTangent,
-		VertexColor,
-		VertexUV,
-		VertexAO,
-		VertexBoneWeights,
-		VertexBoneIndices,
-		VoxelPosition,
-		VoxelNormal,
-		VoxelColor,
-		VoxelUV,
-		ParticlePosition,
-		ParticleRotation,
-		ParticleScale,
-		ParticleSpawnTime
+		Position,
+		Normal,
+		Tangent,
+		Color,
+		UV,
+		AO,
+		BoneWeights,
+		BoneIndices,
+		Rotation,
+		Scale,
+		SpawnTime
 	};
 
 	struct BufferComponentInfo

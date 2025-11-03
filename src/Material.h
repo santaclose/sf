@@ -20,6 +20,15 @@ namespace sf
 		} data;
 	};
 
+	struct MaterialBuffer
+	{
+		const char* name;
+		void* pointer;
+		const BufferLayout* layout;
+		uint32_t size;
+		DataType dataType;
+	};
+
 	enum class RendererUniformData
 	{
 		IrradianceMap = 0,
@@ -47,11 +56,10 @@ namespace sf
 
 		std::unordered_map<std::string, Uniform> uniforms;
 		std::unordered_map<std::string, RendererUniform> rendererUniforms;
+		std::vector<MaterialBuffer> buffers;
 		bool isDoubleSided = false;
 		MaterialDrawMode drawMode = MaterialDrawMode::Fill;
 		MaterialBlendMode blendMode = MaterialBlendMode::Alpha;
-		BufferLayout* particleBufferLayout = nullptr;
-		BufferLayout* voxelBufferLayout = nullptr;
 		uint32_t tessPatchVertexCount;
 		std::string tessSpacing;
 		std::string tessWinding;

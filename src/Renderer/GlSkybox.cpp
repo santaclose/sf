@@ -5,7 +5,7 @@
 bool sf::GlSkybox::generated = false;
 uint32_t sf::GlSkybox::gl_VAO;
 uint32_t sf::GlSkybox::gl_VBO;
-sf::BufferLayout sf::GlSkybox::vertexBufferLayout = sf::BufferLayout({sf::BufferComponent::VertexPosition});
+sf::BufferLayout sf::GlSkybox::vertexBufferLayout = sf::BufferLayout({sf::BufferComponent::Position});
 
 float sf::GlSkybox::cubeVertices[] = {   
 	-1.0f,  1.0f, -1.0f,

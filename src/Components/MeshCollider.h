@@ -17,7 +17,7 @@ namespace sf
 			boundingSphereRadius = 0.0f;
 			for (uint32_t j = 0; j < meshData->indexCount; j++)
 			{
-				glm::vec3* vertexPos = meshData->AccessVertexComponent<glm::vec3>(BufferComponent::VertexPosition, meshData->indexBuffer[j + 0]);
+				glm::vec3* vertexPos = meshData->AccessVertexComponent<glm::vec3>(BufferComponent::Position, meshData->indexBuffer[j + 0]);
 				float length2 = glm::dot(*vertexPos, *vertexPos);
 				boundingSphereRadius = length2 > boundingSphereRadius ? length2 : boundingSphereRadius;
 			}

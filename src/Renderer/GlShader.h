@@ -39,10 +39,7 @@ namespace sf {
 		int GetUniformLocation(const std::string& name);
 		int GetOrAssignTextureIndex(const std::string& uniform);
 	public:
-		void Create(const Material& material,
-			const BufferLayout* vertexBufferLayout,
-			const BufferLayout* voxelBufferLayout = nullptr,
-			const BufferLayout* particleBufferLayout = nullptr);
+		void Create(const Material& material, const BufferLayout* vertexBufferLayout);
 
 		void CreateComputeFromFile(const std::string& computeShaderPath);
 

@@ -3,7 +3,6 @@
 #include <Scene/Entity.h>
 #include <Components/Mesh.h>
 #include <Components/SkinnedMesh.h>
-#include <Components/VoxelVolume.h>
 #include <Components/Transform.h>
 #include <Components/ScreenCoordinates.h>
 #include <Components/Sprite.h>
@@ -51,7 +50,6 @@ namespace sf::Renderer {
 	bool IsDebugDrawEnabled();
 	void DebugDrawSkeleton(SkinnedMesh& mesh, Transform& transform);
 
-	void DrawVoxelVolume(VoxelVolume& voxelVolume, Transform& transform);
 	void DrawSphereCollider(const SphereCollider& sc, const glm::vec3& color);
 	void DrawCapsuleCollider(const CapsuleCollider& cc, const glm::vec3& color);
 	void DrawBoxCollider(const BoxCollider& bc, const glm::vec3& color);

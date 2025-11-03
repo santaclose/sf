@@ -16,7 +16,7 @@ void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, c
 {
 	if (voxelBufferLayout != nullptr)
 		this->voxelBufferLayout = *voxelBufferLayout;
-	DataType positionDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::VertexPosition)->dataType;
+	DataType positionDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::Position)->dataType;
 	assert(positionDataType == DataType::vec3f32);
 	assert(mesh.vertexCount > 0);
 	assert(voxelSize > 0.0f);
@@ -24,11 +24,11 @@ void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, c
 	this->voxelSize = voxelSize;
 
 	// compute mesh AABB
-	glm::vec3 minP = *mesh.AccessVertexComponent<glm::vec3>(BufferComponent::VertexPosition, 0);
+	glm::vec3 minP = *mesh.AccessVertexComponent<glm::vec3>(BufferComponent::Position, 0);
 	glm::vec3 maxP = minP;
 	for (int i = 1; i < mesh.vertexCount; i++)
 	{
-		glm::vec3* posPtr = mesh.AccessVertexComponent<glm::vec3>(BufferComponent::VertexPosition, i);
+		glm::vec3* posPtr = mesh.AccessVertexComponent<glm::vec3>(BufferComponent::Position, i);
 		minP.x = glm::min(minP.x, posPtr->x);
 		minP.y = glm::min(minP.y, posPtr->y);
 		minP.z = glm::min(minP.z, posPtr->z);
@@ -53,9 +53,9 @@ void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, c
 		uint32_t indexB = mesh.indexBuffer[indexI + 1];
 		uint32_t indexC = mesh.indexBuffer[indexI + 2];
 
-		glm::vec3* posPtrA = mesh.AccessVertexComponent<glm::vec3>(BufferComponent::VertexPosition, indexA);
-		glm::vec3* posPtrB = mesh.AccessVertexComponent<glm::vec3>(BufferComponent::VertexPosition, indexB);
-		glm::vec3* posPtrC = mesh.AccessVertexComponent<glm::vec3>(BufferComponent::VertexPosition, indexC);
+		glm::vec3* posPtrA = mesh.AccessVertexComponent<glm::vec3>(BufferComponent::Position, indexA);
+		glm::vec3* posPtrB = mesh.AccessVertexComponent<glm::vec3>(BufferComponent::Position, indexB);
+		glm::vec3* posPtrC = mesh.AccessVertexComponent<glm::vec3>(BufferComponent::Position, indexC);
 		glm::vec3 triNormal = glm::cross(
 			*posPtrB - *posPtrA,
 			*posPtrC - *posPtrA);
@@ -103,9 +103,9 @@ void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, c
 					}
 					for (const BufferComponentInfo& bci : voxelBufferLayout->GetComponentInfos())
 					{
-						if (bci.component == BufferComponent::VoxelPosition)
+						if (bci.component == BufferComponent::Position)
 						{
-							glm::vec3* voxelPosPointer = AccessVoxelComponent<glm::vec3>(BufferComponent::VoxelPosition, currentVoxel);
+							glm::vec3* voxelPosPointer = AccessVoxelComponent<glm::vec3>(BufferComponent::Position, currentVoxel);
 							if (voxelPosPointer != nullptr)
 								*voxelPosPointer = currentVoxelCenter;
 							continue;
@@ -113,14 +113,14 @@ void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, c
 						BufferComponent targetVertexComponent;
 						switch (bci.component)
 						{
-							case BufferComponent::VoxelNormal:
-								targetVertexComponent = BufferComponent::VertexNormal;
+							case BufferComponent::Normal:
+								targetVertexComponent = BufferComponent::Normal;
 								break;
-							case BufferComponent::VoxelColor:
-								targetVertexComponent = BufferComponent::VertexColor;
+							case BufferComponent::Color:
+								targetVertexComponent = BufferComponent::Color;
 								break;
-							case BufferComponent::VoxelUV:
-								targetVertexComponent = BufferComponent::VertexUV;
+							case BufferComponent::UV:
+								targetVertexComponent = BufferComponent::UV;
 								break;
 							default:
 								continue;
@@ -159,7 +159,7 @@ void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, c
 	{
 		for (const BufferComponentInfo& bci : voxelBufferLayout->GetComponentInfos())
 		{
-			if (bci.component == BufferComponent::VoxelPosition)
+			if (bci.component == BufferComponent::Position)
 				continue;
 			switch (bci.dataType)
 			{
@@ -167,7 +167,7 @@ void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, c
 					*(voxelBufferLayout->Access<glm::vec2>(voxelBuffer.data(), bci.component, pair.first)) /= (float) pair.second;
 					break;
 				case DataType::vec3f32:
-					if (bci.component == BufferComponent::VoxelNormal)
+					if (bci.component == BufferComponent::Normal)
 					{
 						glm::vec3& temp = *(voxelBufferLayout->Access<glm::vec3>(voxelBuffer.data(), bci.component, pair.first));
 						temp = glm::normalize(temp);

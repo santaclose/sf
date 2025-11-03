@@ -16,7 +16,7 @@
 #include <Scene/Entity.h>
 #include <Scene/Scene.h>
 
-#include <Components/VoxelVolume.h>
+#include <VoxelVolumeData.h>
 #include <Components/Mesh.h>
 #include <Components/Camera.h>
 #include <Components/Transform.h>
@@ -38,10 +38,9 @@ namespace sf
 
 		bool rotationEnabled;
 
-		BufferLayout voxelLayout = BufferLayout({BufferComponent::VoxelPosition});
+		BufferLayout voxelLayout = BufferLayout({BufferComponent::Position});
 		VoxelVolumeData monkevbd;
 		VoxelVolumeData monkevbd2;
-		VoxelVolumeData monkevbd3;
 
 		int selectedModel;
 
@@ -55,6 +54,9 @@ namespace sf
 			selectedModel = Math::Mod(selectedModel, (int)galleryObjects.size());
 			galleryObjects[prevModel].SetEnabled(false);
 			galleryObjects[selectedModel].SetEnabled(true);
+
+			voxelVolumeMaterial.uniforms["bufferSelect"].data.u32 = selectedModel;
+			voxelVolumeMaterial.uniforms["voxelSize"].data.f32 = selectedModel == 0 ? monkevbd.voxelSize : monkevbd2.voxelSize;
 		}
 	}
 
@@ -74,30 +76,37 @@ namespace sf
 
 		monkevbd.BuildFromMesh(Defaults::MeshDataMonkey(), 0.007f, &voxelLayout);
 		monkevbd2.BuildFromMesh(Defaults::MeshDataMonkey(), 0.02f, &voxelLayout);
-		monkevbd3.BuildFromMesh(Defaults::MeshDataMonkey(), 0.07, &voxelLayout);
 
 		meshMaterial.vertShaderFilePath = "assets/shaders/default.vert";
 		meshMaterial.fragShaderFilePath = "assets/shaders/default.frag";
 		voxelVolumeMaterial.vertShaderFilePath = "assets/shaders/voxelVolume.vert";
 		voxelVolumeMaterial.fragShaderFilePath = "assets/shaders/uv.frag";
-		voxelVolumeMaterial.voxelBufferLayout = &voxelLayout;
+		voxelVolumeMaterial.buffers.resize(2);
+		voxelVolumeMaterial.buffers[0] = { "VOXELS_SMALL", monkevbd.voxelBuffer.data(), &voxelLayout, (uint32_t) monkevbd.voxelBuffer.size(), DataType::f32 };
+		voxelVolumeMaterial.buffers[1] = { "VOXELS_BIG", monkevbd2.voxelBuffer.data(), &voxelLayout, (uint32_t) monkevbd2.voxelBuffer.size(), DataType::f32 };
+		voxelVolumeMaterial.uniforms["voxelSize"].dataType = DataType::f32;
+		voxelVolumeMaterial.uniforms["voxelSize"].data.f32 = monkevbd.voxelSize;
+		voxelVolumeMaterial.uniforms["bufferSelect"].dataType = DataType::u32;
+		voxelVolumeMaterial.uniforms["bufferSelect"].data.u32 = selectedModel;
 
 		{
 			galleryObjects.push_back(scene.CreateEntity());
 			Transform& objectTransform = galleryObjects.back().AddComponent<Transform>();
-			VoxelVolume& objectVoxelVolume = galleryObjects.back().AddComponent<VoxelVolume>(&monkevbd, &voxelVolumeMaterial);
+			ParticleSystem& objectParticles = galleryObjects.back().AddComponent<ParticleSystem>();
+			objectParticles.dynamic = false;
+			objectParticles.meshData = &Defaults::MeshDataCube();
+			objectParticles.material = &voxelVolumeMaterial;
+			objectParticles.particleCount = monkevbd.GetVoxelCount();
 		}
 
 		{
 			galleryObjects.push_back(scene.CreateEntity());
 			Transform& objectTransform = galleryObjects.back().AddComponent<Transform>();
-			VoxelVolume& objectVoxelVolume = galleryObjects.back().AddComponent<VoxelVolume>(&monkevbd2, &voxelVolumeMaterial);
-		}
-
-		{
-			galleryObjects.push_back(scene.CreateEntity());
-			Transform& objectTransform = galleryObjects.back().AddComponent<Transform>();
-			VoxelVolume& objectVoxelVolume = galleryObjects.back().AddComponent<VoxelVolume>(&monkevbd3, &voxelVolumeMaterial);
+			ParticleSystem& objectParticles = galleryObjects.back().AddComponent<ParticleSystem>();
+			objectParticles.dynamic = false;
+			objectParticles.meshData = &Defaults::MeshDataCube();
+			objectParticles.material = &voxelVolumeMaterial;
+			objectParticles.particleCount = monkevbd2.GetVoxelCount();
 		}
 
 		{

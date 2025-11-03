@@ -5,17 +5,14 @@
 #include <Renderer/GlTexture.h>
 #include <Renderer/GlCubemap.h>
 
-void sf::GlMaterial::Create(const Material* material,
-	const BufferLayout* vertexBufferLayout,
-	const BufferLayout* voxelBufferLayout,
-	const BufferLayout* particleBufferLayout)
+void sf::GlMaterial::Create(const Material* material, const BufferLayout* vertexBufferLayout)
 {
 	m_material = material;
 	assert(m_material != nullptr);
 	assert((m_material->vertShaderFilePath.length() > 0 || m_material->meshShaderFilePath.length() > 0) &&
 		   (m_material->fragShaderFilePath.length() > 0));
 	m_shader = new GlShader();
-	m_shader->Create(*m_material, vertexBufferLayout, voxelBufferLayout, particleBufferLayout);
+	m_shader->Create(*m_material, vertexBufferLayout);
 
 	for (const std::pair<std::string, Uniform>& uniformPair : m_material->uniforms)
 	{
@@ -25,6 +22,17 @@ void sf::GlMaterial::Create(const Material* material,
 			newTexture->CreateFromBitmap(*((Bitmap*)uniformPair.second.data.p));
 			m_textures[uniformPair.second.data.p] = newTexture;
 		}
+	}
+
+	for (int i = 0; i < m_material->buffers.size(); i++)
+	{
+		if (m_material->buffers[i].pointer == nullptr)
+			continue;
+		uint32_t newSsbo;
+		glGenBuffers(1, &newSsbo);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, newSsbo);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, m_material->buffers[i].size, m_material->buffers[i].pointer, GL_STATIC_DRAW);
+		m_ssbos[m_material->buffers[i].pointer] = newSsbo;
 	}
 }
 
@@ -190,4 +198,21 @@ void sf::GlMaterial::Bind(const std::vector<void*>& rendererUniformVector)
 			break;
 		}
 	}
+
+	for (int i = 0; i < m_material->buffers.size(); i++)
+	{
+		if (m_material->buffers[i].pointer == nullptr)
+			continue;
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, i, m_ssbos[m_material->buffers[i].pointer]);
+	}
+}
+
+void sf::GlMaterial::UpdateBufferData(uint32_t bufferIndex, uint32_t location, uint32_t size)
+{
+	assert(bufferIndex < m_material->buffers.size());
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_ssbos[m_material->buffers[bufferIndex].pointer]);
+	if (location != ~0)
+		glBufferSubData(GL_SHADER_STORAGE_BUFFER, location, size, (uint8_t*) m_material->buffers[bufferIndex].pointer + location);
+	else
+		glBufferData(GL_SHADER_STORAGE_BUFFER, m_material->buffers[bufferIndex].size, m_material->buffers[bufferIndex].pointer, GL_STATIC_DRAW);
 }

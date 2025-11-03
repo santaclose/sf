@@ -33,7 +33,6 @@ namespace
 		std::string out = "";
 		for (const sf::BufferComponentInfo& bci : vertexBufferLayout.GetComponentInfos())
 		{
-			assert((uint32_t)bci.component < (uint32_t) sf::BufferComponent::VoxelPosition); // should be vertex component
 			if (isVertexShader)
 			{
 				out += "layout(location = " + std::to_string(currentLocation) + ") in ";
@@ -48,27 +47,27 @@ namespace
 					case sf::DataType::vec4f32:
 						out += "vec4"; break;
 					default:
-						assert(false); // missing type, should add to this switch
+						assert(!"Missing type, should add to this switch");
 				}
 				out += " ";
 			}
 			switch (bci.component)
 			{
-				case sf::BufferComponent::VertexPosition:
+				case sf::BufferComponent::Position:
 					out += (isVertexShader ? "VA_Position;\n#define HAS_VA_Position 1\n" : "#define HAS_VA_Position 1\n"); break;
-				case sf::BufferComponent::VertexNormal:
+				case sf::BufferComponent::Normal:
 					out += (isVertexShader ? "VA_Normal;\n#define HAS_VA_Normal 1\n" : "#define HAS_VA_Normal 1\n"); break;
-				case sf::BufferComponent::VertexTangent:
+				case sf::BufferComponent::Tangent:
 					out += (isVertexShader ? "VA_Tangent;\n#define HAS_VA_Tangent 1\n" : "#define HAS_VA_Tangent 1\n"); break;
-				case sf::BufferComponent::VertexColor:
+				case sf::BufferComponent::Color:
 					out += (isVertexShader ? "VA_Color;\n#define HAS_VA_Color 1\n" : "#define HAS_VA_Color 1\n"); break;
-				case sf::BufferComponent::VertexUV:
+				case sf::BufferComponent::UV:
 					out += (isVertexShader ? "VA_UV;\n#define HAS_VA_UV 1\n" : "#define HAS_VA_UV 1\n"); break;
-				case sf::BufferComponent::VertexAO:
+				case sf::BufferComponent::AO:
 					out += (isVertexShader ? "VA_AO;\n#define HAS_VA_AO 1\n" : "#define HAS_VA_AO 1\n"); break;
-				case sf::BufferComponent::VertexBoneWeights:
+				case sf::BufferComponent::BoneWeights:
 					out += (isVertexShader ? "VA_BoneWeights;\n#define HAS_VA_BoneWeights 1\n" : "#define HAS_VA_BoneWeights 1\n"); break;
-				case sf::BufferComponent::VertexBoneIndices:
+				case sf::BufferComponent::BoneIndices:
 					out += (isVertexShader ? "VA_BoneIndices;\n#define HAS_VA_BoneIndices 1\n" : "#define HAS_VA_BoneIndices 1\n"); break;
 			}
 			currentLocation++;
@@ -76,80 +75,66 @@ namespace
 		return out;
 	}
 
-	std::string GenerateVoxelVolumeShaderHeader(const sf::BufferLayout& voxelBufferLayout)
+	std::string GenerateBufferShaderHeader(const sf::Material& material)
 	{
 		std::string out = "";
-		for (const sf::BufferComponentInfo& bci : voxelBufferLayout.GetComponentInfos())
+		for (uint32_t i = 0; i < material.buffers.size(); i++)
 		{
-			assert(
-				(uint32_t)bci.component < (uint32_t) sf::BufferComponent::ParticlePosition &&
-				(uint32_t)bci.component >= (uint32_t) sf::BufferComponent::VoxelPosition); // should be voxel component
-			// assume buffer is only floats
-			uint32_t stride = voxelBufferLayout.GetSize() / 4u;
-			uint32_t baseOffset = bci.byteOffset / 4u;
-			switch (bci.component)
+			const sf::MaterialBuffer& mb = material.buffers[i];
+			out += "layout (std430, binding = " + std::to_string(i) + ") buffer _" + std::string(mb.name) + "\n";
+			out += "{\n\t";
+			switch (mb.dataType)
 			{
-			case sf::BufferComponent::VoxelPosition:
-				out += "#define LOAD_VOXEL_POSITION vec3("
-					"VOXEL_BUFFER[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 0) + "], "
-					"VOXEL_BUFFER[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 1) + "], "
-					"VOXEL_BUFFER[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 2) + "])\n";
+			case sf::DataType::f32:
+				out += "float";
 				break;
-			case sf::BufferComponent::VoxelNormal:
-				out += "#define LOAD_VOXEL_NORMAL vec3("
-					"VOXEL_BUFFER[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 0) + "], "
-					"VOXEL_BUFFER[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 1) + "], "
-					"VOXEL_BUFFER[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 2) + "])\n";
+			case sf::DataType::u32:
+				out += "uint";
 				break;
-			case sf::BufferComponent::VoxelColor:
-				out += "#define LOAD_VOXEL_COLOR vec3("
-					"VOXEL_BUFFER[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 0) + "], "
-					"VOXEL_BUFFER[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 1) + "], "
-					"VOXEL_BUFFER[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 2) + "])\n";
+			case sf::DataType::i32:
+				out += "int";
 				break;
-			case sf::BufferComponent::VoxelUV:
-				out += "#define LOAD_VOXEL_UV vec3("
-					"VOXEL_BUFFER[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 0) + "], "
-					"VOXEL_BUFFER[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 1) + "])\n";
+			default:
+				assert(!"Invalid type for buffer");
 				break;
 			}
-		}
-		return out;
-	}
+			out += " " + std::string(mb.name) + "[];\n";
+			out += "};\n";
 
-	std::string GenerateParticleShaderHeader(const sf::BufferLayout& particleBufferLayout)
-	{
-		std::string out = "";
-		for (const sf::BufferComponentInfo& bci : particleBufferLayout.GetComponentInfos())
-		{
-			assert(
-				(uint32_t)bci.component >= (uint32_t) sf::BufferComponent::ParticlePosition); // should be particle component
-			// assume buffer is only floats
-			uint32_t stride = particleBufferLayout.GetSize() / 4u;
-			uint32_t baseOffset = bci.byteOffset / 4u;
-			switch (bci.component)
+			if (mb.layout == nullptr)
+				continue;
+			for (const sf::BufferComponentInfo& bci : mb.layout->GetComponentInfos())
 			{
-			case sf::BufferComponent::ParticlePosition:
-				out += "#define LOAD_PARTICLE_POSITION vec3("
-					"PARTICLE_BUFFER[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 0) + "], "
-					"PARTICLE_BUFFER[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 1) + "], "
-					"PARTICLE_BUFFER[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 2) + "])\n";
-				break;
-			case sf::BufferComponent::ParticleRotation:
-				out += "#define LOAD_PARTICLE_ROTATION vec4("
-					"PARTICLE_BUFFER[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 0) + "], "
-					"PARTICLE_BUFFER[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 1) + "], "
-					"PARTICLE_BUFFER[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 2) + "], "
-					"PARTICLE_BUFFER[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 3) + "])\n";
-				break;
-			case sf::BufferComponent::ParticleScale:
-				out += "#define LOAD_PARTICLE_SCALE "
-					"PARTICLE_BUFFER[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 0) + "]\n";
-				break;
-			case sf::BufferComponent::ParticleSpawnTime:
-				out += "#define LOAD_PARTICLE_SPAWN_TIME "
-					"PARTICLE_BUFFER[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 0) + "]\n";
-				break;
+				/* Only 4 byte element buffers are supported */
+				uint32_t stride = mb.layout->GetSize() / 4u;
+				uint32_t baseOffset = bci.byteOffset / 4u;
+				switch (bci.component)
+				{
+				case sf::BufferComponent::Position:
+					out += "#define " + std::string(mb.name) + "_LOAD_POSITION vec3(" +
+						std::string(mb.name) + "[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 0) + "], " +
+						std::string(mb.name) + "[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 1) + "], " +
+						std::string(mb.name) + "[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 2) + "])\n";
+					break;
+				case sf::BufferComponent::Rotation:
+					out += "#define " + std::string(mb.name) + "_LOAD_ROTATION vec4(" +
+						std::string(mb.name) + "[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 0) + "], " +
+						std::string(mb.name) + "[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 1) + "], " +
+						std::string(mb.name) + "[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 2) + "], " +
+						std::string(mb.name) + "[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 3) + "])\n";
+					break;
+				case sf::BufferComponent::Scale:
+					out += "#define " + std::string(mb.name) + "_LOAD_SCALE " +
+						std::string(mb.name) + "[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 0) + "]\n";
+					break;
+				case sf::BufferComponent::SpawnTime:
+					out += "#define " + std::string(mb.name) + "_LOAD_SPAWN_TIME " +
+						std::string(mb.name) + "[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 0) + "]\n";
+					break;
+				default:
+					assert(!"Buffer component not handled");
+					break;
+				}
 			}
 		}
 		return out;
@@ -226,10 +211,7 @@ uint32_t sf::GlShader::CompileShader(uint32_t type, const std::string& source)
 	return id;
 }
 
-void sf::GlShader::Create(const Material& material,
-	const BufferLayout* vertexBufferLayout,
-	const BufferLayout* voxelBufferLayout,
-	const BufferLayout* particleBufferLayout)
+void sf::GlShader::Create(const Material& material, const BufferLayout* vertexBufferLayout)
 {
 	if (material.UsesMeshShader())
 	{
@@ -346,10 +328,7 @@ void sf::GlShader::Create(const Material& material,
 	fragShaderSource = std::string((std::istreambuf_iterator<char>(ifs4)),
 		(std::istreambuf_iterator<char>()));
 
-	if (voxelBufferLayout != nullptr)
-		vertShaderSource = GenerateVoxelVolumeShaderHeader(*voxelBufferLayout) + vertShaderSource;
-	if (particleBufferLayout != nullptr)
-		vertShaderSource = GenerateParticleShaderHeader(*particleBufferLayout) + vertShaderSource;
+	vertShaderSource = GenerateBufferShaderHeader(material) + vertShaderSource;
 	vertShaderSource = GenerateVertexAttributeShaderHeader(*vertexBufferLayout) + vertShaderSource;
 	vertShaderSource = "#version 460\n" + vertShaderSource;
 	if (material.UsesTessellation())

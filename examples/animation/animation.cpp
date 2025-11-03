@@ -47,10 +47,10 @@ namespace sf
 		int selectedModel;
 
 		BufferLayout vertexLayout = BufferLayout({
-			BufferComponent::VertexPosition,
-			BufferComponent::VertexNormal,
-			BufferComponent::VertexBoneIndices,
-			BufferComponent::VertexBoneWeights
+			BufferComponent::Position,
+			BufferComponent::Normal,
+			BufferComponent::BoneIndices,
+			BufferComponent::BoneWeights
 		});
 
 		void GalleryChange(bool next)

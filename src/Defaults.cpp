@@ -10,9 +10,9 @@ namespace sf::Defaults
 	MeshData sphereMeshData;
 	MeshData monkeyMeshData;
 	BufferLayout defaultVertexLayout = BufferLayout({
-		BufferComponent::VertexPosition,
-		BufferComponent::VertexNormal,
-		BufferComponent::VertexUV,
+		BufferComponent::Position,
+		BufferComponent::Normal,
+		BufferComponent::UV,
 	});
 
 	const MeshData& MeshDataCube()

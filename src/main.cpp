@@ -104,14 +104,6 @@ int main(int argc, char** argv)
 			if (base.isEntityEnabled)
 				sf::Renderer::DrawParticleSystem(particleSystem, transform, deltaTime);
 		}
-
-		auto voxelVolumeRenderView = sf::Scene::activeScene->GetRegistry().view<sf::Base, sf::VoxelVolume, sf::Transform>();
-		for (auto entity : voxelVolumeRenderView)
-		{
-			auto [base, voxelVolume, transform] = voxelVolumeRenderView.get<sf::Base, sf::VoxelVolume, sf::Transform>(entity);
-			if (base.isEntityEnabled)
-				sf::Renderer::DrawVoxelVolume(voxelVolume, transform);
-		}
 		if (sf::Renderer::IsDebugDrawEnabled())
 		{
 			auto sphereColliderRenderView = sf::Scene::activeScene->GetRegistry().view<sf::Base, sf::SphereCollider, sf::Transform>();

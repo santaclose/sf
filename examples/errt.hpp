@@ -9,7 +9,7 @@ namespace errt
 	int seed = 0;
 	int maxCount = 40;
 
-	sf::BufferLayout vertexBufferLayout = sf::BufferLayout({sf::BufferComponent::VertexPosition});
+	sf::BufferLayout vertexBufferLayout = sf::BufferLayout({sf::BufferComponent::Position});
 	std::vector<glm::vec3> vertices;
 	std::vector<uint32_t> indices;
 

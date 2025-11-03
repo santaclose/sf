@@ -42,10 +42,10 @@ namespace sf
 
 		MeshData* meshes;
 		BufferLayout meshVertexLayout = BufferLayout({
-			BufferComponent::VertexPosition,
-			BufferComponent::VertexNormal,
-			BufferComponent::VertexTangent,
-			BufferComponent::VertexUV
+			BufferComponent::Position,
+			BufferComponent::Normal,
+			BufferComponent::Tangent,
+			BufferComponent::UV
 		});
 
 		int selectedModel;

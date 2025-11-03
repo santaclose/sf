@@ -31,10 +31,10 @@ namespace sf
 		MeshData* modelMesh;
 		Material modelMaterial;
 		BufferLayout modelVertexLayout = BufferLayout({
-			BufferComponent::VertexPosition,
-			BufferComponent::VertexNormal,
-			BufferComponent::VertexBoneIndices,
-			BufferComponent::VertexBoneWeights
+			BufferComponent::Position,
+			BufferComponent::Normal,
+			BufferComponent::BoneIndices,
+			BufferComponent::BoneWeights
 		});
 		glm::vec3 modelBaseRotation;
 

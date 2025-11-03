@@ -168,20 +168,20 @@ void sf::ObjImporter::Destroy(int id)
 void sf::ObjImporter::GenerateMeshData(int id, MeshData& mesh)
 {
 	assert(mesh.pieces == nullptr && mesh.vertexBuffer == nullptr && mesh.indexBuffer == nullptr);
-	bool meshHasNormals = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::VertexNormal) != nullptr;
-	bool meshHasUVs = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::VertexUV) != nullptr;
+	bool meshHasNormals = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::Normal) != nullptr;
+	bool meshHasUVs = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::UV) != nullptr;
 
-	DataType positionDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::VertexPosition)->dataType;
+	DataType positionDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::Position)->dataType;
 	assert(positionDataType == DataType::vec3f32);
 
 	if (meshHasNormals)
 	{
-		DataType normalDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::VertexNormal)->dataType;
+		DataType normalDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::Normal)->dataType;
 		assert(normalDataType == DataType::vec3f32);
 	}
 	if (meshHasUVs)
 	{
-		DataType uvsDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::VertexUV)->dataType;
+		DataType uvsDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::UV)->dataType;
 		assert(uvsDataType == DataType::vec2f32);
 	}
 
@@ -227,16 +227,16 @@ void sf::ObjImporter::GenerateMeshData(int id, MeshData& mesh)
 	mesh.vertexBuffer = malloc(mesh.vertexBufferLayout->GetSize() * finalVertices.size());
 	for (int i = 0; i < finalVertices.size(); i++)
 	{
-		glm::vec3* posPtr = mesh.AccessVertexComponent<glm::vec3>(BufferComponent::VertexPosition, i);
+		glm::vec3* posPtr = mesh.AccessVertexComponent<glm::vec3>(BufferComponent::Position, i);
 		*posPtr = meshes[id]->positions[finalVertices[i].posID];
 		if (meshes[id]->normals.size() > 0 && meshHasNormals)
 		{
-			glm::vec3* normalPtr = mesh.AccessVertexComponent<glm::vec3>(BufferComponent::VertexNormal, i);
+			glm::vec3* normalPtr = mesh.AccessVertexComponent<glm::vec3>(BufferComponent::Normal, i);
 			*normalPtr = meshes[id]->normals[finalVertices[i].normalID];
 		}
 		if (meshes[id]->texCoords.size() > 0 && meshHasUVs)
 		{
-			glm::vec2* coordsPtr = mesh.AccessVertexComponent<glm::vec2>(BufferComponent::VertexUV, i);
+			glm::vec2* coordsPtr = mesh.AccessVertexComponent<glm::vec2>(BufferComponent::UV, i);
 			*coordsPtr = meshes[id]->texCoords[finalVertices[i].coordsID];
 		}
 	}

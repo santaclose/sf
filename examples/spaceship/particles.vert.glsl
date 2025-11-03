@@ -15,20 +15,15 @@ layout(binding = 0) uniform SharedGpuData
 	float windowSizeY;
 };
 
-layout (std430, binding = 1) buffer _PARTICLE_BUFFER
-{
-	float PARTICLE_BUFFER[];
-};
-
 uniform float PARTICLE_CYCLE_TIME;
 uniform float PARTICLE_LIFETIME;
 
 void main()
 {
-	vec4 particleRotation = LOAD_PARTICLE_ROTATION;
-	vec3 particlePosition = LOAD_PARTICLE_POSITION;
-	float particleScale = LOAD_PARTICLE_SCALE;
-	float particleSpawnTime = LOAD_PARTICLE_SPAWN_TIME;
+	vec4 particleRotation = PARTICLES_LOAD_ROTATION;
+	vec3 particlePosition = PARTICLES_LOAD_POSITION;
+	float particleScale = PARTICLES_LOAD_SCALE;
+	float particleSpawnTime = PARTICLES_LOAD_SPAWN_TIME;
 	float particleTimeAlive = PARTICLE_TIME_ALIVE(particleSpawnTime);
 
 	float timeRatio = particleTimeAlive / PARTICLE_LIFETIME;

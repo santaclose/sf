@@ -39,8 +39,8 @@ namespace sf
 		float shipSpeed;
 		
 		BufferLayout shipVertexLayout = BufferLayout({
-			BufferComponent::VertexPosition,
-			BufferComponent::VertexUV
+			BufferComponent::Position,
+			BufferComponent::UV
 		});
 		MeshData shipMesh = MeshData(&shipVertexLayout);
 
@@ -48,18 +48,19 @@ namespace sf
 
 		MeshData* generatedMeshes;
 		BufferLayout generatedMeshesVertexLayout = BufferLayout({
-			BufferComponent::VertexPosition,
-			BufferComponent::VertexNormal,
-			BufferComponent::VertexUV,
-			BufferComponent::VertexAO
+			BufferComponent::Position,
+			BufferComponent::Normal,
+			BufferComponent::UV,
+			BufferComponent::AO
 		});
 
 		BufferLayout particleBufferLayout = BufferLayout({
-			BufferComponent::ParticlePosition,
-			BufferComponent::ParticleRotation,
-			BufferComponent::ParticleScale,
-			BufferComponent::ParticleSpawnTime
+			BufferComponent::Position,
+			BufferComponent::Rotation,
+			BufferComponent::Scale,
+			BufferComponent::SpawnTime
 		});
+		std::vector<uint8_t> particleBuffer;
 
 		Material particleMaterial;
 		Material errtMaterial;
@@ -107,11 +108,14 @@ namespace sf
 		errtMaterial.vertShaderFilePath = "assets/shaders/default.vert";
 		errtMaterial.fragShaderFilePath = "assets/shaders/vertexAo.frag";
 
+		uint32_t particleCount = 160;
 		particleMaterial.vertShaderFilePath = "examples/spaceship/particles.vert";
 		particleMaterial.fragShaderFilePath = "examples/spaceship/particles.frag";
 		particleMaterial.blendMode = MaterialBlendMode::Multiply;
 		particleMaterial.isDoubleSided = true;
-		particleMaterial.particleBufferLayout = &particleBufferLayout;
+		particleBuffer.resize(particleCount * particleBufferLayout.GetSize());
+		particleMaterial.buffers.resize(1);
+		particleMaterial.buffers[0] = { "PARTICLES" , particleBuffer.data(), &particleBufferLayout, (uint32_t) particleBuffer.size(), DataType::f32 };
 
 		e_ship = scene.CreateEntity();
 
@@ -120,8 +124,9 @@ namespace sf
 		Mesh& m_ship = e_ship.AddComponent<Mesh>(&shipMesh, &spaceshipMaterial);
 		Transform& t_ship = e_ship.AddComponent<Transform>();
 		ParticleSystem& ps_ship = e_ship.AddComponent<ParticleSystem>();
+		ps_ship.dynamic = true;
 		ps_ship.meshData = &Defaults::MeshDataPlane();
-		ps_ship.particleCount = 160;
+		ps_ship.particleCount = particleCount;
 		ps_ship.timeBetweenEmissions = 0.05f;
 		ps_ship.particlesPerEmission = 8u;
 		ps_ship.material = &particleMaterial;

@@ -1,6 +1,5 @@
 layout(location = 4) out vec2 fTexCoords;
 
-
 layout(binding = 0) uniform SharedGpuData
 {
 	mat4 modelMatrix;
@@ -12,15 +11,12 @@ layout(binding = 0) uniform SharedGpuData
 	float windowSizeY;
 };
 
-layout (std430, binding = 1) buffer _VOXEL_BUFFER
-{
-	float VOXEL_BUFFER[];
-};
-
 uniform float voxelSize;
+uniform uint bufferSelect;
 
 void main()
 {
 	fTexCoords = VA_UV;
-	gl_Position = cameraMatrix * modelMatrix * vec4(LOAD_VOXEL_POSITION + VA_Position * voxelSize, 1.0);
+	vec3 voxelPos = bufferSelect != 0 ? VOXELS_BIG_LOAD_POSITION : VOXELS_SMALL_LOAD_POSITION;
+	gl_Position = cameraMatrix * modelMatrix * vec4(voxelPos + VA_Position * voxelSize, 1.0);
 }

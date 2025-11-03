@@ -46,10 +46,10 @@ namespace sf
 		float cameraDistance;
 
 		BufferLayout characterVertexLayout = BufferLayout({
-			BufferComponent::VertexPosition,
-			BufferComponent::VertexNormal,
-			BufferComponent::VertexBoneIndices,
-			BufferComponent::VertexBoneWeights
+			BufferComponent::Position,
+			BufferComponent::Normal,
+			BufferComponent::BoneIndices,
+			BufferComponent::BoneWeights
 		});
 		SkeletonData* shanyungSkeleton;
 		MeshData* shanyungMesh;

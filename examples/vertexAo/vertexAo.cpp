@@ -45,8 +45,8 @@ namespace sf
 		int selectedModel;
 
 		BufferLayout meshVertexBufferLayout = BufferLayout({
-			BufferComponent::VertexPosition,
-			BufferComponent::VertexAO
+			BufferComponent::Position,
+			BufferComponent::AO
 		});
 
 		void GalleryChange(bool next)

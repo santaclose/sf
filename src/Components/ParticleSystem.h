@@ -11,6 +11,7 @@ namespace sf
 	{
 		const MeshData* meshData = nullptr;
 		const Material* material = nullptr;
+		bool dynamic = true;
 		uint32_t particleCount = 16U;
 		float timeBetweenEmissions = 0.1f;
 		uint32_t particlesPerEmission = 1U;

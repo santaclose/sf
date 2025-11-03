@@ -6,25 +6,20 @@ sf::DataType sf::BufferLayout::GetComponentDataType(BufferComponent component)
 {
 	switch (component)
 	{
-	case BufferComponent::VertexPosition:
-	case BufferComponent::VertexNormal:
-	case BufferComponent::VertexTangent:
-	case BufferComponent::VertexColor:
-	case BufferComponent::VoxelPosition:
-	case BufferComponent::VoxelNormal:
-	case BufferComponent::VoxelColor:
-	case BufferComponent::ParticlePosition:
+	case BufferComponent::Position:
+	case BufferComponent::Normal:
+	case BufferComponent::Tangent:
+	case BufferComponent::Color:
 		return DataType::vec3f32;
-	case BufferComponent::VertexUV:
-	case BufferComponent::VoxelUV:
+	case BufferComponent::UV:
 		return DataType::vec2f32;
-	case BufferComponent::VertexBoneWeights:
-	case BufferComponent::VertexBoneIndices:
-	case BufferComponent::ParticleRotation:
+	case BufferComponent::BoneWeights:
+	case BufferComponent::BoneIndices:
+	case BufferComponent::Rotation:
 		return DataType::vec4f32;
-	case BufferComponent::VertexAO:
-	case BufferComponent::ParticleScale:
-	case BufferComponent::ParticleSpawnTime:
+	case BufferComponent::AO:
+	case BufferComponent::Scale:
+	case BufferComponent::SpawnTime:
 		return DataType::f32;
 	default:
 		assert(false);

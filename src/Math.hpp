@@ -69,5 +69,24 @@ namespace sf {
 				output = glm::slerp(output, input[i], totalIsZero ? weights[i] : weights[i] / total);
 			}
 		}
+
+		inline uint32_t NextPowerOf2(uint32_t v)
+		{
+			v--;
+			v |= v >> 1;
+			v |= v >> 2;
+			v |= v >> 4;
+			v |= v >> 8;
+			v |= v >> 16;
+			v++;
+			return v;
+		}
+
+		inline uint32_t CountTrailingZeroes(uint32_t v)
+		{
+			uint32_t i = 0;
+			for (; !((v >> i) & 1) && i < 32; i++);
+			return i;
+		}
 	}
 }

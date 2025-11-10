@@ -245,7 +245,11 @@ void sf::GlShader::Create(const Material& material, const BufferLayout* vertexBu
 		fragShaderSource = std::string((std::istreambuf_iterator<char>(ifs3)),
 			(std::istreambuf_iterator<char>()));
 		if (material.UsesTaskShader())
+		{
+			taskShaderSource = GenerateBufferShaderHeader(material) + taskShaderSource;
 			taskShaderSource = "#version 460\n#extension GL_NV_mesh_shader : require\n" + taskShaderSource;
+		}
+		meshShaderSource = GenerateBufferShaderHeader(material) + meshShaderSource;
 		meshShaderSource = "#version 460\n#extension GL_NV_mesh_shader : require\n" + meshShaderSource;
 		fragShaderSource = "#version 460\nlayout(location = 0) out vec4 OUT_COLOR;\n" + fragShaderSource;
 		if (material.UsesTaskShader())

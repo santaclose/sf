@@ -501,9 +501,9 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 	if (mesh.meshData == nullptr)
 	{
 		assert(mesh.materials.size() == 1);
+		assert(mesh.materials[0]->UsesMeshShader());
 		GlMaterial* materialToUse = GetOrCreateMaterial(mesh.materials[0], nullptr);
 		materialToUse->Bind(rendererUniformVector);
-		assert(mesh.materials[0]->UsesMeshShader());
 		glDrawMeshTasksNV(0, mesh.materials[0]->meshWorkGroupCount);
 		return;
 	}

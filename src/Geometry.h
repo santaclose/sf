@@ -10,6 +10,36 @@
 
 namespace sf::Geometry
 {
+	inline bool IntersectCircleCircle(
+		const glm::vec2& centerA, float radiusA,
+		const glm::vec2& centerB, float radiusB,
+		glm::vec2& outA, glm::vec2& outB)
+	{
+		glm::vec2 d = centerB - centerA;
+		float distSq = glm::dot(d, d);
+
+		if (distSq <= 1e-12f)
+			return false;
+
+		float dist = glm::sqrt(distSq);
+		if (dist > radiusA + radiusB || dist < glm::abs(radiusA - radiusB))
+			return false;
+
+		float a = (radiusA * radiusA - radiusB * radiusB + distSq) / (2.0f * dist);
+
+		float hSq = radiusA * radiusA - a * a;
+		if (hSq < 0.0f)
+			hSq = 0.0f; // clamp precision error
+
+		float h = glm::sqrt(hSq); // the unavoidable sqrt
+		glm::vec2 mid = centerA + (a / dist) * d;
+		glm::vec2 perp(-d.y / dist, d.x / dist);
+		outA = mid + h * perp;
+		outB = mid - h * perp;
+
+		return true;
+	}
+
 	// from https://realtimecollisiondetection.net/
 	inline glm::vec3 Barycentric(
 		const glm::vec3& point,

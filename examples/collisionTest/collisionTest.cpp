@@ -43,6 +43,7 @@ namespace sf
 			LineTriangleClosestPoints,
 			LineAABBClosestPoints,
 			LineTriangleIntersection,
+			CircleCircleIntersection,
 			SphereSphereIntersection,
 			SphereCapsuleIntersection,
 			SphereBoxIntersection,
@@ -170,6 +171,12 @@ namespace sf
 						lines[i * 2 + 0] = planeX * pointInPlane.x + planeY * pointInPlane.y + lineDirection * (Random::Float() - 0.5f);
 						lines[i * 2 + 1] = planeX * pointInPlane.x + planeY * pointInPlane.y + lineDirection * (Random::Float() - 0.5f);
 					}
+					break;
+				}
+				case TestCase::CircleCircleIntersection:
+				{
+					points[0] = glm::vec3(Random::UnitVec2(), Random::Float() + 0.5f);
+					points[1] = glm::vec3(Random::UnitVec2(), Random::Float() + 0.5f);
 					break;
 				}
 				case TestCase::SphereSphereIntersection:
@@ -605,6 +612,22 @@ namespace sf
 			}
 			break;
 		}
+		case TestCase::CircleCircleIntersection:
+		{
+			sf::Renderer::AddLine(glm::vec3(points[0].x - points[0].z, points[0].y, 0.0f), glm::vec3(points[0].x + points[0].z, points[0].y, 0.0f), COLOR_BLUE);
+			sf::Renderer::AddLine(glm::vec3(points[0].x, points[0].y - points[0].z, 0.0f), glm::vec3(points[0].x, points[0].y + points[0].z, 0.0f), COLOR_BLUE);
+			sf::Renderer::AddLine(glm::vec3(points[1].x - points[1].z, points[1].y, 0.0f), glm::vec3(points[1].x + points[1].z, points[1].y, 0.0f), COLOR_BLUE);
+			sf::Renderer::AddLine(glm::vec3(points[1].x, points[1].y - points[1].z, 0.0f), glm::vec3(points[1].x, points[1].y + points[1].z, 0.0f), COLOR_BLUE);
+			glm::vec2 intersectionPoints[2];
+			if (Geometry::IntersectCircleCircle({ points[0].x, points[0].y }, points[0].z, { points[1].x, points[1].y }, points[1].z, intersectionPoints[0], intersectionPoints[1]))
+			{
+				sf::Renderer::AddLine(glm::vec3(intersectionPoints[0].x - 0.01f, intersectionPoints[0].y, 0.0f), glm::vec3(intersectionPoints[0].x + 0.01f, intersectionPoints[0].y, 0.0f), COLOR_RED);
+				sf::Renderer::AddLine(glm::vec3(intersectionPoints[0].x, intersectionPoints[0].y - 0.01f, 0.0f), glm::vec3(intersectionPoints[0].x, intersectionPoints[0].y + 0.01f, 0.0f), COLOR_RED);
+				sf::Renderer::AddLine(glm::vec3(intersectionPoints[1].x - 0.01f, intersectionPoints[1].y, 0.0f), glm::vec3(intersectionPoints[1].x + 0.01f, intersectionPoints[1].y, 0.0f), COLOR_RED);
+				sf::Renderer::AddLine(glm::vec3(intersectionPoints[1].x, intersectionPoints[1].y - 0.01f, 0.0f), glm::vec3(intersectionPoints[1].x, intersectionPoints[1].y + 0.01f, 0.0f), COLOR_RED);
+			}
+			break;
+		}
 		case TestCase::SphereSphereIntersection:
 		{
 			SphereCollider fixedSc = WORLD_SPACE_SPHERE_COLLIDER(spheres[0]);
@@ -754,6 +777,7 @@ namespace sf
 				if (ImGui::MenuItem("LineTriangleClosestPoints", NULL, currentTestCase == TestCase::LineTriangleClosestPoints)) { currentTestCase = TestCase::LineTriangleClosestPoints; GenerateShapesForCurrentCase(); }
 				if (ImGui::MenuItem("LineAABBClosestPoints", NULL, currentTestCase == TestCase::LineAABBClosestPoints)) { currentTestCase = TestCase::LineAABBClosestPoints; GenerateShapesForCurrentCase(); }
 				if (ImGui::MenuItem("LineTriangleIntersection", NULL, currentTestCase == TestCase::LineTriangleIntersection)) { currentTestCase = TestCase::LineTriangleIntersection; GenerateShapesForCurrentCase(); }
+				if (ImGui::MenuItem("CircleCircleIntersection", NULL, currentTestCase == TestCase::CircleCircleIntersection)) { currentTestCase = TestCase::CircleCircleIntersection; GenerateShapesForCurrentCase(); }
 				if (ImGui::MenuItem("SphereSphereIntersection", NULL, currentTestCase == TestCase::SphereSphereIntersection)) { currentTestCase = TestCase::SphereSphereIntersection; GenerateShapesForCurrentCase(); }
 				if (ImGui::MenuItem("SphereCapsuleIntersection", NULL, currentTestCase == TestCase::SphereCapsuleIntersection)) { currentTestCase = TestCase::SphereCapsuleIntersection; GenerateShapesForCurrentCase(); }
 				if (ImGui::MenuItem("SphereBoxIntersection", NULL, currentTestCase == TestCase::SphereBoxIntersection)) { currentTestCase = TestCase::SphereBoxIntersection; GenerateShapesForCurrentCase(); }

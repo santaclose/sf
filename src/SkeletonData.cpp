@@ -12,7 +12,7 @@ uint32_t sf::SkeletonData::AddNodeSingle(uint32_t animationIndex, float speed)
 	m_nodes.back().single.animation = &m_animations[animationIndex];
 	m_nodes.back().single.speed = speed;
 	m_nodes.back().single.pose = new Transform[m_boneData.size()];
-	memcpy(m_nodes.back().single.pose, m_boneTransforms.data(), m_boneTransforms.size() * sizeof(Transform)); /* Not all data comes from animation samplers */
+	memcpy(m_nodes.back().single.pose, m_boneLocalTransforms.data(), m_boneLocalTransforms.size() * sizeof(Transform)); /* Not all data comes from animation samplers */
 	m_nodes.back().single.boneCount = m_boneData.size();
 	return m_nodes.size() - 1;
 }
@@ -34,7 +34,7 @@ uint32_t sf::SkeletonData::AddNodeBlendSpace1D(const std::vector<BlendSpacePoint
 		m_nodes.back().bs1d.points[i].pos = points[i].pos;
 		m_nodes.back().bs1d.points[i].speed = points[i].speed;
 		m_nodes.back().bs1d.points[i].pose = new Transform[m_boneData.size()];
-		memcpy(m_nodes.back().bs1d.points[i].pose, m_boneTransforms.data(), m_boneTransforms.size() * sizeof(Transform)); /* Not all data comes from animation samplers */
+		memcpy(m_nodes.back().bs1d.points[i].pose, m_boneLocalTransforms.data(), m_boneLocalTransforms.size() * sizeof(Transform)); /* Not all data comes from animation samplers */
 	}
 	m_nodes.back().bs1d.pos = pos;
 	m_nodes.back().bs1d.pose = new Transform[m_boneData.size()];
@@ -60,7 +60,7 @@ uint32_t sf::SkeletonData::AddNodeBlendSpace2D(const std::vector<BlendSpacePoint
 		m_nodes.back().bs2d.points[i].pos = points[i].pos;
 		m_nodes.back().bs2d.points[i].speed = points[i].speed;
 		m_nodes.back().bs2d.points[i].pose = new Transform[m_boneData.size()];
-		memcpy(m_nodes.back().bs2d.points[i].pose, m_boneTransforms.data(), m_boneTransforms.size() * sizeof(Transform)); /* Not all data comes from animation samplers */
+		memcpy(m_nodes.back().bs2d.points[i].pose, m_boneLocalTransforms.data(), m_boneLocalTransforms.size() * sizeof(Transform)); /* Not all data comes from animation samplers */
 	}
 	m_nodes.back().bs2d.pos = pos;
 	m_nodes.back().bs2d.pose = new Transform[m_boneData.size()];
@@ -86,13 +86,13 @@ void sf::SkeletonData::UpdateAnimation(float deltaTime)
 	for (int j = 0; j < nodeCount; j++)
 		weights[j] = m_nodes[j].single.weight;
 
-	for (int i = 0; i < m_boneTransforms.size(); i++)
+	for (int i = 0; i < m_boneLocalTransforms.size(); i++)
 	{
 		if (nodeCount < 2)
 		{
-			m_boneTransforms[i].position = m_nodes[0].single.pose[i].position;
-			m_boneTransforms[i].rotation = m_nodes[0].single.pose[i].rotation;
-			m_boneTransforms[i].scale = m_nodes[0].single.pose[i].scale;
+			m_boneLocalTransforms[i].position = m_nodes[0].single.pose[i].position;
+			m_boneLocalTransforms[i].rotation = m_nodes[0].single.pose[i].rotation;
+			m_boneLocalTransforms[i].scale = m_nodes[0].single.pose[i].scale;
 		}
 		else
 		{
@@ -105,29 +105,23 @@ void sf::SkeletonData::UpdateAnimation(float deltaTime)
 				inrot[j] = m_nodes[j].single.pose[i].rotation;
 				inscale[j] = m_nodes[j].single.pose[i].scale;
 			}
-			Math::WeightedBlend(inpos, weights, nodeCount, m_boneTransforms[i].position);
-			Math::WeightedBlend(inrot, weights, nodeCount, m_boneTransforms[i].rotation);
-			Math::WeightedBlend(inscale, weights, nodeCount, m_boneTransforms[i].scale);
+			Math::WeightedBlend(inpos, weights, nodeCount, m_boneLocalTransforms[i].position);
+			Math::WeightedBlend(inrot, weights, nodeCount, m_boneLocalTransforms[i].rotation);
+			Math::WeightedBlend(inscale, weights, nodeCount, m_boneLocalTransforms[i].scale);
 		}
 	}
 
-	// Update matrices
-	for (int i = 0; i < m_boneData.size(); i++)
-		m_boneData[i].localMatrix = m_boneTransforms[i].ComputeMatrix();
-
-	glm::mat4* boneMatrices = (glm::mat4*)alloca(sizeof(glm::mat4) * m_boneData.size());
+	// Update skinning matrices
 	for (uint32_t i = 0; i < m_boneData.size(); i++)
 	{
 		const BoneData* currentBone = &(m_boneData[i]);
 		if (currentBone->parent < 0)
-		{
-			boneMatrices[i] = currentBone->localMatrix;
-			m_skinningMatrices[i] = boneMatrices[i] * currentBone->invModelMatrix;
-		}
+			m_boneTransforms[i] = m_boneLocalTransforms[i];
 		else
 		{
-			boneMatrices[i] = boneMatrices[currentBone->parent] * currentBone->localMatrix;
-			m_skinningMatrices[i] = boneMatrices[i] * currentBone->invModelMatrix;
+			m_boneTransforms[i] = m_boneTransforms[currentBone->parent];
+			m_boneTransforms[i].Apply(m_boneLocalTransforms[i]);
 		}
+		m_skinningMatrices[i] = m_boneTransforms[i].ComputeMatrix() * currentBone->invModelMatrix;
 	}
 }

@@ -8,6 +8,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 
 #include <Animation.h>
 
@@ -342,9 +343,9 @@ namespace sf::GltfImporter
 		}
 
 		skeleton.m_boneData.emplace_back();
-		skeleton.m_boneTransforms.emplace_back();
+		skeleton.m_boneLocalTransforms.emplace_back();
 		BoneData& currentBone = skeleton.m_boneData.back();
-		Transform& currentBoneTransform = skeleton.m_boneTransforms.back();
+		Transform& currentBoneTransform = skeleton.m_boneLocalTransforms.back();
 
 		if (model.nodes[node].scale.size() == 3)
 			currentBoneTransform.scale = glm::max(glm::max(model.nodes[node].scale[0], model.nodes[node].scale[1]), model.nodes[node].scale[2]);
@@ -353,9 +354,19 @@ namespace sf::GltfImporter
 		if (model.nodes[node].rotation.size() == 4)
 			currentBoneTransform.rotation = glm::make_quat(model.nodes[node].rotation.data());
 		if (model.nodes[node].matrix.size() == 16)
-			currentBone.localMatrix = glm::make_mat4x4(model.nodes[node].matrix.data());
-		else
-			currentBone.localMatrix = currentBoneTransform.ComputeMatrix();
+		{
+			assert(model.nodes[node].scale.size() != 3);
+			assert(model.nodes[node].translation.size() != 3);
+			assert(model.nodes[node].rotation.size() != 4);
+			glm::mat4 tempmat = glm::make_mat4x4(model.nodes[node].matrix.data());
+			glm::vec3 scale, translation, skew;
+			glm::quat rotation;
+			glm::vec4 perspective;
+			glm::decompose(tempmat, scale, rotation, translation, skew, perspective);
+			currentBoneTransform.position = translation;
+			currentBoneTransform.rotation = rotation;
+			currentBoneTransform.scale = glm::max(glm::max(scale[0], scale[1]), scale[2]);
+		}
 
 		int currentBoneIndex = skeleton.m_boneData.size() - 1;
 		nodeToBone[node] = currentBoneIndex;
@@ -368,13 +379,14 @@ namespace sf::GltfImporter
 
 void sf::GltfImporter::GenerateSkeleton(int id, SkeletonData& skeleton, int index)
 {
-	assert(skeleton.m_boneTransforms.size() == 0 && skeleton.m_boneData.size() == 0 && skeleton.m_skinningMatrices.size() == 0 && skeleton.m_animations.size() == 0 && skeleton.m_nodes.size() == 0);
+	assert(skeleton.m_boneLocalTransforms.size() == 0 && skeleton.m_boneTransforms.size() == 0 && skeleton.m_boneData.size() == 0 && skeleton.m_skinningMatrices.size() == 0 && skeleton.m_animations.size() == 0 && skeleton.m_nodes.size() == 0);
 	tinygltf::Model& model = *(models[id]);
 
 	// generate skeleton
 	int rootBoneNode = model.skins[index].skeleton;
 	nodeToBonePerModel[id] = std::unordered_map<uint32_t, uint32_t>();
 	GenerateSkeletonProcessNodes(model, rootBoneNode, skeleton, nodeToBonePerModel[id]);
+	skeleton.m_boneTransforms.resize(skeleton.m_boneLocalTransforms.size());
 
 	// copy inverse model matrix for each bone
 	std::vector<glm::mat4> invModelMatricesTemp;
@@ -498,6 +510,7 @@ void sf::GltfImporter::GenerateSkeleton(int id, SkeletonData& skeleton, int inde
 
 void sf::GltfImporter::FreeSkeleton(SkeletonData& skeleton)
 {
+	skeleton.m_boneLocalTransforms.clear();
 	skeleton.m_boneTransforms.clear();
 	skeleton.m_boneData.clear();
 	skeleton.m_skinningMatrices.clear();

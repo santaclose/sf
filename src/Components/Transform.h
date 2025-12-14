@@ -40,5 +40,12 @@ namespace sf {
 		{
 			rotation = glm::quatLookAt(glm::normalize(target - position), up);
 		}
+
+		inline void Apply(const Transform& other)
+		{
+			position +=  rotation * (other.position * scale);
+			rotation *= other.rotation;
+			scale *= other.scale;
+		}
 	};
 }

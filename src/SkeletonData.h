@@ -10,7 +10,6 @@ namespace sf
 	struct BoneData
 	{
 		int32_t parent = -1;
-		glm::mat4 localMatrix = glm::mat4(1.0f);
 		glm::mat4 invModelMatrix;
 	};
 	struct BlendSpacePoint1DCreateInfo
@@ -39,8 +38,11 @@ namespace sf
 
 		void UpdateAnimation(float deltaTime);
 
+		inline Transform GetBoneTransform(uint32_t boneIndex) const { return m_boneTransforms[boneIndex]; }
+
 		bool m_animate = false;
 
+		std::vector<Transform> m_boneLocalTransforms;
 		std::vector<Transform> m_boneTransforms;
 		std::vector<BoneData> m_boneData;
 		std::vector<glm::mat4> m_skinningMatrices;

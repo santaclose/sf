@@ -851,21 +851,17 @@ void sf::Renderer::DebugDrawSkeleton(SkinnedMesh& mesh, Transform& transform)
 	if (meshGpuData.find(&Defaults::MeshDataCube()) == meshGpuData.end()) // create mesh data if not there
 		CreateMeshGpuData(&Defaults::MeshDataCube());
 
-	glm::mat4 worldMatrix = transform.ComputeMatrix();
-	glm::mat4* boneMatrices = (glm::mat4*)alloca(sizeof(glm::mat4) * mesh.skeletonData->m_boneData.size());
-
 	for (uint32_t i = 0; i < mesh.skeletonData->m_boneData.size(); i++)
 	{
 		const BoneData* currentBone = &(mesh.skeletonData->m_boneData[i]);
-		if (currentBone->parent < 0)
-			boneMatrices[i] = worldMatrix * currentBone->localMatrix;
-		else
+		if (currentBone->parent >= 0)
 		{
-			boneMatrices[i] = boneMatrices[currentBone->parent] * currentBone->localMatrix;
-			AddLine(
-				boneMatrices[currentBone->parent] * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f),
-				boneMatrices[i] * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f),
-				glm::vec3(0.0f, 1.0f, 0.0f));
+			Transform parentT = transform;
+			parentT.Apply(mesh.skeletonData->m_boneTransforms[currentBone->parent]);
+			Transform childT = transform;
+			childT.Apply(mesh.skeletonData->m_boneTransforms[i]);
+			float boneRatio = (float) i / (float) mesh.skeletonData->m_boneData.size();
+			AddLine(parentT.position, childT.position, glm::vec3(0.0f, 1.0f - boneRatio, boneRatio));
 		}
 	}
 }

@@ -1,6 +1,7 @@
 #include "SkeletonData.h"
 
 #include <cstring>
+#include <Geometry.h>
 
 uint32_t sf::SkeletonData::AddNodeSingle(uint32_t animationIndex, float speed)
 {
@@ -109,6 +110,18 @@ void sf::SkeletonData::UpdateAnimation(float deltaTime)
 			Math::WeightedBlend(inrot, weights, nodeCount, m_boneLocalTransforms[i].rotation);
 			Math::WeightedBlend(inscale, weights, nodeCount, m_boneLocalTransforms[i].scale);
 		}
+	}
+
+	for (uint32_t i = 0; i < m_ikData.size(); i++)
+	{
+		IkData& ikd = m_ikData[i];
+		printf("applying ik for bone: %u\n", ikd.firstBone);
+		Transform& a = m_boneLocalTransforms[ikd.firstBone + 0];
+		Transform& b = m_boneLocalTransforms[ikd.firstBone + 1];
+		// Transform& c = m_boneLocalTransforms[ikd.firstBone + 2];
+
+		Geometry::TwoBoneIk(a, b, *ikd.targetPos)
+		// Geometry::TwoBoneIk(a.position, b.position, c.position, *ikd.targetPos, a.rotation, b.rotation);
 	}
 
 	// Update skinning matrices

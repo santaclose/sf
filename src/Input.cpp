@@ -145,6 +145,7 @@ void sf::Input::FrameEnd()
 
 float sf::Input::MousePosDeltaX()
 {
+	if (cursorEnabled) return 0.0f;
 	if (shouldIgnoreMouseDeltaNextFrame > 0) return 0.0f;
 	if (cursorEnabled && ImGuiController::HasControl()) return 0.0f;
 	return mousePos[0] - lastMousePos[0];
@@ -152,6 +153,7 @@ float sf::Input::MousePosDeltaX()
 
 float sf::Input::MousePosDeltaY()
 {
+	if (cursorEnabled) return 0.0f;
 	if (shouldIgnoreMouseDeltaNextFrame > 0) return 0.0f;
 	if (cursorEnabled && ImGuiController::HasControl()) return 0.0f;
 	return mousePos[1] - lastMousePos[1];

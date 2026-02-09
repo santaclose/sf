@@ -2,6 +2,7 @@
 #include <imgui.h>
 #include <iostream>
 #include <fstream>
+#include <glm/gtx/matrix_decompose.hpp>
 
 #include <Defaults.h>
 #include <Game.h>
@@ -40,6 +41,7 @@ namespace sf
 		Scene scene;
 		Entity gimbal, cameraObject;
 		Entity shanyung, fox;
+		Entity gun;
 
 		glm::vec3 targetGimbalRotation;
 
@@ -65,7 +67,31 @@ namespace sf
 		std::vector<float> foxWeights;
 		std::vector<float> foxSpeedPerAnimation;
 
+		BufferLayout gunVertexLayout = BufferLayout({
+			BufferComponent::Position,
+			BufferComponent::Normal,
+			BufferComponent::Tangent,
+			BufferComponent::UV
+		});
+		MeshData* gunMesh;
+		uint32_t gunTargetBone = 463;
+		glm::vec3 gunPosOffset = glm::vec3(-0.024f, 0.114f, 2.339f);
+		glm::vec3 gunRotOffsetEuler = glm::vec3(0.0f, 0.0f, -0.318f);
+		glm::quat gunRotOffset = glm::quat(gunRotOffsetEuler);
+
+		uint32_t rightArmBone = 484;
+		uint32_t rightElbow = 485;
+		uint32_t leftArmBone = 465;
+		uint32_t leftElbow = 466;
+		glm::vec3 rightArmIkTarget = glm::vec3(0.255f, 0.0f, 0.0f);
+		glm::vec3 leftArmIkTarget = glm::vec3(-0.074f, -0.047f, 0.0f);
+		glm::vec3 righthandpos;
+		glm::vec3 lefthandpos;
+		glm::vec3 righthandposCharSpace;
+		glm::vec3 lefthandposCharSpace;
+
 		Material characterMaterial;
+		Material gunMaterial;
 		Terrain terrain;
 
 		void UpdateCamera(float deltaTime, Entity targetCharacter, float gimbalOffsetY)
@@ -128,6 +154,9 @@ namespace sf
 		characterMaterial.vertShaderFilePath = "assets/shaders/default.vert";
 		characterMaterial.fragShaderFilePath = "assets/shaders/default.frag";
 
+		gunMaterial.vertShaderFilePath = "assets/shaders/default.vert";
+		gunMaterial.fragShaderFilePath = "assets/shaders/default.frag";
+
 		terrain.Create(scene, "../Downloads/Telegram Desktop/test.r16", 0.5566f, 152.0f, 41,
 			glm::vec3(-(float)(1025 - 1) * 0.5f * 0.5566f, 0.0f, (float)(1025 - 1) * 0.5f * 0.5566f));
 
@@ -152,6 +181,16 @@ namespace sf
 				{ 0.0f, 0.0f },
 				shanyungWeights.data());
 			shanyungSkeleton->SetAnimate(true);
+			shanyungSkeleton->AddIkData({leftArmBone, &lefthandposCharSpace});
+			shanyungSkeleton->AddIkData({rightArmBone, &righthandposCharSpace});
+
+			gunMesh = new MeshData(&gunVertexLayout);
+			gltfid = GltfImporter::Load("/mnt/hgst/Untitled.glb");
+			GltfImporter::GenerateMeshData(gltfid, *gunMesh);
+
+			gun = scene.CreateEntity();
+			Transform& gt = gun.AddComponent<Transform>();
+			gun.AddComponent<Mesh>(gunMesh, &gunMaterial);
 		}
 		{
 			fox = scene.CreateEntity();
@@ -227,6 +266,26 @@ namespace sf
 			terrain.Sample(e_t.position, e_t.position.y);
 
 			UpdateCamera(deltaTime, shanyung, GIMBAL_OFFSET_SHANYUNG);
+
+			Transform& e_t_g = gun.GetComponent<Transform>();
+			e_t_g = e_t;
+			Transform offset;
+			offset.rotation = gunRotOffset;
+			offset.position = gunPosOffset;
+			Transform tempIk;
+			e_t_g.Apply(shanyungSkeleton->GetBoneTransform(gunTargetBone));
+			tempIk.Apply(shanyungSkeleton->GetBoneTransform(gunTargetBone));
+			e_t_g.Apply(offset);
+			tempIk.Apply(offset);
+			e_t_g.scale = 1.0f;
+			tempIk.scale = 1.0f;
+			sf::Renderer::AddLine(e_t.position, e_t_g.position, glm::vec3(1.0f, 0.0f, 0.0f));
+			righthandpos = e_t_g.position + e_t_g.rotation * rightArmIkTarget;
+			lefthandpos = e_t_g.position + e_t_g.rotation * leftArmIkTarget;
+			righthandposCharSpace = tempIk.position + tempIk.rotation * rightArmIkTarget;
+			lefthandposCharSpace = tempIk.position + tempIk.rotation * leftArmIkTarget;
+			sf::Renderer::AddLine(righthandpos, righthandpos + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+			sf::Renderer::AddLine(lefthandpos, lefthandpos + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 		}
 		if (fox.IsEnabled())
 		{
@@ -282,6 +341,16 @@ namespace sf
 					SwitchCharacter();
 				if (ImGui::MenuItem("Fox", "Right/Left arrow", fox.IsEnabled()))
 					SwitchCharacter();
+				ImGui::EndMenu();
+			}
+			if (ImGui::BeginMenu("lil"))
+			{
+				ImGui::DragScalar("gun target bone", ImGuiDataType_U32, &gunTargetBone);
+				ImGui::DragFloat3("gunrot", &gunRotOffsetEuler.x, 0.001);
+				ImGui::DragFloat3("gunpos", &gunPosOffset.x, 0.001);
+				ImGui::DragFloat3("ik target right", &rightArmIkTarget.x, 0.001);
+				ImGui::DragFloat3("ik target left", &leftArmIkTarget.x, 0.001);
+				gunRotOffset = glm::quat(gunRotOffsetEuler);
 				ImGui::EndMenu();
 			}
 			ImGui::EndMainMenuBar();

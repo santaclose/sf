@@ -229,6 +229,8 @@ void sf::Animation::SampleToBones(sf::Animation::SkeletalAnimation& animation, s
 						q2.z = sampler.outputsVec4[i + 1].z;
 						q2.w = sampler.outputsVec4[i + 1].w;
 						bones[channel.bone].rotation = glm::normalize(glm::slerp(q1, q2, u));
+						// if (channel.bone == 466)
+							// bones[channel.bone].rotation = glm::quat(glm::vec3(glm::radians(90.0f), 0.0f, 0.0f));
 						break;
 					}
 					}

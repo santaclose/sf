@@ -1,6 +1,7 @@
 #include "SkeletonData.h"
 
 #include <cstring>
+#include <Geometry.h>
 
 uint32_t sf::SkeletonData::AddNodeSingle(uint32_t animationIndex, float speed)
 {
@@ -124,4 +125,49 @@ void sf::SkeletonData::UpdateAnimation(float deltaTime)
 		}
 		m_skinningMatrices[i] = m_boneTransforms[i].ComputeMatrix() * currentBone->invModelMatrix;
 	}
+
+	// // Update bone entity space transforms
+	// for (uint32_t i = 0; i < m_boneData.size(); i++)
+	// {
+	// 	const BoneData* currentBone = &(m_boneData[i]);
+	// 	if (currentBone->parent < 0)
+	// 		m_boneTransforms[i] = m_boneLocalTransforms[i];
+	// 	else
+	// 	{
+	// 		m_boneTransforms[i] = m_boneTransforms[currentBone->parent];
+	// 		m_boneTransforms[i].Apply(m_boneLocalTransforms[i]);
+	// 	}
+	// }
+
+	// // Apply two bone IK
+	// // std::unordered_set<uint32_t> parentsForIkAffectedBones;
+	// for (uint32_t i = 0; i < m_ikData.size(); i++)
+	// {
+	// 	TwoBoneIkData& ikd = m_ikData[i];
+	// 	const BoneData* boneA = &(m_boneData[ikd.firstBone]);
+
+	// 	printf("applying ik for bone: %u\n", ikd.firstBone);
+	// 	Transform& a = m_boneLocalTransforms[ikd.firstBone + 0];
+	// 	Transform& b = m_boneLocalTransforms[ikd.firstBone + 1];
+	// 	Transform& aBase = m_boneTransforms[boneA->parent];
+
+	// 	Geometry::TwoBoneIk(a, b, *ikd.targetPosEntitySpace, aBase);
+	// 	// Geometry::TwoBoneIk(a.position, b.position, c.position, *ikd.targetPosEntitySpace, a.rotation, b.rotation);
+
+	// 	// Update bone entity space transforms again for IK altered bones assuming the root bone is never affected
+	// 	// parentsForIkAffectedBones.clear();
+	// 	for (uint32_t j = ikd.firstBone; j < m_boneData.size(); j++)
+	// 	{
+	// 		// if (j == ikd.firstBone || parentsForIkAffectedBones.find(m_boneData[j].parent) != parentsForIkAffectedBones.end())
+	// 		{
+	// 			m_boneTransforms[j] = m_boneTransforms[m_boneData[j].parent];
+	// 			m_boneTransforms[j].Apply(m_boneLocalTransforms[j]);
+	// 			// parentsForIkAffectedBones.insert(j);
+	// 		}
+	// 	}
+	// }
+
+	// // Update skinning matrices
+	// for (uint32_t i = 0; i < m_boneData.size(); i++)
+	// 	m_skinningMatrices[i] = m_boneTransforms[i].ComputeMatrix() * m_boneData[i].invModelMatrix;
 }

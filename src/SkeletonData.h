@@ -24,6 +24,11 @@ namespace sf
 		float speed;
 		glm::vec2 pos;
 	};
+	struct TwoBoneIkData
+	{
+		uint32_t firstBone;
+		const glm::vec3* targetPosEntitySpace;
+	};
 
 	struct SkeletonData
 	{
@@ -39,6 +44,7 @@ namespace sf
 		void UpdateAnimation(float deltaTime);
 
 		inline Transform GetBoneTransform(uint32_t boneIndex) const { return m_boneTransforms[boneIndex]; }
+		inline void AddTwoBoneIkData(TwoBoneIkData ikData) { m_ikData.push_back(ikData); }
 
 		bool m_animate = false;
 
@@ -50,5 +56,6 @@ namespace sf
 		std::vector<Animation::SkeletalAnimation> m_animations;
 
 		std::vector<Animation::Node> m_nodes;
+		std::vector<TwoBoneIkData> m_ikData;
 	};
 }

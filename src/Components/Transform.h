@@ -43,7 +43,7 @@ namespace sf {
 
 		inline void Apply(const Transform& other)
 		{
-			position +=  rotation * (other.position * scale);
+			position += rotation * (other.position * scale);
 			rotation *= other.rotation;
 			scale *= other.scale;
 		}

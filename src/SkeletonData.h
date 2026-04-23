@@ -2,6 +2,8 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <unordered_map>
+#include <stdio.h>
 
 #include <Animation.h>
 
@@ -26,8 +28,10 @@ namespace sf
 	};
 	struct TwoBoneIkData
 	{
-		uint32_t firstBone;
+		uint32_t elbowBone;
 		const glm::vec3* targetPosEntitySpace;
+		const glm::quat* targetRotEntitySpace;
+		const glm::vec3* poleVector;
 	};
 
 	struct SkeletonData
@@ -42,9 +46,22 @@ namespace sf
 		inline void SetBlendSpace2DPosition(uint32_t node, const glm::vec2& pos) { assert(m_nodes[node].single.type == Animation::NodeType::BlendSpace2D); m_nodes[node].bs2d.pos = pos; }
 
 		void UpdateAnimation(float deltaTime);
+		void TwoBoneIk(uint32_t elbowBoneId, const glm::vec3& target);
+		void SolveTwoBoneIK(const TwoBoneIkData& ikData);
+		void RotateLeafIK(const TwoBoneIkData& ikData);
 
 		inline Transform GetBoneTransform(uint32_t boneIndex) const { return m_boneTransforms[boneIndex]; }
-		inline void AddTwoBoneIkData(TwoBoneIkData ikData) { m_ikData.push_back(ikData); }
+		inline void AddTwoBoneIkData(uint32_t elbowBone, const glm::vec3* targetPosEntitySpace, const glm::quat* targetRotEntitySpace = nullptr, const glm::vec3* poleVector = nullptr)
+		{
+			uint32_t shoulderBone = m_boneData[m_boneData[elbowBone].parent].parent;
+			printf("elbowBone: %u\n", elbowBone);
+			printf("armBone: %u\n", m_boneData[elbowBone].parent);
+			printf("shoulderBone is: %u\n", shoulderBone);
+			m_ikData[shoulderBone].targetPosEntitySpace = targetPosEntitySpace;
+			m_ikData[shoulderBone].targetRotEntitySpace = targetRotEntitySpace;
+			m_ikData[shoulderBone].poleVector = poleVector;
+			m_ikData[shoulderBone].elbowBone = elbowBone;
+		}
 
 		bool m_animate = false;
 
@@ -56,6 +73,6 @@ namespace sf
 		std::vector<Animation::SkeletalAnimation> m_animations;
 
 		std::vector<Animation::Node> m_nodes;
-		std::vector<TwoBoneIkData> m_ikData;
+		std::unordered_map<uint32_t, TwoBoneIkData> m_ikData;
 	};
 }

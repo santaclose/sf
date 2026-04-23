@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <unordered_set>
 #include <tiny_gltf.h>
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -52,6 +53,7 @@ int sf::GltfImporter::Load(const std::string& filePath)
 
 
 	models.push_back(newModel);
+	printf("[GltfImporter] Assigned id %d to file \"%s\"\n", (int) (models.size() - 1), filePath.c_str());
 	return models.size() - 1;
 }
 
@@ -92,6 +94,7 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 	std::vector<uint32_t> indices;
 	std::vector<uint32_t> pieces;
 
+	std::unordered_set<uint32_t> usedBones;
 	for (const tinygltf::Mesh& gltfMesh : model.meshes)
 	{
 		for (auto& prim : gltfMesh.primitives)
@@ -179,6 +182,10 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 								(float)nodeToBonePerModel[id][model.skins[0].joints[buf[i * 4 + 1]]],
 								(float)nodeToBonePerModel[id][model.skins[0].joints[buf[i * 4 + 2]]],
 								(float)nodeToBonePerModel[id][model.skins[0].joints[buf[i * 4 + 3]]] };
+							usedBones.insert((uint32_t)nodeToBonePerModel[id][model.skins[0].joints[buf[i * 4 + 0]]]);
+							usedBones.insert((uint32_t)nodeToBonePerModel[id][model.skins[0].joints[buf[i * 4 + 1]]]);
+							usedBones.insert((uint32_t)nodeToBonePerModel[id][model.skins[0].joints[buf[i * 4 + 2]]]);
+							usedBones.insert((uint32_t)nodeToBonePerModel[id][model.skins[0].joints[buf[i * 4 + 3]]]);
 						}
 						else // unsigned short
 						{
@@ -189,6 +196,10 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 								(float)nodeToBonePerModel[id][model.skins[0].joints[buf[i * 4 + 1]]],
 								(float)nodeToBonePerModel[id][model.skins[0].joints[buf[i * 4 + 2]]],
 								(float)nodeToBonePerModel[id][model.skins[0].joints[buf[i * 4 + 3]]] };
+							usedBones.insert((uint32_t)nodeToBonePerModel[id][model.skins[0].joints[buf[i * 4 + 0]]]);
+							usedBones.insert((uint32_t)nodeToBonePerModel[id][model.skins[0].joints[buf[i * 4 + 1]]]);
+							usedBones.insert((uint32_t)nodeToBonePerModel[id][model.skins[0].joints[buf[i * 4 + 2]]]);
+							usedBones.insert((uint32_t)nodeToBonePerModel[id][model.skins[0].joints[buf[i * 4 + 3]]]);
 						}
 					}
 					if (boneWeightsBuffer && meshHasBoneWeights)
@@ -263,6 +274,10 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 	mesh.pieceCount = pieces.size();
 	memcpy(mesh.indexBuffer, indices.data(), indices.size() * sizeof(uint32_t));
 	memcpy(mesh.pieces, pieces.data(), pieces.size() * sizeof(uint32_t));
+	printf("[GltfImporter] Mesh for %d is using %u bones (", id, (uint32_t)usedBones.size());
+	for (uint32_t bone : usedBones)
+		printf("%u ", bone);
+	printf(")\n");
 }
 
 void sf::GltfImporter::FreeMeshData(MeshData& mesh)
@@ -370,6 +385,7 @@ namespace sf::GltfImporter
 
 		int currentBoneIndex = skeleton.m_boneData.size() - 1;
 		nodeToBone[node] = currentBoneIndex;
+		printf("parent bone for %u is %u\n", currentBoneIndex, parentBone);
 		currentBone.parent = parentBone;
 
 		for (int child : model.nodes[node].children)
@@ -398,7 +414,7 @@ void sf::GltfImporter::GenerateSkeleton(int id, SkeletonData& skeleton, int inde
 	for (size_t i = 0; i < model.skins[index].joints.size(); i++)
 		skeleton.m_boneData[nodeToBonePerModel[id][model.skins[index].joints[i]]].invModelMatrix = invModelMatricesTemp[i];
 
-	std::cout << "[GltfImporter] Generated skeleton with " << skeleton.m_boneData.size() << " bones\n";
+	std::cout << "[GltfImporter] Generated skeleton for " << id << " with " << skeleton.m_boneData.size() << " bones\n";
 
 	// reserve space for skinning matrices
 	skeleton.m_skinningMatrices.resize(skeleton.m_boneData.size());

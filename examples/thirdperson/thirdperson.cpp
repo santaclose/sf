@@ -75,20 +75,33 @@ namespace sf
 		});
 		MeshData* gunMesh;
 		uint32_t gunTargetBone = 463;
-		glm::vec3 gunPosOffset = glm::vec3(-0.024f, 0.114f, 2.339f);
-		glm::vec3 gunRotOffsetEuler = glm::vec3(0.0f, 0.0f, -0.318f);
+		glm::vec3 gunPosOffset = glm::vec3(-0.024f, 0.114f, 2.731f);
+		glm::vec3 gunRotOffsetEuler = glm::vec3(0.0f, -0.366f, -0.318f);
 		glm::quat gunRotOffset = glm::quat(gunRotOffsetEuler);
 
-		uint32_t rightArmBone = 484;
-		uint32_t rightElbow = 485;
-		uint32_t leftArmBone = 465;
-		uint32_t leftElbow = 466;
-		glm::vec3 rightArmIkTarget = glm::vec3(0.255f, 0.0f, 0.0f);
-		glm::vec3 leftArmIkTarget = glm::vec3(-0.074f, -0.047f, 0.0f);
+		uint32_t rightShoulderBone = 484;
+		uint32_t rightArmBone = 485;
+		uint32_t rightElbowBone = 486;
+		uint32_t leftShoulderBone = 465;
+		uint32_t leftArmBone = 466;
+		uint32_t leftElbowBone = 467;
+		// glm::vec3 rightArmIkTarget = glm::vec3(-0.074f, -0.047f, 0.0f);
+		glm::vec3 rightArmIkTarget = glm::vec3(-0.146f, -0.039f, -0.004f);
+		glm::vec3 leftArmIkTarget = glm::vec3(0.281f, 0.053f, -0.082f);
 		glm::vec3 righthandpos;
 		glm::vec3 lefthandpos;
 		glm::vec3 righthandposCharSpace;
 		glm::vec3 lefthandposCharSpace;
+		glm::vec3 poleVectorLeft = glm::vec3(-0.165f, 0.640f, -0.232f);
+		glm::vec3 poleVectorRight = glm::vec3(-0.905, 0.640f, 0.668f);
+
+		glm::quat rightHandRot;
+		glm::quat leftHandRot;
+
+		glm::vec3 rightHandRotOffsetEuler = glm::vec3(2.131, 5.146, 2.741);
+		glm::vec3 leftHandRotOffsetEuler = glm::vec3(1.477, -0.638, -3.882);
+		glm::quat rightHandRotOffset = glm::quat(rightHandRotOffsetEuler);
+		glm::quat leftHandRotOffset = glm::quat(leftHandRotOffsetEuler);
 
 		Material characterMaterial;
 		Material gunMaterial;
@@ -181,8 +194,8 @@ namespace sf
 				{ 0.0f, 0.0f },
 				shanyungWeights.data());
 			shanyungSkeleton->SetAnimate(true);
-			// shanyungSkeleton->AddTwoBoneIkData({leftArmBone, &lefthandposCharSpace});
-			shanyungSkeleton->AddTwoBoneIkData({rightArmBone, &righthandposCharSpace});
+			shanyungSkeleton->AddTwoBoneIkData(leftElbowBone, &lefthandposCharSpace, &leftHandRot, &poleVectorLeft);
+			shanyungSkeleton->AddTwoBoneIkData(rightElbowBone, &righthandposCharSpace, &rightHandRot, &poleVectorRight);
 
 			gunMesh = new MeshData(&gunVertexLayout);
 			gltfid = GltfImporter::Load("/mnt/hgst/Untitled.glb");
@@ -267,35 +280,56 @@ namespace sf
 
 			UpdateCamera(deltaTime, shanyung, GIMBAL_OFFSET_SHANYUNG);
 
+			printf("Character transform:\n   %f %f %f\n   %f %f %f %f\n   %f\n", e_t.position.x, e_t.position.y, e_t.position.z, e_t.rotation.x, e_t.rotation.y, e_t.rotation.z, e_t.rotation.w, e_t.scale);
 			Transform& e_t_g = gun.GetComponent<Transform>();
 			e_t_g = e_t;
 			Transform offset;
 			offset.rotation = gunRotOffset;
 			offset.position = gunPosOffset;
-			Transform tempIk;
 			e_t_g.Apply(shanyungSkeleton->GetBoneTransform(gunTargetBone));
+			Transform tempIk;
+			// tempIk = shanyungSkeleton->GetBoneTransform(gunTargetBone);
 			tempIk.Apply(shanyungSkeleton->GetBoneTransform(gunTargetBone));
 			e_t_g.Apply(offset);
 			tempIk.Apply(offset);
+			rightHandRot = tempIk.rotation * rightHandRotOffset;
+			leftHandRot = tempIk.rotation * leftHandRotOffset;
 			e_t_g.scale = 1.0f;
 			tempIk.scale = 1.0f;
-			sf::Renderer::AddLine(e_t.position, e_t_g.position, glm::vec3(1.0f, 0.0f, 0.0f));
+			// sf::Renderer::AddLine(e_t.position, e_t_g.position, glm::vec3(1.0f, 0.0f, 0.0f));
 			righthandpos = e_t_g.position + e_t_g.rotation * rightArmIkTarget;
 			lefthandpos = e_t_g.position + e_t_g.rotation * leftArmIkTarget;
 			righthandposCharSpace = tempIk.position + tempIk.rotation * rightArmIkTarget;
 			lefthandposCharSpace = tempIk.position + tempIk.rotation * leftArmIkTarget;
-			sf::Renderer::AddLine(righthandpos, righthandpos + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+			// rightHandRot = glm::quat(rightHandRotEuler);
+			sf::Renderer::AddLine(righthandpos, righthandpos + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 0.0f));
 			sf::Renderer::AddLine(lefthandpos, lefthandpos + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
-			Transform boneATransform = e_t;
-			boneATransform.Apply(shanyungSkeleton->GetBoneTransform(rightArmBone + 0));
-			sf::Renderer::AddLine(boneATransform.position, boneATransform.position + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-			Transform boneBTransform = e_t;
-			boneBTransform.Apply(shanyungSkeleton->GetBoneTransform(rightArmBone + 1));
-			sf::Renderer::AddLine(boneBTransform.position, boneBTransform.position + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			Transform poleVectorVis = e_t;
+			Transform poleVectorOffset;
+			poleVectorOffset.position = poleVectorRight;
+			poleVectorVis.Apply(poleVectorOffset);
+			sf::Renderer::AddLine(poleVectorOffset.position, poleVectorOffset.position + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 0.0f));
+			poleVectorVis = e_t;
+			poleVectorOffset.position = poleVectorLeft;
+			poleVectorVis.Apply(poleVectorOffset);
+			sf::Renderer::AddLine(poleVectorOffset.position, poleVectorOffset.position + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 0.0f));
 
-			printf("REAL DISTANCE A: %f\n", glm::distance(boneATransform.position, boneBTransform.position));
-			printf("REAL DISTANCE B: %f\n", glm::distance(righthandpos, boneBTransform.position));
+			Transform boneATransform = e_t;
+			boneATransform.Apply(shanyungSkeleton->GetBoneTransform(rightShoulderBone));
+			// sf::Renderer::AddLine(boneATransform.position, boneATransform.position + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+			Transform boneBTransform = e_t;
+			boneBTransform.Apply(shanyungSkeleton->GetBoneTransform(rightArmBone));
+			// sf::Renderer::AddLine(boneBTransform.position, boneBTransform.position + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			Transform boneCTransform = e_t;
+			boneCTransform.Apply(shanyungSkeleton->GetBoneTransform(rightElbowBone));
+			// sf::Renderer::AddLine(boneCTransform.position, boneCTransform.position + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+
+			// printf("REAL DISTANCE AB: %f\n", glm::distance(boneATransform.position, boneBTransform.position));
+			// printf("REAL DISTANCE BC: %f\n", glm::distance(boneBTransform.position, boneCTransform.position));
+			// printf("REAL DISTANCE BT: %f\n", glm::distance(boneBTransform.position, righthandpos));
+
+			// sf::Renderer::AddLine(e_t.position + righthandposCharSpace, e_t.position + righthandposCharSpace + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 1.0f));
 
 		}
 		if (fox.IsEnabled())
@@ -361,7 +395,13 @@ namespace sf
 				ImGui::DragFloat3("gunpos", &gunPosOffset.x, 0.001);
 				ImGui::DragFloat3("ik target right", &rightArmIkTarget.x, 0.001);
 				ImGui::DragFloat3("ik target left", &leftArmIkTarget.x, 0.001);
+				ImGui::DragFloat3("pole left", &poleVectorLeft.x, 0.001);
+				ImGui::DragFloat3("pole right", &poleVectorRight.x, 0.001);
+				ImGui::DragFloat3("ik rot right", &rightHandRotOffsetEuler.x, 0.001);
+				ImGui::DragFloat3("ik rot left", &leftHandRotOffsetEuler.x, 0.001);
 				gunRotOffset = glm::quat(gunRotOffsetEuler);
+				rightHandRotOffset = glm::quat(rightHandRotOffsetEuler);
+				leftHandRotOffset = glm::quat(leftHandRotOffsetEuler);
 				ImGui::EndMenu();
 			}
 			ImGui::EndMainMenuBar();

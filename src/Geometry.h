@@ -40,60 +40,6 @@ namespace sf::Geometry
 		return true;
 	}
 
-	inline void TwoBoneIk(Transform& localAToB, Transform& localBToC, const glm::vec3& target, const Transform& baseA)
-	{
-		Transform temp = baseA;
-		glm::vec3 posA = temp.position;
-		temp.Apply(localAToB);
-		glm::vec3 posB = temp.position;
-		temp.Apply(localBToC);
-		glm::vec3 posC = temp.position;
-
-		glm::vec3 planeNormal = glm::normalize(glm::cross(posB - posA, target - posA));
-		glm::quat q = glm::rotation(planeNormal, glm::vec3(0.0f, 0.0f, 1.0f));
-		glm::quat iq = glm::conjugate(q);
-
-		glm::vec3 a2d = q * posA;
-		glm::vec3 b2d = q * posB;
-		glm::vec3 t2d = q * target;
-		printf("a2d: %f %f %f\n", a2d.x, a2d.y, a2d.z);
-		printf("b2d: %f %f %f\n", b2d.x, b2d.y, b2d.z);
-		printf("t2d: %f %f %f\n", t2d.x, t2d.y, t2d.z);
-
-		float lengthA = glm::distance(posA, posB);
-		float lengthB = glm::distance(posB, posC);
-		printf("lengthA: %f\n", lengthA);
-		printf("lengthB: %f\n", lengthB);
-		printf("lengthAA: %f\n", glm::length(localAToB.position));
-		printf("lengthBB: %f\n", glm::length(localBToC.position));
-		glm::vec3 newMiddlePoint;
-		glm::vec2 intersectionPointA, intersectionPointB;
-		if (IntersectCircleCircle(glm::vec2(a2d.x, a2d.y), lengthA, glm::vec2(t2d.x, t2d.y), lengthB, intersectionPointA, intersectionPointB))
-		{
-			printf("intersects\n");
-			glm::vec2 wantedIntersectionPoint = glm::distance2(intersectionPointA, glm::vec2(b2d.x, b2d.y)) < glm::distance2(intersectionPointB, glm::vec2(b2d.x, b2d.y)) ? intersectionPointA : intersectionPointB;
-
-			newMiddlePoint = iq * glm::vec3(wantedIntersectionPoint.x, wantedIntersectionPoint.y, a2d.z);
-			glm::quat neededOffsetA = glm::rotation(glm::normalize(posB - posA), glm::normalize(newMiddlePoint - posA));
-			glm::quat neededOffsetB = glm::rotation(glm::normalize(posC - posB), glm::normalize(target - newMiddlePoint));
-			localAToB.rotation = neededOffsetA * localAToB.rotation;
-			localBToC.rotation = neededOffsetB * localBToC.rotation;
-
-			// outA *= neededOffsetA;
-			// outB *= neededOffsetB;
-		}
-
-		// glm::vec3 nAxis = glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f));
-
-	    // // 90 degrees in radians
-	    // float angle = glm::half_pi<float>();
-	    // glm::quat rot = glm::angleAxis(angle, nAxis);
-
-	    // Apply rotation
-	    // outA = glm::normalize(rot * outA);
-	    // outB = glm::normalize(rot * outB);
-	}
-
 	// from https://realtimecollisiondetection.net/
 	inline glm::vec3 Barycentric(
 		const glm::vec3& point,

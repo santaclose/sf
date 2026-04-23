@@ -1,6 +1,7 @@
 #include "SkeletonData.h"
 
 #include <cstring>
+#include <glm/gtx/vector_angle.hpp>
 #include <Geometry.h>
 
 uint32_t sf::SkeletonData::AddNodeSingle(uint32_t animationIndex, float speed)
@@ -112,21 +113,7 @@ void sf::SkeletonData::UpdateAnimation(float deltaTime)
 		}
 	}
 
-	// Update skinning matrices
-	for (uint32_t i = 0; i < m_boneData.size(); i++)
-	{
-		const BoneData* currentBone = &(m_boneData[i]);
-		if (currentBone->parent < 0)
-			m_boneTransforms[i] = m_boneLocalTransforms[i];
-		else
-		{
-			m_boneTransforms[i] = m_boneTransforms[currentBone->parent];
-			m_boneTransforms[i].Apply(m_boneLocalTransforms[i]);
-		}
-		m_skinningMatrices[i] = m_boneTransforms[i].ComputeMatrix() * currentBone->invModelMatrix;
-	}
-
-	// // Update bone entity space transforms
+	// // Update entity space bone transforms (non efficient way of having IK work)
 	// for (uint32_t i = 0; i < m_boneData.size(); i++)
 	// {
 	// 	const BoneData* currentBone = &(m_boneData[i]);
@@ -139,35 +126,183 @@ void sf::SkeletonData::UpdateAnimation(float deltaTime)
 	// 	}
 	// }
 
-	// // Apply two bone IK
-	// // std::unordered_set<uint32_t> parentsForIkAffectedBones;
-	// for (uint32_t i = 0; i < m_ikData.size(); i++)
+	// TwoBoneIkData* nextIkLeafToRotateData = nullptr;
+	// for (uint32_t i = 0; i < m_boneData.size(); i++)
 	// {
-	// 	TwoBoneIkData& ikd = m_ikData[i];
-	// 	const BoneData* boneA = &(m_boneData[ikd.firstBone]);
-
-	// 	printf("applying ik for bone: %u\n", ikd.firstBone);
-	// 	Transform& a = m_boneLocalTransforms[ikd.firstBone + 0];
-	// 	Transform& b = m_boneLocalTransforms[ikd.firstBone + 1];
-	// 	Transform& aBase = m_boneTransforms[boneA->parent];
-
-	// 	Geometry::TwoBoneIk(a, b, *ikd.targetPosEntitySpace, aBase);
-	// 	// Geometry::TwoBoneIk(a.position, b.position, c.position, *ikd.targetPosEntitySpace, a.rotation, b.rotation);
-
-	// 	// Update bone entity space transforms again for IK altered bones assuming the root bone is never affected
-	// 	// parentsForIkAffectedBones.clear();
-	// 	for (uint32_t j = ikd.firstBone; j < m_boneData.size(); j++)
+	// 	if (m_ikData.find(i) != m_ikData.end())
 	// 	{
-	// 		// if (j == ikd.firstBone || parentsForIkAffectedBones.find(m_boneData[j].parent) != parentsForIkAffectedBones.end())
-	// 		{
-	// 			m_boneTransforms[j] = m_boneTransforms[m_boneData[j].parent];
-	// 			m_boneTransforms[j].Apply(m_boneLocalTransforms[j]);
-	// 			// parentsForIkAffectedBones.insert(j);
-	// 		}
+	// 		SolveTwoBoneIK(m_ikData[i]);
+	// 		nextIkLeafToRotateData = &m_ikData[i];
+	// 	}
+	// 	else if (nextIkLeafToRotateData != nullptr &&
+	// 		i == nextIkLeafToRotateData->elbowBone &&
+	// 		nextIkLeafToRotateData->targetRotEntitySpace != nullptr)
+	// 	{
+	// 		RotateLeafIK(*nextIkLeafToRotateData);
+	// 		nextIkLeafToRotateData = nullptr;
 	// 	}
 	// }
 
-	// // Update skinning matrices
-	// for (uint32_t i = 0; i < m_boneData.size(); i++)
-	// 	m_skinningMatrices[i] = m_boneTransforms[i].ComputeMatrix() * m_boneData[i].invModelMatrix;
+	// Update entity space bone transforms and skinning matrices
+	TwoBoneIkData* nextIkLeafToRotateData = nullptr;
+	for (uint32_t i = 0; i < m_boneData.size(); i++)
+	{
+		if (m_ikData.find(i) != m_ikData.end())
+		{
+			SolveTwoBoneIK(m_ikData[i]);
+			nextIkLeafToRotateData = &m_ikData[i];
+		}
+		else if (nextIkLeafToRotateData != nullptr &&
+			i == nextIkLeafToRotateData->elbowBone &&
+			nextIkLeafToRotateData->targetRotEntitySpace != nullptr)
+		{
+			RotateLeafIK(*nextIkLeafToRotateData);
+			nextIkLeafToRotateData = nullptr;
+		}
+
+		const BoneData* currentBone = &(m_boneData[i]);
+		if (currentBone->parent < 0)
+			m_boneTransforms[i] = m_boneLocalTransforms[i];
+		else
+		{
+			m_boneTransforms[i] = m_boneTransforms[currentBone->parent];
+			m_boneTransforms[i].Apply(m_boneLocalTransforms[i]);
+		}
+		m_skinningMatrices[i] = m_boneTransforms[i].ComputeMatrix() * currentBone->invModelMatrix;
+	}
 }
+
+void sf::SkeletonData::RotateLeafIK(const TwoBoneIkData& ikData)
+{
+	uint32_t elbowBoneId = ikData.elbowBone;
+	const BoneData* elbowBone = &(m_boneData[elbowBoneId]);
+	uint32_t armBoneId = elbowBone->parent;
+	m_boneLocalTransforms[elbowBoneId].rotation = glm::inverse(m_boneTransforms[armBoneId].rotation) * *ikData.targetRotEntitySpace;
+}
+
+void sf::SkeletonData::SolveTwoBoneIK(const TwoBoneIkData& ikData)
+{
+	assert(ikData.targetPosEntitySpace != nullptr);
+	uint32_t elbowBoneId = ikData.elbowBone;
+	const BoneData* elbowBone = &(m_boneData[elbowBoneId]);
+	uint32_t armBoneId = elbowBone->parent;
+	const BoneData* armBone = &(m_boneData[armBoneId]);
+	uint32_t shoulderBoneId = armBone->parent;
+	const BoneData* shoulderBone = &(m_boneData[shoulderBoneId]);
+	uint32_t shoulderParentBoneId = shoulderBone->parent;
+
+	Transform temp = m_boneTransforms[shoulderParentBoneId];
+	temp.Apply(m_boneLocalTransforms[shoulderBoneId]);
+	glm::vec3 a = temp.position;
+	glm::quat a_gr = temp.rotation;
+	temp.Apply(m_boneLocalTransforms[armBoneId]);
+	glm::vec3 b = temp.position;
+	glm::quat b_gr = temp.rotation;
+	temp.Apply(m_boneLocalTransforms[elbowBoneId]);
+	glm::vec3 c = temp.position;
+
+
+	// glm::vec3 a = m_boneTransforms[shoulderBoneId].position;
+	// glm::vec3 b = m_boneTransforms[armBoneId].position;
+	// glm::vec3 c = m_boneTransforms[elbowBoneId].position;
+	glm::vec3 t = *ikData.targetPosEntitySpace;
+	// glm::quat a_gr = m_boneTransforms[shoulderBoneId].rotation;
+	// glm::quat b_gr = m_boneTransforms[armBoneId].rotation;
+	glm::quat& a_lr = m_boneLocalTransforms[shoulderBoneId].rotation;
+	glm::quat& b_lr = m_boneLocalTransforms[armBoneId].rotation;
+
+
+
+	glm::vec3 debug = t + *ikData.targetRotEntitySpace * glm::vec3(0.0f, -0.1f, 0.0f);
+	Renderer::AddLine(debug, debug + glm::vec3(0.0f, 0.1f, 0.0f), glm::vec3(0.0f));
+
+
+	float eps = 0.01f;
+	float lab = glm::length(b - a);
+	float lcb = glm::length(b - c);
+	float lat = glm::clamp(glm::length(t - a), eps, lab + lcb - eps);
+
+	float ac_ab_0 = glm::acos(glm::clamp(glm::dot(
+		glm::normalize(c - a), 
+		glm::normalize(b - a)), -1.0f, 1.0f));
+
+	float ba_bc_0 = glm::acos(glm::clamp(glm::dot(
+		glm::normalize(a - b), 
+		glm::normalize(c - b)), -1.0f, 1.0f));
+
+	float ac_at_0 = glm::acos(glm::clamp(glm::dot(
+		glm::normalize(c - a),
+		glm::normalize(t - a)), -1.0f, 1.0f));
+
+	float ac_ab_1 = glm::acos(glm::clamp((lcb * lcb - lab * lab - lat * lat) / (-2.0f * lab * lat), -1.0f, 1.0f));
+	float ba_bc_1 = glm::acos(glm::clamp((lat * lat - lab * lab - lcb * lcb) / (-2.0f * lab * lcb), -1.0f, 1.0f));
+
+	glm::vec3 axis0 = glm::normalize(glm::cross(c - a, b - a));
+	// glm::vec3 d = b_gr * glm::vec3(0.0f, 0.0f, 1.0f);
+	// glm::vec3 axis0 = normalize(cross(c - a, d));
+
+	glm::vec3 axis1 = glm::normalize(glm::cross(c - a, t - a)); 
+
+	glm::quat r0 = glm::angleAxis(ac_ab_1 - ac_ab_0, glm::inverse(a_gr) * axis0);
+	glm::quat r1 = glm::angleAxis(ba_bc_1 - ba_bc_0, glm::inverse(b_gr) * axis0);
+	glm::quat r2 = glm::angleAxis(ac_at_0, glm::inverse(a_gr) * axis1);
+	glm::quat poleRot = glm::angleAxis(ikData.poleVector->x, glm::inverse(a_gr) * glm::normalize(t - a));
+
+	a_lr = a_lr * (poleRot * r2 * r0);
+	b_lr = b_lr * r1;
+}
+
+
+// void sf::SkeletonData::SolveTwoBoneIK(const TwoBoneIkData& ikData)
+// {
+// 	assert(ikData.targetPosEntitySpace != nullptr);
+// 	float eps = 0.01f;
+// 	uint32_t elbowBoneId = ikData.elbowBone;
+// 	const BoneData* elbowBone = &(m_boneData[elbowBoneId]);
+// 	uint32_t armBoneId = elbowBone->parent;
+// 	const BoneData* armBone = &(m_boneData[armBoneId]);
+// 	uint32_t shoulderBoneId = armBone->parent;
+// 	const BoneData* shoulderBone = &(m_boneData[shoulderBoneId]);
+// 	uint32_t shoulderParentBoneId = shoulderBone->parent;
+
+// 	Transform temp = m_boneTransforms[shoulderParentBoneId];
+// 	temp.Apply(m_boneLocalTransforms[shoulderBoneId]);
+// 	glm::vec3 a = temp.position;
+// 	glm::quat a_gr = temp.rotation;
+// 	temp.Apply(m_boneLocalTransforms[armBoneId]);
+// 	glm::vec3 b = temp.position;
+// 	glm::quat b_gr = temp.rotation;
+// 	temp.Apply(m_boneLocalTransforms[elbowBoneId]);
+// 	glm::vec3 c = temp.position;
+
+
+// 	// glm::vec3 a = m_boneTransforms[shoulderBoneId].position;
+// 	// glm::vec3 b = m_boneTransforms[armBoneId].position;
+// 	// glm::vec3 c = m_boneTransforms[elbowBoneId].position;
+// 	glm::vec3 t = *ikData.targetPosEntitySpace;
+// 	// glm::quat a_gr = m_boneTransforms[shoulderBoneId].rotation;
+// 	// glm::quat b_gr = m_boneTransforms[armBoneId].rotation;
+// 	glm::quat& a_lr = m_boneLocalTransforms[shoulderBoneId].rotation;
+// 	glm::quat& b_lr = m_boneLocalTransforms[armBoneId].rotation;
+
+// 	float lab = glm::length(b - a);
+//     float lcb = glm::length(b - c);
+//     float lat = glm::clamp(glm::length(t - a), eps, lab + lcb - eps);
+
+//     float ac_ab_0 = glm::acos(glm::clamp(glm::dot(glm::normalize(c - a), glm::normalize(b - a)), -1.0f, 1.0f));
+//     float ba_bc_0 = glm::acos(glm::clamp(glm::dot(glm::normalize(a - b), glm::normalize(c - b)), -1.0f, 1.0f));
+//     float ac_at_0 = glm::acos(glm::clamp(glm::dot(glm::normalize(c - a), glm::normalize(t - a)), -1.0f, 1.0f));
+
+//     float ac_ab_1 = glm::acos(glm::clamp((lcb*lcb-lab*lab-lat*lat) / (-2.0f*lab*lat), -1.0f, 1.0f));
+//     float ba_bc_1 = glm::acos(glm::clamp((lat*lat-lab*lab-lcb*lcb) / (-2.0f*lab*lcb), -1.0f, 1.0f));
+
+//     glm::vec3 axis0 = glm::normalize(glm::cross(c - a, b - a));
+//     glm::vec3 axis1 = glm::normalize(glm::cross(c - a, t - a));    
+    
+//     glm::quat r0 = glm::angleAxis(ac_ab_1 - ac_ab_0, (glm::inverse(a_gr) * axis0));
+//     glm::quat r1 = glm::angleAxis(ba_bc_1 - ba_bc_0, (glm::inverse(b_gr) * axis0));
+//     glm::quat r2 = glm::angleAxis(ac_at_0, (glm::inverse(a_gr) * axis1));
+
+//     a_lr = (a_lr * (r0 * r2));
+//     b_lr = (b_lr * r1);
+// }

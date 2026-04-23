@@ -8,6 +8,7 @@ void main()
 	normal = normalize(fTBN * normal);
 
 	vec3 lightDir = vec3(1.0, -1.0, -1.0);
+	//vec3 lightDir = vec3(-1.0, -1.0, 1.0);
 	float diff = max(dot(-normal, normalize(lightDir)), 0.0);
 	vec4 texColor = vec4(1.0);
 	OUT_COLOR = vec4(texColor.rgb * diff, 1.0);

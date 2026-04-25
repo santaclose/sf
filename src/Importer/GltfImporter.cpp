@@ -10,6 +10,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 
+#include <FileUtils.h>
 #include <Animation.h>
 
 namespace sf::GltfImporter
@@ -20,6 +21,15 @@ namespace sf::GltfImporter
 
 int sf::GltfImporter::Load(const std::string& filePath)
 {
+	std::string ext = std::string(FileUtils::ExtensionFromPath(filePath));
+	bool isGlb = ext == "glb";
+	bool isGltf = ext == "gltf";
+	if (!isGlb && !isGltf)
+	{
+		std::cout << "[GltfImporter] Invalid file\n";
+		return -1;
+	}
+
 	tinygltf::Model* newModel = new tinygltf::Model();
 
 	tinygltf::TinyGLTF loader;
@@ -27,19 +37,16 @@ int sf::GltfImporter::Load(const std::string& filePath)
 	std::string warn;
 
 	bool ret;
-	std::string ext = filePath.substr(filePath.find_last_of(".") + 1);
-
-	bool isBinary = ext == "glb";
-	if (ext != "gltf" && !isBinary)
+	if (isGlb)
 	{
-		std::cout << "[GltfImporter] Invalid file\n";
-		return -1;
-	}
-
-	if (isBinary)
+		printf("[GltfImporter] Loading GLB: %s\n", filePath.c_str());
 		ret = loader.LoadBinaryFromFile(newModel, &err, &warn, filePath);
+	}
 	else
+	{
+		printf("[GltfImporter] Loading GLTF: %s\n", filePath.c_str());
 		ret = loader.LoadASCIIFromFile(newModel, &err, &warn, filePath);
+	}
 
 	if (!warn.empty())
 		printf("[GltfImporter] Warn: %s\n", warn.c_str());

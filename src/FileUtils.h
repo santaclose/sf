@@ -12,6 +12,7 @@ namespace sf::FileUtils
 	inline const char* FileNameFromPath(const std::string& filePath) { return filePath.c_str() + std::max(filePath.find_last_of('/') + 1, filePath.find_last_of('\\') + 1); }
 	inline bool ExtensionIs(const std::string& filePath, const char* extension) { return strcmp(ExtensionFromPath(filePath), extension) == 0; }
 
+	bool CreateFolder(const std::string& path);
 	void DecompressZip(const std::string& filePath, const char* targetFolderPath = nullptr);
 	void DownloadFiles(const std::vector<std::string>& urls, const std::string& targetPath, const std::vector<std::string>* targetNames = nullptr, bool decompressZipFiles = true);
 }

@@ -3,6 +3,16 @@
 #include <fstream>
 #include <cassert>
 
+bool sf::FileUtils::CreateFolder(const std::string& path)
+{
+#if SF_PLATFORM_WINDOWS
+	std::string commandString = "mkdir \"" + path + "\"";
+#else
+	std::string commandString = "mkdir -p \"" + path + "\"";
+#endif
+	return system(commandString.c_str()) == 0;
+}
+
 void sf::FileUtils::DecompressZip(const std::string& filePath, const char* targetFolderPath)
 {
 	assert(ExtensionIs(filePath, "zip"));

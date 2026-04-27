@@ -58,6 +58,7 @@ int sf::GltfImporter::Load(const std::string& filePath)
 		printf("[GltfImporter] Failed to parse glTF\n");
 
 
+	printf("[GltfImporter] Assigning ID %u to file %s\n", (uint32_t)models.size(), filePath.c_str());
 	models.push_back(newModel);
 	return models.size() - 1;
 }
@@ -270,6 +271,7 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 	mesh.pieceCount = pieces.size();
 	memcpy(mesh.indexBuffer, indices.data(), indices.size() * sizeof(uint32_t));
 	memcpy(mesh.pieces, pieces.data(), pieces.size() * sizeof(uint32_t));
+	printf("[GltfImporter] Generated mesh data with %u vertices, %u indices, and %u pieces for ID %u\n", mesh.vertexCount, mesh.indexCount, mesh.pieceCount, id);
 }
 
 void sf::GltfImporter::FreeMeshData(MeshData& mesh)

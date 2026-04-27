@@ -1,5 +1,7 @@
 #include "Animation.h"
 
+#include <glm/gtc/type_ptr.hpp>
+
 #include <BlendMatrixInterpolation.h>
 
 void sf::Animation::ComputeNodeWeights(sf::Animation::Node& node)
@@ -199,40 +201,31 @@ void sf::Animation::SampleToBones(sf::Animation::SkeletalAnimation& animation, s
 		{
 			if ((animationTime >= sampler.inputs[i]) && (animationTime <= sampler.inputs[i + 1]))
 			{
-				float u = std::max(0.0f, animationTime - sampler.inputs[i]) / (sampler.inputs[i + 1] - sampler.inputs[i]);
-				if (u <= 1.0f)
+				float u = std::min(std::max(0.0f, animationTime - sampler.inputs[i]) / (sampler.inputs[i + 1] - sampler.inputs[i]), 1.0f);
+				switch (channel.path)
 				{
-					switch (channel.path)
-					{
-					case Channel::PathType::TRANSLATION:
-					{
-						glm::vec4 trans = glm::mix(sampler.outputsVec4[i], sampler.outputsVec4[i + 1], u);
-						bones[channel.bone].position = glm::vec3(trans);
-						break;
-					}
-					case Channel::PathType::SCALE:
-					{
-						glm::vec4 scale = glm::mix(sampler.outputsVec4[i], sampler.outputsVec4[i + 1], u);
-						bones[channel.bone].scale = glm::max(glm::max(scale.x, scale.y), scale.z);
-						break;
-					}
-					case Channel::PathType::ROTATION:
-					{
-						glm::quat q1;
-						q1.x = sampler.outputsVec4[i].x;
-						q1.y = sampler.outputsVec4[i].y;
-						q1.z = sampler.outputsVec4[i].z;
-						q1.w = sampler.outputsVec4[i].w;
-						glm::quat q2;
-						q2.x = sampler.outputsVec4[i + 1].x;
-						q2.y = sampler.outputsVec4[i + 1].y;
-						q2.z = sampler.outputsVec4[i + 1].z;
-						q2.w = sampler.outputsVec4[i + 1].w;
-						bones[channel.bone].rotation = glm::normalize(glm::slerp(q1, q2, u));
-						break;
-					}
-					}
+				case Channel::PathType::TRANSLATION:
+				{
+					glm::vec4 trans = glm::mix(sampler.outputsVec4[i], sampler.outputsVec4[i + 1], u);
+					bones[channel.bone].position = glm::vec3(trans);
+					break;
 				}
+				case Channel::PathType::SCALE:
+				{
+					glm::vec4 scale = glm::mix(sampler.outputsVec4[i], sampler.outputsVec4[i + 1], u);
+					bones[channel.bone].scale = glm::max(glm::max(scale.x, scale.y), scale.z);
+					break;
+				}
+				case Channel::PathType::ROTATION:
+				{
+					// use make_quat for w, x, y, z order fix
+					glm::quat q1 = glm::make_quat(glm::value_ptr(sampler.outputsVec4[i]));
+					glm::quat q2 = glm::make_quat(glm::value_ptr(sampler.outputsVec4[i + 1]));
+					bones[channel.bone].rotation = glm::normalize(glm::slerp(q1, q2, u));
+					break;
+				}
+				}
+				break;
 			}
 		}
 	}

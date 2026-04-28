@@ -77,15 +77,16 @@ namespace sf
 
 	void Game::Initialize(int argc, char** argv)
 	{
+		FileUtils::CreateFolder("assets/examples");
+		FileUtils::DownloadFiles({
+			"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Fox/glTF-Binary/Fox.glb",
+			"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BrainStem/glTF-Binary/BrainStem.glb"
+			}, "assets/examples/");
+
 		modelRotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
 		modelRotationY = 0.0f;
 		rotationEnabled = false;
 		selectedModel = 0;
-
-		FileUtils::DownloadFiles({
-			"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Fox/glTF-Binary/Fox.glb",
-			"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BrainStem/glTF-Binary/BrainStem.glb"
-			}, "examples/animation/");
 
 		ExampleViewer::Initialize(scene);
 		meshMaterial.vertShaderFilePath = "assets/shaders/default.vert";
@@ -102,7 +103,7 @@ namespace sf
 			e_t.scale = 0.025f;
 			e_t.position.y -= 1.0f;
 
-			gltfid = GltfImporter::Load("examples/animation/Fox.glb");
+			gltfid = GltfImporter::Load("assets/examples/Fox.glb");
 			GltfImporter::GenerateSkeleton(gltfid, skeletons[0]);
 			meshes[0] = MeshData(&vertexLayout);
 			GltfImporter::GenerateMeshData(gltfid, meshes[0]);
@@ -120,7 +121,7 @@ namespace sf
 			e_t.scale = 1.7f;
 			e_t.position.y -= 1.5f;
 
-			gltfid = GltfImporter::Load("examples/animation/BrainStem.glb");
+			gltfid = GltfImporter::Load("assets/examples/BrainStem.glb");
 			GltfImporter::GenerateSkeleton(gltfid, skeletons[1]);
 			meshes[1] = MeshData(&vertexLayout);
 			GltfImporter::GenerateMeshData(gltfid, meshes[1]);

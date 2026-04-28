@@ -79,10 +79,10 @@ namespace sf
 
 	void Game::Initialize(int argc, char** argv)
 	{
-		FileUtils::CreateFolder("examples/assets");
+		FileUtils::CreateFolder("assets/examples");
 		FileUtils::DownloadFiles({
 			"https://github.com/santaclose/sample_models/raw/master/mannequin_tpose.zip"
-			}, "examples/assets/");
+			}, "assets/examples/");
 
 		modelRotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
 		modelRotationY = 0.0f;
@@ -111,7 +111,7 @@ namespace sf
 		{
 			humanModel = scene.CreateEntity();
 			Transform& e_t = humanModel.AddComponent<Transform>();
-			gltfid = GltfImporter::Load("examples/assets/mannequin_tpose/mannequin_tpose.gltf");
+			gltfid = GltfImporter::Load("assets/examples/mannequin_tpose/mannequin_tpose.gltf");
 			GltfImporter::GenerateSkeleton(gltfid, humanSkeleton);
 			humanMesh = MeshData(&vertexLayout);
 			GltfImporter::GenerateMeshData(gltfid, humanMesh);

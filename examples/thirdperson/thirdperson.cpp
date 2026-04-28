@@ -107,16 +107,17 @@ namespace sf
 
 	void Game::Initialize(int argc, char** argv)
 	{
-		targetGimbalRotation = glm::vec3(0.0, glm::radians(180.0f), 0.0);
-		cameraDistance = 3.0;
-		shanyungBlendSpaceCurrentPos = { 0.0f, 0.0f };
-		foxBlendSpaceCurrentX = 0.0f;
-
+		FileUtils::CreateFolder("assets/examples");
 		FileUtils::DownloadFiles({
 			"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Fox/glTF-Binary/Fox.glb",
 			"https://us.v-cdn.net/5021068/uploads/editor/ha/7frj09nru4zu.png",
 			"https://github.com/santaclose/sample_models/raw/master/shanyung_blendspace2d.glb"
-			}, "examples/thirdperson/");
+			}, "assets/examples/");
+
+		targetGimbalRotation = glm::vec3(0.0, glm::radians(180.0f), 0.0);
+		cameraDistance = 3.0;
+		shanyungBlendSpaceCurrentPos = { 0.0f, 0.0f };
+		foxBlendSpaceCurrentX = 0.0f;
 
 		gimbal = scene.CreateEntity();
 		cameraObject = scene.CreateEntity();
@@ -140,7 +141,7 @@ namespace sf
 
 			shanyungSkeleton = new SkeletonData();
 			shanyungMesh = new MeshData(&characterVertexLayout);
-			gltfid = GltfImporter::Load("examples/thirdperson/shanyung_blendspace2d.glb");
+			gltfid = GltfImporter::Load("assets/examples/shanyung_blendspace2d.glb");
 			GltfImporter::GenerateSkeleton(gltfid, *shanyungSkeleton);
 			GltfImporter::GenerateMeshData(gltfid, *shanyungMesh);
 			MeshProcessor::RemoveUnusedBones(*shanyungMesh, *shanyungSkeleton);
@@ -162,7 +163,7 @@ namespace sf
 
 			foxSkeleton = new SkeletonData();
 			foxMesh = new MeshData(&characterVertexLayout);
-			gltfid = GltfImporter::Load("examples/thirdperson/Fox.glb");
+			gltfid = GltfImporter::Load("assets/examples/Fox.glb");
 			GltfImporter::GenerateSkeleton(gltfid, *foxSkeleton);
 			GltfImporter::GenerateMeshData(gltfid, *foxMesh);
 			MeshProcessor::RemoveUnusedBones(*foxMesh, *foxSkeleton);

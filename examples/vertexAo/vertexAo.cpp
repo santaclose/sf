@@ -66,19 +66,20 @@ namespace sf
 
 	void Game::Initialize(int argc, char** argv)
 	{
+		FileUtils::CreateFolder("assets/examples");
+		FileUtils::DownloadFiles({ "https://casual-effects.com/g3d/data10/research/model/bunny/bunny.zip" }, "assets/examples/");
+
 		modelRotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
 		modelRotationY = 0.0f;
 		rotationEnabled = false;
 		selectedModel = 0;
-
-		FileUtils::DownloadFiles({ "https://casual-effects.com/g3d/data10/research/model/bunny/bunny.zip" }, "examples/vertexAo/");
 
 		ExampleViewer::Initialize(scene);
 
 		aoMaterial.vertShaderFilePath = "assets/shaders/default.vert";
 		aoMaterial.fragShaderFilePath = "assets/shaders/vertexAo.frag";
 
-		std::vector<std::string> meshFilePaths = { "examples/vertexAo/bunny/bunny.obj", "assets/meshes/monke.obj" };
+		std::vector<std::string> meshFilePaths = { "assets/examples/bunny/bunny.obj", "assets/meshes/monke.obj" };
 		sampleMeshes = new MeshData[meshFilePaths.size()];
 		for (int i = 0; i < meshFilePaths.size(); i++)
 		{

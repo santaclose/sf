@@ -79,24 +79,28 @@ namespace sf
 
 	void Game::Initialize(int argc, char** argv)
 	{
-		modelRotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
-		modelRotationY = 0.0f;
-		rotationEnabled = false;
-		selectedEnvironment = 0;
-		environments = { "examples/pbr/brown_photostudio_02_4k.hdr", "examples/pbr/aft_lounge_4k.hdr", };
-		selectedModel = 0;
-
+		FileUtils::CreateFolder("assets/examples");
+		FileUtils::CreateFolder("assets/examples/SciFiHelmet");
 		FileUtils::DownloadFiles({
 			"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb",
+			"https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/4k/brown_photostudio_02_4k.hdr",
+			"https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/4k/aft_lounge_4k.hdr"
+			}, "assets/examples/");
+		FileUtils::DownloadFiles({
 			"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/SciFiHelmet/glTF/SciFiHelmet.gltf",
 			"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/SciFiHelmet/glTF/SciFiHelmet.bin",
 			"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/SciFiHelmet/glTF/SciFiHelmet_AmbientOcclusion.png",
 			"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/SciFiHelmet/glTF/SciFiHelmet_BaseColor.png",
 			"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/SciFiHelmet/glTF/SciFiHelmet_MetallicRoughness.png",
-			"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/SciFiHelmet/glTF/SciFiHelmet_Normal.png",
-			"https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/4k/brown_photostudio_02_4k.hdr",
-			"https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/4k/aft_lounge_4k.hdr"
-			}, "examples/pbr/");
+			"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/SciFiHelmet/glTF/SciFiHelmet_Normal.png"
+			}, "assets/examples/SciFiHelmet/");
+
+		modelRotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+		modelRotationY = 0.0f;
+		rotationEnabled = false;
+		selectedEnvironment = 0;
+		environments = { "assets/examples/brown_photostudio_02_4k.hdr", "assets/examples/aft_lounge_4k.hdr", };
+		selectedModel = 0;
 
 		ExampleViewer::Initialize(scene);
 		Renderer::SetEnvironment(environments[selectedEnvironment]);
@@ -109,7 +113,7 @@ namespace sf
 			Transform& e_t = galleryObjects.back().AddComponent<Transform>();
 			e_t.rotation = glm::fquat(glm::vec3(glm::radians(90.0f), 0.0f, 0.0f));
 
-			gltfid = GltfImporter::Load("examples/pbr/DamagedHelmet.glb");
+			gltfid = GltfImporter::Load("assets/examples/DamagedHelmet.glb");
 
 			Bitmap tempMetalRoughness;
 			GltfImporter::GenerateBitmap(gltfid, 0, damagedHelmetAlbedo);
@@ -139,7 +143,7 @@ namespace sf
 			galleryObjects.push_back(scene.CreateEntity());
 			galleryObjects.back().AddComponent<Transform>();
 
-			gltfid = GltfImporter::Load("examples/pbr/SciFiHelmet.gltf");
+			gltfid = GltfImporter::Load("assets/examples/SciFiHelmet/SciFiHelmet.gltf");
 			meshes[1] = MeshData(&meshVertexLayout);
 			GltfImporter::GenerateMeshData(gltfid, meshes[1]);
 			MeshProcessor::ComputeTangentSpace(meshes[1]);

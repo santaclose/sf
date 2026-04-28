@@ -56,16 +56,18 @@ namespace sf
 
 	void Game::Initialize(int argc, char** argv)
 	{
-		sprintf(textStringA, "Left aligned");
-		sprintf(textStringB, "Right aligned");
-		sprintf(textStringC, "Centered multiline\ntext");
-
+		FileUtils::CreateFolder("assets/examples");
 		FileUtils::DownloadFiles({
 			"https://www.wikipedia.org/portal/wikipedia.org/assets/img/Wikipedia-logo-v2.png",
 			"http://fonts.gstatic.com/s/abeezee/v11/mE5BOuZKGln_Ex0uYKpIaw.ttf",
 			"https://fonts.gstatic.com/s/comicneue/v3/4UaHrEJDsxBrF37olUeDx63j5pN1MwI.ttf",
 			"https://fonts.gstatic.com/s/nunitosans/v15/pe1kMImSLYBIv1o4X1M8cce4OdVisMz5nZRqy6cmmmU3t2FQWEAEOvV9wNvrwlNstMKW3Y6K5WMwXeVy3GboJ0kTHmqP92UnK_c.ttf"
-			}, "examples/ui/");
+			}, "assets/examples/");
+
+		sprintf(textStringA, "Left aligned");
+		sprintf(textStringB, "Right aligned");
+		sprintf(textStringC, "Centered multiline\ntext");
+
 		{
 			textA = scene.CreateEntity();
 			ScreenCoordinates& e_sc = textA.AddComponent<ScreenCoordinates>();
@@ -73,7 +75,7 @@ namespace sf
 			e_sc.offset = { 22.0f, 22.0f };
 			Text& e_txt = textA.AddComponent<Text>();
 			e_txt.color = { 1.0f, 1.0f, 1.0f, 1.0f };
-			e_txt.fontPath = "examples/ui/mE5BOuZKGln_Ex0uYKpIaw.ttf";
+			e_txt.fontPath = "assets/examples/mE5BOuZKGln_Ex0uYKpIaw.ttf";
 			e_txt.string = textStringA;
 			e_txt.size = 50.0f;
 			e_txt.alignmentH = ALIGNMENT_LEFT;
@@ -86,7 +88,7 @@ namespace sf
 			e_sc.offset = { -22.0f, -22.0f };
 			Text& e_txt = textB.AddComponent<Text>();
 			e_txt.color = { 1.0f, 1.0f, 1.0f, 1.0f };
-			e_txt.fontPath = "examples/ui/4UaHrEJDsxBrF37olUeDx63j5pN1MwI.ttf";
+			e_txt.fontPath = "assets/examples/4UaHrEJDsxBrF37olUeDx63j5pN1MwI.ttf";
 			e_txt.string = textStringB;
 			e_txt.size = 50.0f;
 			e_txt.alignmentH = ALIGNMENT_RIGHT;
@@ -99,7 +101,7 @@ namespace sf
 			e_sc.offset = { 0.0f, 0.0f };
 			Text& e_txt = textC.AddComponent<Text>();
 			e_txt.color = { 1.0f, 1.0f, 1.0f, 1.0f };
-			e_txt.fontPath = "examples/ui/pe1kMImSLYBIv1o4X1M8cce4OdVisMz5nZRqy6cmmmU3t2FQWEAEOvV9wNvrwlNstMKW3Y6K5WMwXeVy3GboJ0kTHmqP92UnK_c.ttf";
+			e_txt.fontPath = "assets/examples/pe1kMImSLYBIv1o4X1M8cce4OdVisMz5nZRqy6cmmmU3t2FQWEAEOvV9wNvrwlNstMKW3Y6K5WMwXeVy3GboJ0kTHmqP92UnK_c.ttf";
 			e_txt.string = textStringC;
 			e_txt.size = 50.0f;
 			e_txt.alignmentH = ALIGNMENT_CENTER;
@@ -112,7 +114,7 @@ namespace sf
 			e_sc.origin = { 0.5f, 0.5f };
 			e_sc.offset = { 0.0f, 0.0f };
 			testSpriteBitmap = new Bitmap();
-			testSpriteBitmap->CreateFromFile("examples/ui/Wikipedia-logo-v2.png");
+			testSpriteBitmap->CreateFromFile("assets/examples/Wikipedia-logo-v2.png");
 			Sprite& e_spt = spriteTest.AddComponent<Sprite>(testSpriteBitmap);
 			e_spt.alignmentH = ALIGNMENT_CENTER;
 			e_spt.alignmentV = ALIGNMENT_CENTER;

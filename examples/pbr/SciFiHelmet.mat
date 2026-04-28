@@ -6,11 +6,11 @@ b useRoughnessTexture: true
 b useEmissiveTexture: false
 b useAoTexture: true
 
-bitmap albedoTexture: "examples/pbr/SciFiHelmet_BaseColor.png"
-bitmap normalTexture: "examples/pbr/SciFiHelmet_Normal.png"
-bitmap metalnessTexture: "examples/pbr/SciFiHelmet_MetallicRoughness.png"2
-bitmap roughnessTexture: "examples/pbr/SciFiHelmet_MetallicRoughness.png"1
-bitmap aoTexture: "examples/pbr/SciFiHelmet_AmbientOcclusion.png"
+bitmap albedoTexture: "assets/examples/SciFiHelmet/SciFiHelmet_BaseColor.png"
+bitmap normalTexture: "assets/examples/SciFiHelmet/SciFiHelmet_Normal.png"
+bitmap metalnessTexture: "assets/examples/SciFiHelmet/SciFiHelmet_MetallicRoughness.png"2
+bitmap roughnessTexture: "assets/examples/SciFiHelmet/SciFiHelmet_MetallicRoughness.png"1
+bitmap aoTexture: "assets/examples/SciFiHelmet/SciFiHelmet_AmbientOcclusion.png"
 
 cubemap irradianceMap: _IRRADIANCE_MAP_
 cubemap prefilterMap: _PREFILTER_MAP_

@@ -17,6 +17,7 @@
 #include <MeshProcessor.h>
 #include <Math.hpp>
 #include <Random.h>
+#include <FileUtils.h>
 
 #include <Input.h>
 #include <Importer/GltfImporter.h>
@@ -153,14 +154,18 @@ namespace sf
 
 		
 		generatedMeshes = new MeshData[UNIQUE_COUNT];
-		char cahedMeshesPath[] = "examples/spaceship/generatedXX.mesh\0";
+		FileUtils::CreateFolder("assets/examples");
+		FileUtils::CreateFolder("assets/examples/spaceship");
+		char cachedMeshesPath[] = "assets/examples/spaceship/generatedXX.mesh\0";
+		uint32_t numberIndex = 0;
+		for (; cachedMeshesPath[numberIndex] != 'X' || cachedMeshesPath[numberIndex + 1] != 'X'; numberIndex++);
 		for (unsigned int i = 0; i < UNIQUE_COUNT; i++)
 		{
-			cahedMeshesPath[28] = '0' + (i / 10);
-			cahedMeshesPath[29] = '0' + (i % 10);
+			cachedMeshesPath[numberIndex + 0] = '0' + (i / 10);
+			cachedMeshesPath[numberIndex + 1] = '0' + (i % 10);
 			/* Assign layout to avoid creating a new one per model when loading */
 			generatedMeshes[i].vertexBufferLayout = &generatedMeshesVertexLayout;
-			if (generatedMeshes[i].LoadFromFile(cahedMeshesPath))
+			if (generatedMeshes[i].LoadFromFile(cachedMeshesPath))
 				continue;
 			errt::seed = i;
 			errt::GenerateModel(generatedMeshes[i]);
@@ -168,7 +173,7 @@ namespace sf
 			VoxelVolumeData vv;
 			vv.BuildFromMesh(generatedMeshes[i], 0.01f);
 			MeshProcessor::ComputeVertexAmbientOcclusion(generatedMeshes[i], &vv);
-			generatedMeshes[i].SaveToFile(cahedMeshesPath);
+			generatedMeshes[i].SaveToFile(cachedMeshesPath);
 		}
 
 		things = new Entity[COUNT];

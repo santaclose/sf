@@ -47,5 +47,14 @@ namespace sf {
 			rotation *= other.rotation;
 			scale *= other.scale;
 		}
+
+		inline Transform Inverse()
+		{
+			Transform out;
+			out.scale = 1.0f / scale;
+			out.rotation = glm::conjugate(rotation);
+			out.position = out.rotation * (-position * out.scale);
+			return out;
+		}
 	};
 }

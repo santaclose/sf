@@ -88,6 +88,7 @@ namespace sf
 			uint32_t gltfid = GltfImporter::Load(filePath);
 			GltfImporter::GenerateSkeleton(gltfid, *modelSkeleton);
 			GltfImporter::GenerateMeshData(gltfid, *modelMesh);
+			MeshProcessor::RemoveUnusedBones(*modelMesh, *modelSkeleton);
 			modelEntity.AddComponent<SkinnedMesh>(modelMesh, &modelMaterial, modelSkeleton);
 			animNames.resize(modelSkeleton->m_animations.size());
 			for (int i = 0; i < modelSkeleton->m_animations.size(); i++)

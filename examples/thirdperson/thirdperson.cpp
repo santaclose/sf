@@ -143,6 +143,7 @@ namespace sf
 			gltfid = GltfImporter::Load("examples/thirdperson/shanyung_blendspace2d.glb");
 			GltfImporter::GenerateSkeleton(gltfid, *shanyungSkeleton);
 			GltfImporter::GenerateMeshData(gltfid, *shanyungMesh);
+			MeshProcessor::RemoveUnusedBones(*shanyungMesh, *shanyungSkeleton);
 			shanyung.AddComponent<SkinnedMesh>(shanyungMesh, &characterMaterial, shanyungSkeleton);
 
 			shanyungWeights.resize(10);
@@ -164,6 +165,7 @@ namespace sf
 			gltfid = GltfImporter::Load("examples/thirdperson/Fox.glb");
 			GltfImporter::GenerateSkeleton(gltfid, *foxSkeleton);
 			GltfImporter::GenerateMeshData(gltfid, *foxMesh);
+			MeshProcessor::RemoveUnusedBones(*foxMesh, *foxSkeleton);
 			MeshProcessor::ComputeNormals(*foxMesh);
 			fox.AddComponent<SkinnedMesh>(foxMesh, &characterMaterial, foxSkeleton);
 

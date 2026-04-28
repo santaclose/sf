@@ -1,6 +1,7 @@
 #pragma once
 
 #include <MeshData.h>
+#include <SkeletonData.h>
 #include <VoxelVolumeData.h>
 #include <string>
 
@@ -26,5 +27,6 @@ namespace sf {
 		static void ComputeTangentSpace(MeshData& mesh);
 		static void ComputeVertexAmbientOcclusion(MeshData& mesh, const VoxelVolumeData* voxelVolume = nullptr, const VertexAmbientOcclusionBakerConfig* config = nullptr);
 		static void GenerateGrid(MeshData& mesh, uint32_t sizeX, uint32_t sizeY, uint32_t texResX, uint32_t texResY, float cellSize, bool useQuads = false);
+		static void RemoveUnusedBones(MeshData& mesh, SkeletonData& skeleton);
 	};
 }

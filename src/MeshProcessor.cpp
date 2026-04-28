@@ -3,6 +3,8 @@
 #include <iostream>
 #include <fstream>
 #include <cstring>
+#include <unordered_set>
+#include <unordered_map>
 
 #include <Random.h>
 #include <Geometry.h>
@@ -326,5 +328,153 @@ void sf::MeshProcessor::GenerateGrid(MeshData& mesh, uint32_t sizeX, uint32_t si
 				mesh.indexBuffer[currentIndex++] = (y - 0u) * sizeX + (x - 1u);
 			}
 		}
+	}
+}
+
+void sf::MeshProcessor::RemoveUnusedBones(MeshData& mesh, SkeletonData& skeleton)
+{
+	// Mesh must have bone indices
+	assert(mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::BoneIndices) != nullptr);
+
+	// Find used bones, both in mesh and animations
+	std::unordered_set<uint32_t> bonesUsedByMesh;
+	std::unordered_set<uint32_t> bonesUsedByAnimation;
+	for (uint32_t i = 0; i < mesh.vertexCount; i++)
+	{
+		glm::vec4* boneIndicesPointer = mesh.AccessVertexComponent<glm::vec4>(BufferComponent::BoneIndices, i);
+		bonesUsedByMesh.insert((uint32_t)boneIndicesPointer->x);
+		bonesUsedByMesh.insert((uint32_t)boneIndicesPointer->y);
+		bonesUsedByMesh.insert((uint32_t)boneIndicesPointer->z);
+		bonesUsedByMesh.insert((uint32_t)boneIndicesPointer->w);
+	}
+	for (const Animation::SkeletalAnimation& sa : skeleton.m_animations)
+	{
+		for (const Animation::Channel& ch : sa.channels)
+			bonesUsedByAnimation.insert(ch.bone);
+	}
+	std::unordered_set<uint32_t> usedBones = bonesUsedByMesh;
+	usedBones.insert(bonesUsedByAnimation.begin(), bonesUsedByAnimation.end());
+
+	// Find unused but required bones
+	std::unordered_map<uint32_t, uint32_t> depthPerBone;
+	std::unordered_map<uint32_t, uint32_t> boneRemapping;
+	std::unordered_set<uint32_t> requiredUnusedParents;
+	for (uint32_t i = 0; i < skeleton.m_boneData.size(); i++)
+	{
+		uint32_t currentParent = skeleton.m_boneData[i].parent;
+		if (currentParent != -1 &&
+			usedBones.find(i) != usedBones.end() &&
+			usedBones.find(currentParent) == usedBones.end())
+		{
+			requiredUnusedParents.insert(currentParent);
+			while (true)
+			{
+				currentParent = skeleton.m_boneData[currentParent].parent;
+				if (currentParent == -1)
+					break;
+				requiredUnusedParents.insert(currentParent);
+			}
+		}
+	}
+
+	// Compute bone remapping
+	uint32_t newBoneIndex = 0;
+#ifdef SF_DEBUG
+	printf("[MeshProcessor] Remove unused bones draft:\n");
+#endif
+	for (uint32_t i = 0; i < skeleton.m_boneData.size(); i++)
+	{
+#ifdef SF_DEBUG
+		uint32_t currentParent = skeleton.m_boneData[i].parent;
+		if (currentParent == -1)
+			depthPerBone[i] = 0;
+		else
+			depthPerBone[i] = depthPerBone[currentParent] + 1;
+		for (uint32_t j = 0; j < depthPerBone[i] + 1; j++)
+			printf("   ");
+#endif
+		if (usedBones.find(i) != usedBones.end())
+		{
+#ifdef SF_DEBUG
+			bool usedByMesh = bonesUsedByMesh.find(i) != bonesUsedByMesh.end();
+			bool usedByAnimation = bonesUsedByAnimation.find(i) != bonesUsedByAnimation.end();
+			printf("used bone (%u -> %u) (mesh: %u, anim: %u)\n", i, newBoneIndex, usedByMesh, usedByAnimation);
+#endif
+			boneRemapping[i] = newBoneIndex;
+			newBoneIndex++;
+		}
+		else
+		{
+			if (requiredUnusedParents.find(i) != requiredUnusedParents.end())
+			{
+#ifdef SF_DEBUG
+				printf("unused, but REQUIRED bone (%u -> %u)\n", i, newBoneIndex);
+#endif
+				boneRemapping[i] = newBoneIndex;
+				newBoneIndex++;
+			}
+#ifdef SF_DEBUG
+			else
+				printf("UNUSED bone (%u)\n", i);
+#endif
+		}
+	}
+	std::unordered_set<uint32_t> requiredBones = usedBones;
+	requiredBones.insert(requiredUnusedParents.begin(), requiredUnusedParents.end());
+
+	uint32_t requiredBoneCount = (uint32_t)requiredBones.size();
+	uint32_t totalBoneCount = (uint32_t)skeleton.m_boneData.size();
+	assert(totalBoneCount >= requiredBoneCount);
+	if (totalBoneCount == requiredBoneCount)
+	{
+		printf("[MeshProcessor] All %u bones are in use, skipping\n", totalBoneCount);
+		return;
+	}
+	printf("[MeshProcessor] %u bones are required, and there are %u bones in total, removing %u\n", requiredBoneCount, totalBoneCount, totalBoneCount - requiredBoneCount);
+
+	// Update skeleton
+	std::vector<Transform> newBoneLocalTransforms(newBoneIndex);
+	std::vector<Transform> newBoneTransforms(newBoneIndex);
+	std::vector<BoneData> newBoneData(newBoneIndex);
+	for (uint32_t i = 0; i < skeleton.m_boneLocalTransforms.size(); i++)
+	{
+		if (requiredBones.find(i) == requiredBones.end())
+			continue;
+
+		uint32_t targetBone = boneRemapping[i];
+		newBoneLocalTransforms[targetBone] = skeleton.m_boneLocalTransforms[i];
+		newBoneTransforms[targetBone] = skeleton.m_boneTransforms[i];
+		newBoneData[targetBone] = skeleton.m_boneData[i];
+		if (skeleton.m_boneData[i].parent != -1)
+			newBoneData[targetBone].parent = boneRemapping[skeleton.m_boneData[i].parent];
+	}
+	skeleton.m_skinningMatrices.resize(newBoneIndex);
+	for (Animation::SkeletalAnimation& sa : skeleton.m_animations)
+	{
+		for (Animation::Channel& ch : sa.channels)
+			ch.bone = boneRemapping[ch.bone];
+	}
+	for (Animation::Node& an : skeleton.m_nodes)
+		an.single.boneCount = newBoneIndex;
+
+	std::unordered_map<uint32_t, TwoBoneIkData> newIkData;
+	for (const auto& [shoulderBone, data] : skeleton.m_ikData)
+	{
+		newIkData[boneRemapping[shoulderBone]] = data;
+		newIkData[boneRemapping[shoulderBone]].elbowBone = boneRemapping[newIkData[boneRemapping[shoulderBone]].elbowBone];
+	}
+	skeleton.m_boneLocalTransforms = newBoneLocalTransforms;
+	skeleton.m_boneTransforms = newBoneTransforms;
+	skeleton.m_boneData = newBoneData;
+	skeleton.m_ikData = newIkData;
+
+	// Update mesh
+	for (uint32_t i = 0; i < mesh.vertexCount; i++)
+	{
+		glm::vec4* boneIndicesPointer = mesh.AccessVertexComponent<glm::vec4>(BufferComponent::BoneIndices, i);
+		boneIndicesPointer->x = (float) boneRemapping[(uint32_t)boneIndicesPointer->x];
+		boneIndicesPointer->y = (float) boneRemapping[(uint32_t)boneIndicesPointer->y];
+		boneIndicesPointer->z = (float) boneRemapping[(uint32_t)boneIndicesPointer->z];
+		boneIndicesPointer->w = (float) boneRemapping[(uint32_t)boneIndicesPointer->w];
 	}
 }

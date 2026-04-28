@@ -106,6 +106,7 @@ namespace sf
 			GltfImporter::GenerateSkeleton(gltfid, skeletons[0]);
 			meshes[0] = MeshData(&vertexLayout);
 			GltfImporter::GenerateMeshData(gltfid, meshes[0]);
+			MeshProcessor::RemoveUnusedBones(meshes[0], skeletons[0]);
 			MeshProcessor::ComputeNormals(meshes[0]);
 			SkinnedMesh& objectMesh = galleryObjects.back().AddComponent<SkinnedMesh>(&(meshes[0]), &meshMaterial, &(skeletons[0]));
 			for (int i = 0; i < skeletons[0].m_animations.size(); i++)
@@ -123,6 +124,7 @@ namespace sf
 			GltfImporter::GenerateSkeleton(gltfid, skeletons[1]);
 			meshes[1] = MeshData(&vertexLayout);
 			GltfImporter::GenerateMeshData(gltfid, meshes[1]);
+			MeshProcessor::RemoveUnusedBones(meshes[1], skeletons[1]);
 			SkinnedMesh& objectMesh = galleryObjects.back().AddComponent<SkinnedMesh>(&(meshes[1]), &meshMaterial, &(skeletons[1]));
 			for (int i = 0; i < skeletons[1].m_animations.size(); i++)
 				skeletons[1].AddNodeSingle(i);

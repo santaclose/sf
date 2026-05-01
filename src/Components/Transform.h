@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 
 namespace sf {
 
@@ -19,6 +20,36 @@ namespace sf {
 			outputMatrix *= rotationMatrix;
 			outputMatrix = glm::scale(outputMatrix, glm::vec3(scale, scale, scale));
 			return outputMatrix;
+		}
+
+		static inline Transform FromMatrix(const glm::mat4& matrix)
+		{
+			glm::vec3 scale, translation, skew;
+			glm::quat rotation;
+			glm::vec4 perspective;
+			bool succeeded = glm::decompose(matrix, scale, rotation, translation, skew, perspective);
+			assert(succeeded);
+			const float assertEpsilon = 0.001f;
+			assert(glm::abs(skew.x) < assertEpsilon &&
+				glm::abs(skew.y) < assertEpsilon &&
+				glm::abs(skew.z) < assertEpsilon); // we don't deal with skew
+			assert(glm::abs(perspective.x) < assertEpsilon &&
+				glm::abs(perspective.y) < assertEpsilon &&
+				glm::abs(perspective.z) < assertEpsilon &&
+				glm::abs(perspective.w - 1.0f) < assertEpsilon); // we don't deal with perspective
+			Transform output;
+			output.position = translation;
+			output.rotation = glm::normalize(rotation);
+			output.SetScale(scale);
+			return output;
+		}
+
+		inline void SetScale(const glm::vec3& newScale)
+		{
+			const float assertEpsilon = 0.001f;
+			assert(glm::abs(newScale.x - newScale.y) < assertEpsilon &&
+				glm::abs(newScale.x - newScale.z) < assertEpsilon); // we don't deal with non uniform scaaling
+			scale = newScale.x;
 		}
 
 		inline glm::vec3 Forward() const

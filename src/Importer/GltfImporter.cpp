@@ -8,7 +8,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/matrix_decompose.hpp>
 
 #include <FileUtils.h>
 #include <Animation.h>
@@ -357,7 +356,7 @@ namespace sf::GltfImporter
 		Transform& currentBoneTransform = skeleton.m_boneLocalTransforms.back();
 
 		if (model.nodes[node].scale.size() == 3)
-			currentBoneTransform.scale = glm::max(glm::max(model.nodes[node].scale[0], model.nodes[node].scale[1]), model.nodes[node].scale[2]);
+			currentBoneTransform.SetScale(glm::vec3(model.nodes[node].scale[0], model.nodes[node].scale[1], model.nodes[node].scale[2]));
 		if (model.nodes[node].translation.size() == 3)
 			currentBoneTransform.position = glm::make_vec3(model.nodes[node].translation.data());
 		if (model.nodes[node].rotation.size() == 4)
@@ -368,13 +367,7 @@ namespace sf::GltfImporter
 			assert(model.nodes[node].translation.size() != 3);
 			assert(model.nodes[node].rotation.size() != 4);
 			glm::mat4 tempmat = glm::make_mat4x4(model.nodes[node].matrix.data());
-			glm::vec3 scale, translation, skew;
-			glm::quat rotation;
-			glm::vec4 perspective;
-			glm::decompose(tempmat, scale, rotation, translation, skew, perspective);
-			currentBoneTransform.position = translation;
-			currentBoneTransform.rotation = rotation;
-			currentBoneTransform.scale = glm::max(glm::max(scale[0], scale[1]), scale[2]);
+			currentBoneTransform = Transform::FromMatrix(tempmat);
 		}
 
 		int currentBoneIndex = skeleton.m_boneData.size() - 1;
@@ -405,7 +398,7 @@ void sf::GltfImporter::GenerateSkeleton(int id, SkeletonData& skeleton, int inde
 	invModelMatricesTemp.resize(accessor.count);
 	memcpy(invModelMatricesTemp.data(), &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(glm::mat4));
 	for (size_t i = 0; i < model.skins[index].joints.size(); i++)
-		skeleton.m_boneData[nodeToBonePerModel[id][model.skins[index].joints[i]]].invModelMatrix = invModelMatricesTemp[i];
+		skeleton.m_boneData[nodeToBonePerModel[id][model.skins[index].joints[i]]].invModelTransform = Transform::FromMatrix(invModelMatricesTemp[i]);
 
 	std::cout << "[GltfImporter] Generated skeleton with " << skeleton.m_boneData.size() << " bones\n";
 

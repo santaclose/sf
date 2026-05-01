@@ -5,13 +5,14 @@
 #include <unordered_map>
 
 #include <Animation.h>
+#include <Components/Transform.h>
 
 namespace sf
 {
 	struct BoneData
 	{
 		int32_t parent = -1;
-		glm::mat4 invModelMatrix;
+		Transform invModelTransform;
 	};
 	struct BlendSpacePoint1DCreateInfo
 	{

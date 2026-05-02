@@ -1,16 +1,12 @@
 workspace "sf"
 	architecture "x64"
 	startproject "sf"
+	multiprocessorcompile "On"
 
 	configurations
 	{
 		"Debug",
 		"Release"
-	}
-	
-	flags
-	{
-		"MultiProcessorCompile"
 	}
 
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"

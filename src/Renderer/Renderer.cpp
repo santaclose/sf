@@ -854,15 +854,13 @@ void sf::Renderer::DebugDrawSkeleton(SkinnedMesh& mesh, Transform& transform)
 	for (uint32_t i = 0; i < mesh.skeletonData->m_boneData.size(); i++)
 	{
 		const BoneData* currentBone = &(mesh.skeletonData->m_boneData[i]);
+		Transform parentT = transform;
 		if (currentBone->parent >= 0)
-		{
-			Transform parentT = transform;
 			parentT.Apply(mesh.skeletonData->m_boneTransforms[currentBone->parent]);
-			Transform childT = transform;
-			childT.Apply(mesh.skeletonData->m_boneTransforms[i]);
-			float boneRatio = (float) i / (float) mesh.skeletonData->m_boneData.size();
-			AddLine(parentT.position, childT.position, glm::vec3(0.0f, 1.0f - boneRatio, boneRatio));
-		}
+		Transform childT = transform;
+		childT.Apply(mesh.skeletonData->m_boneTransforms[i]);
+		float boneRatio = (float) i / (float) mesh.skeletonData->m_boneData.size();
+		AddLine(parentT.position, childT.position, glm::vec3(0.0f, 1.0f - boneRatio, boneRatio));
 	}
 }
 

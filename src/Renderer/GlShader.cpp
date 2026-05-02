@@ -22,7 +22,7 @@ namespace
 				if (ifs.fail())
 					std::cout << "[GlShader] Could not read shader include file: " << filePath << std::endl;
 				std::string includeText((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
-				shaderSource = shaderSource.substr(0, i + 1) + includeText + shaderSource.substr(j + 1);
+				shaderSource = shaderSource.substr(0, i + 1) + "\n// INCLUDE BEGIN (" + filePath + ")\n" + includeText + "\n// INCLUDE END (" + filePath + ")\n" + shaderSource.substr(j + 1);
 			}
 		}
 	}

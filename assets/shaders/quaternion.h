@@ -6,7 +6,7 @@
 #define DTOR (PI/180.0)
 #endif
 
-vec3 QuatRotateVector(vec3 v, vec4 q)
+vec3 QuatRotateVector(vec4 q, vec3 v)
 {
 	vec3 u = vec3(q.r, q.g, q.b);
 	float s = q.a;
@@ -150,4 +150,86 @@ vec4 QuatSlerp(vec4 q1, vec4 q2, float t)
 		float angle = acos(cosTheta);
 		return (sin((1.0 - t) * angle) * q1 + sin(t * angle) * temp) / sin(angle);
 	}
+}
+
+// vec4 QuatAbs(vec4 q) {
+// 	return (q.w < 0.0) ? -q : q;
+// }
+
+// vec4 mat4_svd_dominant_eigen(
+// 	const mat4 A, 
+// 	const vec4 v0,
+// 	const int iterations, 
+// 	const float eps)
+// {
+// 	// Initial Guess at Eigen Vector & Value
+// 	vec4 v = v0;
+// 	float ev = ((A * v) / v).x;
+	
+// 	for (int i = 0; i < iterations; i++)
+// 	{
+// 		// Power Iteration
+// 		vec4 Av = (A * v);
+		
+// 		// Next Guess at Eigen Vector & Value
+// 		vec4 v_new = normalize(Av);
+// 		float ev_new = ((A * v_new) / v_new).x;
+		
+// 		// Break if converged
+// 		if (abs(ev - ev_new) < eps)
+// 		{
+// 			break;
+// 		}
+		
+// 		// Update best guess
+// 		v = v_new;
+// 		ev = ev_new;
+// 	}
+	
+// 	return v;
+// }
+
+vec4 QuatBlendAccurate(vec4 rotations[4], vec4 weights)
+{
+	vec3 finalUp = vec3(0.0), finalForward = vec3(0.0);
+	vec3 up[4], forward[4];
+	up[0] = up[1] = up[2] = up[3] = vec3(0.0, 1.0, 0.0);
+	forward[0] = forward[1] = forward[2] = forward[3] = vec3(0.0, 0.0, -1.0);
+	for (int i = 0; i < 4; i++)
+	{
+		up[i] = QuatRotateVector(rotations[i], up[i]);
+		forward[i] = QuatRotateVector(rotations[i], forward[i]);
+		finalUp += up[i] * weights[i];
+		finalForward += forward[i] * weights[i];
+	}
+	finalUp = normalize(finalUp);
+	finalForward = normalize(finalForward);
+
+	return QuatLookRotation(finalForward, finalUp);
+
+	// mat4 accum = mat4(0.0);
+	
+	// // Loop over rotations
+	// for (int i = 0; i < 4; i++)
+	// {
+	// 	vec4 q = rotations[i];
+
+	// 	// Compute the outer-product of the quaternion 
+	// 	// multiplied by the weight and add to the accumulator 
+	// 	accum = accum + mat4(
+	// 		q.w*q.x, q.w*q.y, q.w*q.z, q.w*q.w,
+	// 		q.x*q.x, q.x*q.y, q.x*q.z, q.x*q.w,
+	// 		q.y*q.x, q.y*q.y, q.y*q.z, q.y*q.w,
+	// 		q.z*q.x, q.z*q.y, q.z*q.z, q.z*q.w) * weights[i];
+	// }
+	
+	// // Initial guess at eigen vector is identity quaternion
+	// vec4 guess = vec4(0, 0, 0, 1);
+	
+	// // Compute first eigen vectoru
+	// vec4 u = mat4_svd_dominant_eigen(accum, guess, 64, 1e-8f);
+	// vec4 v = normalize(accum * u);
+	
+	// // Average quaternion is first eigen vector
+	// return QuatAbs(v);
 }

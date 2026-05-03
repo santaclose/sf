@@ -1,18 +1,18 @@
+#include <assets/shaders/shared.h>
+
 layout(location = 0) in mat3 fTBN;
 layout(location = 3) in vec3 fWorldPos;
 layout(location = 4) in vec2 fTexCoords;
 layout(location = 5) in float fVertexAo;
 
-#include <assets/shaders/shared.h>
-
 #define MAX_DIR_LIGHTS 10
 #define MAX_POINT_LIGHTS 10
 #define PI 3.14159265359
 
-layout (binding = 0) uniform SharedGpuData
+layout(binding = 0) uniform SharedGpuData
 {
-	mat4 modelMatrix;
 	mat4 cameraMatrix;
+	float modelTransform[8];
 	float cameraPositionX;
 	float cameraPositionY;
 	float cameraPositionZ;

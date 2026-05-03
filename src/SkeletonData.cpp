@@ -137,9 +137,8 @@ void sf::SkeletonData::UpdateAnimation(float deltaTime)
 			m_boneTransforms[i] = m_boneTransforms[currentBone->parent];
 			m_boneTransforms[i].Apply(m_boneLocalTransforms[i]);
 		}
-		Transform skinningTransform = m_boneTransforms[i];
-		skinningTransform.Apply(currentBone->invModelTransform);
-		m_skinningMatrices[i] = skinningTransform.ComputeMatrix();
+		m_skinningTransforms[i] = m_boneTransforms[i];
+		m_skinningTransforms[i].Apply(currentBone->invModelTransform);
 	}
 }
 

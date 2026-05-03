@@ -64,7 +64,7 @@ namespace sf
 		std::vector<Transform> m_boneLocalTransforms;
 		std::vector<Transform> m_boneTransforms;
 		std::vector<BoneData> m_boneData;
-		std::vector<glm::mat4> m_skinningMatrices;
+		std::vector<Transform> m_skinningTransforms;
 
 		std::vector<Animation::SkeletalAnimation> m_animations;
 

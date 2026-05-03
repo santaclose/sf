@@ -381,7 +381,7 @@ namespace sf::GltfImporter
 
 void sf::GltfImporter::GenerateSkeleton(int id, SkeletonData& skeleton, int index)
 {
-	assert(skeleton.m_boneLocalTransforms.size() == 0 && skeleton.m_boneTransforms.size() == 0 && skeleton.m_boneData.size() == 0 && skeleton.m_skinningMatrices.size() == 0 && skeleton.m_animations.size() == 0 && skeleton.m_nodes.size() == 0);
+	assert(skeleton.m_boneLocalTransforms.size() == 0 && skeleton.m_boneTransforms.size() == 0 && skeleton.m_boneData.size() == 0 && skeleton.m_skinningTransforms.size() == 0 && skeleton.m_animations.size() == 0 && skeleton.m_nodes.size() == 0);
 	tinygltf::Model& model = *(models[id]);
 
 	// generate skeleton
@@ -402,8 +402,8 @@ void sf::GltfImporter::GenerateSkeleton(int id, SkeletonData& skeleton, int inde
 
 	std::cout << "[GltfImporter] Generated skeleton with " << skeleton.m_boneData.size() << " bones\n";
 
-	// reserve space for skinning matrices
-	skeleton.m_skinningMatrices.resize(skeleton.m_boneData.size());
+	// reserve space for skinning transforms
+	skeleton.m_skinningTransforms.resize(skeleton.m_boneData.size());
 
 	// load animations
 	for (tinygltf::Animation& anim : model.animations)
@@ -515,7 +515,7 @@ void sf::GltfImporter::FreeSkeleton(SkeletonData& skeleton)
 	skeleton.m_boneLocalTransforms.clear();
 	skeleton.m_boneTransforms.clear();
 	skeleton.m_boneData.clear();
-	skeleton.m_skinningMatrices.clear();
+	skeleton.m_skinningTransforms.clear();
 	skeleton.m_animations.clear();
 	skeleton.m_nodes.clear();
 }

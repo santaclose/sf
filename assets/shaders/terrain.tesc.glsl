@@ -10,8 +10,8 @@ out TCS_OUT {
 
 layout(binding = 0) uniform SharedGpuData
 {
-	mat4 modelMatrix;
 	mat4 cameraMatrix;
+	float modelTransform[8];
 	float cameraPositionX;
 	float cameraPositionY;
 	float cameraPositionZ;

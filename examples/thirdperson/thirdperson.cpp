@@ -107,6 +107,34 @@ namespace sf
 
 	void Game::Initialize(int argc, char** argv)
 	{
+		{
+			printf("----------\n");
+			Transform a;
+			a.position = glm::vec3(0.0f, 1.0f, 0.0f);
+			a.rotation = glm::quat(glm::vec3(0.0f, 0.0f, 0.5f));
+
+			Transform b;
+			b.position = glm::vec3(0.0f, 1.0f, 0.0f);
+			b.rotation = glm::quat(glm::vec3(0.0f, 0.0f, -0.5f));
+
+			printf("a: %f %f %f - %f %f %f %f - %f\n", a.position.x, a.position.y, a.position.z, a.rotation.x, a.rotation.y, a.rotation.z, a.rotation.w, a.scale);
+			printf("b: %f %f %f - %f %f %f %f - %f\n", b.position.x, b.position.y, b.position.z, b.rotation.x, b.rotation.y, b.rotation.z, b.rotation.w, b.scale);
+
+			glm::mat4 am = a.ComputeMatrix();
+			glm::mat4 bm = b.ComputeMatrix();
+
+			glm::mat4 interpolated = 0.5f * am + 0.5f * bm;
+			glm::vec3 scale, translation, skew;
+			glm::quat rotation;
+			glm::vec4 perspective;
+			bool succeeded = glm::decompose(interpolated, scale, rotation, translation, skew, perspective);
+			assert(succeeded);
+			printf("scale: %f %f %f\n", scale.x, scale.y, scale.z);
+			printf("perspective: %f %f %f %f\n", perspective.x, perspective.y, perspective.z, perspective.w);
+			printf("skew: %f %f %f\n", skew.x, skew.y, skew.z);
+
+			printf("----------\n");
+		}
 		FileUtils::CreateFolder("assets/examples");
 		FileUtils::DownloadFiles({
 			"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Fox/glTF-Binary/Fox.glb",

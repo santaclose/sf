@@ -105,7 +105,7 @@ namespace sf
 	{
 		modelBaseRotation = glm::vec3(-90.0f, 0.0f, 0.0f);
 		ExampleViewer::Initialize(scene);
-		OpenFile("examples/thirdperson/Fox.glb");
+		OpenFile("../catGameMaybe/catTextured.glb");
 	}
 
 	void Game::Terminate()

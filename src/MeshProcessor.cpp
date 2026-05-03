@@ -448,7 +448,7 @@ void sf::MeshProcessor::RemoveUnusedBones(MeshData& mesh, SkeletonData& skeleton
 		if (skeleton.m_boneData[i].parent != -1)
 			newBoneData[targetBone].parent = boneRemapping[skeleton.m_boneData[i].parent];
 	}
-	skeleton.m_skinningMatrices.resize(newBoneIndex);
+	skeleton.m_skinningTransforms.resize(newBoneIndex);
 	for (Animation::SkeletalAnimation& sa : skeleton.m_animations)
 	{
 		for (Animation::Channel& ch : sa.channels)

@@ -92,8 +92,8 @@ namespace sf::Renderer
 
 	struct SharedGpuData
 	{
-		glm::mat4 modelMatrix;
 		glm::mat4 cameraMatrix;
+		Transform modelTransform;
 		glm::vec3 cameraPosition;
 		glm::vec2 windowSize;
 	};
@@ -494,7 +494,8 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 	if (mesh.meshData != nullptr && mesh.meshData->vertexCount == 0)
 		return;
 
-	sharedGpuData.modelMatrix = transform.ComputeMatrix();
+	// sharedGpuData.modelMatrix = transform.ComputeMatrix();
+	sharedGpuData.modelTransform = transform;
 	glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
 
@@ -556,12 +557,13 @@ void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 	if (meshGpuData.find(mesh.meshData) == meshGpuData.end()) // create mesh data if not there
 		CreateMeshGpuData(mesh.meshData);
 
-	sharedGpuData.modelMatrix = transform.ComputeMatrix();
+	// sharedGpuData.modelMatrix = transform.ComputeMatrix();
+	sharedGpuData.modelTransform = transform;
 	glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
 
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, skeletonSsbos[mesh.skeletonData]);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, mesh.skeletonData->m_skinningMatrices.size() * sizeof(glm::mat4), &(mesh.skeletonData->m_skinningMatrices[0][0][0]), GL_DYNAMIC_DRAW);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, mesh.skeletonData->m_skinningTransforms.size() * sizeof(Transform), mesh.skeletonData->m_skinningTransforms.data(), GL_DYNAMIC_DRAW);
 
 	for (uint32_t i = 0; i < mesh.meshData->pieceCount; i++)
 	{
@@ -602,7 +604,8 @@ void sf::Renderer::DrawParticleSystem(ParticleSystem& particleSystem, Transform&
 	{
 		materialToUse->Bind(rendererUniformVector);
 
-		sharedGpuData.modelMatrix = transform.ComputeMatrix();
+		// sharedGpuData.modelMatrix = transform.ComputeMatrix();
+		sharedGpuData.modelTransform = transform;
 		glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
 
@@ -682,7 +685,8 @@ void sf::Renderer::DrawParticleSystem(ParticleSystem& particleSystem, Transform&
 		materialToUse->m_shader->SetUniform1f("PARTICLE_CYCLE_TIME", particleSystemData[&particleSystem].cycleCurrentTime);
 		materialToUse->m_shader->SetUniform1f("PARTICLE_LIFETIME", cycleTotalTime);
 
-		sharedGpuData.modelMatrix = transform.ComputeMatrix();
+		// sharedGpuData.modelMatrix = transform.ComputeMatrix();
+		sharedGpuData.modelTransform = transform;
 		glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
 

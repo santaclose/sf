@@ -31,9 +31,9 @@ project "sf"
 	files
 	{
 		-- one example project
-		"examples/spaceship/**.h",
-		"examples/spaceship/**.hpp",
-		"examples/spaceship/**.cpp",
+		"examples/thirdperson/**.h",
+		"examples/thirdperson/**.hpp",
+		"examples/thirdperson/**.cpp",
 
 		"src/**.h",
 		"src/**.hpp",
@@ -47,6 +47,7 @@ project "sf"
 		"vendor/sfmg/*.cpp",
 		"vendor/nanosvg/*.cpp",
 		"vendor/sebtext/*.cpp",
+		"vendor/imnodes/*.cpp",
 		"vendor/vendor.cpp"
 	}
 

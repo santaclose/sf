@@ -6,7 +6,7 @@
 #define DTOR (PI/180.0)
 #endif
 
-vec3 QuatRotateVector(vec3 v, vec4 q)
+vec3 QuatRotateVector(vec4 q, vec3 v)
 {
 	vec3 u = vec3(q.r, q.g, q.b);
 	float s = q.a;

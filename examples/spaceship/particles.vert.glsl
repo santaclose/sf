@@ -32,5 +32,5 @@ void main()
 	particleOpacity *= 0.2f;
 	particleUV = VA_UV;
 
-	gl_Position = cameraMatrix * vec4(particlePosition + QuatRotateVector(VA_Position * particleScale, particleRotation), 1.0);
+	gl_Position = cameraMatrix * vec4(particlePosition + QuatRotateVector(particleRotation, VA_Position * particleScale), 1.0);
 }

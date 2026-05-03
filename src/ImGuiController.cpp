@@ -43,6 +43,9 @@ void sf::ImGuiController::Initialize(Window& window)
 
 void sf::ImGuiController::Terminate()
 {
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
 }
 
 bool sf::ImGuiController::HasControl()

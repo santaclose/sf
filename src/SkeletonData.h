@@ -11,6 +11,7 @@ namespace sf
 {
 	struct BoneData
 	{
+		const char* name;
 		int32_t parent = -1;
 		Transform invModelTransform;
 	};

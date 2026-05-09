@@ -398,7 +398,11 @@ void sf::GltfImporter::GenerateSkeleton(int id, SkeletonData& skeleton, int inde
 	invModelMatricesTemp.resize(accessor.count);
 	memcpy(invModelMatricesTemp.data(), &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(glm::mat4));
 	for (size_t i = 0; i < model.skins[index].joints.size(); i++)
-		skeleton.m_boneData[nodeToBonePerModel[id][model.skins[index].joints[i]]].invModelTransform = Transform::FromMatrix(invModelMatricesTemp[i]);
+	{
+		BoneData& targetBoneData = skeleton.m_boneData[nodeToBonePerModel[id][model.skins[index].joints[i]]];
+		targetBoneData.invModelTransform = Transform::FromMatrix(invModelMatricesTemp[i]);
+		targetBoneData.name = model.nodes[model.skins[index].joints[i]].name.c_str();
+	}
 
 	std::cout << "[GltfImporter] Generated skeleton with " << skeleton.m_boneData.size() << " bones\n";
 

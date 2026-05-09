@@ -112,6 +112,11 @@ void sf::SkeletonData::UpdateAnimation(float deltaTime)
 		}
 	}
 
+	PropagateLocalTransforms();
+}
+
+void sf::SkeletonData::PropagateLocalTransforms()
+{
 	// Update entity space bone transforms and skinning matrices
 	TwoBoneIkData* nextIkLeafToRotateData = nullptr;
 	for (uint32_t i = 0; i < m_boneData.size(); i++)

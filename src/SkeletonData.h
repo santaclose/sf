@@ -47,6 +47,7 @@ namespace sf
 		inline void SetBlendSpace2DPosition(uint32_t node, const glm::vec2& pos) { assert(m_nodes[node].single.type == Animation::NodeType::BlendSpace2D); m_nodes[node].bs2d.pos = pos; }
 
 		void UpdateAnimation(float deltaTime);
+		void PropagateLocalTransforms();
 		void SolveTwoBoneIK(const TwoBoneIkData& ikData);
 		void RotateLeafIK(const TwoBoneIkData& ikData);
 

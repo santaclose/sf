@@ -1,5 +1,7 @@
 #include <imgui.h>
+#include <imnodes.h>
 #include <iostream>
+#include <unordered_map>
 
 #include <Game.h>
 #include <MeshProcessor.h>
@@ -20,15 +22,19 @@
 #include <Components/Transform.h>
 
 #include "../Viewer.hpp"
+#include "retargetNodes.h"
 
 namespace sf
 {
 	namespace Game
 	{
 		Scene scene;
-		Entity modelEntity;
-		SkeletonData* modelSkeleton;
-		MeshData* modelMesh;
+
+		Entity inputModelEntity, outputModelEntity;
+		SkeletonData* inputModelSkeleton, *outputModelSkeleton;
+		MeshData* inputModelMesh, *outputModelMesh;
+		std::vector<const char*> inputAnimNames, outputAnimNames;
+
 		Material modelMaterial;
 		BufferLayout modelVertexLayout = BufferLayout({
 			BufferComponent::Position,
@@ -36,63 +42,94 @@ namespace sf
 			BufferComponent::BoneIndices,
 			BufferComponent::BoneWeights
 		});
-		glm::vec3 modelBaseRotation;
 
-		float animSpeedSelection = 1.0f;
-		int animSelection = 0;
-		std::vector<const char*> animNames;
-		std::vector<BlendSpacePoint1DCreateInfo> bs1dpoints;
-		std::vector<BlendSpacePoint2DCreateInfo> bs2dpoints;
-		std::vector<std::pair<float, float>> bs1dPosMinMax;
-		std::vector<std::pair<glm::vec2, glm::vec2>> bs2dPosMinMax;
+		Transform inputModelBaseTransform, outputModelBaseTransform;
+		glm::vec3 inputModelBaseRotHelper = glm::vec3(0.0f);
+		glm::vec3 outputModelBaseRotHelper = glm::vec3(0.0f);
 
-		void ComputeBs1dMinMaxPos(int node)
+		struct Link
 		{
-			bs1dPosMinMax[node].first = bs1dPosMinMax[node].second = modelSkeleton->m_nodes[node].bs1d.points[0].pos;
-			for (int k = 1; k < modelSkeleton->m_nodes[node].bs1d.pointCount; k++)
-			{
-				if (modelSkeleton->m_nodes[node].bs1d.points[k].pos < bs1dPosMinMax[node].first)
-					bs1dPosMinMax[node].first = modelSkeleton->m_nodes[node].bs1d.points[k].pos;
-				if (modelSkeleton->m_nodes[node].bs1d.points[k].pos > bs1dPosMinMax[node].second)
-					bs1dPosMinMax[node].second = modelSkeleton->m_nodes[node].bs1d.points[k].pos;
-			}
+			int id, a, b;
+		};
+		std::vector<RetargetNode*> editorNodes;
+		std::vector<Link> editorLinks;
+		int FindNewNodeId()
+		{
+			for (int i = 0; i < editorNodes.size(); i++)
+				if (editorNodes[i] == nullptr)
+					return i;
+			editorNodes.push_back(nullptr);
+			return (int) (editorNodes.size() - 1);
+
+		}
+		int FindNewLinkId()
+		{
+			for (int i = 0; i < editorLinks.size(); i++)
+				if (editorLinks[i].id == -1)
+					return i;
+			editorLinks.emplace_back();
+			return (int) (editorLinks.size() - 1);
 		}
 
-		void ComputeBs2dMinMaxPos(int node)
+		void OpenFile(const char* filePath, Entity& entity, SkeletonData*& sd, MeshData*& md, std::vector<const char*>& animNames, bool isInputModel)
 		{
-			bs2dPosMinMax[node].first = bs2dPosMinMax[node].second = modelSkeleton->m_nodes[node].bs2d.points[0].pos;
-			for (int k = 1; k < modelSkeleton->m_nodes[node].bs2d.pointCount; k++)
-			{
-				if (modelSkeleton->m_nodes[node].bs2d.points[k].pos.x < bs2dPosMinMax[node].first.x)
-					bs2dPosMinMax[node].first.x = modelSkeleton->m_nodes[node].bs2d.points[k].pos.x;
-				if (modelSkeleton->m_nodes[node].bs2d.points[k].pos.y < bs2dPosMinMax[node].first.y)
-					bs2dPosMinMax[node].first.y = modelSkeleton->m_nodes[node].bs2d.points[k].pos.y;
-				if (modelSkeleton->m_nodes[node].bs2d.points[k].pos.x > bs2dPosMinMax[node].second.x)
-					bs2dPosMinMax[node].second.x = modelSkeleton->m_nodes[node].bs2d.points[k].pos.x;
-				if (modelSkeleton->m_nodes[node].bs2d.points[k].pos.y > bs2dPosMinMax[node].second.y)
-					bs2dPosMinMax[node].second.y = modelSkeleton->m_nodes[node].bs2d.points[k].pos.y;
-			}
-		}
-
-		void OpenFile(const char* filePath)
-		{
-			if (modelEntity)
-				scene.DestroyEntity(modelEntity);
-			modelEntity = scene.CreateEntity();
-			modelEntity.AddComponent<Transform>();
-
-			modelMaterial.vertShaderFilePath = "assets/shaders/default.vert";
-			modelMaterial.fragShaderFilePath = "assets/shaders/default.frag";
-			modelSkeleton = new SkeletonData();
-			modelMesh = new MeshData(&modelVertexLayout);
+			if (entity)
+				scene.DestroyEntity(entity);
+			entity = scene.CreateEntity();
+			entity.AddComponent<Transform>();
+			sd = new SkeletonData();
+			md = new MeshData(&modelVertexLayout);
 			uint32_t gltfid = GltfImporter::Load(filePath);
-			GltfImporter::GenerateSkeleton(gltfid, *modelSkeleton);
-			GltfImporter::GenerateMeshData(gltfid, *modelMesh);
-			MeshProcessor::RemoveUnusedBones(*modelMesh, *modelSkeleton);
-			modelEntity.AddComponent<SkinnedMesh>(modelMesh, &modelMaterial, modelSkeleton);
-			animNames.resize(modelSkeleton->m_animations.size());
-			for (int i = 0; i < modelSkeleton->m_animations.size(); i++)
-				animNames[i] = modelSkeleton->m_animations[i].name;
+			GltfImporter::GenerateSkeleton(gltfid, *sd);
+			GltfImporter::GenerateMeshData(gltfid, *md);
+			MeshProcessor::ComputeNormals(*md);
+			MeshProcessor::RemoveUnusedBones(*md, *sd);
+			entity.AddComponent<SkinnedMesh>(md, &modelMaterial, sd);
+			if (isInputModel)
+			{
+				animNames.resize(sd->m_animations.size());
+				for (int i = 0; i < sd->m_animations.size(); i++)
+					animNames[i] = sd->m_animations[i].name;
+				editorNodes.push_back(new RetargetNode());
+				RetargetNodeInitialize(RetargetNodeType::InputBones, *editorNodes.back());
+				editorNodes.back()->inputBones.localTransforms = &sd->m_boneLocalTransforms;
+				editorNodes.back()->inputBones.boneNames = (const char**)calloc(sd->m_boneData.size(), sizeof(char*));
+				for (int i = 0; i < sd->m_boneData.size(); i++)
+					editorNodes.back()->inputBones.boneNames[i] = sd->m_boneData[i].name;
+			}
+			else // is output model file
+			{
+				animNames.resize(sd->m_animations.size());
+				for (int i = 0; i < sd->m_animations.size(); i++)
+					animNames[i] = sd->m_animations[i].name;
+				editorNodes.push_back(new RetargetNode());
+				RetargetNodeInitialize(RetargetNodeType::OutputBones, *editorNodes.back());
+				editorNodes.back()->outputBones.localTransforms = &sd->m_boneLocalTransforms;
+				editorNodes.back()->outputBones.boneNames = (const char**)calloc(sd->m_boneData.size(), sizeof(char*));
+				editorNodes.back()->outputBones.inputPos = (const glm::vec3**)calloc(sd->m_boneLocalTransforms.size(), sizeof(glm::vec3*));
+				editorNodes.back()->outputBones.inputRot = (const glm::quat**)calloc(sd->m_boneLocalTransforms.size(), sizeof(glm::quat*));
+				editorNodes.back()->outputBones.inputScale = (const float**)calloc(sd->m_boneLocalTransforms.size(), sizeof(float*));
+				for (int i = 0; i < sd->m_boneData.size(); i++)
+					editorNodes.back()->outputBones.boneNames[i] = sd->m_boneData[i].name;
+				return;
+			}
+		}
+
+		void ExecuteNodeAndDependants(int nodeId)
+		{
+			static std::vector<int> activationQueue;
+			activationQueue.clear();
+			int currentQueueIndex = 0;
+			int currentNode;
+			activationQueue.push_back(nodeId);
+			while (currentQueueIndex < activationQueue.size())
+			{
+				currentNode = activationQueue[currentQueueIndex];
+				currentQueueIndex++;
+				RetargetNodeRun(editorNodes[currentNode][0]);
+				for (int i = 0; editorNodes[currentNode][0].inputQuat.nodesToTheRight[i] != -1; i++)
+					activationQueue.push_back(editorNodes[currentNode][0].inputQuat.nodesToTheRight[i]);
+			}
 		}
 	}
 
@@ -103,145 +140,238 @@ namespace sf
 
 	void Game::Initialize(int argc, char** argv)
 	{
-		modelBaseRotation = glm::vec3(-90.0f, 0.0f, 0.0f);
+		modelMaterial.vertShaderFilePath = "assets/shaders/default.vert";
+		modelMaterial.fragShaderFilePath = "assets/shaders/default.frag";
+
 		ExampleViewer::Initialize(scene);
-		OpenFile("examples/thirdperson/Fox.glb");
+
+		OpenFile("assets/examples/Fox.glb", inputModelEntity, inputModelSkeleton, inputModelMesh, inputAnimNames, true);
+		OpenFile("/home/san/catGameMaybe/catTextured.glb", outputModelEntity, outputModelSkeleton, outputModelMesh, outputAnimNames, false);
+
+		inputModelBaseTransform.scale = 0.02f;
+		inputModelBaseTransform.position.z = -1.5f;
+		outputModelBaseTransform.position.z = 1.5f;
+		outputModelBaseTransform.rotation = glm::quat(glm::radians(glm::vec3(-90.0f, 0.0f, 0.0f)));
+		inputModelEntity.GetComponent<Transform>() = inputModelBaseTransform;
+		outputModelEntity.GetComponent<Transform>() = outputModelBaseTransform;
 	}
 
 	void Game::Terminate()
 	{
-		scene.DestroyEntity(modelEntity);
+		scene.DestroyEntity(outputModelEntity);
+		scene.DestroyEntity(inputModelEntity);
 		ExampleViewer::Terminate(scene);
 	}
 
 	void Game::OnUpdate(float deltaTime, float time)
 	{
 		ExampleViewer::UpdateCamera(deltaTime);
-		if (modelEntity)
+		if (inputModelEntity)
+			inputModelSkeleton->UpdateAnimation(deltaTime);
+		if (inputModelEntity && outputModelEntity)
 		{
-			modelEntity.GetComponent<Transform>().rotation = glm::quat(modelBaseRotation * Math::DTOR);
-			modelSkeleton->UpdateAnimation(deltaTime);
+			outputModelSkeleton->UpdateAnimation(deltaTime);
+			ExecuteNodeAndDependants(0); // zero is input bones node
+			for (int i = 0; i < editorNodes.size(); i++)
+				if (editorNodes[i] != nullptr && editorNodes[i]->inputQuat.type == RetargetNodeType::InputQuat)
+					ExecuteNodeAndDependants(i); // nodes with no dependencies
+
+			// update output skeleton
+			outputModelSkeleton->PropagateLocalTransforms();
 		}
 	}
 
 	void Game::ImGuiCall()
 	{
+		ImGui::Begin("node editor");
+
+		ImNodes::BeginNodeEditor();
+		for (int i = 0; i < editorNodes.size(); i++)
+		{
+			if (editorNodes[i] != nullptr)
+				RetargetNodeImGui(i, *editorNodes[i]);
+		}
+		for (const Link& link : editorLinks)
+		{
+			if (link.id != -1)
+				ImNodes::Link(link.id, link.a, link.b);
+		}
+		ImNodes::MiniMap(0.2f, ImNodesMiniMapLocation_BottomRight);
+		ImNodes::EndNodeEditor();
+
+		int start_attr, end_attr;
+		if (ImNodes::IsLinkCreated(&start_attr, &end_attr))
+		{
+			int nodeA = start_attr / 1000;
+			int pinA = start_attr % 1000;
+			int nodeB = end_attr / 1000;
+			int pinB = end_attr % 1000;
+
+			// check type match before creating
+			if (RetargetGetPinType(*editorNodes[nodeA], pinA) == RetargetGetPinType(*editorNodes[nodeB], pinB))
+			{
+				int newLinkId = FindNewLinkId();
+				editorLinks[newLinkId] = { newLinkId, start_attr, end_attr };
+
+				const void* pointerFromNodeA = RetargetNodeGetOutput(editorNodes[nodeA][0], pinA);
+				RetargetNodeSetInput(editorNodes[nodeB][0], pinB, pointerFromNodeA);
+				RetargetNodeAddToRight(editorNodes[nodeA][0], nodeB);
+			}
+		}
+
+		if (ImGui::IsKeyPressed(ImGuiKey_Delete) || ImGui::IsKeyPressed(ImGuiKey_Backspace))
+		{
+			int count = ImNodes::NumSelectedLinks();
+			int* selected_links = (int*) alloca(sizeof(int) * count);
+			ImNodes::GetSelectedLinks(selected_links);
+			for (int i = 0; i < count; i++)
+			{
+				if (editorLinks[selected_links[i]].id == -1)
+					continue;
+
+				int nodeA = editorLinks[selected_links[i]].a / 1000;
+				int pinA = editorLinks[selected_links[i]].a % 1000;
+				int nodeB = editorLinks[selected_links[i]].b / 1000;
+				int pinB = editorLinks[selected_links[i]].b % 1000;
+
+				RetargetNodeSetInput(editorNodes[nodeB][0], pinB, nullptr);
+				RetargetNodeRemoveFromRight(editorNodes[nodeA][0], nodeB);
+				editorLinks[selected_links[i]].id = -1;
+			}
+			count = ImNodes::NumSelectedNodes();
+			int* selected_nodes = (int*) alloca(sizeof(int) * count);
+			ImNodes::GetSelectedNodes(selected_nodes);
+			for (int i = 0; i < count; i++)
+			{
+				int selectedNode = selected_nodes[i];
+				if (editorNodes[selectedNode] == nullptr)
+					continue;
+				if (editorNodes[selectedNode]->inputQuat.type == RetargetNodeType::InputBones)
+					continue;
+				if (editorNodes[selectedNode]->inputQuat.type == RetargetNodeType::OutputBones)
+					continue;
+				for (int j = 0; j < editorLinks.size(); j++)
+				{
+					if (editorLinks[j].id == -1)
+						continue;
+
+					int nodeA = editorLinks[j].a / 1000;
+					int pinA = editorLinks[j].a % 1000;
+					int nodeB = editorLinks[j].b / 1000;
+					int pinB = editorLinks[j].b % 1000;
+
+					if (selectedNode == nodeA)
+					{
+						RetargetNodeSetInput(editorNodes[nodeB][0], pinB, nullptr);
+						editorLinks[j].id = -1;
+					}
+					if (selectedNode == nodeB)
+					{
+						RetargetNodeRemoveFromRight(editorNodes[nodeA][0], nodeB);
+						editorLinks[j].id = -1;
+					}
+				}
+				delete editorNodes[selectedNode];
+				editorNodes[selectedNode] = nullptr;
+			}
+		}
+		if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+		{
+			ImGui::OpenPopup("node_create_menu");
+		}
+		if (ImGui::BeginPopup("node_create_menu"))
+		{
+			RetargetNodeType newNodeType = RetargetNodeType::INVALID;
+			if (ImGui::MenuItem("Quaternion from euler"))
+				newNodeType = RetargetNodeType::InputQuat;
+			else if (ImGui::MenuItem("Multiply quaternions"))
+				newNodeType = RetargetNodeType::QuatMultiply;
+			else if (ImGui::MenuItem("Slerp"))
+				newNodeType = RetargetNodeType::Slerp;
+			else if (ImGui::MenuItem("Scale vector"))
+				newNodeType = RetargetNodeType::ScaleVector;
+			else if (ImGui::MenuItem("Rotation sandwich"))
+				newNodeType = RetargetNodeType::RotSandwich;
+
+			if (newNodeType != RetargetNodeType::INVALID)
+			{
+				int newNodeId = FindNewNodeId();
+				editorNodes[newNodeId] = new RetargetNode();
+				RetargetNodeInitialize(newNodeType, editorNodes[newNodeId][0]);
+
+				ImNodes::SetNodeScreenSpacePos(newNodeId, ImGui::GetMousePos());
+			}
+
+			ImGui::EndPopup();
+		}
+
+		ImGui::End();
+
 		if (ImGui::BeginMainMenuBar())
 		{
 			if (ImGui::BeginMenu("File"))
 			{
-				if (ImGui::MenuItem("Open", "Ctrl+O")) { OpenFile("examples/thirdperson/shanyung_blendspace2d.glb"); }
+				ImGui::PushID("inputModelSection");
+				ImGui::TextUnformatted("Input model");
+				static char inputModelTextFieldBuffer[256];
+				ImGui::InputText("Path", inputModelTextFieldBuffer, 256);
+				if (ImGui::Button("Load"))
+					OpenFile(inputModelTextFieldBuffer, inputModelEntity, inputModelSkeleton, inputModelMesh, inputAnimNames, true);
+				ImGui::PopID();
+
+				ImGui::Separator();
+
+				ImGui::PushID("outputModelSection");
+				ImGui::TextUnformatted("Output model");
+				static char outputModelTextFieldBuffer[256];
+				ImGui::InputText("Path", outputModelTextFieldBuffer, 256);
+				if (ImGui::Button("Load"))
+					OpenFile(outputModelTextFieldBuffer, outputModelEntity, outputModelSkeleton, outputModelMesh, outputAnimNames, false);
+				ImGui::PopID();
+
 				ImGui::EndMenu();
 			}
 			ImGui::EndMainMenuBar();
 		}
 
-		if (modelEntity)
+		if (inputModelEntity)
 		{
-			ImGui::Begin("Animation");
-			ImGui::InputFloat3("Base rotation", &modelBaseRotation.x);
-			ImGui::Checkbox("Animate", &modelSkeleton->m_animate);
+			ImGui::Begin("Input model");
+			bool setPosition, setRotation, setScale;
+			setPosition = ImGui::DragFloat3("Base position", &inputModelBaseTransform.position.x);
+			setRotation = ImGui::DragFloat3("Base rotation", &inputModelBaseRotHelper.x);
+			setScale = ImGui::DragFloat("Base scale", &inputModelBaseTransform.scale);
+			ImGui::Checkbox("Animate", &inputModelSkeleton->m_animate);
+			if (setRotation || setScale || setPosition)
+			{
+				inputModelBaseTransform.rotation = glm::quat(glm::radians(inputModelBaseRotHelper));
+				inputModelEntity.GetComponent<Transform>() = inputModelBaseTransform;
+			}
 
 			if (ImGui::CollapsingHeader("Add single animation node"))
 			{
+				static int animSelection;
 				ImGui::PushID("singleSection");
-				ImGui::Combo("Animation", &animSelection, animNames.data(), animNames.size());
+				ImGui::Combo("Animation", &animSelection, inputAnimNames.data(), inputAnimNames.size());
 				if (ImGui::Button("Add single animation node"))
-					modelSkeleton->AddNodeSingle((uint32_t)animSelection, 1.0f);
-				ImGui::PopID();
-			}
-			if (ImGui::CollapsingHeader("Add blendspace 1d node"))
-			{
-				ImGui::PushID("blendspace1dSection");
-				ImGui::Combo("Animation", &animSelection, animNames.data(), animNames.size());
-				if (ImGui::Button("Add blendspace 1d point"))
-					bs1dpoints.push_back({ (uint32_t)animSelection, 1.0f, (float)bs1dpoints.size() });
-				{
-					for (int i = 0; i < bs1dpoints.size(); i++)
-						ImGui::Text(animNames[bs1dpoints[i].animationIndex]);
-				}
-				if (ImGui::Button("Add blendspace 1d node"))
-				{
-					modelSkeleton->AddNodeBlendSpace1D(bs1dpoints, 0.0f);
-					bs1dPosMinMax.resize(modelSkeleton->m_nodes.size());
-					ComputeBs1dMinMaxPos(modelSkeleton->m_nodes.size() - 1);
-					bs1dpoints.clear();
-				}
-				ImGui::PopID();
-			}
-			if (ImGui::CollapsingHeader("Add blendspace 2d node"))
-			{
-				ImGui::PushID("blendspace2dSection");
-				ImGui::Combo("Animation", &animSelection, animNames.data(), animNames.size());
-				if (ImGui::Button("Add blendspace 2d point"))
-					bs2dpoints.push_back({ (uint32_t)animSelection, 1.0f, { glm::cos((float)bs2dpoints.size()), glm::sin((float)bs2dpoints.size()) } });
-				{
-					for (int i = 0; i < bs2dpoints.size(); i++)
-						ImGui::Text(animNames[bs2dpoints[i].animationIndex]);
-				}
-				if (ImGui::Button("Add blendspace 2d node"))
-				{
-					modelSkeleton->AddNodeBlendSpace2D(bs2dpoints, { 0.0f, 0.0f });
-					bs2dPosMinMax.resize(modelSkeleton->m_nodes.size());
-					ComputeBs2dMinMaxPos(modelSkeleton->m_nodes.size() - 1);
-					bs2dpoints.clear();
-				}
+					inputModelSkeleton->AddNodeSingle((uint32_t)animSelection, 1.0f);
 				ImGui::PopID();
 			}
 
-			ImGui::Text("Node count: %u", modelSkeleton->m_nodes.size());
+			ImGui::Text("Node count: %u", inputModelSkeleton->m_nodes.size());
 			if (ImGui::CollapsingHeader("Existing nodes"))
 			{
-				for (int i = 0; i < modelSkeleton->m_nodes.size(); i++)
+				for (int i = 0; i < inputModelSkeleton->m_nodes.size(); i++)
 				{
 					ImGui::PushID(i);
-					switch (modelSkeleton->m_nodes[i].single.type)
+					switch (inputModelSkeleton->m_nodes[i].single.type)
 					{
 					case Animation::NodeType::Single:
-						if (ImGui::CollapsingHeader(modelSkeleton->m_nodes[i].single.animation->name))
+						if (ImGui::CollapsingHeader(inputModelSkeleton->m_nodes[i].single.animation->name))
 						{
-							ImGui::Text("%s:", modelSkeleton->m_nodes[i].single.animation->name);
-							ImGui::DragFloat("Weight", &modelSkeleton->m_nodes[i].single.weight, 0.01f);
-							ImGui::DragFloat("Speed", &modelSkeleton->m_nodes[i].single.speed, 0.01f);
-						}
-						break;
-					case Animation::NodeType::BlendSpace1D:
-						if (ImGui::CollapsingHeader("BlendSpace1D"))
-						{
-							ImGui::DragFloat("Weight", &modelSkeleton->m_nodes[i].bs1d.weight, 0.01f);
-							ImGui::DragFloat("Position", &modelSkeleton->m_nodes[i].bs1d.pos, 0.01f);
-							ImGui::Text("Point count: %u", modelSkeleton->m_nodes[i].bs1d.pointCount);
-							for (int j = 0; j < modelSkeleton->m_nodes[i].bs1d.pointCount; j++)
-							{
-								ImGui::PushID(j);
-								ImGui::Text("%s:", modelSkeleton->m_nodes[i].bs1d.points[j].animation->name);
-								ImGui::DragFloat("Speed", &modelSkeleton->m_nodes[i].bs1d.points[j].speed, 0.01f);
-								if (ImGui::DragFloat("Position", &modelSkeleton->m_nodes[i].bs1d.points[j].pos, 0.01f))
-								{
-									ComputeBs1dMinMaxPos(i);
-								}
-								ImGui::PopID();
-							}
-						}
-						break;
-					case Animation::NodeType::BlendSpace2D:
-						if (ImGui::CollapsingHeader("BlendSpace2D"))
-						{
-							ImGui::DragFloat("Weight", &modelSkeleton->m_nodes[i].bs2d.weight, 0.01f);
-							ImGui::DragFloat2("Position", &modelSkeleton->m_nodes[i].bs2d.pos.x, 0.01f);
-							ImGui::Text("Point count: %u", modelSkeleton->m_nodes[i].bs2d.pointCount);
-							for (int j = 0; j < modelSkeleton->m_nodes[i].bs2d.pointCount; j++)
-							{
-								ImGui::PushID(j);
-								ImGui::Text("%s:", modelSkeleton->m_nodes[i].bs2d.points[j].animation->name);
-								ImGui::DragFloat("Speed", &modelSkeleton->m_nodes[i].bs2d.points[j].speed, 0.01f);
-								if (ImGui::DragFloat2("Position", &modelSkeleton->m_nodes[i].bs2d.points[j].pos.x, 0.01f))
-								{
-									modelSkeleton->m_nodes[i].bs2d.needsToComputeBlendMatrix = true;
-									ComputeBs2dMinMaxPos(i);
-								}
-								ImGui::PopID();
-							}
+							ImGui::Text("%s:", inputModelSkeleton->m_nodes[i].single.animation->name);
+							ImGui::DragFloat("Weight", &inputModelSkeleton->m_nodes[i].single.weight, 0.01f);
+							ImGui::DragFloat("Speed", &inputModelSkeleton->m_nodes[i].single.speed, 0.01f);
 						}
 						break;
 					}
@@ -249,31 +379,52 @@ namespace sf
 				}
 			}
 			ImGui::End();
-			/* Clamp node positions */
-			for (int i = 0; i < modelSkeleton->m_nodes.size(); i++)
+		}
+		if (outputModelEntity)
+		{
+			ImGui::Begin("Output model");
+			bool setPosition, setRotation, setScale;
+			setPosition = ImGui::DragFloat3("Base position", &outputModelBaseTransform.position.x);
+			setRotation = ImGui::DragFloat3("Base rotation", &outputModelBaseRotHelper.x);
+			setScale = ImGui::DragFloat("Base scale", &outputModelBaseTransform.scale);
+			ImGui::Checkbox("Animate", &outputModelSkeleton->m_animate);
+			if (setRotation || setScale || setPosition)
 			{
-				switch (modelSkeleton->m_nodes[i].single.type)
+				outputModelBaseTransform.rotation = glm::quat(glm::radians(outputModelBaseRotHelper));
+				outputModelEntity.GetComponent<Transform>() = outputModelBaseTransform;
+			}
+
+			if (ImGui::CollapsingHeader("Add single animation node"))
+			{
+				static int animSelection;
+				ImGui::PushID("singleSection");
+				ImGui::Combo("Animation", &animSelection, outputAnimNames.data(), outputAnimNames.size());
+				if (ImGui::Button("Add single animation node"))
+					outputModelSkeleton->AddNodeSingle((uint32_t)animSelection, 1.0f);
+				ImGui::PopID();
+			}
+
+			ImGui::Text("Node count: %u", outputModelSkeleton->m_nodes.size());
+			if (ImGui::CollapsingHeader("Existing nodes"))
+			{
+				for (int i = 0; i < outputModelSkeleton->m_nodes.size(); i++)
 				{
-				case Animation::NodeType::BlendSpace1D:
-					if (modelSkeleton->m_nodes[i].bs1d.pos < bs1dPosMinMax[i].first)
-						modelSkeleton->m_nodes[i].bs1d.pos = bs1dPosMinMax[i].first;
-					if (modelSkeleton->m_nodes[i].bs1d.pos > bs1dPosMinMax[i].second)
-						modelSkeleton->m_nodes[i].bs1d.pos = bs1dPosMinMax[i].second;
-					break;
-				case Animation::NodeType::BlendSpace2D:
-					if (modelSkeleton->m_nodes[i].bs2d.pos.x < bs2dPosMinMax[i].first.x)
-						modelSkeleton->m_nodes[i].bs2d.pos.x = bs2dPosMinMax[i].first.x;
-					if (modelSkeleton->m_nodes[i].bs2d.pos.x > bs2dPosMinMax[i].second.x)
-						modelSkeleton->m_nodes[i].bs2d.pos.x = bs2dPosMinMax[i].second.x;
-					if (modelSkeleton->m_nodes[i].bs2d.pos.y < bs2dPosMinMax[i].first.y)
-						modelSkeleton->m_nodes[i].bs2d.pos.y = bs2dPosMinMax[i].first.y;
-					if (modelSkeleton->m_nodes[i].bs2d.pos.y > bs2dPosMinMax[i].second.y)
-						modelSkeleton->m_nodes[i].bs2d.pos.y = bs2dPosMinMax[i].second.y;
-					break;
-				default:
-					break;
+					ImGui::PushID(i);
+					switch (outputModelSkeleton->m_nodes[i].single.type)
+					{
+					case Animation::NodeType::Single:
+						if (ImGui::CollapsingHeader(outputModelSkeleton->m_nodes[i].single.animation->name))
+						{
+							ImGui::Text("%s:", outputModelSkeleton->m_nodes[i].single.animation->name);
+							ImGui::DragFloat("Weight", &outputModelSkeleton->m_nodes[i].single.weight, 0.01f);
+							ImGui::DragFloat("Speed", &outputModelSkeleton->m_nodes[i].single.speed, 0.01f);
+						}
+						break;
+					}
+					ImGui::PopID();
 				}
 			}
+			ImGui::End();
 		}
 
 		ExampleViewer::ImGuiCall();

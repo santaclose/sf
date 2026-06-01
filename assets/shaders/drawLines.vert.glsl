@@ -7,8 +7,8 @@ layout(std140, binding = 0) uniform SharedGpuData
 	float cameraPositionX;
 	float cameraPositionY;
 	float cameraPositionZ;
-	float windowSizeX;
-	float windowSizeY;
+	float renderTargetSizeX;
+	float renderTargetSizeY;
 };
 
 void main()

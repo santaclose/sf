@@ -2,7 +2,7 @@
 
 #include <Components/Base.h>
 
-void (*sf::Entity::OnComponentAddCallback)(Entity) = nullptr;
+// void (*sf::Entity::OnComponentAddCallback)(Entity) = nullptr;
 
 sf::Entity::Entity(entt::entity handle, Scene* scene)
 {

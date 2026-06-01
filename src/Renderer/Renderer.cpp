@@ -24,7 +24,9 @@
 
 namespace sf::Renderer
 {
-	const Window* window;
+	glm::uvec2 currentViewportSize;
+	std::vector<RenderTarget> renderTargets;
+	uint32_t boundRenderTargetId = 0;
 
 	BufferLayout positionColorVertexLayout = BufferLayout({
 		BufferComponent::Position,
@@ -36,14 +38,6 @@ namespace sf::Renderer
 	});
 
 	GlShader drawLineShader;
-
-	float aspectRatio;
-	Entity activeCameraEntity;
-
-	glm::mat4 cameraView;
-	glm::mat4 cameraProjection;
-
-	glm::vec3 clearColor;
 
 	struct MeshGpuData
 	{
@@ -95,7 +89,7 @@ namespace sf::Renderer
 		glm::mat4 modelMatrix;
 		glm::mat4 cameraMatrix;
 		glm::vec3 cameraPosition;
-		glm::vec2 windowSize;
+		glm::vec2 renderTargetSize;
 	};
 	uint32_t sharedGpuData_gl_ubo;
 	SharedGpuData sharedGpuData;
@@ -325,22 +319,31 @@ namespace sf::Renderer
 #endif
 }
 
-
-bool sf::Renderer::Initialize(const Window& windowArg, const glm::vec3& clearColorArg)
+std::vector<sf::Renderer::RenderTarget>& sf::Renderer::GetRenderTargets()
 {
-	clearColor = clearColorArg;
-	window = &windowArg;
+	return renderTargets;
+}
+
+bool sf::Renderer::Initialize(const Window& window, const Game::InitData& gameInitData)
+{
+	renderTargets.clear();
+	RenderTarget windowRenderTarget;
+	windowRenderTarget.framebuffer = window.GetFramebufferToDraw();
+	windowRenderTarget.topLeftOrigin = glm::vec2(0.0f, 0.0f);
+	windowRenderTarget.topLeftOffset = glm::ivec2(0u, 0u);
+	windowRenderTarget.bottomRightOrigin = glm::vec2(1.0f, 1.0f);
+	windowRenderTarget.bottomRightOffset = glm::ivec2(0u, 0u);
+	windowRenderTarget.clearColor = gameInitData.clearColor;
+	renderTargets.push_back(windowRenderTarget);
 
 	materials.clear();
 	materials.reserve(64);
 
-	if (!gladLoadGLLoader((GLADloadproc)window->GetOpenGlFunctionAddress()))
+	if (!gladLoadGLLoader((GLADloadproc) window.GetOpenGlFunctionAddress()))
 	{
 		std::cout << "[Renderer] Failed to initialize OpenGL context (GLAD)" << std::endl;
 		return false;
 	}
-
-	window->AddOnResizeCallback(OnResize);
 
 #ifdef SF_DEBUG
 	int flags;
@@ -371,11 +374,6 @@ bool sf::Renderer::Initialize(const Window& windowArg, const glm::vec3& clearCol
 
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
-	glClearColor(clearColor.r, clearColor.g, clearColor.b, 0.0f);
-	glViewport(0, 0, window->GetWidth(), window->GetHeight());
-
-	sf::Renderer::aspectRatio = (float)(window->GetWidth()) / (float)(window->GetHeight());
-
 	glGenBuffers(1, &sharedGpuData_gl_ubo);
 
 	rendererUniformVector.resize(3);
@@ -386,85 +384,77 @@ bool sf::Renderer::Initialize(const Window& windowArg, const glm::vec3& clearCol
 	return true;
 }
 
-void sf::Renderer::OnResize()
+void sf::Renderer::BindRenderTarget(uint32_t renderTargetId)
 {
-	glViewport(0, 0, window->GetWidth(), window->GetHeight());
-	aspectRatio = (float)window->GetWidth() / (float)window->GetHeight();
+	assert(renderTargetId < renderTargets.size());
+	RenderTarget& renderTarget = renderTargets[renderTargetId];
+	glm::uvec2 viewportTopLeft = glm::uvec2(
+		renderTarget.framebuffer.size->x * renderTarget.topLeftOrigin.x + renderTarget.topLeftOffset.x,
+		renderTarget.framebuffer.size->y * renderTarget.topLeftOrigin.y + renderTarget.topLeftOffset.y);
+	glm::uvec2 viewportBottomRight = glm::uvec2(
+		renderTarget.framebuffer.size->x * renderTarget.bottomRightOrigin.x + renderTarget.bottomRightOffset.x,
+		renderTarget.framebuffer.size->y * renderTarget.bottomRightOrigin.y + renderTarget.bottomRightOffset.y);
+	currentViewportSize = glm::uvec2(viewportBottomRight.x - viewportTopLeft.x, viewportBottomRight.y - viewportTopLeft.y);
+	sharedGpuData.renderTargetSize = glm::vec2((float) currentViewportSize.x, (float) currentViewportSize.y);
+	glViewport(viewportTopLeft.x, viewportTopLeft.y, currentViewportSize.x, currentViewportSize.y);
+	glScissor(viewportTopLeft.x, viewportTopLeft.y, currentViewportSize.x, currentViewportSize.y);
+	boundRenderTargetId = renderTargetId;
 }
 
-void sf::Renderer::Predraw()
+void sf::Renderer::Clear(bool clearDepth)
 {
-	// clear
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	RenderTarget& renderTarget = renderTargets[boundRenderTargetId];
+	glEnable(GL_SCISSOR_TEST);
+	glClearColor(renderTarget.clearColor.r, renderTarget.clearColor.g, renderTarget.clearColor.b, 0.0f);
+	glClear(GL_COLOR_BUFFER_BIT | (clearDepth ? GL_DEPTH_BUFFER_BIT : 0));
+	glDisable(GL_SCISSOR_TEST);
+}
 
-	sharedGpuData.windowSize = glm::vec2((float)window->GetWidth(), (float)window->GetHeight());
-
-	if (!activeCameraEntity)
-		return;
-
-	// camera matrices
-	const Transform& transformComponent = activeCameraEntity.GetComponent<Transform>();
-	const Camera& cameraComponent = activeCameraEntity.GetComponent<Camera>();
-	if (cameraComponent.perspective)
+void sf::Renderer::BindCamera(Camera& camera, Transform& cameraTransform)
+{
+	float aspectRatio = (float) currentViewportSize.x / (float) currentViewportSize.y;
+	glm::mat4 cameraProjection, cameraView;
+	if (camera.perspective)
 	{
 		if (aspectRatio == aspectRatio) // only if aspectRatio is not nan, it is nan when fullscreen and not visible
 			cameraProjection = glm::perspective(
-				cameraComponent.fieldOfView,
+				camera.fieldOfView,
 				aspectRatio,
-				cameraComponent.nearClippingPlane,
-				cameraComponent.farClippingPlane);
+				camera.nearClippingPlane,
+				camera.farClippingPlane);
 	}
 	else
 	{
 		if (aspectRatio >= 1.0)
 			cameraProjection = glm::ortho(
-				-aspectRatio / 2.0f * cameraComponent.orthographicScale,
-				aspectRatio / 2.0f * cameraComponent.orthographicScale,
-				-0.5f * cameraComponent.orthographicScale,
-				0.5f * cameraComponent.orthographicScale,
-				cameraComponent.nearClippingPlane,
-				cameraComponent.farClippingPlane);
+				-aspectRatio / 2.0f * camera.orthographicScale,
+				aspectRatio / 2.0f * camera.orthographicScale,
+				-0.5f * camera.orthographicScale,
+				0.5f * camera.orthographicScale,
+				camera.nearClippingPlane,
+				camera.farClippingPlane);
 		else
 			cameraProjection = glm::ortho(
-				-0.5f * cameraComponent.orthographicScale,
-				0.5f * cameraComponent.orthographicScale,
-				-1.0f / aspectRatio / 2.0f * cameraComponent.orthographicScale,
-				1.0f / aspectRatio / 2.0f * cameraComponent.orthographicScale,
-				cameraComponent.nearClippingPlane,
-				cameraComponent.farClippingPlane);
+				-0.5f * camera.orthographicScale,
+				0.5f * camera.orthographicScale,
+				-1.0f / aspectRatio / 2.0f * camera.orthographicScale,
+				1.0f / aspectRatio / 2.0f * camera.orthographicScale,
+				camera.nearClippingPlane,
+				camera.farClippingPlane);
 	}
 
-	cameraView = (glm::mat4)glm::conjugate(transformComponent.rotation);
-	cameraView = glm::translate(cameraView, -transformComponent.position);
+	cameraView = (glm::mat4)glm::conjugate(cameraTransform.rotation);
+	cameraView = glm::translate(cameraView, -cameraTransform.position);
 
 	sharedGpuData.cameraMatrix = cameraProjection * cameraView;
-	sharedGpuData.cameraPosition = transformComponent.position;
+	sharedGpuData.cameraPosition = cameraTransform.position;
+
+	GlSkybox::Draw(cameraView, cameraProjection);
 }
 
-void sf::Renderer::Postdraw()
+void sf::Renderer::FrameEnd()
 {
 	drawLineLines.clear();
-}
-
-void sf::Renderer::SetClearColor(const glm::vec3& clearColorArg)
-{
-	clearColor = clearColorArg;
-	glClearColor(clearColor.r, clearColor.g, clearColor.b, 0.0f);
-}
-
-const glm::vec3& sf::Renderer::GetClearColor()
-{
-	return clearColor;
-}
-
-void sf::Renderer::SetActiveCameraEntity(Entity cameraEntity)
-{
-	activeCameraEntity = cameraEntity;
-}
-
-sf::Entity sf::Renderer::GetActiveCameraEntity()
-{
-	return activeCameraEntity;
 }
 
 void sf::Renderer::SetEnvironment(const std::string& hdrFilePath, DataType hdrDataType)
@@ -481,16 +471,8 @@ void sf::Renderer::SetEnvironment(const std::string& hdrFilePath, DataType hdrDa
 	GlSkybox::SetCubemap(&(environmentData.envCubemap));
 }
 
-void sf::Renderer::DrawSkybox()
-{
-	GlSkybox::Draw(cameraView, cameraProjection);
-}
-
 void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 {
-	if (!activeCameraEntity)
-		return;
-
 	if (mesh.meshData != nullptr && mesh.meshData->vertexCount == 0)
 		return;
 
@@ -550,9 +532,6 @@ void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 	if (mesh.meshData->vertexCount == 0)
 		return;
 
-	if (!activeCameraEntity)
-		return;
-
 	if (meshGpuData.find(mesh.meshData) == meshGpuData.end()) // create mesh data if not there
 		CreateMeshGpuData(mesh.meshData);
 
@@ -586,9 +565,6 @@ void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 
 void sf::Renderer::DrawParticleSystem(ParticleSystem& particleSystem, Transform& transform, float deltaTime)
 {
-	if (!activeCameraEntity)
-		return;
-
 	GlMaterial* materialToUse = GetOrCreateMaterial(particleSystem.material, particleSystem.meshData->vertexBufferLayout);
 	assert(!particleSystem.dynamic || particleSystem.material->buffers.size() == 1);
 	const BufferLayout* particleBufferLayout = particleSystem.material->buffers[0].layout;
@@ -707,7 +683,7 @@ void sf::Renderer::DrawSprite(Sprite& sprite, ScreenCoordinates& screenCoordinat
 	if (spriteTextures.find(sprite.bitmap) == spriteTextures.end()) // create mesh data if not there
 		spriteTextures[sprite.bitmap].CreateFromBitmap(*sprite.bitmap, GlTexture::ClampToEdge, false);
 
-	glm::vec2 spriteTopLeft = screenCoordinates.origin * glm::vec2(window->GetWidth(), window->GetHeight()) + (glm::vec2)screenCoordinates.offset;
+	glm::vec2 spriteTopLeft = screenCoordinates.origin * glm::vec2(currentViewportSize.x, currentViewportSize.y) + (glm::vec2) screenCoordinates.offset;
 	if (sprite.alignmentH != ALIGNMENT_LEFT) spriteTopLeft.x -= ((float)sprite.bitmap->width) * (sprite.alignmentH * 0.5f);
 	if (sprite.alignmentV != ALIGNMENT_LEFT) spriteTopLeft.y -= ((float)sprite.bitmap->height) * (sprite.alignmentV * 0.5f);
 	spriteTopLeft = glm::vec2(glm::round(spriteTopLeft.x), glm::round(spriteTopLeft.y));
@@ -807,7 +783,7 @@ void sf::Renderer::DrawText(Text& text, ScreenCoordinates& screenCoordinates)
 	glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
 	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
 	textShader.SetUniform4fv("textCol", &text.color.r);
-	glm::vec2 targetOffset = screenCoordinates.origin * glm::vec2(window->GetWidth(), window->GetHeight()) + (glm::vec2)screenCoordinates.offset;
+	glm::vec2 targetOffset = screenCoordinates.origin * glm::vec2(currentViewportSize.x, currentViewportSize.y) + (glm::vec2)screenCoordinates.offset;
 	textShader.SetUniform2fv("globalOffset", &targetOffset.x);
 	textShader.SetUniform1i("lineCount", fontPathAndStringToTextData[fontPathHash].at(stringHash).textData.LineCount);
 
@@ -844,8 +820,6 @@ bool sf::Renderer::IsDebugDrawEnabled()
 void sf::Renderer::DebugDrawSkeleton(SkinnedMesh& mesh, Transform& transform)
 {
 	if (!debugDrawEnabled)
-		return;
-	if (!activeCameraEntity)
 		return;
 
 	if (meshGpuData.find(&Defaults::MeshDataCube()) == meshGpuData.end()) // create mesh data if not there
@@ -947,6 +921,111 @@ void sf::Renderer::DrawLines()
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glEnable(GL_DEPTH_TEST);
+}
+
+void sf::Renderer::DrawFramebuffer(const Framebuffer& framebuffer, float deltaTime)
+{
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer.id[0]);
+	if (framebuffer.hasDepth)
+		glEnable(GL_DEPTH_TEST);
+	else
+		glDisable(GL_DEPTH_TEST);
+
+	/* Clear very render target using this framebuffer */
+	for (uint32_t i = 0; i < renderTargets.size(); i++)
+	{
+		if (renderTargets[i].framebuffer.id[0] != framebuffer.id[0])
+			continue;
+
+		BindRenderTarget(i);
+		Clear(framebuffer.hasDepth);
+	}
+
+	/* For every scene, find the cameras and ui that render to targets using this framebuffer */
+	for (sf::Scene* scene : sf::Scene::scenes)
+	{
+		auto cameraView = scene->GetRegistry().view<Base, Camera, Transform>();
+		for (auto entity : cameraView)
+		{
+			auto [base_, camera_, transform_] = cameraView.get<Base, Camera, Transform>(entity);
+			if (camera_.renderTargetId == ~0)
+				continue;
+			if (renderTargets[camera_.renderTargetId].framebuffer.id[0] != framebuffer.id[0])
+				continue;
+
+			BindRenderTarget(camera_.renderTargetId);
+			BindCamera(camera_, transform_);
+			auto meshRenderView = scene->GetRegistry().view<Base, Mesh, Transform>();
+			for (auto entity : meshRenderView)
+			{
+				auto [base, mesh, transform] = meshRenderView.get<Base, Mesh, Transform>(entity);
+				if (base.isEntityEnabled)
+					DrawMesh(mesh, transform);
+			}
+			auto skinnedMeshRenderView = scene->GetRegistry().view<Base, SkinnedMesh, Transform>();
+			for (auto entity : skinnedMeshRenderView)
+			{
+				auto [base, mesh, transform] = skinnedMeshRenderView.get<Base, SkinnedMesh, Transform>(entity);
+				if (base.isEntityEnabled)
+					DrawSkinnedMesh(mesh, transform);
+			}
+			auto particlesRenderView = scene->GetRegistry().view<Base, ParticleSystem, Transform>();
+			for (auto entity : particlesRenderView)
+			{
+				auto [base, particleSystem, transform] = particlesRenderView.get<Base, ParticleSystem, Transform>(entity);
+				if (base.isEntityEnabled)
+					DrawParticleSystem(particleSystem, transform, deltaTime);
+			}
+			if (IsDebugDrawEnabled())
+			{
+				auto sphereColliderRenderView = scene->GetRegistry().view<Base, SphereCollider, Transform>();
+				for (auto entity : sphereColliderRenderView)
+				{
+					auto [base, sc, transform] = sphereColliderRenderView.get<Base, SphereCollider, Transform>(entity);
+					if (base.isEntityEnabled)
+						DrawSphereCollider(sc.ApplyTransform(transform), glm::vec3(0.0f, 0.0f, 0.0f));
+				}
+				auto capsuleColliderRenderView = scene->GetRegistry().view<Base, CapsuleCollider, Transform>();
+				for (auto entity : capsuleColliderRenderView)
+				{
+					auto [base, sc, transform] = capsuleColliderRenderView.get<Base, CapsuleCollider, Transform>(entity);
+					if (base.isEntityEnabled)
+						DrawCapsuleCollider(sc.ApplyTransform(transform), glm::vec3(0.0f, 0.0f, 0.0f));
+				}
+				auto boxColliderRenderView = scene->GetRegistry().view<Base, BoxCollider, Transform>();
+				for (auto entity : boxColliderRenderView)
+				{
+					auto [base, bc, transform] = boxColliderRenderView.get<Base, BoxCollider, Transform>(entity);
+					if (base.isEntityEnabled)
+						DrawBoxCollider(bc.ApplyTransform(transform), glm::vec3(0.0f, 0.0f, 0.0f));
+				}
+			}
+
+			DrawLines();
+		}
+
+		for (uint32_t i = 0; i < renderTargets.size(); i++) // a bit brute force
+		{
+			if (renderTargets[i].framebuffer.id[0] != framebuffer.id[0])
+				continue;
+
+			BindRenderTarget(i);
+			auto spriteRenderView = scene->GetRegistry().view<Base, Sprite, ScreenCoordinates>();
+			for (auto entity : spriteRenderView)
+			{
+				auto [base, sprite, screenCooordinates] = spriteRenderView.get<Base, Sprite, ScreenCoordinates>(entity);
+				if (base.isEntityEnabled && sprite.renderTargetId == i)
+					DrawSprite(sprite, screenCooordinates);
+			}
+			auto textRenderView = scene->GetRegistry().view<Base, Text, ScreenCoordinates>();
+			for (auto entity : textRenderView)
+			{
+				auto [base, text, screenCooordinates] = textRenderView.get<Base, Text, ScreenCoordinates>(entity);
+				if (base.isEntityEnabled && text.renderTargetId == i)
+					DrawText(text, screenCooordinates);
+			}
+		}
+	}
 }
 
 void sf::Renderer::Terminate()

@@ -3,7 +3,7 @@
 #include "Entity.h"
 #include <Components/Base.h>
 
-sf::Scene* sf::Scene::activeScene = nullptr;
+std::unordered_set<sf::Scene*> sf::Scene::scenes;
 
 entt::registry& sf::Scene::GetRegistry()
 {
@@ -12,12 +12,12 @@ entt::registry& sf::Scene::GetRegistry()
 
 sf::Scene::Scene()
 {
-	if (activeScene == nullptr)
-		activeScene = this;
+	scenes.insert(this);
 }
 
 sf::Scene::~Scene()
 {
+	scenes.erase(this);
 }
 
 sf::Entity sf::Scene::CreateEntity()
@@ -30,9 +30,4 @@ sf::Entity sf::Scene::CreateEntity()
 void sf::Scene::DestroyEntity(Entity entity)
 {
 	m_Registry.destroy(entity);
-}
-
-void sf::Scene::SetActive()
-{
-	activeScene = this;
 }

@@ -6,6 +6,7 @@
 #include <unordered_map>
 
 #include <Game.h>
+#include <Renderer/RenderTarget.h>
 
 #ifdef SF_PLATFORM_WINDOWS
 struct HWND__;
@@ -46,13 +47,16 @@ namespace sf
 		inline bool GetToolBarEnabled() const { return toolBarEnabled; }
 		inline bool GetCursorRequired() const { return cursorRequired; }
 
-		void AddOnResizeCallback(void (*newCallback)(void)) const;
+		// void AddOnResizeCallback(void (*newCallback)(void)) const;
 
 		inline glm::uvec2 GetSize() const { return size; };
 		inline uint32_t GetWidth() const { return size.x; };
 		inline uint32_t GetHeight() const { return size.y; };
+		Renderer::Framebuffer GetFramebufferToDraw() const { return framebuffer; }
 
+#ifdef SF_PLATFORM_WINDOWS
 		void HandleImGuiViewports(void (*updatePlatformWindows)(), void (*renderPlatformWindows)(void*, void*));
+#endif
 
 #ifdef SF_USE_OPENGL
 		bool ImGuiInitForOpenGL(bool (*initForOpenGL)(GLFWwindow*, bool));
@@ -69,6 +73,8 @@ namespace sf
 		GLFWwindow* windowHandle;
 		GLFWwindow* contextBackup; // used for imgui viewports
 
+		Renderer::Framebuffer framebuffer;
+		uint32_t framebufferId = 0; // we don't touch this, it's always 0
 		std::string title;
 		glm::uvec2 size = { 0, 0 };
 		uint32_t msaaCount = 4;
@@ -78,7 +84,6 @@ namespace sf
 		bool cursorEnabled = true;
 		bool vsyncEnabled = true;
 
-		mutable std::vector<void (*)()> onResizeCallbacks;
 		void CursorPositionCallback(double xpos, double ypos);
 		void MouseButtonCallback(int button, int action, int mods);
 		void KeyCallback(int key, int scancode, int action, int mods);

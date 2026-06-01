@@ -11,5 +11,6 @@ namespace sf {
 		float fieldOfView = glm::radians(90.0f);
 		float nearClippingPlane = 0.1f;
 		float farClippingPlane = 1000.0f;
+		uint32_t renderTargetId = 0;
 	};
 }

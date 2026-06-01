@@ -8,6 +8,7 @@
 #include <Input.h>
 #include <FileUtils.h>
 
+#include <ImGuiController.h>
 #include <Renderer/Renderer.h>
 
 #include <Importer/GltfImporter.h>
@@ -30,6 +31,7 @@ namespace sf
 	namespace Game
 	{
 		Scene scene;
+		ExampleViewer viewer;
 		std::vector<Entity> galleryObjects;
 
 		glm::quat modelRotation;
@@ -102,7 +104,7 @@ namespace sf
 		environments = { "assets/examples/brown_photostudio_02_4k.hdr", "assets/examples/aft_lounge_4k.hdr", };
 		selectedModel = 0;
 
-		ExampleViewer::Initialize(scene);
+		viewer.Initialize(scene);
 		Renderer::SetEnvironment(environments[selectedEnvironment]);
 
 		int gltfid;
@@ -162,12 +164,12 @@ namespace sf
 		for (Entity e : galleryObjects)
 			scene.DestroyEntity(e);
 		galleryObjects.clear();
-		ExampleViewer::Terminate(scene);
+		viewer.Terminate(scene);
 	}
 
 	void Game::OnUpdate(float deltaTime, float time)
 	{
-		ExampleViewer::UpdateCamera(deltaTime);
+		viewer.UpdateCamera(deltaTime);
 
 		if (Input::KeyDown(Input::KeyCode::Space))
 			rotationEnabled = !rotationEnabled;
@@ -211,6 +213,6 @@ namespace sf
 			}
 			ImGui::EndMainMenuBar();
 		}
-		ExampleViewer::ImGuiCall();
+		viewer.ImGuiCall();
 	}
 }

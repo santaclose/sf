@@ -32,6 +32,7 @@ namespace sf
 	namespace Game
 	{
 		Scene scene;
+		ExampleViewer viewer;
 		std::vector<Entity> galleryObjects;
 
 		glm::quat modelRotation;
@@ -76,7 +77,7 @@ namespace sf
 		rotationEnabled = false;
 		selectedModel = 0;
 
-		ExampleViewer::Initialize(scene);
+		viewer.Initialize(scene);
 
 		monkevvd.BuildFromMesh(Defaults::MeshDataMonkey(), 0.007f, &voxelLayout);
 		monkevvd2.BuildFromMesh(Defaults::MeshDataMonkey(), 0.04f, &voxelLayout);
@@ -154,12 +155,12 @@ namespace sf
 		for (Entity e : galleryObjects)
 			scene.DestroyEntity(e);
 		galleryObjects.clear();
-		ExampleViewer::Terminate(scene);
+		viewer.Terminate(scene);
 	}
 
 	void Game::OnUpdate(float deltaTime, float time)
 	{
-		ExampleViewer::UpdateCamera(deltaTime);
+		viewer.UpdateCamera(deltaTime);
 
 		if (Input::KeyDown(Input::KeyCode::Space))
 			rotationEnabled = !rotationEnabled;
@@ -191,6 +192,6 @@ namespace sf
 			}
 			ImGui::EndMainMenuBar();
 		}
-		ExampleViewer::ImGuiCall();
+		viewer.ImGuiCall();
 	}
 }

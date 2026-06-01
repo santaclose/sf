@@ -1,6 +1,13 @@
 #pragma once
 
+#include <Renderer/RenderTarget.h>
+
+#include <Game.h>
+
+#include <Scene/Scene.h>
 #include <Scene/Entity.h>
+
+#include <Components/Base.h>
 #include <Components/Mesh.h>
 #include <Components/SkinnedMesh.h>
 #include <Components/Transform.h>
@@ -8,12 +15,14 @@
 #include <Components/Sprite.h>
 #include <Components/Text.h>
 #include <Components/ParticleSystem.h>
+#include <Components/Camera.h>
 
 #include <Components/SphereCollider.h>
 #include <Components/CapsuleCollider.h>
 #include <Components/BoxCollider.h>
 
 #include <Renderer/GlMaterial.h>
+#include <Renderer/RenderTarget.h>
 #include <Window.h>
 #include <Material.h>
 
@@ -21,21 +30,17 @@
 
 namespace sf::Renderer {
 
-	bool Initialize(const Window& window, const glm::vec3& clearColorArg);
-	void OnResize();
+	std::vector<RenderTarget>& GetRenderTargets();
 
-	void Predraw();
-	void Postdraw();
+	bool Initialize(const Window& window, const Game::InitData& gameInitData);
 
-	void SetClearColor(const glm::vec3& clearColorArg);
-	const glm::vec3& GetClearColor();
-
-	void SetActiveCameraEntity(Entity cameraEntity);
-	Entity GetActiveCameraEntity();
+	void BindRenderTarget(uint32_t renderTargetId);
+	void Clear(bool clearDepth);
+	void BindCamera(Camera& camera, Transform& cameraTransform);
+	void FrameEnd();
 
 	void SetEnvironment(const std::string& hdrFilePath, DataType hdrDataType = DataType::f16);
 
-	void DrawSkybox();
 	void DrawMesh(Mesh& mesh, Transform& transform);
 	void DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform);
 	void DrawParticleSystem(ParticleSystem& particleSystem, Transform& transform, float deltaTime);
@@ -45,7 +50,6 @@ namespace sf::Renderer {
 
 	void AddLine(const glm::vec3& a, const glm::vec3& b, const glm::vec3& color);
 
-
 	void SetDebugDrawEnabled(bool value);
 	bool IsDebugDrawEnabled();
 	void DebugDrawSkeleton(SkinnedMesh& mesh, Transform& transform);
@@ -54,6 +58,9 @@ namespace sf::Renderer {
 	void DrawCapsuleCollider(const CapsuleCollider& cc, const glm::vec3& color);
 	void DrawBoxCollider(const BoxCollider& bc, const glm::vec3& color);
 	void DrawLines();
+
+	// void DrawScene(Scene* scene, float deltaTime);
+	void DrawFramebuffer(const Framebuffer& framebuffer, float deltaTime);
 
 	void Terminate();
 }

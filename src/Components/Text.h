@@ -14,6 +14,8 @@ namespace sf {
 		float size = 1.0f;
 		int alignmentH = ALIGNMENT_LEFT;
 		int alignmentV = ALIGNMENT_TOP;
+		uint32_t renderTargetId = 0;
+
 		Text() = default;
 		inline Text(const char* fontPath, const char* string, const glm::vec4& color, float size)
 		{

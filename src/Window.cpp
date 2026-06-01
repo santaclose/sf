@@ -40,7 +40,9 @@ sf::Window::Window(const Game::InitData& gameInitData)
 	toolBarEnabled = gameInitData.toolBarEnabled;
 	cursorEnabled = cursorRequired = gameInitData.cursorRequired;
 	vsyncEnabled = gameInitData.vsyncEnabled;
-
+	framebuffer.id = &framebufferId;
+	framebuffer.size = &size;
+	framebuffer.hasDepth = true;
 
 #ifdef SF_USE_VULKAN
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -186,11 +188,7 @@ void sf::Window::SetCursorRequired(bool enabled)
 	Input::UpdateCursorEnabled(cursorEnabled);
 }
 
-void sf::Window::AddOnResizeCallback(void(*newCallback)(void)) const
-{
-	onResizeCallbacks.push_back(newCallback);
-}
-
+#ifdef SF_PLATFORM_WINDOWS
 void sf::Window::HandleImGuiViewports(void(*updatePlatformWindows)(), void(*renderPlatformWindows)(void*, void*))
 {
 	contextBackup = glfwGetCurrentContext();
@@ -198,6 +196,7 @@ void sf::Window::HandleImGuiViewports(void(*updatePlatformWindows)(), void(*rend
 	renderPlatformWindows(nullptr, nullptr);
 	glfwMakeContextCurrent(contextBackup);
 }
+#endif
 
 #ifdef SF_USE_OPENGL
 bool sf::Window::ImGuiInitForOpenGL(bool(*initForOpenGL)(GLFWwindow*, bool))
@@ -269,9 +268,6 @@ void sf::Window::WindowResizeCallback(int width, int height)
 	// height can be zero
 	size.x = width;
 	size.y = height;
-
-	for (auto* function : onResizeCallbacks)
-		function();
 }
 
 void sf::Window::Terminate()

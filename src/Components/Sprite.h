@@ -10,6 +10,7 @@ namespace sf {
 		const Bitmap* bitmap;
 		int alignmentH = ALIGNMENT_LEFT;
 		int alignmentV = ALIGNMENT_TOP;
+		uint32_t renderTargetId = 0;
 
 		inline Sprite(const Bitmap* bitmap)
 		{

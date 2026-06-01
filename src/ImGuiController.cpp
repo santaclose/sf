@@ -5,12 +5,20 @@
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 #include <imgui.h>
+#include <imgui_internal.h>
+#include <imnodes.h>
 
 #include <Window.h>
 #include <Game.h>
 #include <Input.h>
 #include <Debug.h>
+
+#include <Renderer/RenderTarget.h>
 #include <Renderer/Renderer.h>
+#include <Renderer/ImGuiDisplayPanel.h>
+
+#include <Scene/Scene.h>
+#include <Scene/Entity.h>
 
 namespace sf::ImGuiController
 {
@@ -18,19 +26,34 @@ namespace sf::ImGuiController
 	bool logsEnabled = false;
 	bool debugDrawEnabled = false;
 	Window* window;
+	std::vector<ImGuiDisplayPanel*> displayPanels;
+	uint32_t lockedDisplayPanel = ~0;
+	uint32_t hoveredDisplayPanel = ~0;
+
+	void DrawDisplayPanel(uint32_t panelId, float deltaTime)
+	{
+		sf::Renderer::Framebuffer dpFramebuffer = displayPanels[panelId]->GetFramebufferToDraw();
+		sf::Renderer::DrawFramebuffer(dpFramebuffer, deltaTime);
+	}
 }
 
-void sf::ImGuiController::Initialize(Window& window)
+void sf::ImGuiController::Initialize(Window& window, const Game::InitData& gameInitData)
 {
+	bool rendererInitializedSuccessfully = sf::Renderer::Initialize(window, gameInitData);
+	assert(rendererInitializedSuccessfully);
+
 	ImGuiController::window = &window;
 
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
+	ImNodes::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
+#ifdef SF_PLATFORM_WINDOWS
 	//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
+#endif
 
 	// Setup Platform/Renderer bindings
 	window.ImGuiInitForOpenGL(ImGui_ImplGlfw_InitForOpenGL);
@@ -41,20 +64,50 @@ void sf::ImGuiController::Initialize(Window& window)
 	auto f = io.Fonts->AddFontFromFileTTF("assets/fonts/FiraCode/FiraCode-Regular.ttf", 15.0f);
 }
 
+uint32_t sf::ImGuiController::CreateDisplayPanel(const char* name, uint32_t sampleCount)
+{
+	displayPanels.push_back(new ImGuiDisplayPanel());
+	displayPanels.back()->Create(name, DrawDisplayPanel, sampleCount, true);
+	return (uint32_t) displayPanels.size() - 1;
+}
+
+sf::Renderer::Framebuffer sf::ImGuiController::GetDisplayPanelFramebufferToDraw(uint32_t displayPanelId)
+{
+	assert(displayPanelId < displayPanels.size());
+	return displayPanels[displayPanelId]->GetFramebufferToDraw();
+}
+
+uint32_t sf::ImGuiController::GetActiveDisplayPanel()
+{
+	if (lockedDisplayPanel != ~0)
+		return lockedDisplayPanel;
+	return hoveredDisplayPanel;
+}
+
+void sf::ImGuiController::LockActiveDisplayPanel(uint32_t displayPanelId)
+{
+	lockedDisplayPanel = displayPanelId;
+}
+
+void sf::ImGuiController::UnlockActiveDisplayPanel()
+{
+	lockedDisplayPanel = ~0;
+}
+
 void sf::ImGuiController::Terminate()
 {
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
+	ImNodes::DestroyContext();
 	ImGui::DestroyContext();
-}
-
-bool sf::ImGuiController::HasControl()
-{
-	return ImGui::GetIO().WantCaptureMouse;
+	sf::Renderer::Terminate();
 }
 
 void sf::ImGuiController::Tick(float deltaTime)
 {
+	/* Draw scenes */
+	sf::Renderer::DrawFramebuffer(window->GetFramebufferToDraw(), deltaTime);
+
 	if (Input::KeyDown(Input::Escape))
 		window->SetToolBarEnabled(!window->GetToolBarEnabled());
 	if (Input::KeyDown(Input::F2))
@@ -67,6 +120,38 @@ void sf::ImGuiController::Tick(float deltaTime)
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
+	{
+		static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
+		static ImGuiWindowFlags window_flags =
+			ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoBackground |
+			ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse |
+			ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+
+		ImGuiViewport* viewport = ImGui::GetMainViewport();
+		ImGui::SetNextWindowPos(viewport->WorkPos);
+		ImGui::SetNextWindowSize(viewport->WorkSize);
+		ImGui::SetNextWindowViewport(viewport->ID);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+		ImGui::Begin("DockSpace", nullptr, window_flags);
+		ImGui::PopStyleVar(3);
+		ImGuiID dockspace_id = ImGui::GetID("DockSpace");
+		ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
+		ImGui::End();
+	}
+
+	hoveredDisplayPanel = ~0;
+	bool cursorHover;
+	for (uint32_t i = 0; i < displayPanels.size(); i++)
+	{
+		displayPanels[i]->ImGuiCall(ImGui::GetIO(), cursorHover, i, deltaTime);
+		if (cursorHover)
+			hoveredDisplayPanel = i;
+	}
+	Input::SetEnabled(!ImGui::GetIO().WantCaptureMouse || GetActiveDisplayPanel() != ~0);
+	sf::Renderer::FrameEnd();
+
 	if (window->GetToolBarEnabled())
 	{
 		if (ImGui::BeginMainMenuBar())
@@ -88,7 +173,6 @@ void sf::ImGuiController::Tick(float deltaTime)
 				if (ImGui::MenuItem("Restart"))
 				{
 					Game::Terminate();
-					Renderer::SetActiveCameraEntity(Entity());
 					Game::Initialize(0, nullptr);
 				}
 				ImGui::EndMenu();
@@ -129,6 +213,8 @@ void sf::ImGuiController::Tick(float deltaTime)
 	// Render dear imgui into screen
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+#ifdef SF_PLATFORM_WINDOWS
 	if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 		window->HandleImGuiViewports(ImGui::UpdatePlatformWindows, ImGui::RenderPlatformWindowsDefault);
+#endif
 }

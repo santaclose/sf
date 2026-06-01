@@ -62,6 +62,7 @@ namespace sf
 		glm::vec3 aabbMax;
 
 		Scene scene;
+		ExampleViewer viewer;
 
 		uint32_t testCount;
 		std::vector<glm::vec3> points;
@@ -451,7 +452,7 @@ namespace sf
 		aabbMin = glm::vec3(-1.0f, 0.0f, 0.0f);
 		aabbMax = glm::vec3(-0.5f, 1.0f, 1.0f);
 
-		ExampleViewer::Initialize(scene);
+		viewer.Initialize(scene);
 
 		points.resize(MAX_TEST_COUNT + 1);
 		lines.resize(MAX_TEST_COUNT * 2 + 2);
@@ -492,14 +493,14 @@ namespace sf
 			scene.DestroyEntity(capsules[i]);
 			scene.DestroyEntity(boxes[i]);
 		}
-		ExampleViewer::Terminate(scene);
+		viewer.Terminate(scene);
 	}
 	void Game::OnUpdate(float deltaTime, float time)
 	{
 		if (Input::KeyDown(Input::KeyCode::Space))
 			GenerateShapesForCurrentCase();
 
-		ExampleViewer::UpdateCamera(deltaTime);
+		viewer.UpdateCamera(deltaTime);
 
 		switch (currentTestCase)
 		{
@@ -799,6 +800,6 @@ namespace sf
 			}
 			ImGui::EndMainMenuBar();
 		}
-		ExampleViewer::ImGuiCall();
+		viewer.ImGuiCall();
 	}
 }

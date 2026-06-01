@@ -47,6 +47,7 @@ project "sf"
 		"vendor/sfmg/*.cpp",
 		"vendor/nanosvg/*.cpp",
 		"vendor/sebtext/*.cpp",
+		"vendor/imnodes/imnodes.cpp",
 		"vendor/vendor.cpp"
 	}
 
@@ -71,7 +72,8 @@ project "sf"
 		"vendor/nanosvg",
 		"vendor/imgui",
 		"vendor/sebtext",
-		"vendor/orangeduck"
+		"vendor/orangeduck",
+		"vendor/imnodes"
 	}
 
 	links 

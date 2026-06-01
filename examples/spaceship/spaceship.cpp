@@ -144,6 +144,8 @@ namespace sf
 		c_mainCamera.nearClippingPlane = c_lookBackCamera.nearClippingPlane = 0.1f;
 		c_mainCamera.fieldOfView = glm::radians(90.0f);
 		c_lookBackCamera.fieldOfView = glm::radians(120.0f);
+		c_mainCamera.renderTargetId = 0;
+		c_lookBackCamera.renderTargetId = ~0;
 
 
 		Transform& t_mainCamera = e_mainCamera.AddComponent<Transform>();
@@ -206,10 +208,16 @@ namespace sf
 	{
 		if (Input::KeyDown(Input::KeyCode::Space))
 		{
-			if (Renderer::GetActiveCameraEntity() == e_mainCamera)
-				Renderer::SetActiveCameraEntity(e_lookBackCamera);
+			if (e_mainCamera.GetComponent<Camera>().renderTargetId == ~0)
+			{
+				e_mainCamera.GetComponent<Camera>().renderTargetId = 0;
+				e_lookBackCamera.GetComponent<Camera>().renderTargetId = ~0;
+			}
 			else
-				Renderer::SetActiveCameraEntity(e_mainCamera);
+			{
+				e_lookBackCamera.GetComponent<Camera>().renderTargetId = 0;
+				e_mainCamera.GetComponent<Camera>().renderTargetId = ~0;
+			}
 		}
 
 		ParticleSystem& ps_ship = e_ship.GetComponent<ParticleSystem>();

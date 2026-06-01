@@ -15,8 +15,8 @@ layout(binding = 0) uniform SharedGpuData
 	float cameraPositionX;
 	float cameraPositionY;
 	float cameraPositionZ;
-	float windowSizeX;
-	float windowSizeY;
+	float renderTargetSizeX;
+	float renderTargetSizeY;
 };
 
 uniform float maxResDistance = 70.0;

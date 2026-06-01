@@ -33,6 +33,7 @@ namespace sf
 	namespace Game
 	{
 		Scene scene;
+		ExampleViewer viewer;
 
 		BufferLayout vertexLayout = BufferLayout({
 			BufferComponent::Position,
@@ -88,7 +89,7 @@ namespace sf
 		modelRotationY = 0.0f;
 		rotationEnabled = false;
 
-		ExampleViewer::Initialize(scene);
+		viewer.Initialize(scene);
 		meshMaterial.vertShaderFilePath = "assets/shaders/default.vert";
 		meshMaterial.fragShaderFilePath = "assets/shaders/default.frag";
 
@@ -136,12 +137,12 @@ namespace sf
 		scene.DestroyEntity(boneLocalizer);
 		scene.DestroyEntity(leftHandIkTarget);
 		scene.DestroyEntity(rightFootIkTarget);
-		ExampleViewer::Terminate(scene);
+		viewer.Terminate(scene);
 	}
 
 	void Game::OnUpdate(float deltaTime, float time)
 	{
-		ExampleViewer::UpdateCamera(deltaTime);
+		viewer.UpdateCamera(deltaTime);
 
 		if (Input::KeyDown(Input::KeyCode::Space))
 			rotationEnabled = !rotationEnabled;
@@ -195,6 +196,6 @@ namespace sf
 			}
 			ImGui::EndMainMenuBar();
 		}
-		ExampleViewer::ImGuiCall();
+		viewer.ImGuiCall();
 	}
 }

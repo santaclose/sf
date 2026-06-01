@@ -10,6 +10,7 @@
 #include <Input.h>
 #include <Defaults.h>
 
+#include <ImGuiController.h>
 #include <Renderer/Renderer.h>
 
 #include <Importer/GltfImporter.h>
@@ -28,7 +29,9 @@ namespace sf
 {
 	namespace Game
 	{
-		Scene scene;
+		uint32_t inputModelDisplayPanelId, outputModelDisplayPanelId;
+		Scene inputModelScene, outputModelScene;
+		ExampleViewer inputModelViewer, outputModelViewer;
 
 		Entity inputModelEntity, outputModelEntity;
 		SkeletonData* inputModelSkeleton, *outputModelSkeleton;
@@ -73,9 +76,11 @@ namespace sf
 
 		void OpenFile(const char* filePath, Entity& entity, SkeletonData*& sd, MeshData*& md, std::vector<const char*>& animNames, bool isInputModel)
 		{
+			Scene& targetScene = isInputModel ? inputModelScene : outputModelScene;
+
 			if (entity)
-				scene.DestroyEntity(entity);
-			entity = scene.CreateEntity();
+				targetScene.DestroyEntity(entity);
+			entity = targetScene.CreateEntity();
 			entity.AddComponent<Transform>();
 			sd = new SkeletonData();
 			md = new MeshData(&modelVertexLayout);
@@ -140,17 +145,23 @@ namespace sf
 
 	void Game::Initialize(int argc, char** argv)
 	{
+		inputModelDisplayPanelId = ImGuiController::CreateDisplayPanel("Input Model Viewer", 8);
+		outputModelDisplayPanelId = ImGuiController::CreateDisplayPanel("Output Model Viewer", 8);
+		std::vector<Renderer::RenderTarget>& renderTargets = Renderer::GetRenderTargets();
+		renderTargets.back().framebuffer = ImGuiController::GetDisplayPanelFramebufferToDraw(inputModelDisplayPanelId);
+		renderTargets.push_back(renderTargets.back());
+		renderTargets.back().framebuffer = ImGuiController::GetDisplayPanelFramebufferToDraw(outputModelDisplayPanelId);
+
 		modelMaterial.vertShaderFilePath = "assets/shaders/default.vert";
 		modelMaterial.fragShaderFilePath = "assets/shaders/default.frag";
 
-		ExampleViewer::Initialize(scene);
+		inputModelViewer.Initialize(inputModelScene, 0);
+		outputModelViewer.Initialize(outputModelScene, 1);
 
 		OpenFile("assets/examples/Fox.glb", inputModelEntity, inputModelSkeleton, inputModelMesh, inputAnimNames, true);
 		OpenFile("/home/san/catGameMaybe/catTextured.glb", outputModelEntity, outputModelSkeleton, outputModelMesh, outputAnimNames, false);
 
 		inputModelBaseTransform.scale = 0.02f;
-		inputModelBaseTransform.position.z = -1.5f;
-		outputModelBaseTransform.position.z = 1.5f;
 		outputModelBaseTransform.rotation = glm::quat(glm::radians(glm::vec3(-90.0f, 0.0f, 0.0f)));
 		inputModelEntity.GetComponent<Transform>() = inputModelBaseTransform;
 		outputModelEntity.GetComponent<Transform>() = outputModelBaseTransform;
@@ -158,14 +169,33 @@ namespace sf
 
 	void Game::Terminate()
 	{
-		scene.DestroyEntity(outputModelEntity);
-		scene.DestroyEntity(inputModelEntity);
-		ExampleViewer::Terminate(scene);
+		outputModelScene.DestroyEntity(outputModelEntity);
+		inputModelScene.DestroyEntity(inputModelEntity);
+		outputModelViewer.Terminate(outputModelScene);
+		inputModelViewer.Terminate(inputModelScene);
 	}
 
 	void Game::OnUpdate(float deltaTime, float time)
 	{
-		ExampleViewer::UpdateCamera(deltaTime);
+		if (ImGuiController::GetActiveDisplayPanel() == inputModelDisplayPanelId)
+		{
+			inputModelViewer.UpdateCameraInput(deltaTime);
+			if (Input::MouseButtonDown(2))
+				ImGuiController::LockActiveDisplayPanel(inputModelDisplayPanelId);
+			else if (Input::MouseButtonUp(2))
+				ImGuiController::UnlockActiveDisplayPanel();
+		}
+		inputModelViewer.UpdateCamera(deltaTime, false);
+		if (ImGuiController::GetActiveDisplayPanel() == outputModelDisplayPanelId)
+		{
+			outputModelViewer.UpdateCameraInput(deltaTime);
+			if (Input::MouseButtonDown(2))
+				ImGuiController::LockActiveDisplayPanel(outputModelDisplayPanelId);
+			else if (Input::MouseButtonUp(2))
+				ImGuiController::UnlockActiveDisplayPanel();
+		}
+		outputModelViewer.UpdateCamera(deltaTime, false);
+
 		if (inputModelEntity)
 			inputModelSkeleton->UpdateAnimation(deltaTime);
 		if (inputModelEntity && outputModelEntity)
@@ -427,6 +457,7 @@ namespace sf
 			ImGui::End();
 		}
 
-		ExampleViewer::ImGuiCall();
+		inputModelViewer.ImGuiCall("Input viewer");
+		outputModelViewer.ImGuiCall("Output viewer");
 	}
 }

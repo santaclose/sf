@@ -4,12 +4,11 @@
 #include <iostream>
 #include <cstring>
 
-#include <ImGuiController.h>
-
 #define GAMEPAD_BUTTON_COUNT 15
 
 namespace sf::Input {
 
+	bool enabled = true;
 	int shouldIgnoreMouseDeltaNextFrame = 0;
 	bool cursorEnabled = false;
 
@@ -43,6 +42,11 @@ namespace sf::Input {
 	};
 	GamepadState gamepadState;
 	unsigned char gamepadButtonsPreviousFrame[GAMEPAD_BUTTON_COUNT];
+}
+
+void sf::Input::SetEnabled(bool value)
+{
+	enabled = value;
 }
 
 void sf::Input::UpdateFullScreenEnabled()
@@ -143,53 +147,63 @@ void sf::Input::FrameEnd()
 	shouldIgnoreMouseDeltaNextFrame--;
 }
 
+float sf::Input::MousePosX()
+{
+	return mousePos[0];
+}
+
+float sf::Input::MousePosY()
+{
+	return mousePos[1];
+}
+
 float sf::Input::MousePosDeltaX()
 {
 	if (shouldIgnoreMouseDeltaNextFrame > 0) return 0.0f;
-	if (cursorEnabled && ImGuiController::HasControl()) return 0.0f;
+	if (!enabled && cursorEnabled) return 0.0f;
 	return mousePos[0] - lastMousePos[0];
 }
 
 float sf::Input::MousePosDeltaY()
 {
 	if (shouldIgnoreMouseDeltaNextFrame > 0) return 0.0f;
-	if (cursorEnabled && ImGuiController::HasControl()) return 0.0f;
+	if (!enabled && cursorEnabled) return 0.0f;
 	return mousePos[1] - lastMousePos[1];
 }
 
 bool sf::Input::MouseButtonDown(int buttonID)
 {
-	if (cursorEnabled && ImGuiController::HasControl()) return false;
+	if (!enabled && cursorEnabled) return false;
 	return mouseButtonsPressing[buttonID];
 }
 
 bool sf::Input::MouseButtonUp(int buttonID)
 {
-	if (cursorEnabled && ImGuiController::HasControl()) return false;
+	if (!enabled && cursorEnabled) return false;
 	return mouseButtonsReleasing[buttonID];
 }
 
 bool sf::Input::MouseButton(int buttonID)
 {
-	if (cursorEnabled && ImGuiController::HasControl()) return false;
+	if (!enabled && cursorEnabled) return false;
 	return mouseButtons[buttonID];
 }
 
 bool sf::Input::MouseScrollUp()
 {
-	if (cursorEnabled && ImGuiController::HasControl()) return false;
+	if (!enabled && cursorEnabled) return false;
 	return mouseScroll[1] == 1.0f;
 }
 
 bool sf::Input::MouseScrollDown()
 {
-	if (cursorEnabled && ImGuiController::HasControl()) return false;
+	if (!enabled && cursorEnabled) return false;
 	return mouseScroll[1] == -1.0f;
 }
 
 bool sf::Input::KeyDown(int key)
 {
-	if (cursorEnabled && ImGuiController::HasControl()) return false;
+	if (!enabled && cursorEnabled) return false;
 	if (keyStates.find(key) == keyStates.end())
 		return false;
 	return keyStates[key].pressing;
@@ -197,7 +211,7 @@ bool sf::Input::KeyDown(int key)
 
 bool sf::Input::KeyUp(int key)
 {
-	if (cursorEnabled && ImGuiController::HasControl()) return false;
+	if (!enabled && cursorEnabled) return false;
 	if (keyStates.find(key) == keyStates.end())
 		return false;
 	return keyStates[key].releasing;
@@ -205,7 +219,7 @@ bool sf::Input::KeyUp(int key)
 
 bool sf::Input::Key(int key)
 {
-	if (cursorEnabled && ImGuiController::HasControl()) return false;
+	if (!enabled && cursorEnabled) return false;
 	if (keyStates.find(key) == keyStates.end())
 		return false;
 	return keyStates[key].isDown;
@@ -213,7 +227,7 @@ bool sf::Input::Key(int key)
 
 bool sf::Input::KeyRepeat(int key)
 {
-	if (cursorEnabled && ImGuiController::HasControl()) return false;
+	if (!enabled && cursorEnabled) return false;
 	if (keyStates.find(key) == keyStates.end())
 		return false;
 	return keyStates[key].repeating;
@@ -221,7 +235,7 @@ bool sf::Input::KeyRepeat(int key)
 
 bool sf::Input::CharacterInput(unsigned int& character)
 {
-	if (cursorEnabled && ImGuiController::HasControl()) return false;
+	if (!enabled && cursorEnabled) return false;
 	character = Input::character;
 	return charInput;
 }

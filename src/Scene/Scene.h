@@ -1,6 +1,7 @@
 #pragma once
 
 #include <entt.hpp>
+#include <unordered_set>
 
 namespace sf {
 
@@ -11,7 +12,7 @@ namespace sf {
 		friend Entity;
 
 	public:
-		static Scene* activeScene;
+		static std::unordered_set<Scene*> scenes;
 		entt::registry& GetRegistry();
 
 		Scene();
@@ -20,7 +21,8 @@ namespace sf {
 		Entity CreateEntity();
 		void DestroyEntity(Entity entity);
 
-		void SetActive();
+		void SetRenderTargetVisibility(uint32_t value);
+		uint32_t GetRenderTargetVisibility();
 
 	private:
 		entt::registry m_Registry;

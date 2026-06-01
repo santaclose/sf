@@ -2,6 +2,7 @@
 
 namespace sf::Input
 {
+	void SetEnabled(bool value);
 	void UpdateFullScreenEnabled();
 	void UpdateCursorEnabled(bool value);
 
@@ -12,6 +13,8 @@ namespace sf::Input
 	void UpdateMouseScroll(float xoffset, float yoffset);
 	void FrameEnd();
 
+	float MousePosX();
+	float MousePosY();
 	float MousePosDeltaX();
 	float MousePosDeltaY();
 

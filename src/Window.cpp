@@ -102,7 +102,15 @@ sf::Window::~Window()
 void sf::Window::PollEvents()
 {
 	glfwPollEvents();
-	glfwGetGamepadState(GLFW_JOYSTICK_1, (GLFWgamepadstate*)Input::GetGamepadState());
+	uint32_t gamepadPresentBitmask = 0u;
+	for (uint32_t joystick = GLFW_JOYSTICK_1; joystick <= GLFW_JOYSTICK_LAST; joystick++)
+	{
+		if (!glfwJoystickIsGamepad(joystick))
+			continue;
+		gamepadPresentBitmask |= (1u << joystick);
+		glfwGetGamepadState(joystick, (GLFWgamepadstate*)Input::GetGamepadState(joystick));
+	}
+	Input::UpdateGamepadPresentBitmask(gamepadPresentBitmask);
 }
 
 void sf::Window::SwapBuffers()

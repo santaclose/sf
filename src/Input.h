@@ -31,18 +31,20 @@ namespace sf::Input
 
 	bool CharacterInput(unsigned int& character);
 
-	void* GetGamepadState();
-	bool GamepadButtonDown(int button);
-	bool GamepadButtonUp(int button);
-	bool GamepadButton(int button);
+	void UpdateGamepadPresentBitmask(unsigned int value);
+	bool IsGamepadPresent(int id);
+	void* GetGamepadState(int id);
+	bool GamepadButtonDown(int id, int button);
+	bool GamepadButtonUp(int id, int button);
+	bool GamepadButton(int id, int button);
 	/* From -1 to +1 */
-	float GamepadLeftStickX();
-	float GamepadLeftStickY();
-	float GamepadRightStickX();
-	float GamepadRightStickY();
+	float GamepadLeftStickX(int id);
+	float GamepadLeftStickY(int id);
+	float GamepadRightStickX(int id);
+	float GamepadRightStickY(int id);
 	/* From 0 to 1 */
-	float GamepadLeftTrigger();
-	float GamepadRightTrigger();
+	float GamepadLeftTrigger(int id);
+	float GamepadRightTrigger(int id);
 
 	enum KeyCode
 	{

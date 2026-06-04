@@ -24,7 +24,10 @@
 
 #include "../errt.hpp"
 
-#define SENSITIVITY 0.007
+#define MOUSE_SENSITIVITY 0.007
+#define GAMEPAD_TURN_SENSITIVITY 2.3
+#define GAMEPAD_SPEED_SENSITIVITY 4.0
+#define PLAYER_GAMEPAD 0
 
 #define UNIQUE_COUNT 50
 #define COUNT 4000
@@ -206,7 +209,11 @@ namespace sf
 
 	void Game::OnUpdate(float deltaTime, float time)
 	{
-		if (Input::KeyDown(Input::KeyCode::Space))
+		bool togglecam = Input::KeyDown(Input::KeyCode::Space);
+		if (Input::IsGamepadPresent(PLAYER_GAMEPAD))
+			togglecam |= Input::GamepadButtonDown(PLAYER_GAMEPAD, Input::GamepadButtonCode::LeftBumper);
+
+		if (togglecam)
 		{
 			if (e_mainCamera.GetComponent<Camera>().renderTargetId == ~0)
 			{
@@ -222,25 +229,32 @@ namespace sf
 
 		ParticleSystem& ps_ship = e_ship.GetComponent<ParticleSystem>();
 		ps_ship.emit = false;
-		if (Input::MouseScrollUp() || Input::Key(Input::KeyCode::W))
-		{
-			ps_ship.emit = true;
-			shipSpeed += 1.0f;
-		}
-		if (Input::MouseScrollDown() || Input::Key(Input::KeyCode::S))
-		{
-			ps_ship.emit = true;
-			shipSpeed -= 1.0f;
-		}
-
-		if (glm::abs(Input::MousePosDeltaY()) > 0.001f || glm::abs(Input::MousePosDeltaX()) > 0.001f)
+		float speedchange = 0.0f;
+		if (Input::MouseScrollUp())
+			speedchange += 1.0f;
+		if (Input::MouseScrollDown())
+			speedchange -= 1.0f;
+		if (Input::IsGamepadPresent(PLAYER_GAMEPAD))
+			speedchange -= Input::GamepadRightStickY(PLAYER_GAMEPAD) * GAMEPAD_SPEED_SENSITIVITY * deltaTime;
+		shipSpeed += speedchange;
+		if (glm::abs(speedchange) > 0.001f)
 			ps_ship.emit = true;
 
 		Transform& t_ship = e_ship.GetComponent<Transform>();
 		Transform& t_mainCamera = e_mainCamera.GetComponent<Transform>();
 		Transform& t_lookBackCamera = e_lookBackCamera.GetComponent<Transform>();
 
-		t_ship.rotation *= glm::quat(glm::vec3(Input::MousePosDeltaY() * SENSITIVITY, 0.0, -Input::MousePosDeltaX() * SENSITIVITY));
+		float xrot = Input::MousePosDeltaY() * MOUSE_SENSITIVITY;
+		float zrot = -Input::MousePosDeltaX() * MOUSE_SENSITIVITY;
+		if (Input::IsGamepadPresent(PLAYER_GAMEPAD))
+		{
+			xrot += Input::GamepadLeftStickY(PLAYER_GAMEPAD) * GAMEPAD_TURN_SENSITIVITY * deltaTime;
+			zrot -= Input::GamepadLeftStickX(PLAYER_GAMEPAD) * GAMEPAD_TURN_SENSITIVITY * deltaTime;
+		}
+		if (glm::abs(xrot) > 0.001f || glm::abs(zrot) > 0.001f)
+			ps_ship.emit = true;
+
+		t_ship.rotation *= glm::quat(glm::vec3(xrot, 0.0, zrot));
 		t_ship.position += t_ship.Forward() * shipSpeed * deltaTime;
 
 		t_mainCamera.position = glm::mix(t_mainCamera.position, t_ship.position - (t_ship.Forward() * 4.0) + (t_ship.Up()), (float)(deltaTime * 2.0));

@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cstring>
 
+#define GAMEPAD_MAX_COUNT 16
 #define GAMEPAD_BUTTON_COUNT 15
 
 namespace sf::Input {
@@ -40,8 +41,10 @@ namespace sf::Input {
 		unsigned char buttons[GAMEPAD_BUTTON_COUNT] = { 0U };
 		float axes[6] = { 0.0f };
 	};
-	GamepadState gamepadState;
-	unsigned char gamepadButtonsPreviousFrame[GAMEPAD_BUTTON_COUNT];
+	unsigned int gamepadPresentBitmask;
+	static_assert(sizeof(gamepadPresentBitmask) * 8 > GAMEPAD_MAX_COUNT);
+	GamepadState gamepadState[GAMEPAD_MAX_COUNT];
+	unsigned char gamepadButtonsPreviousFrame[GAMEPAD_MAX_COUNT][GAMEPAD_BUTTON_COUNT];
 }
 
 void sf::Input::SetEnabled(bool value)
@@ -240,53 +243,63 @@ bool sf::Input::CharacterInput(unsigned int& character)
 	return charInput;
 }
 
-void* sf::Input::GetGamepadState()
+void sf::Input::UpdateGamepadPresentBitmask(unsigned int value)
 {
-	memcpy(gamepadButtonsPreviousFrame, gamepadState.buttons, GAMEPAD_BUTTON_COUNT);
-	return (void*) &gamepadState;
+	gamepadPresentBitmask = value;
 }
 
-bool sf::Input::GamepadButtonDown(int button)
+bool sf::Input::IsGamepadPresent(int id)
 {
-	return gamepadState.buttons[button] && !gamepadButtonsPreviousFrame[button];
+	return (gamepadPresentBitmask & (1u << id)) != 0;
 }
 
-bool sf::Input::GamepadButtonUp(int button)
+void* sf::Input::GetGamepadState(int id)
 {
-	return !gamepadState.buttons[button] && gamepadButtonsPreviousFrame[button];
+	memcpy(gamepadButtonsPreviousFrame[id], gamepadState[id].buttons, GAMEPAD_BUTTON_COUNT);
+	return (void*) &gamepadState[id];
 }
 
-bool sf::Input::GamepadButton(int button)
+bool sf::Input::GamepadButtonDown(int id, int button)
 {
-	return gamepadState.buttons[button];
+	return gamepadState[id].buttons[button] && !gamepadButtonsPreviousFrame[id][button];
 }
 
-float sf::Input::GamepadLeftStickX()
+bool sf::Input::GamepadButtonUp(int id, int button)
 {
-	return gamepadState.axes[GamepadAxes::LeftStickX];
+	return !gamepadState[id].buttons[button] && gamepadButtonsPreviousFrame[id][button];
 }
 
-float sf::Input::GamepadLeftStickY()
+bool sf::Input::GamepadButton(int id, int button)
 {
-	return gamepadState.axes[GamepadAxes::LeftStickY];
+	return gamepadState[id].buttons[button];
 }
 
-float sf::Input::GamepadRightStickX()
+float sf::Input::GamepadLeftStickX(int id)
 {
-	return gamepadState.axes[GamepadAxes::RightStickX];
+	return gamepadState[id].axes[GamepadAxes::LeftStickX];
 }
 
-float sf::Input::GamepadRightStickY()
+float sf::Input::GamepadLeftStickY(int id)
 {
-	return gamepadState.axes[GamepadAxes::RightStickY];
+	return gamepadState[id].axes[GamepadAxes::LeftStickY];
 }
 
-float sf::Input::GamepadLeftTrigger()
+float sf::Input::GamepadRightStickX(int id)
 {
-	return (gamepadState.axes[GamepadAxes::LeftTrigger] + 1.0f) / 2.0f;
+	return gamepadState[id].axes[GamepadAxes::RightStickX];
 }
 
-float sf::Input::GamepadRightTrigger()
+float sf::Input::GamepadRightStickY(int id)
 {
-	return (gamepadState.axes[GamepadAxes::RightTrigger] + 1.0f) / 2.0f;
+	return gamepadState[id].axes[GamepadAxes::RightStickY];
+}
+
+float sf::Input::GamepadLeftTrigger(int id)
+{
+	return (gamepadState[id].axes[GamepadAxes::LeftTrigger] + 1.0f) / 2.0f;
+}
+
+float sf::Input::GamepadRightTrigger(int id)
+{
+	return (gamepadState[id].axes[GamepadAxes::RightTrigger] + 1.0f) / 2.0f;
 }

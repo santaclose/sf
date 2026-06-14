@@ -70,31 +70,53 @@ namespace sf::ObjImporter {
 	}
 	void parseFace(const std::string& line, std::vector<glm::ivec3>& target, int start = 0)
 	{
-		int q = start, p = start;
-		while (p < line.length())
+		int pos = start;
+		int end;
+
+		while (pos < line.size())
 		{
-			for (q = p + 1; line[q] == ' ' || line[q] == '\t'; q++);
-			for (p = q; line[p] != '/'; p++);
-			int a = p - q == 0 ? -1 : std::stoi(line.substr(q, p - q));
-			q = p + 1;
-			for (p = q; line[p] != '/'; p++);
-			int b = p - q == 0 ? -1 : std::stoi(line.substr(q, p - q));
-			q = p + 1;
-			for (p = q; p < line.length() && line[p] != ' ' && line[p] != '\t'; p++);
-			int c = p - q == 0 ? -1 : std::stoi(line.substr(q, p - q));
-			target.push_back({ a, b, c });
-			bool moreVerticesAhead = false;
-			for (int i = p; i < line.length(); i++)
-			{
-				if (line[i] >= '0' && line[i] <= '9')
-				{
-					moreVerticesAhead = true;
-					break;
-				}
-			}
-			if (!moreVerticesAhead)
+			for (; pos < line.size() && (line[pos] == ' ' || line[pos] == '\t' || line[pos] == '\r'); pos++);
+			if (pos >= line.size())
 				break;
 
+			for (end = pos; end < line.size() &&
+				   line[end] != ' ' &&
+				   line[end] != '\t' &&
+				   line[end] != '\r'; end++);
+
+			std::string token = line.substr(pos, end - pos);
+
+			int v  = -1;
+			int vt = -1;
+			int vn = -1;
+
+			int s1 = token.find('/');
+			if (s1 == std::string::npos)
+				v = std::stoi(token);
+			else
+			{
+				int s2 = token.find('/', s1 + 1);
+
+				if (s1 > 0)
+					v = std::stoi(token.substr(0, s1));
+
+				if (s2 == std::string::npos)
+				{
+					// v/vt
+					if (s1 + 1 < token.size())
+						vt = std::stoi(token.substr(s1 + 1));
+				}
+				else
+				{
+					// v/vt/vn or v//vn
+					if (s2 > s1 + 1)
+						vt = std::stoi(token.substr(s1 + 1, s2 - s1 - 1));
+					if (s2 + 1 < token.size())
+						vn = std::stoi(token.substr(s2 + 1));
+				}
+			}
+			target.emplace_back(v, vt, vn);
+			pos = end;
 		}
 	}
 

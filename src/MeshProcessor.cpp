@@ -9,6 +9,8 @@
 #include <Random.h>
 #include <Geometry.h>
 
+#include <meshoptimizer.h>
+
 namespace sf {
 
 	template<typename PDT, typename NDT> // position data type and normal data type
@@ -477,4 +479,34 @@ void sf::MeshProcessor::RemoveUnusedBones(MeshData& mesh, SkeletonData& skeleton
 		boneIndicesPointer->z = (float) boneRemapping[(uint32_t)boneIndicesPointer->z];
 		boneIndicesPointer->w = (float) boneRemapping[(uint32_t)boneIndicesPointer->w];
 	}
+}
+
+void sf::MeshProcessor::Decimate(const MeshData& inputMesh, MeshData& outputMesh, float ratio)
+{
+	// Vertices must have positions
+	assert(inputMesh.vertexBufferLayout->GetComponentInfo(BufferComponent::Position) != nullptr);
+	assert(inputMesh.vertexCountPerPrimitive == 3);
+	assert(ratio >= 0.0f && ratio <= 1.0f);
+
+	uint32_t targetIndexCount = (uint32_t(inputMesh.indexCount * ratio) / 3) * 3;
+
+	outputMesh = inputMesh;
+	outputMesh.pieces = nullptr;
+	outputMesh.pieceCount = 1;
+
+	const glm::vec3* firstVertexPos = inputMesh.AccessVertexComponent<glm::vec3>(BufferComponent::Position, 0);
+	uint32_t* newIndices = new uint32_t[inputMesh.indexCount];
+	uint32_t actualIndexCount = meshopt_simplify(
+		newIndices,
+		inputMesh.indexBuffer,
+		inputMesh.indexCount,
+		&(firstVertexPos->x),
+		inputMesh.vertexCount,
+		inputMesh.vertexBufferLayout->GetSize(),
+		targetIndexCount,
+		1e-2f
+	);
+
+	outputMesh.indexCount = actualIndexCount;
+	outputMesh.indexBuffer = newIndices;
 }

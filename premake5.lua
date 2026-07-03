@@ -48,6 +48,7 @@ project "sf"
 		"vendor/nanosvg/*.cpp",
 		"vendor/sebtext/*.cpp",
 		"vendor/imnodes/imnodes.cpp",
+		"vendor/meshoptimizer/src/simplifier.cpp",
 		"vendor/vendor.cpp"
 	}
 
@@ -73,7 +74,8 @@ project "sf"
 		"vendor/imgui",
 		"vendor/sebtext",
 		"vendor/orangeduck",
-		"vendor/imnodes"
+		"vendor/imnodes",
+		"vendor/meshoptimizer/src"
 	}
 
 	links 

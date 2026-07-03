@@ -473,14 +473,17 @@ void sf::Renderer::SetEnvironment(const std::string& hdrFilePath, DataType hdrDa
 
 void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 {
-	if (mesh.meshData != nullptr && mesh.meshData->vertexCount == 0)
+	float meshCamDis2 = glm::distance2(transform.position, sharedGpuData.cameraPosition);
+	const MeshData* meshData  = mesh.GetMeshData(meshCamDis2);
+
+	if (meshData != nullptr && meshData->vertexCount == 0)
 		return;
 
 	sharedGpuData.modelMatrix = transform.ComputeMatrix();
 	glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
 
-	if (mesh.meshData == nullptr)
+	if (meshData == nullptr)
 	{
 		assert(mesh.materials.size() == 1);
 		assert(mesh.materials[0]->UsesMeshShader());
@@ -490,29 +493,33 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 		return;
 	}
 
-	if (meshGpuData.find(mesh.meshData) == meshGpuData.end()) // create mesh data if not there
-		CreateMeshGpuData(mesh.meshData);
+	if (meshGpuData.find(meshData) == meshGpuData.end()) // create mesh data if not there
+		CreateMeshGpuData(meshData);
 
-	for (uint32_t i = 0; i < mesh.meshData->pieceCount; i++)
+	for (uint32_t i = 0; i < meshData->pieceCount; i++)
 	{
-		GlMaterial* materialToUse = GetOrCreateMaterial(mesh.materials[i], mesh.meshData->vertexBufferLayout);
+		GlMaterial* materialToUse = GetOrCreateMaterial(mesh.materials[i], meshData->vertexBufferLayout);
 		materialToUse->Bind(rendererUniformVector);
 
-		uint32_t drawEnd, drawStart;
-		drawStart = mesh.meshData->pieces[i];
-		drawEnd = mesh.meshData->pieceCount > i + 1 ? mesh.meshData->pieces[i + 1] : mesh.meshData->indexCount;
+		uint32_t drawStart = 0;
+		uint32_t drawEnd = meshData->indexCount;
+		if (meshData->pieceCount > 1)
+		{
+			drawStart = meshData->pieces[i];
+			drawEnd = meshData->pieceCount > i + 1 ? meshData->pieces[i + 1] : meshData->indexCount;
+		}
 
-		glBindVertexArray(meshGpuData[mesh.meshData].gl_vao);
+		glBindVertexArray(meshGpuData[meshData].gl_vao);
 		glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
 		if (mesh.materials[i]->UsesTessellation())
 		{
-			assert(mesh.meshData->vertexCountPerPrimitive == mesh.materials[i]->tessPatchVertexCount);
+			assert(meshData->vertexCountPerPrimitive == mesh.materials[i]->tessPatchVertexCount);
 			glPatchParameteri(GL_PATCH_VERTICES, mesh.materials[i]->tessPatchVertexCount);
 			glDrawElements(GL_PATCHES, drawEnd - drawStart, GL_UNSIGNED_INT, (void*)(drawStart * sizeof(uint32_t)));
 		}
 		else
 		{
-			assert(mesh.meshData->vertexCountPerPrimitive == 3);
+			assert(meshData->vertexCountPerPrimitive == 3);
 			glDrawElements(GL_TRIANGLES, drawEnd - drawStart, GL_UNSIGNED_INT, (void*)(drawStart * sizeof(uint32_t)));
 		}
 	}
@@ -528,12 +535,15 @@ void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 		glGenBuffers(1, &newSsbo);
 		skeletonSsbos[mesh.skeletonData] = newSsbo;
 	}
+	
+	float meshCamDis2 = glm::distance2(transform.position, sharedGpuData.cameraPosition);
+	const MeshData* meshData  = mesh.GetMeshData(meshCamDis2);
 
-	if (mesh.meshData->vertexCount == 0)
+	if (meshData->vertexCount == 0)
 		return;
 
-	if (meshGpuData.find(mesh.meshData) == meshGpuData.end()) // create mesh data if not there
-		CreateMeshGpuData(mesh.meshData);
+	if (meshGpuData.find(meshData) == meshGpuData.end()) // create mesh data if not there
+		CreateMeshGpuData(meshData);
 
 	sharedGpuData.modelMatrix = transform.ComputeMatrix();
 	glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
@@ -542,20 +552,24 @@ void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, skeletonSsbos[mesh.skeletonData]);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, mesh.skeletonData->m_skinningMatrices.size() * sizeof(glm::mat4), &(mesh.skeletonData->m_skinningMatrices[0][0][0]), GL_DYNAMIC_DRAW);
 
-	for (uint32_t i = 0; i < mesh.meshData->pieceCount; i++)
+	for (uint32_t i = 0; i < meshData->pieceCount; i++)
 	{
-		GlMaterial* materialToUse = GetOrCreateMaterial(mesh.materials[i], mesh.meshData->vertexBufferLayout);
+		GlMaterial* materialToUse = GetOrCreateMaterial(mesh.materials[i], meshData->vertexBufferLayout);
 		materialToUse->Bind(rendererUniformVector);
 		materialToUse->m_shader->SetUniform1i("animate", mesh.skeletonData->m_animate);
 
-		uint32_t drawEnd, drawStart;
-		drawStart = mesh.meshData->pieces[i];
-		drawEnd = mesh.meshData->pieceCount > i + 1 ? mesh.meshData->pieces[i + 1] : mesh.meshData->indexCount;
+		uint32_t drawStart = 0;
+		uint32_t drawEnd = meshData->indexCount;
+		if (meshData->pieceCount > 1)
+		{
+			drawStart = meshData->pieces[i];
+			drawEnd = meshData->pieceCount > i + 1 ? meshData->pieces[i + 1] : meshData->indexCount;
+		}
 
-		glBindVertexArray(meshGpuData[mesh.meshData].gl_vao);
+		glBindVertexArray(meshGpuData[meshData].gl_vao);
 		glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, skeletonSsbos[mesh.skeletonData]);
-		assert(mesh.meshData->vertexCountPerPrimitive == 3);
+		assert(meshData->vertexCountPerPrimitive == 3);
 		glDrawElements(GL_TRIANGLES, drawEnd - drawStart, GL_UNSIGNED_INT, (void*)(drawStart * sizeof(uint32_t)));
 	}
 

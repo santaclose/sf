@@ -9,7 +9,6 @@ premake-*
 **.vcxproj.filters
 **.vcxproj.user
 
-**.obj
 **.gltf
 **.bin
 **.glb

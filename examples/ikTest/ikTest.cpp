@@ -117,7 +117,7 @@ namespace sf
 			humanMesh = MeshData(&vertexLayout);
 			GltfImporter::GenerateMeshData(gltfid, humanMesh);
 			MeshProcessor::ComputeNormals(humanMesh);
-			SkinnedMesh& objectMesh = humanModel.AddComponent<SkinnedMesh>(&humanMesh, &meshMaterial, &humanSkeleton);
+			SkinnedMesh& objectMesh = humanModel.AddComponent<SkinnedMesh>(&humanMesh, &humanSkeleton, &meshMaterial);
 			for (int i = 0; i < humanSkeleton.m_animations.size(); i++)
 				humanSkeleton.AddNodeSingle(i);
 			humanSkeleton.SetAnimate(true);

@@ -1,6 +1,6 @@
 #include "VoxelVolumeData.h"
 
-#include <Geometry.h>
+#include <Geometry/Geometry.h>
 #include <Math.hpp>
 
 void sf::VoxelVolumeData::BuildEmpty(const glm::uvec3& voxelCountPerAxis, const BufferLayout* voxelBufferLayout, float voxelSize, const glm::vec3& offset)
@@ -198,17 +198,25 @@ void* sf::VoxelVolumeData::CastRay(const glm::vec3& origin, const glm::vec3& dir
 	glm::vec3 bbmax = GetAABBMax();
 
 	glm::uvec3 currentVoxel;
-	if (!Geometry::IntersectPointAABB(origin, bbmin, bbmax))
-	{
-		glm::vec3 point;
-		// move origin to bounding box
-		if (!Geometry::IntersectRayAABB(origin, dir, bbmin, bbmax, &point))
-			return nullptr;
+	Geometry::RayHit rh;
+	if (!Geometry::IntersectRayAABB(origin, dir, bbmin, bbmax, &rh))
+		return nullptr;
 
+	/* Origin was inside aabb */
+	if (rh.distance == 0.0f)
+	{
 		currentVoxel = {
-			(point.x - bbmin.x) / voxelSize,
-			(point.y - bbmin.y) / voxelSize,
-			(point.z - bbmin.z) / voxelSize
+			(origin.x - bbmin.x) / voxelSize,
+			(origin.y - bbmin.y) / voxelSize,
+			(origin.z - bbmin.z) / voxelSize };
+	}
+	else
+	{
+		/* Move origin to bounding box */
+		currentVoxel = {
+			(rh.point.x - bbmin.x) / voxelSize,
+			(rh.point.y - bbmin.y) / voxelSize,
+			(rh.point.z - bbmin.z) / voxelSize
 		};
 		if (currentVoxel.x < 0) currentVoxel.x = 0;
 		if (currentVoxel.x > voxelCountPerAxis.x - 1) currentVoxel.x = voxelCountPerAxis.x - 1;
@@ -216,14 +224,6 @@ void* sf::VoxelVolumeData::CastRay(const glm::vec3& origin, const glm::vec3& dir
 		if (currentVoxel.y > voxelCountPerAxis.y - 1) currentVoxel.y = voxelCountPerAxis.y - 1;
 		if (currentVoxel.z < 0) currentVoxel.z = 0;
 		if (currentVoxel.z > voxelCountPerAxis.z - 1) currentVoxel.z = voxelCountPerAxis.z - 1;
-	}
-	else
-	{
-		currentVoxel = {
-			(origin.x - bbmin.x) / voxelSize,
-			(origin.y - bbmin.y) / voxelSize,
-			(origin.z - bbmin.z) / voxelSize
-		};
 	}
 
 	glm::vec3 currentVoxelCenter = GetVoxelCenterLocation(currentVoxel);

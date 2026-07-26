@@ -13,8 +13,8 @@
 #include <Game.h>
 #include <MeshData.h>
 #include <Defaults.h>
-#include <Geometry.h>
 #include <Random.h>
+#include <EntityIntersect.h>
 #include <Renderer/Renderer.h>
 
 #include <Importer/ObjImporter.h>
@@ -54,7 +54,9 @@ namespace sf
 			TriangleTriangleIntersection,
 			MeshSphereIntersection,
 			MeshCapsuleIntersection,
-			MeshBoxIntersection
+			MeshBoxIntersection,
+			MovingSphereMesh,
+			MovingCapsuleMesh,
 		};
 		TestCase currentTestCase;
 
@@ -435,6 +437,33 @@ namespace sf
 					}
 					break;
 				}
+				case TestCase::MovingSphereMesh:
+				{
+					monkey.SetEnabled(true);
+					monkey.GetComponent<Transform>() = Transform();
+
+					spheres[0].GetComponent<Transform>().position = glm::vec3(-2.0f, 0.0f, 0.0f);
+					spheres[0].GetComponent<Transform>().scale = Random::Float() * 0.4f + 0.2f;
+					spheres[0].GetComponent<SphereCollider>().center = Random::PointInSphere();
+					spheres[0].GetComponent<SphereCollider>().radius = Random::Float() * 0.4f + 0.2f;
+					spheres[1].GetComponent<Transform>() = spheres[0].GetComponent<Transform>();
+					spheres[1].GetComponent<SphereCollider>() = spheres[0].GetComponent<SphereCollider>();
+					break;
+				}
+				case TestCase::MovingCapsuleMesh:
+				{
+					monkey.SetEnabled(true);
+					monkey.GetComponent<Transform>() = Transform();
+
+					capsules[0].GetComponent<Transform>().position = glm::vec3(-2.0f, 0.0f, 0.0f);
+					capsules[0].GetComponent<Transform>().scale = Random::Float() * 0.4f + 0.2f;
+					capsules[0].GetComponent<CapsuleCollider>().radius = Random::Float() * 0.4f + 0.2f;
+					capsules[0].GetComponent<CapsuleCollider>().centerA = Random::PointInSphere();
+					capsules[0].GetComponent<CapsuleCollider>().centerB = Random::PointInSphere();
+					capsules[1].GetComponent<Transform>() = capsules[0].GetComponent<Transform>();
+					capsules[1].GetComponent<CapsuleCollider>() = capsules[0].GetComponent<CapsuleCollider>();
+					break;
+				}
 			}
 		}
 	}
@@ -608,7 +637,7 @@ namespace sf
 			for (int i = 0; i < testCount; i++)
 			{
 				glm::vec3 intersectionPoint;
-				glm::vec3 lineColor = Geometry::IntersectTriangleSegment(triangles[0], triangles[1], triangles[2], lines[i * 2], lines[i * 2 + 1], intersectionPoint) ? glm::vec3 COLOR_RED : glm::vec3 COLOR_LIGHT_BLUE;
+				glm::vec3 lineColor = Geometry::IntersectTriangleSegment(triangles[0], triangles[1], triangles[2], lines[i * 2], lines[i * 2 + 1], &intersectionPoint) ? glm::vec3 COLOR_RED : glm::vec3 COLOR_LIGHT_BLUE;
 				sf::Renderer::AddLine(lines[i * 2], lines[i * 2 + 1], lineColor);
 			}
 			break;
@@ -620,7 +649,7 @@ namespace sf
 			sf::Renderer::AddLine(glm::vec3(points[1].x - points[1].z, points[1].y, 0.0f), glm::vec3(points[1].x + points[1].z, points[1].y, 0.0f), COLOR_BLUE);
 			sf::Renderer::AddLine(glm::vec3(points[1].x, points[1].y - points[1].z, 0.0f), glm::vec3(points[1].x, points[1].y + points[1].z, 0.0f), COLOR_BLUE);
 			glm::vec2 intersectionPoints[2];
-			if (Geometry::IntersectCircleCircle({ points[0].x, points[0].y }, points[0].z, { points[1].x, points[1].y }, points[1].z, intersectionPoints[0], intersectionPoints[1]))
+			if (Geometry::IntersectCircleCircle2D({ points[0].x, points[0].y }, points[0].z, { points[1].x, points[1].y }, points[1].z, intersectionPoints[0], intersectionPoints[1]))
 			{
 				sf::Renderer::AddLine(glm::vec3(intersectionPoints[0].x - 0.01f, intersectionPoints[0].y, 0.0f), glm::vec3(intersectionPoints[0].x + 0.01f, intersectionPoints[0].y, 0.0f), COLOR_RED);
 				sf::Renderer::AddLine(glm::vec3(intersectionPoints[0].x, intersectionPoints[0].y - 0.01f, 0.0f), glm::vec3(intersectionPoints[0].x, intersectionPoints[0].y + 0.01f, 0.0f), COLOR_RED);
@@ -631,11 +660,11 @@ namespace sf
 		}
 		case TestCase::SphereSphereIntersection:
 		{
-			SphereCollider fixedSc = WORLD_SPACE_SPHERE_COLLIDER(spheres[0]);
+			SphereCollider fixedSc = EntityIntersect::WorldSpace<SphereCollider>(spheres[0]);
 			Renderer::DrawSphereCollider(fixedSc, COLOR_BLUE);
 			for (int i = 0; i < testCount; i++)
 			{
-				SphereCollider sc = WORLD_SPACE_SPHERE_COLLIDER(spheres[i + 1]);
+				SphereCollider sc = EntityIntersect::WorldSpace<SphereCollider>(spheres[i + 1]);
 				Renderer::DrawSphereCollider(sc,
 					Geometry::IntersectSphereSphere(fixedSc, sc) ? glm::vec3 COLOR_RED : glm::vec3 COLOR_GREEN);
 			}
@@ -643,35 +672,35 @@ namespace sf
 		}
 		case TestCase::SphereCapsuleIntersection:
 		{
-			CapsuleCollider cc = WORLD_SPACE_CAPSULE_COLLIDER(capsules[0]);
+			CapsuleCollider cc = EntityIntersect::WorldSpace<CapsuleCollider>(capsules[0]);
 			Renderer::DrawCapsuleCollider(cc, COLOR_BLUE);
 			for (int i = 0; i < testCount; i++)
 			{
-				SphereCollider sc = WORLD_SPACE_SPHERE_COLLIDER(spheres[i]);
+				SphereCollider sc = EntityIntersect::WorldSpace<SphereCollider>(spheres[i]);
 				Renderer::DrawSphereCollider(sc,
-					Geometry::IntersectCapsuleSphere(cc, sc) ? glm::vec3 COLOR_RED : glm::vec3 COLOR_GREEN);
+					Geometry::IntersectSphereCapsule(sc, cc) ? glm::vec3 COLOR_RED : glm::vec3 COLOR_GREEN);
 			}
 			return;
 		}
 		case TestCase::SphereBoxIntersection:
 		{
-			BoxCollider fixedBc = WORLD_SPACE_BOX_COLLIDER(boxes[0]);
+			BoxCollider fixedBc = EntityIntersect::WorldSpace<BoxCollider>(boxes[0]);
 			Renderer::DrawBoxCollider(fixedBc, COLOR_BLUE);
 			for (int i = 0; i < testCount; i++)
 			{
-				SphereCollider sc = WORLD_SPACE_SPHERE_COLLIDER(spheres[i]);
+				SphereCollider sc = EntityIntersect::WorldSpace<SphereCollider>(spheres[i]);
 				Renderer::DrawSphereCollider(sc,
-					Geometry::IntersectBoxSphere(fixedBc, sc) ? glm::vec3 COLOR_RED : glm::vec3 COLOR_GREEN);
+					Geometry::IntersectSphereBox(sc, fixedBc) ? glm::vec3 COLOR_RED : glm::vec3 COLOR_GREEN);
 			}
 			return;
 		}
 		case TestCase::CapsuleCapsuleIntersection:
 		{
-			CapsuleCollider fixedCc = WORLD_SPACE_CAPSULE_COLLIDER(capsules[0]);
+			CapsuleCollider fixedCc = EntityIntersect::WorldSpace<CapsuleCollider>(capsules[0]);
 			Renderer::DrawCapsuleCollider(fixedCc, COLOR_BLUE);
 			for (int i = 0; i < testCount; i++)
 			{
-				CapsuleCollider cc = WORLD_SPACE_CAPSULE_COLLIDER(capsules[i + 1]);
+				CapsuleCollider cc = EntityIntersect::WorldSpace<CapsuleCollider>(capsules[i + 1]);
 				Renderer::DrawCapsuleCollider(cc,
 					Geometry::IntersectCapsuleCapsule(fixedCc, cc) ? glm::vec3 COLOR_RED : glm::vec3 COLOR_GREEN);
 			}
@@ -679,23 +708,23 @@ namespace sf
 		}
 		case TestCase::CapsuleBoxIntersection:
 		{
-			BoxCollider fixedBc = WORLD_SPACE_BOX_COLLIDER(boxes[0]);
+			BoxCollider fixedBc = EntityIntersect::WorldSpace<BoxCollider>(boxes[0]);
 			Renderer::DrawBoxCollider(fixedBc, COLOR_BLUE);
 			for (int i = 0; i < testCount; i++)
 			{
-				CapsuleCollider bc = WORLD_SPACE_CAPSULE_COLLIDER(capsules[i]);
-				Renderer::DrawCapsuleCollider(bc,
-					Geometry::IntersectBoxCapsule(fixedBc, bc) ? glm::vec3 COLOR_RED : glm::vec3 COLOR_GREEN);
+				CapsuleCollider cc = EntityIntersect::WorldSpace<CapsuleCollider>(capsules[i]);
+				Renderer::DrawCapsuleCollider(cc,
+					Geometry::IntersectCapsuleBox(cc, fixedBc) ? glm::vec3 COLOR_RED : glm::vec3 COLOR_GREEN);
 			}
 			return;
 		}
 		case TestCase::BoxBoxIntersection:
 		{
-			BoxCollider fixedBc = WORLD_SPACE_BOX_COLLIDER(boxes[0]);
+			BoxCollider fixedBc = EntityIntersect::WorldSpace<BoxCollider>(boxes[0]);
 			Renderer::DrawBoxCollider(fixedBc, COLOR_BLUE);
 			for (int i = 0; i < testCount; i++)
 			{
-				BoxCollider bc = WORLD_SPACE_BOX_COLLIDER(boxes[i + 1]);
+				BoxCollider bc = EntityIntersect::WorldSpace<BoxCollider>(boxes[i + 1]);
 				Renderer::DrawBoxCollider(bc,
 					Geometry::IntersectBoxBox(fixedBc, bc) ? glm::vec3 COLOR_RED : glm::vec3 COLOR_GREEN);
 			}
@@ -703,7 +732,7 @@ namespace sf
 		}
 		case TestCase::BoxTriangleIntersection:
 		{
-			BoxCollider fixedBc = WORLD_SPACE_BOX_COLLIDER(boxes[0]);
+			BoxCollider fixedBc = EntityIntersect::WorldSpace<BoxCollider>(boxes[0]);
 			Renderer::DrawBoxCollider(fixedBc, COLOR_BLUE);
 			for (int i = 0; i < testCount; i++)
 			{
@@ -737,8 +766,8 @@ namespace sf
 		{
 			for (int i = 0; i < testCount; i++)
 			{
-				glm::vec3 sphereColor = INTERSECT_MESH_SPHERE(monkey, spheres[i]) ? glm::vec3 COLOR_RED : glm::vec3 COLOR_GREEN;
-				Renderer::DrawSphereCollider(WORLD_SPACE_SPHERE_COLLIDER(spheres[i]), sphereColor);
+				glm::vec3 sphereColor = EntityIntersect::SphereMesh(spheres[i], monkey) ? glm::vec3 COLOR_RED : glm::vec3 COLOR_GREEN;
+				Renderer::DrawSphereCollider(EntityIntersect::WorldSpace<SphereCollider>(spheres[i]), sphereColor);
 			}
 			return;
 		}
@@ -746,8 +775,8 @@ namespace sf
 		{
 			for (int i = 0; i < testCount; i++)
 			{
-				glm::vec3 capsuleColor = INTERSECT_MESH_CAPSULE(monkey, capsules[i]) ? glm::vec3 COLOR_RED : glm::vec3 COLOR_GREEN;
-				Renderer::DrawCapsuleCollider(WORLD_SPACE_CAPSULE_COLLIDER(capsules[i]), capsuleColor);
+				glm::vec3 capsuleColor = EntityIntersect::CapsuleMesh(capsules[i], monkey) ? glm::vec3 COLOR_RED : glm::vec3 COLOR_GREEN;
+				Renderer::DrawCapsuleCollider(EntityIntersect::WorldSpace<CapsuleCollider>(capsules[i]), capsuleColor);
 			}
 			break;
 		}
@@ -755,8 +784,34 @@ namespace sf
 		{
 			for (int i = 0; i < testCount; i++)
 			{
-				glm::vec3 boxColor = INTERSECT_MESH_BOX(monkey, boxes[i]) ? glm::vec3 COLOR_RED : glm::vec3 COLOR_GREEN;
-				Renderer::DrawBoxCollider(WORLD_SPACE_BOX_COLLIDER(boxes[i]), boxColor);
+				glm::vec3 boxColor = EntityIntersect::BoxMesh(boxes[i], monkey) ? glm::vec3 COLOR_RED : glm::vec3 COLOR_GREEN;
+				Renderer::DrawBoxCollider(EntityIntersect::WorldSpace<BoxCollider>(boxes[i]), boxColor);
+			}
+			break;
+		}
+		case TestCase::MovingSphereMesh:
+		{
+			monkey.GetComponent<Transform>().rotation = glm::quat(glm::vec3(0.0f, time * 0.2f, 0.0f));
+			Geometry::RayHit rh;
+			bool collided = EntityIntersect::MovingSphereMesh(spheres[0], glm::vec3(3.0f, 0.0f, 0.0f), monkey, &rh);
+			Renderer::DrawSphereCollider(EntityIntersect::WorldSpace<SphereCollider>(spheres[0]), glm::vec3 COLOR_BLUE);
+			if (collided)
+			{
+				spheres[1].GetComponent<Transform>().position = spheres[0].GetComponent<Transform>().position + glm::vec3(1.0f, 0.0f, 0.0f) * rh.distance;
+				Renderer::DrawSphereCollider(EntityIntersect::WorldSpace<SphereCollider>(spheres[1]), glm::vec3 COLOR_RED);
+			}
+			break;
+		}
+		case TestCase::MovingCapsuleMesh:
+		{
+			monkey.GetComponent<Transform>().rotation = glm::quat(glm::vec3(0.0f, time * 0.2f, 0.0f));
+			Geometry::RayHit rh;
+			bool collided = EntityIntersect::MovingCapsuleMesh(capsules[0], glm::vec3(3.0f, 0.0f, 0.0f), monkey, &rh);
+			Renderer::DrawCapsuleCollider(EntityIntersect::WorldSpace<CapsuleCollider>(capsules[0]), glm::vec3 COLOR_BLUE);
+			if (collided)
+			{
+				capsules[1].GetComponent<Transform>().position = capsules[0].GetComponent<Transform>().position + glm::vec3(1.0f, 0.0f, 0.0f) * rh.distance;
+				Renderer::DrawCapsuleCollider(EntityIntersect::WorldSpace<CapsuleCollider>(capsules[1]), glm::vec3 COLOR_RED);
 			}
 			break;
 		}
@@ -790,6 +845,8 @@ namespace sf
 				if (ImGui::MenuItem("MeshSphereIntersection", NULL, currentTestCase == TestCase::MeshSphereIntersection)) { currentTestCase = TestCase::MeshSphereIntersection; GenerateShapesForCurrentCase(); }
 				if (ImGui::MenuItem("MeshCapsuleIntersection", NULL, currentTestCase == TestCase::MeshCapsuleIntersection)) { currentTestCase = TestCase::MeshCapsuleIntersection; GenerateShapesForCurrentCase(); }
 				if (ImGui::MenuItem("MeshBoxIntersection", NULL, currentTestCase == TestCase::MeshBoxIntersection)) { currentTestCase = TestCase::MeshBoxIntersection; GenerateShapesForCurrentCase(); }
+				if (ImGui::MenuItem("MovingSphereMesh", NULL, currentTestCase == TestCase::MovingSphereMesh)) { currentTestCase = TestCase::MovingSphereMesh; GenerateShapesForCurrentCase(); }
+				if (ImGui::MenuItem("MovingCapsuleMesh", NULL, currentTestCase == TestCase::MovingCapsuleMesh)) { currentTestCase = TestCase::MovingCapsuleMesh; GenerateShapesForCurrentCase(); }
 
 				ImGui::EndMenu();
 			}

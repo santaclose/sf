@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Components/Transform.h>
+#include <Components/SphereCollider.h>
 #include <MeshData.h>
 
 namespace sf
@@ -8,20 +9,36 @@ namespace sf
 	struct MeshCollider
 	{
 		const MeshData* meshData;
-		float boundingSphereRadius;
+		SphereCollider boundingSphere;
 
 		MeshCollider(const MeshData* meshData)
 		{
 			this->meshData = meshData;
 
-			boundingSphereRadius = 0.0f;
+			glm::vec3 min, max;
 			for (uint32_t j = 0; j < meshData->indexCount; j++)
 			{
 				glm::vec3* vertexPos = meshData->AccessVertexComponent<glm::vec3>(BufferComponent::Position, meshData->indexBuffer[j + 0]);
-				float length2 = glm::dot(*vertexPos, *vertexPos);
-				boundingSphereRadius = length2 > boundingSphereRadius ? length2 : boundingSphereRadius;
+				if (j == 0)
+				{
+					min = max = *vertexPos;
+					continue;
+				}
+				if (vertexPos->x > max.x)
+					max.x = vertexPos->x;
+				if (vertexPos->y > max.y)
+					max.y = vertexPos->y;
+				if (vertexPos->z > max.z)
+					max.z = vertexPos->z;
+				if (vertexPos->x < min.x)
+					min.x = vertexPos->x;
+				if (vertexPos->y < min.y)
+					min.y = vertexPos->y;
+				if (vertexPos->z < min.z)
+					min.z = vertexPos->z;
 			}
-			boundingSphereRadius = glm::sqrt(boundingSphereRadius);
+			boundingSphere.center = (min + max) * 0.5f;
+			boundingSphere.radius = glm::length(boundingSphere.center - max);
 		}
 	};
 }

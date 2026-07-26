@@ -12,18 +12,7 @@ namespace sf
 		{
 			SphereCollider out;
 			out.radius = this->radius * transform.scale;
-			out.center = this->center * transform.scale;
-			out.center = transform.rotation * out.center;
-			out.center += transform.position;
-			return out;
-		}
-		inline SphereCollider ApplyTransformInverse(const Transform& transform)
-		{
-			SphereCollider out;
-			out.center = this->center - transform.position;
-			out.center = glm::conjugate(transform.rotation) * out.center;
-			out.center = out.center / transform.scale;
-			out.radius = this->radius / transform.scale;
+			out.center = transform.ApplyToPoint(center);
 			return out;
 		}
 	};

@@ -7,7 +7,7 @@
 #include <unordered_map>
 
 #include <Random.h>
-#include <Geometry.h>
+#include <Geometry/Geometry.h>
 
 #include <meshoptimizer.h>
 
@@ -256,11 +256,14 @@ void sf::MeshProcessor::ComputeVertexAmbientOcclusion(MeshData& mesh, const Voxe
 					if (mesh.indexBuffer[j + 0] == q || mesh.indexBuffer[j + 1] == q || mesh.indexBuffer[j + 2] == q)
 						continue; // current vertex belongs to this face
 
+					Geometry::RayHit rh;
 					didHit = Geometry::IntersectRayTriangle(vertexPos + (rayDir * config->rayOriginOffset), rayDir,
 						*mesh.AccessVertexComponent<glm::vec3>(BufferComponent::Position, mesh.indexBuffer[j + 0]),
 						*mesh.AccessVertexComponent<glm::vec3>(BufferComponent::Position, mesh.indexBuffer[j + 1]),
 						*mesh.AccessVertexComponent<glm::vec3>(BufferComponent::Position, mesh.indexBuffer[j + 2]),
-						&distance);
+						&rh);
+					if (didHit)
+						distance = rh.distance;
 				}
 				if (distance > config->rayDistance)
 					distance = config->rayDistance;

@@ -88,5 +88,10 @@ namespace sf {
 			for (; !((v >> i) & 1) && i < 32; i++);
 			return i;
 		}
+
+		inline float Cross2D(const glm::vec2& a, const glm::vec2& b)
+		{
+			return a.x * b.y - a.y * b.x;
+		}
 	}
 }

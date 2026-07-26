@@ -87,5 +87,15 @@ namespace sf {
 			out.position = out.rotation * (-position * out.scale);
 			return out;
 		}
+
+		glm::vec3 ApplyToPoint(const glm::vec3& p) const
+		{
+			return rotation * (p * scale) + position;
+		}
+
+		glm::vec3 ApplyToDirection(const glm::vec3& d) const
+		{
+			return rotation * d;
+		}
 	};
 }

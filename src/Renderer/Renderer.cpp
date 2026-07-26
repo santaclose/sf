@@ -8,7 +8,9 @@
 #include <glm/gtc/quaternion.hpp>
 
 #include <glad/glad.h>
+
 #include <Components/Camera.h>
+#include <Components/MeshCollider.h>
 
 #include <Material.h>
 #include <Defaults.h>
@@ -1012,6 +1014,13 @@ void sf::Renderer::DrawFramebuffer(const Framebuffer& framebuffer, float deltaTi
 					auto [base, bc, transform] = boxColliderRenderView.get<Base, BoxCollider, Transform>(entity);
 					if (base.isEntityEnabled)
 						DrawBoxCollider(bc.ApplyTransform(transform), glm::vec3(0.0f, 0.0f, 0.0f));
+				}
+				auto meshColliderRenderView = scene->GetRegistry().view<Base, MeshCollider, Transform>();
+				for (auto entity : meshColliderRenderView)
+				{
+					auto [base, mc, transform] = meshColliderRenderView.get<Base, MeshCollider, Transform>(entity);
+					if (base.isEntityEnabled)
+						DrawSphereCollider(mc.boundingSphere.ApplyTransform(transform), glm::vec3(0.0f, 0.0f, 0.0f));
 				}
 			}
 

@@ -19,16 +19,5 @@ namespace sf
 			out.center += transform.position;
 			return out;
 		}
-		inline BoxCollider ApplyTransformInverse(const Transform& transform)
-		{
-			BoxCollider out;
-			glm::quat conj = glm::conjugate(transform.rotation);
-			out.center = this->center - transform.position;
-			out.center = conj * out.center;
-			out.center = out.center / transform.scale;
-			out.orientation = conj * this->orientation;
-			out.size = this->size / transform.scale;
-			return out;
-		}
 	};
 }

@@ -37,8 +37,6 @@
 #define GIMBAL_OFFSET_SHANYUNG 1.0f
 #define GIMBAL_OFFSET_FOX 0.5f
 
-#define FOX_SCALE 0.01f
-
 #define HOUSE_COUNT 400
 
 namespace sf
@@ -274,9 +272,7 @@ namespace sf
 
 		{
 			shanyung = scene.CreateEntity();
-			Transform& e_t = shanyung.AddComponent<Transform>();
-			e_t.rotation = glm::quat(glm::vec3(glm::radians(-90.0f), 0.0f, 0.0f));
-			e_t.rotation *= glm::quat(glm::vec3(0.0f, 0.0f, glm::radians(180.0f)));
+			shanyung.AddComponent<Transform>();
 
 			shanyungSkeleton = new SkeletonData();
 			shanyungMesh = new MeshData(&characterVertexLayout);
@@ -284,14 +280,21 @@ namespace sf
 			GltfImporter::GenerateSkeleton(gltfid, *shanyungSkeleton);
 			GltfImporter::GenerateMeshData(gltfid, *shanyungMesh);
 			MeshProcessor::RemoveUnusedBones(*shanyungMesh, *shanyungSkeleton);
+			{
+				Transform shanyungImportTransform;
+				shanyungImportTransform.rotation = glm::quat(glm::vec3(glm::radians(-90.0f), 0.0f, 0.0f));
+				shanyungImportTransform.rotation *= glm::quat(glm::vec3(0.0f, 0.0f, glm::radians(180.0f)));
+				MeshProcessor::TransformMesh(*shanyungMesh, shanyungImportTransform);
+				MeshProcessor::TransformSkeleton(*shanyungSkeleton, shanyungImportTransform);
+			}
 
 			shanyung.AddComponent<SkinnedMesh>(GenerateLODs(*shanyungMesh, shanyungLodRatios, shanyungLodDistances, 4), shanyungSkeleton, &characterMaterial);
 
 			CapsuleCollider& e_cc = shanyung.AddComponent<CapsuleCollider>();
 			e_cc.radius = 0.3;
-			e_cc.centerA = glm::vec3(0.0f, 0.0f, 0.7f);
-			e_cc.centerB = glm::vec3(0.0f, 0.0f, 1.2f);
-			shanyungCapsuleSeparation = e_cc.centerA.z - e_cc.radius;
+			e_cc.centerA = glm::vec3(0.0f, 0.7f, 0.0f);
+			e_cc.centerB = glm::vec3(0.0f, 1.2f, 0.0f);
+			shanyungCapsuleSeparation = e_cc.centerA.y - e_cc.radius;
 
 			shanyungWeights.resize(10);
 			shanyungSpeedPerAnimation = { {0.0f, 0.0f}, {0.0f, 6.0f}, {-6.0f, 0.0f}, {6.0f, 0.0f}, {0.0f, 1.68f}, {0.0f, -1.08f}, {-0.763f, -0.763f}, {0.763f, -0.763f}, {-1.68f, 0.0f}, {1.68f, 0.0f} };
@@ -303,9 +306,7 @@ namespace sf
 		}
 		{
 			fox = scene.CreateEntity();
-			Transform& e_t = fox.AddComponent<Transform>();
-			e_t.rotation = glm::quat(glm::vec3(0.0f, glm::radians(180.0f), 0.0f));
-			e_t.scale = FOX_SCALE;
+			fox.AddComponent<Transform>();
 
 			foxSkeleton = new SkeletonData();
 			foxMesh = new MeshData(&characterVertexLayout);
@@ -314,6 +315,13 @@ namespace sf
 			GltfImporter::GenerateMeshData(gltfid, *foxMesh);
 			MeshProcessor::RemoveUnusedBones(*foxMesh, *foxSkeleton);
 			MeshProcessor::ComputeNormals(*foxMesh);
+			{
+				Transform foxImportTransform;
+				foxImportTransform.rotation = glm::quat(glm::vec3(0.0f, glm::radians(180.0f), 0.0f));
+				foxImportTransform.scale = 0.01f;
+				MeshProcessor::TransformMesh(*foxMesh, foxImportTransform);
+				MeshProcessor::TransformSkeleton(*foxSkeleton, foxImportTransform);
+			}
 			fox.AddComponent<SkinnedMesh>(foxMesh, foxSkeleton, &characterMaterial);
 
 			foxCol = scene.CreateEntity();
@@ -378,8 +386,8 @@ namespace sf
 			Transform& e_t = shanyung.GetComponent<Transform>();
 			glm::vec2 targetSpeed;
 			Math::WeightedBlend(shanyungSpeedPerAnimation.data(), shanyungWeights.data(), shanyungWeights.size(), targetSpeed);
-			e_t.rotation = glm::slerp(e_t.rotation, glm::quat(glm::vec3(0.0f, targetGimbalRotation.y, 0.0f)) * glm::quat(glm::vec3(glm::radians(-90.0f), 0.0f, 0.0f)), deltaTime * (glm::length(targetSpeed) > 0.01f ? 1.0f : 0.0f) * 4.0f);
-			glm::vec3 disp = (-e_t.Up() * targetSpeed.y - e_t.Right() * targetSpeed.x) * deltaTime;
+			e_t.rotation = glm::slerp(e_t.rotation, glm::quat(glm::vec3(0.0f, glm::radians(180.0f) + targetGimbalRotation.y, 0.0f)), deltaTime * (glm::length(targetSpeed) > 0.01f ? 1.0f : 0.0f) * 4.0f);
+			glm::vec3 disp = (e_t.Forward() * targetSpeed.y + e_t.Right() * targetSpeed.x) * deltaTime;
 
 			uint32_t outNCount;
 			Geometry::ContactData outCd[4];
@@ -413,7 +421,6 @@ namespace sf
 				e_t.position.y -= shanyungVerticalSpeed * deltaTime;
 			}
 
-
 			UpdateCamera(deltaTime, shanyung, GIMBAL_OFFSET_SHANYUNG);
 		}
 		else if (fox.IsEnabled())
@@ -445,7 +452,7 @@ namespace sf
 			camForwardFlat.y = 0;
 			glm::normalize(camForwardFlat);
 			glm::vec3 camRightFlat = glm::cross(camForwardFlat, glm::vec3(0.0f, 1.0f, 0.0f));
-			glm::vec3 disp = -e_t.Forward() * targetSpeed * deltaTime;
+			glm::vec3 disp = e_t.Forward() * targetSpeed * deltaTime;
 
 			bool collidedWithWall = false;
 			uint32_t outNCount;
@@ -490,7 +497,7 @@ namespace sf
 
 				if (targetBlendSpaceX > 0.00001f)
 					e_t.rotation = glm::slerp(e_t.rotation,
-						glm::quatLookAt(camForwardFlat * -inputVector.y + camRightFlat * -inputVector.x, glm::vec3(0.0f, 1.0f, 0.0f)) *
+						glm::quatLookAt(camForwardFlat * inputVector.y + camRightFlat * inputVector.x, glm::vec3(0.0f, 1.0f, 0.0f)) *
 						glm::quatLookAt(glm::normalize(glm::vec3(0.0f, deltaForward.y, -0.001f)),
 							glm::vec3(0.0f, 1.0f, 0.0f)), deltaTime * 5.0f);
 

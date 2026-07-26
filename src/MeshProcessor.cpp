@@ -13,8 +13,8 @@
 
 namespace sf {
 
-	template<typename PDT, typename NDT> // position data type and normal data type
-	void ComputeNormalsT(MeshData& mesh, bool normalize = false)
+	template<typename PDT, typename NDT>
+	void ComputeNormalsT(MeshData& mesh)
 	{
 		// set all normals to zero
 		for (uint32_t i = 0; i < mesh.vertexCount; i++)
@@ -41,13 +41,11 @@ namespace sf {
 			*normalC += faceNormal;
 		}
 
-		if (normalize)
+		/* Normalize */
+		for (uint32_t i = 0; i < mesh.vertexCount; i++)
 		{
-			for (uint32_t i = 0; i < mesh.vertexCount; i++)
-			{
-				NDT* targetPointer = mesh.AccessVertexComponent<NDT>(BufferComponent::Normal, i);
-				*targetPointer = glm::normalize(*targetPointer);
-			}
+			NDT* targetPointer = mesh.AccessVertexComponent<NDT>(BufferComponent::Normal, i);
+			*targetPointer = glm::normalize(*targetPointer);
 		}
 	}
 
@@ -62,7 +60,7 @@ namespace sf {
 			targetPointer->x = targetPointer->y = targetPointer->z = 0.0;
 		}
 
-		for (int i = 0; i < mesh.indexCount; i += 3)
+		for (uint32_t i = 0; i < mesh.indexCount; i += 3)
 		{
 			PDT* ap = mesh.AccessVertexComponent<PDT>(BufferComponent::Position, mesh.indexBuffer[i + 0]);
 			PDT* bp = mesh.AccessVertexComponent<PDT>(BufferComponent::Position, mesh.indexBuffer[i + 1]);
@@ -100,7 +98,7 @@ namespace sf {
 	}
 }
 
-void sf::MeshProcessor::ComputeNormals(MeshData& mesh, bool normalize)
+void sf::MeshProcessor::ComputeNormals(MeshData& mesh)
 {
 	DataType positionDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::Position)->dataType;
 	DataType normalDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::Normal)->dataType;
@@ -111,16 +109,16 @@ void sf::MeshProcessor::ComputeNormals(MeshData& mesh, bool normalize)
 	if (positionDataType == DataType::vec3f32)
 	{
 		if (normalDataType == DataType::vec3f32)
-			ComputeNormalsT<glm::vec3, glm::vec3>(mesh, normalize);
+			ComputeNormalsT<glm::vec3, glm::vec3>(mesh);
 		else
-			ComputeNormalsT<glm::vec3, glm::dvec3>(mesh, normalize);
+			ComputeNormalsT<glm::vec3, glm::dvec3>(mesh);
 	}
 	else
 	{
 		if (normalDataType == DataType::vec3f32)
-			ComputeNormalsT<glm::dvec3, glm::vec3>(mesh, normalize);
+			ComputeNormalsT<glm::dvec3, glm::vec3>(mesh);
 		else
-			ComputeNormalsT<glm::dvec3, glm::dvec3>(mesh, normalize);
+			ComputeNormalsT<glm::dvec3, glm::dvec3>(mesh);
 	}
 }
 

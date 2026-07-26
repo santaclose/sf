@@ -155,6 +155,7 @@ int sf::ObjImporter::Load(const std::string& filePath)
 	}
 
 	meshes.push_back(newObjMesh);
+	printf("[ObjImporter] Assigned id %d to file \"%s\"\n", (int) (meshes.size() - 1), filePath.c_str());
 	return meshes.size() - 1;
 }
 

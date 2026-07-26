@@ -16,3 +16,6 @@
 [submodule "vendor/meshoptimizer"]
 	path = vendor/meshoptimizer
 	url = https://github.com/zeux/meshoptimizer.git
+[submodule "vendor/imnodes"]
+	path = vendor/imnodes
+	url = https://github.com/Nelarius/imnodes.git

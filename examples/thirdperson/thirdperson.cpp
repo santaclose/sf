@@ -155,7 +155,7 @@ namespace sf
 			"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Fox/glTF-Binary/Fox.glb",
 			"https://us.v-cdn.net/5021068/uploads/editor/ha/7frj09nru4zu.png",
 			"https://github.com/santaclose/sample_models/raw/master/shanyung_blendspace2d.glb"
-			}, "examples/thirdperson/");
+			}, "assets/examples/");
 
 		gimbal = scene.CreateEntity();
 		cameraObject = scene.CreateEntity();
@@ -182,7 +182,7 @@ namespace sf
 
 			shanyungSkeleton = new SkeletonData();
 			shanyungMesh = new MeshData(&characterVertexLayout);
-			gltfid = GltfImporter::Load("examples/thirdperson/shanyung_blendspace2d.glb");
+			gltfid = GltfImporter::Load("assets/examples/shanyung_blendspace2d.glb");
 			GltfImporter::GenerateSkeleton(gltfid, *shanyungSkeleton);
 			GltfImporter::GenerateMeshData(gltfid, *shanyungMesh);
 			shanyung.AddComponent<SkinnedMesh>(shanyungMesh, &characterMaterial, shanyungSkeleton);
@@ -213,7 +213,7 @@ namespace sf
 
 			foxSkeleton = new SkeletonData();
 			foxMesh = new MeshData(&characterVertexLayout);
-			gltfid = GltfImporter::Load("examples/thirdperson/Fox.glb");
+			gltfid = GltfImporter::Load("assets/examples/Fox.glb");
 			GltfImporter::GenerateSkeleton(gltfid, *foxSkeleton);
 			GltfImporter::GenerateMeshData(gltfid, *foxMesh);
 			MeshProcessor::ComputeNormals(*foxMesh);

@@ -511,3 +511,40 @@ void sf::MeshProcessor::Decimate(const MeshData& inputMesh, MeshData& outputMesh
 	outputMesh.indexCount = actualIndexCount;
 	outputMesh.indexBuffer = newIndices;
 }
+
+void sf::MeshProcessor::TransformMesh(MeshData& mesh, const Transform& transform)
+{
+	DataType positionDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::Position)->dataType;
+	DataType normalDataType;
+	DataType tangentDataType;
+	bool hasNormal = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::Normal) != nullptr;
+	bool hasTangent = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::Tangent) != nullptr;
+	if (hasNormal)
+		normalDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::Normal)->dataType;
+	if (hasTangent)
+		tangentDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::Tangent)->dataType;
+
+	assert(positionDataType == DataType::vec3f32);
+	assert(!hasNormal || normalDataType == DataType::vec3f32);
+	assert(!hasTangent || tangentDataType == DataType::vec3f32);
+
+	for (uint32_t i = 0; i < mesh.vertexCount; i++)
+	{
+		{
+			glm::vec3* targetPointer = mesh.AccessVertexComponent<glm::vec3>(BufferComponent::Position, i);
+			*targetPointer = transform.ApplyToPoint(*targetPointer);
+		}
+
+		if (hasNormal)
+		{
+			glm::vec3* targetPointer = mesh.AccessVertexComponent<glm::vec3>(BufferComponent::Normal, i);
+			*targetPointer = transform.ApplyToDirection(*targetPointer);
+		}
+
+		if (hasTangent)
+		{
+			glm::vec3* targetPointer = mesh.AccessVertexComponent<glm::vec3>(BufferComponent::Tangent, i);
+			*targetPointer = transform.ApplyToDirection(*targetPointer);
+		}
+	}
+}

@@ -4,6 +4,7 @@
 #include <SkeletonData.h>
 #include <VoxelVolumeData.h>
 #include <string>
+#include <Components/Transform.h>
 
 namespace sf {
 
@@ -29,5 +30,6 @@ namespace sf {
 		static void GenerateGrid(MeshData& mesh, uint32_t sizeX, uint32_t sizeY, uint32_t texResX, uint32_t texResY, float cellSize, bool useQuads = false);
 		static void RemoveUnusedBones(MeshData& mesh, SkeletonData& skeleton);
 		static void Decimate(const MeshData& inputMesh, MeshData& outputMesh, float ratio);
+		static void TransformMesh(MeshData& mesh, const Transform& transform);
 	};
 }

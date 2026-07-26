@@ -57,6 +57,8 @@ int main(int argc, char** argv)
 		else
 			currentFrameTime = window.GetTime();
 		deltaTime = currentFrameTime - lastFrameTime;
+		if (deltaTime > MAX_DELTA_TIME)
+			deltaTime = 0.0f;
 
 		//-------------------//
 		sf::Game::OnUpdate(deltaTime, gameTime);

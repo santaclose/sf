@@ -31,5 +31,6 @@ namespace sf {
 		static void RemoveUnusedBones(MeshData& mesh, SkeletonData& skeleton);
 		static void Decimate(const MeshData& inputMesh, MeshData& outputMesh, float ratio);
 		static void TransformMesh(MeshData& mesh, const Transform& transform);
+		static void TransformSkeleton(SkeletonData& skeleton, const Transform& transform);
 	};
 }

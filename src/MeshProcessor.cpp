@@ -10,6 +10,7 @@
 #include <Geometry/Geometry.h>
 
 #include <meshoptimizer.h>
+#include <glm/gtc/type_ptr.hpp>
 
 namespace sf {
 
@@ -545,6 +546,59 @@ void sf::MeshProcessor::TransformMesh(MeshData& mesh, const Transform& transform
 		{
 			glm::vec3* targetPointer = mesh.AccessVertexComponent<glm::vec3>(BufferComponent::Tangent, i);
 			*targetPointer = transform.ApplyToDirection(*targetPointer);
+		}
+	}
+}
+
+void sf::MeshProcessor::TransformSkeleton(SkeletonData& skeleton, const Transform& transform)
+{
+	glm::mat4 transformMatrix = transform.ComputeMatrix();
+
+	Transform& blt = skeleton.m_boneLocalTransforms[0];
+	Transform newBlt = transform;
+	newBlt.Apply(blt);
+	blt = newBlt;
+
+	for (BoneData& bd : skeleton.m_boneData)
+	{
+		bd.invModelTransform.Apply(transform.Inverse());
+	}
+
+	skeleton.PropagateLocalTransforms();
+
+	for (Animation::SkeletalAnimation& a : skeleton.m_animations)
+	{
+		for (Animation::Channel& c : a.channels)
+		{
+			/* We only need to transform the root */
+			if (skeleton.m_boneData[c.bone].parent >= 0)
+			    continue;
+
+			switch (c.path)
+			{
+			case Animation::Channel::PathType::TRANSLATION:
+				for (glm::vec4& output : a.samplers[c.samplerIndex].outputsVec4)
+				{
+					glm::vec3 newTranslation = transform.ApplyToPoint(glm::vec3(output));
+					output = glm::vec4(newTranslation.x, newTranslation.y, newTranslation.z, 1.0f);
+				}
+				break;
+			case Animation::Channel::PathType::ROTATION:
+				for (glm::vec4& output : a.samplers[c.samplerIndex].outputsVec4)
+				{
+					glm::quat newRotation = transform.rotation * glm::make_quat(glm::value_ptr(output));
+					output = glm::vec4(newRotation.x, newRotation.y, newRotation.z, newRotation.w);
+				}
+				break;
+			case Animation::Channel::PathType::SCALE:
+				for (glm::vec4& output : a.samplers[c.samplerIndex].outputsVec4)
+				{
+					float originalScale = glm::max(glm::max(output.x, output.y), output.z);
+					float newScale = transform.scale * originalScale;
+					output = glm::vec4(newScale, newScale, newScale, newScale);
+				}
+				break;
+			}
 		}
 	}
 }

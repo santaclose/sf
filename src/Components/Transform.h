@@ -79,7 +79,7 @@ namespace sf {
 			scale *= other.scale;
 		}
 
-		inline Transform Inverse()
+		inline Transform Inverse() const
 		{
 			Transform out;
 			out.scale = 1.0f / scale;

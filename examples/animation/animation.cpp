@@ -101,8 +101,6 @@ namespace sf
 		{
 			galleryObjects.push_back(scene.CreateEntity());
 			Transform& e_t = galleryObjects.back().AddComponent<Transform>();
-			e_t.scale = 0.025f;
-			e_t.position.y -= 1.0f;
 
 			gltfid = GltfImporter::Load("assets/examples/Fox.glb");
 			GltfImporter::GenerateSkeleton(gltfid, skeletons[0]);
@@ -110,6 +108,13 @@ namespace sf
 			GltfImporter::GenerateMeshData(gltfid, meshes[0]);
 			MeshProcessor::RemoveUnusedBones(meshes[0], skeletons[0]);
 			MeshProcessor::ComputeNormals(meshes[0]);
+			{
+				Transform foxImportTransform;
+				foxImportTransform.scale = 0.025f;
+				foxImportTransform.position.y = -1.0f;
+				MeshProcessor::TransformMesh(meshes[0], foxImportTransform);
+				MeshProcessor::TransformSkeleton(skeletons[0], foxImportTransform);
+			}
 			SkinnedMesh& objectMesh = galleryObjects.back().AddComponent<SkinnedMesh>(&(meshes[0]), &(skeletons[0]), &meshMaterial);
 			for (int i = 0; i < skeletons[0].m_animations.size(); i++)
 				skeletons[0].AddNodeSingle(i);
@@ -118,15 +123,20 @@ namespace sf
 		{
 			galleryObjects.push_back(scene.CreateEntity());
 			Transform& e_t = galleryObjects.back().AddComponent<Transform>();
-			e_t.rotation = glm::quat(glm::vec3(glm::radians(-90.0f), 0.0f, 0.0f));
-			e_t.scale = 1.7f;
-			e_t.position.y -= 1.5f;
 
 			gltfid = GltfImporter::Load("assets/examples/BrainStem.glb");
 			GltfImporter::GenerateSkeleton(gltfid, skeletons[1]);
 			meshes[1] = MeshData(&vertexLayout);
 			GltfImporter::GenerateMeshData(gltfid, meshes[1]);
 			MeshProcessor::RemoveUnusedBones(meshes[1], skeletons[1]);
+			{
+				Transform brainStemImportTransform;
+				brainStemImportTransform.rotation = glm::quat(glm::vec3(glm::radians(-90.0f), 0.0f, 0.0f));
+				brainStemImportTransform.scale = 1.7f;
+				brainStemImportTransform.position.y = -1.5f;
+				MeshProcessor::TransformMesh(meshes[1], brainStemImportTransform);
+				MeshProcessor::TransformSkeleton(skeletons[1], brainStemImportTransform);
+			}
 			SkinnedMesh& objectMesh = galleryObjects.back().AddComponent<SkinnedMesh>(&(meshes[1]), &(skeletons[1]), &meshMaterial);
 			for (int i = 0; i < skeletons[1].m_animations.size(); i++)
 				skeletons[1].AddNodeSingle(i);

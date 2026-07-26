@@ -154,7 +154,8 @@ namespace sf
 		FileUtils::DownloadFiles({
 			"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Fox/glTF-Binary/Fox.glb",
 			"https://us.v-cdn.net/5021068/uploads/editor/ha/7frj09nru4zu.png",
-			"https://github.com/santaclose/sample_models/raw/master/shanyung_blendspace2d.glb"
+			"https://github.com/santaclose/sample_models/raw/master/shanyung_blendspace2d.glb",
+			"https://opengameart.org/sites/default/files/ultimate_gun_pack_by_quaternius.zip"
 			}, "assets/examples/");
 
 		gimbal = scene.CreateEntity();
@@ -196,14 +197,6 @@ namespace sf
 			shanyungSkeleton->SetAnimate(true);
 			shanyungSkeleton->AddTwoBoneIkData(leftElbowBone, &lefthandposCharSpace, &leftHandRot, &poleVectorLeft);
 			shanyungSkeleton->AddTwoBoneIkData(rightElbowBone, &righthandposCharSpace, &rightHandRot, &poleVectorRight);
-
-			gunMesh = new MeshData(&gunVertexLayout);
-			gltfid = GltfImporter::Load("/mnt/hgst/Untitled.glb");
-			GltfImporter::GenerateMeshData(gltfid, *gunMesh);
-
-			gun = scene.CreateEntity();
-			Transform& gt = gun.AddComponent<Transform>();
-			gun.AddComponent<Mesh>(gunMesh, &gunMaterial);
 		}
 		{
 			fox = scene.CreateEntity();
@@ -224,6 +217,21 @@ namespace sf
 			foxBlendSpace = foxSkeleton->AddNodeBlendSpace1D({ {0, 1.0f, 0.0f}, {1, 1.0f, 0.5f}, {2, 2.3f, 1.0f} }, 0.0f, foxWeights.data());
 			foxSkeleton->SetAnimate(true);
 			fox.SetEnabled(false);
+		}
+
+		int objid;
+		{
+			gunMesh = new MeshData(&gunVertexLayout);
+			objid = ObjImporter::Load("assets/examples/ultimate_gun_pack_by_quaternius/Ultimate Gun Pack - July 2019/OBJ/AssaultRifle_5.obj");
+			ObjImporter::GenerateMeshData(objid, *gunMesh);
+			Transform gunImportTransform;
+			gunImportTransform.scale = 0.16042839914585708;
+			gunImportTransform.position = { -0.07233f, -0.032255f, 0.0f };
+			MeshProcessor::TransformMesh(*gunMesh, gunImportTransform);
+
+			gun = scene.CreateEntity();
+			Transform& gt = gun.AddComponent<Transform>();
+			gun.AddComponent<Mesh>(gunMesh, &gunMaterial);
 		}
 
 		gimbal.GetComponent<Transform>().position = glm::vec3(0.0, GIMBAL_OFFSET_SHANYUNG, 0.0);

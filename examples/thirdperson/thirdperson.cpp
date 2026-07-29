@@ -97,6 +97,8 @@ namespace sf
 		float houseLodDistances[] = { 50.0f, 1000.0f };
 		float houseLodRatios[] = { 1.0f, 0.5f };
 
+		Entity testEntity;
+
 		void UpdateCamera(float deltaTime, Entity targetCharacter, float gimbalOffsetY)
 		{
 			Transform& gimbalT = gimbal.GetComponent<Transform>();
@@ -113,19 +115,30 @@ namespace sf
 
 			gimbalT.rotation = glm::slerp(gimbalT.rotation, glm::quat(targetGimbalRotation), deltaTime * GIMBAL_ROTATION_SPEED);
 
-			camT.position = gimbalT.position + gimbalT.Forward() * cameraDistance;
+
+			// Geometry::RayHit terrainTestHit;
+			// if (EntityIntersect::RayTerrain(gimbalT.position, -gimbalT.Forward(), terrain.entity, &terrainTestHit))
+			// 	testEntity.GetComponent<Transform>().position = terrainTestHit.point;
+			// 	// Renderer::AddLine(terrainTestHit.point, terrainTestHit.point + glm::vec3(0.0f, 0.4f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+
+
+			float finalCameraDistance = cameraDistance;
+			// camT.position = gimbalT.position + gimbalT.Forward() * cameraDistance;
 
 			Geometry::RayHit rh;
 			for (uint32_t i = 0; i < HOUSE_COUNT; i++)
 			{
 				if (EntityIntersect::MovingSphereMesh(gimbal, camT.position - gimbalT.position, houses[i], &rh))
-					camT.position = gimbalT.position + gimbalT.Forward() * rh.distance;
+					finalCameraDistance = glm::min(rh.distance, finalCameraDistance);
 			}
+			if (EntityIntersect::RayTerrain(gimbalT.position, gimbalT.Forward(), terrain.entity, &rh))
+				finalCameraDistance = glm::min(rh.distance, finalCameraDistance);
 
+			camT.position = gimbalT.position + gimbalT.Forward() * finalCameraDistance;
 			camT.LookAt(gimbalT.position, glm::vec3(0.0, 1.0, 0.0));
-			float terrainY;
-			terrain.Sample(camT.position, terrainY);
-			camT.position.y = glm::max(camT.position.y, terrainY);
+			// float terrainY;
+			// terrain.Sample(camT.position, terrainY);
+			// camT.position.y = glm::max(camT.position.y, terrainY);
 		}
 
 		void SwitchCharacter()
@@ -223,7 +236,7 @@ namespace sf
 		cameraObject.AddComponent<Transform>();
 
 		terrain.Create(scene, "../Downloads/Telegram Desktop/test.r16", 0.5566f, 152.0f, 41,
-			glm::vec3(-(float)(1025 - 1) * 0.5f * 0.5566f, 0.0f, (float)(1025 - 1) * 0.5f * 0.5566f));
+			glm::vec3(-(float)(1025 - 1) * 0.5f * 0.5566f, 0.0f, -(float)(1025 - 1) * 0.5f * 0.5566f));
 
 		// Houses
 		{
@@ -305,6 +318,9 @@ namespace sf
 			shanyungSkeleton->SetAnimate(true);
 		}
 		{
+			testEntity = scene.CreateEntity();
+			testEntity.AddComponent<Transform>();
+
 			fox = scene.CreateEntity();
 			fox.AddComponent<Transform>();
 
@@ -323,6 +339,7 @@ namespace sf
 				MeshProcessor::TransformSkeleton(*foxSkeleton, foxImportTransform);
 			}
 			fox.AddComponent<SkinnedMesh>(foxMesh, foxSkeleton, &characterMaterial);
+			testEntity.AddComponent<SkinnedMesh>(foxMesh, foxSkeleton, &characterMaterial);
 
 			foxCol = scene.CreateEntity();
 			foxCol.AddComponent<Transform>();

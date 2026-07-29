@@ -2,6 +2,7 @@
 
 #include <glm/glm.hpp>
 #include <MeshProcessor.h>
+#include <Components/TerrainCollider.h>
 
 namespace sf
 {
@@ -50,23 +51,18 @@ namespace sf
 			Transform& e_t = this->entity.AddComponent<Transform>();
 			e_t.position = this->origin;
 			this->entity.AddComponent<Mesh>(&this->mesh, &this->material);
+
+			float size = (float)(this->heightmapResolution - 1) * this->heightmapPixelSize;
+			TerrainCollider& tc = this->entity.AddComponent<TerrainCollider>();
+			tc.aabbMin = glm::vec3(0.0f, 0.0f, 0.0f);
+			tc.aabbMax = glm::vec3(size, maxHeight, size);
+			tc.bitmap = &heightmap;
 		}
 
 		bool Sample(const glm::vec3 point, float& outHeight)
 		{
-			float size = (float)(this->heightmapResolution - 1) * this->heightmapPixelSize;
-			glm::vec2 heightmapUV;
-			heightmapUV.x = (point.x - this->origin.x) / size;
-			heightmapUV.y = -(point.z - this->origin.z) / size;
-			heightmapUV.x = heightmapUV.x * ((float)(this->heightmapResolution - 1) / (float)this->heightmapResolution) + 0.5f / (float)this->heightmapResolution;
-			heightmapUV.y = heightmapUV.y * ((float)(this->heightmapResolution - 1) / (float)this->heightmapResolution) + 0.5f / (float)this->heightmapResolution;
-			if (heightmapUV.x > 0.0f && heightmapUV.x < 1.0f && heightmapUV.y > 0.0f && heightmapUV.y < 1.0f)
-			{
-				float heightSample = this->heightmap.Sample<uint16_t>(heightmapUV, 0);
-				outHeight = heightSample * this->maxHeight;
-				return true;
-			}
-			return false;
+			TerrainCollider worldSpaceTerrainCollider = EntityIntersect::WorldSpace<TerrainCollider>(entity);
+			return worldSpaceTerrainCollider.Sample(point, outHeight);
 		}
 
 		void Destroy(Scene& scene)

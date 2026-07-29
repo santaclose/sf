@@ -22,7 +22,7 @@ namespace sf
 		void WritePng(const std::string& filePath);
 		void WritePpm(const std::string& filePath);
 		template <typename T>
-		inline float Sample(const glm::vec2& uv, uint8_t channel) const
+		inline float Sample(const glm::vec2& uv, uint8_t channel = 0) const
 		{
 			uint32_t dataTypeSize = GetDataTypeSize(this->dataType);
 			/* Adjust so 0,0 lands on corner of pixel and not its center */

@@ -65,10 +65,20 @@ namespace sf::EntityIntersect {
 
 	bool RayMesh(const glm::vec3& rayOrigin, const glm::vec3& rayDir, Entity meshEntity, Geometry::RayHit* out = nullptr)
 	{
-		Transform meshTransformInverse = meshEntity.GetComponent<Transform>().Inverse();
+		Transform meshTransform = meshEntity.GetComponent<Transform>();
+		Transform meshTransformInverse = meshTransform.Inverse();
 		glm::vec3 rayOriginInMeshEntitySpace = meshTransformInverse.ApplyToPoint(rayOrigin);
 		glm::vec3 rayDirInMeshEntitySpace = meshTransformInverse.ApplyToDirection(rayDir);
-		return Geometry::IntersectRayMesh(rayOriginInMeshEntitySpace, rayDirInMeshEntitySpace, meshEntity.GetComponent<MeshCollider>(), out);
+		bool res = Geometry::IntersectRayMesh(
+			rayOriginInMeshEntitySpace, rayDirInMeshEntitySpace,
+			meshEntity.GetComponent<MeshCollider>(), out);
+		if (res && out != nullptr)
+		{
+			out->point = meshTransform.ApplyToPoint(out->point);
+			out->normal = meshTransform.ApplyToDirection(out->normal);
+			out->distance *= meshTransform.scale; 
+		}
+		return res;
 	}
 
 	bool MovingSphereMesh(Entity sphereEntity, const glm::vec3& disp, Entity meshEntity, Geometry::RayHit* out = nullptr)
@@ -103,6 +113,24 @@ namespace sf::EntityIntersect {
 			out->point = meshTransform.ApplyToPoint(out->point);
 			out->normal = meshTransform.ApplyToDirection(out->normal);
 			out->distance *= meshTransform.scale;
+		}
+		return res;
+	}
+
+	bool RayTerrain(const glm::vec3& rayOrigin, const glm::vec3& rayDir, Entity terrainEntity, Geometry::RayHit* out = nullptr)
+	{
+		Transform terrainTransform = terrainEntity.GetComponent<Transform>();
+		Transform terrainTransformInverse = terrainTransform.Inverse();
+		glm::vec3 rayOriginInTerrainEntitySpace = terrainTransformInverse.ApplyToPoint(rayOrigin);
+		glm::vec3 rayDirInTerrainEntitySpace = terrainTransformInverse.ApplyToDirection(rayDir);
+		bool res = Geometry::IntersectRayTerrain(
+			rayOriginInTerrainEntitySpace, rayDirInTerrainEntitySpace,
+			terrainEntity.GetComponent<TerrainCollider>(), out);
+		if (res && out != nullptr)
+		{
+			out->point = terrainTransform.ApplyToPoint(out->point);
+			out->normal = terrainTransform.ApplyToDirection(out->normal);
+			out->distance *= terrainTransform.scale; 
 		}
 		return res;
 	}

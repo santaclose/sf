@@ -314,22 +314,22 @@ void sf::MeshProcessor::GenerateGrid(MeshData& mesh, uint32_t sizeX, uint32_t si
 			glm::vec3* currentVertexPos = mesh.AccessVertexComponent<glm::vec3>(BufferComponent::Position, y * sizeX + x);
 			glm::vec2* currentVertexUV = mesh.AccessVertexComponent<glm::vec2>(BufferComponent::UV, y * sizeX + x);
 			currentVertexPos->x = (float) x * cellSize;
-			currentVertexPos->z = (float) (-y) * cellSize;
+			currentVertexPos->z = (float) y * cellSize;
 			currentVertexPos->y = 0.0f;
 			currentVertexUV->x = (float)x / (float)(sizeX - 1) * ((float)(texResX - 1) / (float)texResX) + uvAdjustX;
 			currentVertexUV->y = (float)y / (float)(sizeY - 1) * ((float)(texResY - 1) / (float)texResY) + uvAdjustY;
 			if (x > 0u && y > 0u)
 			{
 				assert(useQuads && currentIndex + 3u < mesh.indexCount || !useQuads && currentIndex + 5u < mesh.indexCount);
-				mesh.indexBuffer[currentIndex++] = (y - 1u) * sizeX + (x - 1u);
 				mesh.indexBuffer[currentIndex++] = (y - 1u) * sizeX + (x - 0u);
-				mesh.indexBuffer[currentIndex++] = (y - 0u) * sizeX + (x - 0u);
+				mesh.indexBuffer[currentIndex++] = (y - 1u) * sizeX + (x - 1u);
+				mesh.indexBuffer[currentIndex++] = (y - 0u) * sizeX + (x - 1u);
 				if (!useQuads)
 				{
-					mesh.indexBuffer[currentIndex++] = (y - 1u) * sizeX + (x - 1u);
-					mesh.indexBuffer[currentIndex++] = (y - 0u) * sizeX + (x - 0u);
+					mesh.indexBuffer[currentIndex++] = (y - 1u) * sizeX + (x - 0u);
+					mesh.indexBuffer[currentIndex++] = (y - 0u) * sizeX + (x - 1u);
 				}
-				mesh.indexBuffer[currentIndex++] = (y - 0u) * sizeX + (x - 1u);
+				mesh.indexBuffer[currentIndex++] = (y - 0u) * sizeX + (x - 0u);
 			}
 		}
 	}

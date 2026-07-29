@@ -2,6 +2,11 @@
 
 #include "Common.h"
 
+#include <Components/SphereCollider.h>
+#include <Components/CapsuleCollider.h>
+#include <Components/MeshCollider.h>
+#include <Components/TerrainCollider.h>
+
 namespace sf::Geometry
 {
 	struct RayHit
@@ -371,5 +376,92 @@ namespace sf::Geometry
 			return true;
 		}
 		return false;
+	}
+
+	inline bool IntersectRayTerrain(
+		const glm::vec3& rayOrigin, const glm::vec3& rayDir,
+		const TerrainCollider& terrainCollider,
+		RayHit* out = nullptr)
+	{
+		glm::vec3 startingPoint;
+		RayHit aabbRh;
+		if (!IntersectRayAABB(rayOrigin, rayDir, terrainCollider.aabbMin, terrainCollider.aabbMax, &aabbRh))
+			return false;
+
+		if (aabbRh.distance == 0.0f)
+			startingPoint = rayOrigin;
+		else
+			startingPoint = aabbRh.point;
+
+		float outHeight;
+		if (rayDir.x == 0.0f && rayDir.z == 0.0f)
+		{
+			if (rayDir.y > 0.0f)
+				return false;
+
+			if (!terrainCollider.Sample(startingPoint, outHeight))
+				return false;
+
+			if (outHeight > startingPoint.y)
+				return false;
+
+			if (out != nullptr)
+			{
+				out->point = glm::vec3(startingPoint.x, outHeight, startingPoint.z);
+				out->normal = glm::vec3(0.0f, 1.0f, 0.0f);
+				out->distance = rayOrigin.y - outHeight;
+			}
+			return true;
+		}
+
+		glm::vec2 size = glm::vec2(
+			terrainCollider.aabbMax.x - terrainCollider.aabbMin.x,
+			terrainCollider.aabbMax.z - terrainCollider.aabbMin.z);
+
+		float flatStep = glm::min(
+			size.x / (float) terrainCollider.bitmap->width,
+			size.y / (float) terrainCollider.bitmap->height);
+
+
+		float vertical = glm::abs(rayDir.y);
+		float horizontal = glm::sqrt(1.0f - vertical * vertical);
+		float ratio = flatStep / horizontal;
+
+		glm::vec3 step = rayDir * ratio;
+
+		bool isAbove, prevIsAbove;
+		glm::vec3 cursor = startingPoint;
+		glm::vec3 prevCursor;
+		float prevHeight;
+		while (true)
+		{
+			if (!terrainCollider.Sample(cursor, outHeight))
+				return false;
+
+			isAbove = cursor.y > outHeight;
+
+			/* Can't conclude in the first iteration */
+			if (cursor != startingPoint)
+			{
+				if (prevIsAbove && !isAbove)
+				{
+					if (out != nullptr)
+					{
+						float d0 = prevCursor.y - prevHeight;
+						float d1 = cursor.y - outHeight;
+						float t = d0 / (d0 - d1);
+						out->point = glm::mix(prevCursor, cursor, t);
+						out->normal = glm::vec3(0.0f, 1.0f, 0.0f);
+						out->distance = glm::dot(out->point - rayOrigin, rayDir);
+					}
+					return true;
+				}
+			}
+
+			prevHeight = outHeight;
+			prevCursor = cursor;
+			prevIsAbove = isAbove;
+			cursor += step;
+		}
 	}
 }

@@ -12,7 +12,6 @@ namespace sf {
 		friend Entity;
 
 	public:
-		static std::unordered_set<Scene*> scenes;
 		entt::registry& GetRegistry();
 
 		Scene();
@@ -23,6 +22,8 @@ namespace sf {
 
 		void SetRenderTargetVisibility(uint32_t value);
 		uint32_t GetRenderTargetVisibility();
+
+		static std::unordered_set<Scene*>& GetScenes();
 
 	private:
 		entt::registry m_Registry;

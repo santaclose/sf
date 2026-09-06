@@ -958,7 +958,7 @@ void sf::Renderer::DrawFramebuffer(const Framebuffer& framebuffer, float deltaTi
 	}
 
 	/* For every scene, find the cameras and ui that render to targets using this framebuffer */
-	for (sf::Scene* scene : sf::Scene::scenes)
+	for (sf::Scene* scene : sf::Scene::GetScenes())
 	{
 		auto cameraView = scene->GetRegistry().view<Base, Camera, Transform>();
 		for (auto entity : cameraView)

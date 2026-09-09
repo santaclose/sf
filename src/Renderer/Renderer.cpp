@@ -127,6 +127,15 @@ namespace sf::Renderer
 	bool debugDrawEnabled = false;
 	glm::vec3 debugDrawColor = { 0.0f, 0.0f, 0.0f };
 
+	uint32_t boundFramebuffer = 0;
+	void BindFramebufferForDraw(const Framebuffer& framebuffer)
+	{
+		if (*framebuffer.id == boundFramebuffer)
+			return;
+		boundFramebuffer = *framebuffer.id;
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, boundFramebuffer);
+	}
+
 	void TransferVertexData(const sf::MeshData* mesh)
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, meshGpuData[mesh].gl_vertexBuffer);
@@ -941,7 +950,7 @@ void sf::Renderer::DrawLines()
 
 void sf::Renderer::DrawFramebuffer(const Framebuffer& framebuffer, float deltaTime)
 {
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer.id[0]);
+	BindFramebufferForDraw(framebuffer);
 	if (framebuffer.hasDepth)
 		glEnable(GL_DEPTH_TEST);
 	else

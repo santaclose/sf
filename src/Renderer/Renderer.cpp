@@ -487,12 +487,9 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 	float meshCamDis2 = glm::distance2(transform.position, sharedGpuData.cameraPosition);
 	const MeshData* meshData  = mesh.GetMeshData(meshCamDis2);
 
-	if (meshData != nullptr && meshData->vertexCount == 0)
-		return;
-
 	sharedGpuData.modelMatrix = transform.ComputeMatrix();
 	glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
+	glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SharedGpuData, modelMatrix), sizeof(sharedGpuData.modelMatrix), &sharedGpuData.modelMatrix);
 
 	if (meshData == nullptr)
 	{
@@ -503,6 +500,11 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 		glDrawMeshTasksNV(0, mesh.materials[0]->meshWorkGroupCount);
 		return;
 	}
+
+	if (meshData->vertexCount == 0)
+		return;
+	assert(meshData->vertexBufferLayout->GetComponentInfo(BufferComponent::BoneIndices) == nullptr);
+	assert(meshData->vertexBufferLayout->GetComponentInfo(BufferComponent::BoneWeights) == nullptr);
 
 	if (meshGpuData.find(meshData) == meshGpuData.end()) // create mesh data if not there
 		CreateMeshGpuData(meshData);
@@ -538,27 +540,28 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 
 void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 {
-	assert(mesh.skeletonData != nullptr);
+	float meshCamDis2 = glm::distance2(transform.position, sharedGpuData.cameraPosition);
+	const MeshData* meshData  = mesh.GetMeshData(meshCamDis2);
+	assert(meshData != nullptr);
+	if (meshData->vertexCount == 0)
+		return;
+	assert(meshData->vertexBufferLayout->GetComponentInfo(BufferComponent::BoneIndices) != nullptr);
+	assert(meshData->vertexBufferLayout->GetComponentInfo(BufferComponent::BoneWeights) != nullptr);
 
+	if (meshGpuData.find(meshData) == meshGpuData.end()) // create mesh data if not there
+		CreateMeshGpuData(meshData);
+
+	assert(mesh.skeletonData != nullptr);
 	if (skeletonSsbos.find(mesh.skeletonData) == skeletonSsbos.end()) // create skeleton ssbo if not there
 	{
 		uint32_t newSsbo;
 		glGenBuffers(1, &newSsbo);
 		skeletonSsbos[mesh.skeletonData] = newSsbo;
 	}
-	
-	float meshCamDis2 = glm::distance2(transform.position, sharedGpuData.cameraPosition);
-	const MeshData* meshData  = mesh.GetMeshData(meshCamDis2);
-
-	if (meshData->vertexCount == 0)
-		return;
-
-	if (meshGpuData.find(meshData) == meshGpuData.end()) // create mesh data if not there
-		CreateMeshGpuData(meshData);
 
 	sharedGpuData.modelMatrix = transform.ComputeMatrix();
 	glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
+	glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SharedGpuData, modelMatrix), sizeof(sharedGpuData.modelMatrix), &sharedGpuData.modelMatrix);
 
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, skeletonSsbos[mesh.skeletonData]);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, mesh.skeletonData->m_skinningMatrices.size() * sizeof(glm::mat4), &(mesh.skeletonData->m_skinningMatrices[0][0][0]), GL_DYNAMIC_DRAW);
@@ -605,7 +608,7 @@ void sf::Renderer::DrawParticleSystem(ParticleSystem& particleSystem, Transform&
 
 		sharedGpuData.modelMatrix = transform.ComputeMatrix();
 		glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
-		glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
+		glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SharedGpuData, modelMatrix), sizeof(sharedGpuData.modelMatrix), &sharedGpuData.modelMatrix);
 
 		glBindVertexArray(meshGpuData[particleSystem.meshData].gl_vao);
 		glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
@@ -716,9 +719,6 @@ void sf::Renderer::DrawSprite(Sprite& sprite, ScreenCoordinates& screenCoordinat
 	spriteQuad.vertices[0] = spriteTopLeft + glm::vec2(0.0f, (float)(sprite.bitmap->height));
 	spriteQuad.vertices[6] = spriteTopLeft + glm::vec2((float)(sprite.bitmap->width), (float)(sprite.bitmap->height));
 	spriteQuad.vertices[4] = spriteTopLeft + glm::vec2((float)(sprite.bitmap->width), 0.0f);
-
-	glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
 
 	spriteShader.Bind();
 	spriteTextures[sprite.bitmap].Bind(0);
@@ -931,9 +931,6 @@ void sf::Renderer::DrawLines()
 	glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
 	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
 
-	glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
-
 	glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
 
 	glBindVertexArray(drawLineVAO);
@@ -980,6 +977,10 @@ void sf::Renderer::DrawFramebuffer(const Framebuffer& framebuffer, float deltaTi
 
 			BindRenderTarget(camera_.renderTargetId);
 			BindCamera(camera_, transform_);
+
+			glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
+			glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
+
 			auto meshRenderView = scene->GetRegistry().view<Base, Mesh, Transform>();
 			for (auto entity : meshRenderView)
 			{
@@ -1042,6 +1043,10 @@ void sf::Renderer::DrawFramebuffer(const Framebuffer& framebuffer, float deltaTi
 				continue;
 
 			BindRenderTarget(i);
+
+			glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
+			glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedGpuData), &sharedGpuData, GL_DYNAMIC_DRAW);
+
 			auto spriteRenderView = scene->GetRegistry().view<Base, Sprite, ScreenCoordinates>();
 			for (auto entity : spriteRenderView)
 			{

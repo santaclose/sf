@@ -62,6 +62,7 @@ project "sf"
 	includedirs
 	{
 		"src",
+		"vendor/",
 		"vendor/glfw/include",
 		"vendor/Glad/include",
 		"vendor/glm",

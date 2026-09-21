@@ -1077,7 +1077,10 @@ void sf::Renderer::Terminate()
 	for (auto& pair : materials)
 	{
 		for (auto& p : pair.second)
+		{
+			p.second->Delete();
 			delete p.second;
+		}
 	}
 	drawLineShader.Delete();
 

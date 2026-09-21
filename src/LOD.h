@@ -11,38 +11,64 @@ namespace sf
 		float maxDistance;
 	};
 
-	inline std::vector<LOD> GenerateLODs(const MeshData& meshData, float* ratios, float* maxDistances, uint32_t lodCount)
+	struct LODGroup
 	{
-		printf("[LOD] Generating from mesh with %u indices\n", meshData.indexCount / 3);
+		const MeshData* sourceMesh = nullptr;
+		std::vector<LOD> lods;
+		MeshData* lodMeshes = nullptr;
+		/* Index buffer memory used by LOD meshes is managed by this class */
 
-		assert(lodCount > 0);
-
-		/* +1 for culling */
-		MeshData* lodMeshes = new MeshData[lodCount + 1];
-		lodMeshes[lodCount].vertexCount = 0;
-		lodMeshes[lodCount].indexCount = 0;
-		std::vector<LOD> output;
-		output.resize(lodCount + 1);
-		output[lodCount] = { &lodMeshes[lodCount], 0.0f };
-
-		for (uint32_t i = 0; i < lodCount; i++)
+		void Create(const MeshData& meshData, float* ratios, float* maxDistances, uint32_t lodCount)
 		{
-			assert(ratios[i] > 0.0f);
-			if (ratios[i] == 1.0f)
+			Destroy();
+
+			printf("[LOD] Generating from mesh with %u primitives\n", meshData.indexCount / 3);
+			sourceMesh = &meshData;
+
+			assert(lodCount > 0);
+
+			/* +1 for culling, new will initialize the data to 0s */
+			lodMeshes = new MeshData[lodCount + 1];
+			lods.resize(lodCount + 1);
+			lods[lodCount] = { &lodMeshes[lodCount], 0.0f };
+
+			for (uint32_t i = 0; i < lodCount; i++)
 			{
-				output[i] = { &meshData, maxDistances[i] };
+				assert(ratios[i] > 0.0f);
+				if (ratios[i] == 1.0f)
+				{
+					lods[i] = { &meshData, maxDistances[i] };
+				}
+				else
+				{
+					MeshProcessor::Decimate(meshData, lodMeshes[i], ratios[i]);
+					lods[i] = { &lodMeshes[i], maxDistances[i] };
+				}
 			}
-			else
-			{
-				MeshProcessor::Decimate(meshData, lodMeshes[i], ratios[i]);
-				output[i] = { &lodMeshes[i], maxDistances[i] };
-			}
+
+	#ifdef SF_DEBUG
+			for (uint32_t i = 0; i < lodCount + 1; i++)
+				printf("[LOD] LOD %u: %u primitives, %f max distance\n", i, lods[i].meshData->indexCount / 3, lods[i].maxDistance);
+	#endif
 		}
 
-#ifdef SF_DEBUG
-		for (uint32_t i = 0; i < lodCount + 1; i++)
-			printf("[LOD] LOD %u: %u faces, %f max distance\n", i, output[i].meshData->indexCount / 3, output[i].maxDistance);
-#endif
-		return output;
-	}
+		void Destroy()
+		{
+			for (uint32_t i = 0; i < lods.size(); i++)
+			{
+				const LOD& lod = lods[i];
+				if (lod.meshData == sourceMesh)
+					continue;
+				if (lod.meshData->indexCount == 0)
+					continue;
+				delete[] lod.meshData->indexBuffer;
+			}
+			if (lodMeshes != nullptr)
+				delete[] lodMeshes;
+
+			lodMeshes = nullptr;
+			sourceMesh = nullptr;
+			lods.clear();
+		}
+	};
 }

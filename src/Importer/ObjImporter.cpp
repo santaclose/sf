@@ -5,7 +5,6 @@
 #include <iostream>
 #include <unordered_map>
 #include <unordered_set>
-#include <glm/glm.hpp>
 
 namespace sf::ObjImporter {
 
@@ -43,9 +42,36 @@ namespace sf::ObjImporter {
 		std::vector<glm::vec2> texCoords;
 		std::vector<ObjFace> faces;
 		std::unordered_set<uint32_t> pieces;
+
+		std::vector<ObjMarkerExt> markers;
 	};
 
-	void parseVec3(const std::string& line, glm::vec3& target, int start = 0)
+	int parseString(const std::string& line, std::string& target, int start = 0)
+	{
+		int q, p;
+		for (q = start; line[q] == ' ' || line[q] == '\t'; q++);
+		for (p = q; p < line.length() && line[p] != ' ' && line[p] != '\t'; p++);
+		target = line.substr(q, p - q);
+		return p;
+	}
+	int parseQuat(const std::string& line, glm::quat& target, int start = 0)
+	{
+		int q, p;
+		for (q = start; line[q] == ' ' || line[q] == '\t'; q++);
+		for (p = q; line[p] != ' ' && line[p] != '\t'; p++);
+		target.x = std::stof(line.substr(q, p - q));
+		for (q = p; line[q] == ' ' || line[q] == '\t'; q++);
+		for (p = q; line[p] != ' ' && line[p] != '\t'; p++);
+		target.y = std::stof(line.substr(q, p - q));
+		for (q = p; line[q] == ' ' || line[q] == '\t'; q++);
+		for (p = q; line[p] != ' ' && line[p] != '\t'; p++);
+		target.z = std::stof(line.substr(q, p - q));
+		for (q = p; line[q] == ' ' || line[q] == '\t'; q++);
+		for (p = q; p < line.length() && line[p] != ' ' && line[p] != '\t'; p++);
+		target.w = std::stof(line.substr(q, p - q));
+		return p;
+	}
+	int parseVec3(const std::string& line, glm::vec3& target, int start = 0)
 	{
 		int q, p;
 		for (q = start; line[q] == ' ' || line[q] == '\t'; q++);
@@ -57,8 +83,9 @@ namespace sf::ObjImporter {
 		for (q = p; line[q] == ' ' || line[q] == '\t'; q++);
 		for (p = q; p < line.length() && line[p] != ' ' && line[p] != '\t'; p++);
 		target.z = std::stof(line.substr(q, p - q));
+		return p;
 	}
-	void parseVec2(const std::string& line, glm::vec2& target, int start = 0)
+	int parseVec2(const std::string& line, glm::vec2& target, int start = 0)
 	{
 		int q, p;
 		for (q = start; line[q] == ' ' || line[q] == '\t'; q++);
@@ -67,6 +94,7 @@ namespace sf::ObjImporter {
 		for (q = p; line[q] == ' ' || line[q] == '\t'; q++);
 		for (p = q; p < line.length() && line[p] != ' ' && line[p] != '\t'; p++);
 		target.y = std::stof(line.substr(q, p - q));
+		return p;
 	}
 	void parseFace(const std::string& line, std::vector<glm::ivec3>& target, int start = 0)
 	{
@@ -131,7 +159,10 @@ int sf::ObjImporter::Load(const std::string& filePath)
 
 	std::ifstream infile(filePath);
 	if (infile.fail())
+	{
 		std::cout << "[ObjImporter] Could not read file: " << filePath << "\n";
+		return -1;
+	}
 
 	ObjMesh* newObjMesh = new ObjMesh();
 
@@ -178,6 +209,14 @@ int sf::ObjImporter::Load(const std::string& filePath)
 				newObjMesh->faces.back().vertices.push_back(nVtx);
 			}
 		}
+		else if (line.find("# marker: ") == 0)
+		{
+			int p;
+			newObjMesh->markers.emplace_back();
+			p = parseString(line, newObjMesh->markers.back().name, 9);
+			p = parseVec3(line, newObjMesh->markers.back().position, p);
+			p = parseQuat(line, newObjMesh->markers.back().rotation, p);
+		}
 	}
 
 	int newId = meshes.size();
@@ -191,12 +230,16 @@ int sf::ObjImporter::Load(const std::string& filePath)
 void sf::ObjImporter::Destroy(int id)
 {
 	assert(id > -1 && id < meshes.size());
+	assert(meshes[id] != nullptr);
 	delete meshes[id];
 	meshes[id] = nullptr;
 }
 
 void sf::ObjImporter::GenerateMeshData(int id, MeshData& mesh)
 {
+	assert(id > -1 && id < meshes.size());
+	assert(meshes[id] != nullptr);
+
 	assert(mesh.pieces == nullptr && mesh.vertexBuffer == nullptr && mesh.indexBuffer == nullptr);
 	bool meshHasNormals = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::Normal) != nullptr;
 	bool meshHasUVs = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::UV) != nullptr;
@@ -214,9 +257,6 @@ void sf::ObjImporter::GenerateMeshData(int id, MeshData& mesh)
 		DataType uvsDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::UV)->dataType;
 		assert(uvsDataType == DataType::vec2f32);
 	}
-
-	assert(id > -1 && id < meshes.size());
-	assert(meshes[id] != nullptr);
 
 	std::vector<uint32_t> indices;
 	std::vector<uint32_t> pieces;
@@ -254,7 +294,7 @@ void sf::ObjImporter::GenerateMeshData(int id, MeshData& mesh)
 		indices.push_back(uniqueVertices[v]);
 	}
 
-	mesh.vertexBuffer = malloc(mesh.vertexBufferLayout->GetSize() * finalVertices.size());
+	mesh.vertexBuffer = new uint8_t[mesh.vertexBufferLayout->GetSize() * finalVertices.size()];
 	for (int i = 0; i < finalVertices.size(); i++)
 	{
 		glm::vec3* posPtr = mesh.AccessVertexComponent<glm::vec3>(BufferComponent::Position, i);
@@ -277,16 +317,10 @@ void sf::ObjImporter::GenerateMeshData(int id, MeshData& mesh)
 	mesh.pieceCount = pieces.size();
 	memcpy(mesh.indexBuffer, indices.data(), indices.size() * sizeof(uint32_t));
 	memcpy(mesh.pieces, pieces.data(), pieces.size() * sizeof(uint32_t));
+	printf("[ObjImporter] Generated mesh data with %u vertices, %u indices, and %u pieces for ID %u\n", mesh.vertexCount, mesh.indexCount, mesh.pieceCount, id);
 }
 
-void sf::ObjImporter::FreeMeshData(MeshData& mesh)
+const std::vector<sf::ObjImporter::ObjMarkerExt>* sf::ObjImporter::GetMarkers(int id)
 {
-	free(mesh.vertexBuffer);
-	delete[] mesh.indexBuffer;
-	mesh.vertexBuffer = nullptr;
-	mesh.indexBuffer = nullptr;
-	mesh.pieces = nullptr;
-	mesh.vertexCount = 0;
-	mesh.indexCount = 0;
-	mesh.pieceCount = 0;
+	return &(meshes[id]->markers);
 }

@@ -29,7 +29,7 @@ int sf::GltfImporter::Load(const std::string& filePath)
 	bool isGltf = ext == "gltf";
 	if (!isGlb && !isGltf)
 	{
-		std::cout << "[GltfImporter] Invalid file\n";
+		printf("[GltfImporter] Invalid file extension %s\n", ext.c_str());
 		return -1;
 	}
 
@@ -58,7 +58,11 @@ int sf::GltfImporter::Load(const std::string& filePath)
 		printf("[GltfImporter] Err: %s\n", err.c_str());
 
 	if (!ret)
+	{
 		printf("[GltfImporter] Failed to parse glTF\n");
+		delete newModel;
+		return -1;
+	}
 
 	int newId = models.size();
 	alreadyImportedCache[filePath] = newId;
@@ -70,6 +74,8 @@ int sf::GltfImporter::Load(const std::string& filePath)
 
 void sf::GltfImporter::Destroy(int id)
 {
+	assert(id > -1 && id < models.size());
+	assert(models[id] != nullptr);
 	delete models[id];
 	models[id] = nullptr;
 }
@@ -77,6 +83,11 @@ void sf::GltfImporter::Destroy(int id)
 // https://github.com/SaschaWillems/Vulkan/blob/master/examples/gltfloading/gltfloading.cpp
 void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 {
+	assert(id > -1 && id < models.size());
+	assert(models[id] != nullptr);
+
+	tinygltf::Model& model = *(models[id]);
+
 	assert(mesh.pieces == nullptr && mesh.vertexBuffer == nullptr && mesh.indexBuffer == nullptr);
 	bool meshHasNormals = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::Normal) != nullptr;
 	bool meshHasUVs = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::UV) != nullptr;
@@ -96,11 +107,6 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 		DataType uvsDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::UV)->dataType;
 		assert(uvsDataType == DataType::vec2f32);
 	}
-
-	assert(id > -1 && id < models.size());
-	assert(models[id] != nullptr);
-
-	tinygltf::Model& model = *(models[id]);
 
 	std::vector<uint32_t> indices;
 	std::vector<uint32_t> pieces;
@@ -155,13 +161,13 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 					jointsBuffer = &(model.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]);
 				}
 
-				void* oldVertexBuffer = mesh.vertexBuffer;
+				uint8_t* oldVertexBuffer = mesh.vertexBuffer;
 				mesh.vertexCount += primitiveVertexCount;
-				mesh.vertexBuffer = malloc(mesh.vertexBufferLayout->GetSize() * mesh.vertexCount);
+				mesh.vertexBuffer = new uint8_t[mesh.vertexBufferLayout->GetSize() * mesh.vertexCount];
 				if (oldVertexBuffer != nullptr)
 				{
 					memcpy(mesh.vertexBuffer, oldVertexBuffer, mesh.vertexBufferLayout->GetSize() * vertexStart);
-					free(oldVertexBuffer);
+					delete[] oldVertexBuffer;
 				}
 
 				// Create Vertices
@@ -279,23 +285,17 @@ void sf::GltfImporter::GenerateMeshData(int id, MeshData& mesh)
 	printf("[GltfImporter] Generated mesh data with %u vertices, %u indices, and %u pieces for ID %u\n", mesh.vertexCount, mesh.indexCount, mesh.pieceCount, id);
 }
 
-void sf::GltfImporter::FreeMeshData(MeshData& mesh)
+bool sf::GltfImporter::GenerateBitmap(int id, int index, Bitmap& bitmap)
 {
-	free(mesh.vertexBuffer);
-	delete[] mesh.indexBuffer;
-	mesh.vertexBuffer = nullptr;
-	mesh.indexBuffer = nullptr;
-	mesh.pieces = nullptr;
-	mesh.vertexCount = 0;
-	mesh.indexCount = 0;
-	mesh.pieceCount = 0;
-}
+	assert(id > -1 && id < models.size());
+	assert(models[id] != nullptr);
 
-void sf::GltfImporter::GenerateBitmap(int id, int index, Bitmap& bitmap)
-{
-	assert(id > -1 && id < models.size() && bitmap.buffer == nullptr);
+	tinygltf::Model& model = *models[id];
 
-	tinygltf::Image& image = models[id]->images[models[id]->textures[index].source];
+	if (model.textures.size() <= index)
+		return false;
+
+	tinygltf::Image& image = model.images[model.textures[index].source];
 
 	DataType dataType;
 	switch (image.pixel_type)
@@ -326,23 +326,16 @@ void sf::GltfImporter::GenerateBitmap(int id, int index, Bitmap& bitmap)
 		break;
 	}
 
+	bitmap.Destroy();
 	bitmap.dataType = dataType;
 	bitmap.channelCount = image.component;
 	bitmap.width = image.width;
 	bitmap.height = image.height;
 
 	uint32_t dataTypeSize = GetDataTypeSize(dataType);
-	bitmap.buffer = malloc(dataTypeSize * (bitmap.width) * (bitmap.height) * (bitmap.channelCount));
+	bitmap.buffer = new uint8_t[dataTypeSize * (bitmap.width) * (bitmap.height) * (bitmap.channelCount)];
 	memcpy(bitmap.buffer, &image.image.at(0), dataTypeSize * bitmap.width * bitmap.height * bitmap.channelCount);
-}
-
-void sf::GltfImporter::FreeBitmap(Bitmap& bitmap)
-{
-	free(bitmap.buffer);
-	bitmap.buffer = nullptr;
-	bitmap.channelCount = 0;
-	bitmap.width = 0;
-	bitmap.height = 0;
+	return true;
 }
 
 namespace sf::GltfImporter
@@ -385,10 +378,17 @@ namespace sf::GltfImporter
 	}
 }
 
-void sf::GltfImporter::GenerateSkeleton(int id, SkeletonData& skeleton, int index)
+bool sf::GltfImporter::GenerateSkeleton(int id, SkeletonData& skeleton, int index)
 {
+	assert(id > -1 && id < models.size());
+	assert(models[id] != nullptr);
+
+	tinygltf::Model& model = *models[id];
+
 	assert(skeleton.m_boneLocalTransforms.size() == 0 && skeleton.m_boneTransforms.size() == 0 && skeleton.m_boneData.size() == 0 && skeleton.m_skinningMatrices.size() == 0 && skeleton.m_animations.size() == 0 && skeleton.m_nodes.size() == 0);
-	tinygltf::Model& model = *(models[id]);
+
+	if (model.skins.size() <= index)
+		return false;
 
 	// generate skeleton
 	int rootBoneNode = model.skins[index].skeleton;
@@ -518,14 +518,5 @@ void sf::GltfImporter::GenerateSkeleton(int id, SkeletonData& skeleton, int inde
 	}
 
 	std::cout << "[GltfImporter] Imported " << skeleton.m_animations.size() << " animations\n";
-}
-
-void sf::GltfImporter::FreeSkeleton(SkeletonData& skeleton)
-{
-	skeleton.m_boneLocalTransforms.clear();
-	skeleton.m_boneTransforms.clear();
-	skeleton.m_boneData.clear();
-	skeleton.m_skinningMatrices.clear();
-	skeleton.m_animations.clear();
-	skeleton.m_nodes.clear();
+	return true;
 }

@@ -36,6 +36,24 @@ void sf::GlMaterial::Create(const Material* material, const BufferLayout* vertex
 	}
 }
 
+void sf::GlMaterial::Delete()
+{
+	if (m_shader != nullptr)
+	{
+		m_shader->Delete();
+		delete m_shader;
+	}
+	for (const std::pair<void*, GlTexture*>& tx : m_textures)
+	{
+		tx.second->Delete();
+		delete tx.second;
+	}
+	for (const std::pair<void*, uint32_t>& ssbo : m_ssbos)
+	{
+		glDeleteBuffers(1, &ssbo.second);
+	}
+}
+
 void sf::GlMaterial::Bind(const std::vector<void*>& rendererUniformVector)
 {
 	if (m_material->isDoubleSided)

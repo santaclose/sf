@@ -10,7 +10,7 @@ namespace sf {
 	{
 		const BufferLayout* vertexBufferLayout = nullptr;
 
-		void* vertexBuffer = nullptr;
+		uint8_t* vertexBuffer = nullptr;
 		uint32_t vertexCount = 0;
 		uint32_t* indexBuffer = nullptr;
 		uint32_t indexCount = 0;
@@ -35,5 +35,7 @@ namespace sf {
 
 		void SaveToFile(const char* targetFile);
 		bool LoadFromFile(const char* targetFile);
+
+		void Destroy();
 	};
 }

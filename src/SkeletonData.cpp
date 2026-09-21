@@ -217,3 +217,8 @@ void sf::SkeletonData::SolveTwoBoneIK(const TwoBoneIkData& ikData)
 	a_lr = a_lr * (rotOffset * r2 * r0);
 	b_lr = b_lr * r1;
 }
+
+void sf::SkeletonData::Destroy()
+{
+	*this = SkeletonData();
+}

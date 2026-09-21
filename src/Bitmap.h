@@ -12,7 +12,7 @@ namespace sf
 		uint8_t channelCount = 3;
 		uint32_t width = 0;
 		uint32_t height = 0;
-		void* buffer = nullptr;
+		uint8_t* buffer = nullptr;
 
 		Bitmap() = default;
 		void CreateSolid(DataType dataType, uint8_t channelCount, uint32_t width, uint32_t height, const void* pixelValue = nullptr);
@@ -32,16 +32,16 @@ namespace sf
 			uint32_t targetY = (uint32_t) vAdjustedCorners;
 			float uFraction = uAdjustedCorners - (float) targetX;
 			float vFraction = vAdjustedCorners - (float) targetY;
-			T* a = (T*)(((uint8_t*)this->buffer) +
+			T* a = (T*)(this->buffer +
 				(targetY * dataTypeSize * this->channelCount * this->width) +
 				(targetX * dataTypeSize * this->channelCount) + channel);
-			T* b = (T*)(((uint8_t*)this->buffer) +
+			T* b = (T*)(this->buffer +
 				(targetY * dataTypeSize * this->channelCount * this->width) +
 				(glm::min(targetX + 1, width - 1) * dataTypeSize * this->channelCount) + channel);
-			T* c = (T*)(((uint8_t*)this->buffer) +
+			T* c = (T*)(this->buffer +
 				(glm::min(targetY + 1, height - 1) * dataTypeSize * this->channelCount * this->width) +
 				(targetX * dataTypeSize * this->channelCount) + channel);
-			T* d = (T*)(((uint8_t*)this->buffer) +
+			T* d = (T*)(this->buffer +
 				(glm::min(targetY + 1, height - 1) * dataTypeSize * this->channelCount * this->width) +
 				(glm::min(targetX + 1, width - 1) * dataTypeSize * this->channelCount) + channel);
 			float af = (float)(*a) / (float)((1 << (sizeof(T) * 8)) - 1);
@@ -50,6 +50,6 @@ namespace sf
 			float df = (float)(*d) / (float)((1 << (sizeof(T) * 8)) - 1);
 			return glm::mix(glm::mix(af, bf, uFraction), glm::mix(cf, df, uFraction), vFraction);
 		}
-		~Bitmap();
+		void Destroy();
 	};
 }

@@ -12,7 +12,7 @@ void sf::MeshData::ChangeVertexBufferLayout(const sf::BufferLayout* newLayout)
 	}
 
 	const std::vector<BufferComponentInfo>& oldComponents = this->vertexBufferLayout->GetComponentInfos();
-	void* newVertexBuffer = malloc(newLayout->GetSize() * this->vertexCount);
+	uint8_t* newVertexBuffer = new uint8_t[newLayout->GetSize() * this->vertexCount];
 	for (int i = 0; i < this->vertexCount; i++)
 	{
 		for (int j = 0; j < oldComponents.size(); j++)
@@ -29,7 +29,7 @@ void sf::MeshData::ChangeVertexBufferLayout(const sf::BufferLayout* newLayout)
 			memcpy(targetPointer, sourcePointer, dataTypeSize);
 		}
 	}
-	free(this->vertexBuffer);
+	delete[] this->vertexBuffer;
 	this->vertexBufferLayout = newLayout;
 	this->vertexBuffer = newVertexBuffer;
 }
@@ -91,10 +91,20 @@ bool sf::MeshData::LoadFromFile(const char* targetFile)
 	// Vertices
 	file.read((char*) &vertexCount, sizeof(vertexCount));
 	uint32_t vertexBufferSizeInBytes = vertexBufferLayout->GetSize() * vertexCount;
-	vertexBuffer = new char[vertexBufferSizeInBytes];
+	vertexBuffer = new uint8_t[vertexBufferSizeInBytes];
 	file.read((char*) vertexBuffer, vertexBufferSizeInBytes);
 
 	file.close();
 
 	return true;
+}
+
+void sf::MeshData::Destroy()
+{
+	if (vertexBuffer != nullptr)
+		delete[] vertexBuffer;
+	if (indexBuffer != nullptr)
+		delete[] indexBuffer;
+	// pieces are allocated with indices
+	*this = MeshData();
 }

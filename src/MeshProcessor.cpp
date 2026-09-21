@@ -300,7 +300,7 @@ void sf::MeshProcessor::GenerateGrid(MeshData& mesh, uint32_t sizeX, uint32_t si
 	mesh.vertexCountPerPrimitive = useQuads ? 4u : 3u;
 	mesh.vertexCount = sizeX * sizeY;
 	mesh.indexCount = (sizeX - 1u) * (sizeY - 1u) * indicesPerCell;
-	mesh.vertexBuffer = malloc(mesh.vertexCount * mesh.vertexBufferLayout->GetSize());
+	mesh.vertexBuffer = new uint8_t[mesh.vertexCount * mesh.vertexBufferLayout->GetSize()];
 	mesh.indexBuffer = new uint32_t[mesh.indexCount + 1u];
 	mesh.pieces = mesh.indexBuffer + mesh.indexCount;
 	mesh.pieceCount = 1u;
@@ -492,6 +492,7 @@ void sf::MeshProcessor::Decimate(const MeshData& inputMesh, MeshData& outputMesh
 
 	uint32_t targetIndexCount = (uint32_t(inputMesh.indexCount * ratio) / 3) * 3;
 
+	outputMesh.Destroy();
 	outputMesh = inputMesh;
 	outputMesh.pieces = nullptr;
 	outputMesh.pieceCount = 1;

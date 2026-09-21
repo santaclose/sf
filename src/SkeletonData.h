@@ -37,6 +37,18 @@ namespace sf
 
 	struct SkeletonData
 	{
+		bool m_animate = false;
+
+		std::vector<Transform> m_boneLocalTransforms;
+		std::vector<Transform> m_boneTransforms;
+		std::vector<BoneData> m_boneData;
+		std::vector<glm::mat4> m_skinningMatrices;
+
+		std::vector<Animation::SkeletalAnimation> m_animations;
+
+		std::vector<Animation::Node> m_nodes;
+		std::unordered_map<uint32_t, TwoBoneIkData> m_ikData;
+
 		uint32_t AddNodeSingle(uint32_t animationIndex, float speed = 1.0f);
 		uint32_t AddNodeBlendSpace1D(const std::vector<BlendSpacePoint1DCreateInfo>& points, float pos, float* weightsQuery = nullptr);
 		uint32_t AddNodeBlendSpace2D(const std::vector<BlendSpacePoint2DCreateInfo>& points, const glm::vec2& pos, float* weightsQuery = nullptr);
@@ -61,16 +73,6 @@ namespace sf
 			m_ikData[shoulderBone].elbowBone = elbowBone;
 		}
 
-		bool m_animate = false;
-
-		std::vector<Transform> m_boneLocalTransforms;
-		std::vector<Transform> m_boneTransforms;
-		std::vector<BoneData> m_boneData;
-		std::vector<glm::mat4> m_skinningMatrices;
-
-		std::vector<Animation::SkeletalAnimation> m_animations;
-
-		std::vector<Animation::Node> m_nodes;
-		std::unordered_map<uint32_t, TwoBoneIkData> m_ikData;
+		void Destroy();
 	};
 }

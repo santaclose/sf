@@ -17,7 +17,7 @@ void sf::Bitmap::CreateSolid(DataType dataType, uint8_t channelCount, uint32_t w
 	this->channelCount = channelCount;
 	this->width = width;
 	this->height = height;
-	this->buffer = malloc(dataTypeSize * (this->width) * (this->height) * (this->channelCount));
+	this->buffer = new uint8_t[dataTypeSize * (this->width) * (this->height) * (this->channelCount)];
 
 	if (pixelValue == nullptr)
 		return; // leave uninitialized
@@ -25,7 +25,7 @@ void sf::Bitmap::CreateSolid(DataType dataType, uint8_t channelCount, uint32_t w
 	assert(sizeof(uint8_t) == 1);
 	for (int i = 0; i < (this->width) * (this->height); i++)
 	{
-		memcpy(((uint8_t*)this->buffer) + (i * dataTypeSize * this->channelCount), pixelValue, dataTypeSize * (this->channelCount));
+		memcpy(this->buffer + (i * dataTypeSize * this->channelCount), pixelValue, dataTypeSize * (this->channelCount));
 	}
 }
 
@@ -45,7 +45,7 @@ void sf::Bitmap::CreateFromFile(const std::string& filePath, bool flipVertically
 		uint32_t imageSize = (uint32_t) glm::sqrt((float)fileSize / 2.0f);
 		this->width = this->height = imageSize;
 		this->channelCount = 1;
-		this->buffer = malloc(fileSize);
+		this->buffer = new uint8_t[fileSize];
 		std::ifstream file(filePath, std::ios::binary);
 		if (!file.read((char*) this->buffer, fileSize))
 			std::cout << "[Bitmap] Failed to load file: " << filePath << std::endl;
@@ -72,7 +72,7 @@ void sf::Bitmap::CreateFromFile(const std::string& filePath, bool flipVertically
 	this->channelCount = c;
 
 	uint32_t dataTypeSize = GetDataTypeSize(this->dataType);
-	this->buffer = malloc(dataTypeSize * (this->width) * (this->height) * (this->channelCount));
+	this->buffer = new uint8_t[dataTypeSize * (this->width) * (this->height) * (this->channelCount)];
 	memcpy(this->buffer, stb_buffer, this->width * this->height * this->channelCount * dataTypeSize);
 
 	stbi_image_free(stb_buffer);
@@ -84,7 +84,7 @@ void sf::Bitmap::CreateFromFile(const std::string& filePath, bool flipVertically
 		{
 			for (int j = 0; j < this->channelCount; j++)
 			{
-				float* pointer = (float*)(((uint8_t*)this->buffer) + (i * dataTypeSize * (this->channelCount)) + (dataTypeSize * j));
+				float* pointer = (float*)(this->buffer + (i * dataTypeSize * (this->channelCount)) + (dataTypeSize * j));
 				if (*pointer > 6.55e4)
 					*pointer = 6.55e4;
 			}
@@ -94,12 +94,12 @@ void sf::Bitmap::CreateFromFile(const std::string& filePath, bool flipVertically
 
 void sf::Bitmap::AddChannels(uint8_t channelCount)
 {
-	void* oldBuffer = this->buffer;
+	uint8_t* oldBuffer = this->buffer;
 
 	uint8_t originalChannelCount = this->channelCount;
 
 	this->channelCount += channelCount;
-	this->buffer = malloc(GetDataTypeSize(this->dataType) * (this->width) * (this->height) * (this->channelCount));
+	this->buffer = new uint8_t[GetDataTypeSize(this->dataType) * (this->width) * (this->height) * (this->channelCount)];
 
 	uint32_t dataTypeSize = GetDataTypeSize(this->dataType);
 
@@ -110,12 +110,12 @@ void sf::Bitmap::AddChannels(uint8_t channelCount)
 	for (int i = 0; i < (this->width) * (this->height); i++)
 	{
 		memcpy(
-			((uint8_t*)this->buffer) + (i * dataTypeSize * (this->channelCount)),
-			((uint8_t*)oldBuffer) + (i * dataTypeSize * originalChannelCount),
+			this->buffer + (i * dataTypeSize * (this->channelCount)),
+			oldBuffer + (i * dataTypeSize * originalChannelCount),
 			dataTypeSize * originalChannelCount);
 	}
 
-	free(oldBuffer);
+	delete[] oldBuffer;
 }
 
 void sf::Bitmap::CopyChannel(const Bitmap& source, uint8_t sourceChannel, uint8_t targetChannel)
@@ -130,8 +130,8 @@ void sf::Bitmap::CopyChannel(const Bitmap& source, uint8_t sourceChannel, uint8_
 	for (int i = 0; i < (this->width) * (this->height); i++)
 	{
 		memcpy(
-			((uint8_t*)this->buffer) + (i * dataTypeSize * (this->channelCount)) + (dataTypeSize * targetChannel),
-			((uint8_t*)source.buffer) + (i * dataTypeSize * (source.channelCount)) + (dataTypeSize * sourceChannel),
+			this->buffer + (i * dataTypeSize * (this->channelCount)) + (dataTypeSize * targetChannel),
+			source.buffer + (i * dataTypeSize * (source.channelCount)) + (dataTypeSize * sourceChannel),
 			dataTypeSize);
 	}
 }
@@ -162,7 +162,7 @@ void sf::Bitmap::WritePpm(const std::string& filePath)
 		{
 			for (int k = 0; k < this->channelCount; k++)
 			{
-				uint8_t* component = ((uint8_t*)this->buffer) + (i * dataTypeSize * (this->channelCount) * (this->width)) + (j * dataTypeSize * (this->channelCount)) + k;
+				uint8_t* component = this->buffer + (i * dataTypeSize * (this->channelCount) * (this->width)) + (j * dataTypeSize * (this->channelCount)) + k;
 				if (k > 0)
 					outputFile << ' ';
 				outputFile << (int)*component;
@@ -172,7 +172,9 @@ void sf::Bitmap::WritePpm(const std::string& filePath)
 	}
 }
 
-sf::Bitmap::~Bitmap()
+void sf::Bitmap::Destroy()
 {
-	free(this->buffer);
+	if (this->buffer != nullptr)
+		delete[] this->buffer;
+	*this = Bitmap();
 }

@@ -10,10 +10,18 @@ namespace sf::SvgImporter {
 
 int sf::SvgImporter::Load(const std::string& filePath, const char* units, float dpi)
 {
+	static std::unordered_map <std::string, int> alreadyImportedCache;
+	if (alreadyImportedCache.find(filePath) != alreadyImportedCache.end())
+		return alreadyImportedCache[filePath];
+
 	NSVGimage* image = nsvgParseFromFile(filePath.c_str(), units, dpi);
 	
+	int newId = svgData.size();
+	alreadyImportedCache[filePath] = newId;
+
+	printf("[SvgImporter] Assigning ID %u to file %s\n", newId, filePath.c_str());
 	svgData.push_back(image);
-	return svgData.size() - 1;
+	return newId;
 }
 
 void sf::SvgImporter::Destroy(int id)

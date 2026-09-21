@@ -125,6 +125,10 @@ namespace sf::ObjImporter {
 
 int sf::ObjImporter::Load(const std::string& filePath)
 {
+	static std::unordered_map <std::string, int> alreadyImportedCache;
+	if (alreadyImportedCache.find(filePath) != alreadyImportedCache.end())
+		return alreadyImportedCache[filePath];
+
 	std::ifstream infile(filePath);
 	if (infile.fail())
 		std::cout << "[ObjImporter] Could not read file: " << filePath << "\n";
@@ -176,9 +180,12 @@ int sf::ObjImporter::Load(const std::string& filePath)
 		}
 	}
 
-	printf("[ObjImporter] Assigning ID %u to file %s\n", (uint32_t)meshes.size(), filePath.c_str());
+	int newId = meshes.size();
+	alreadyImportedCache[filePath] = newId;
+
+	printf("[ObjImporter] Assigning ID %d to file %s\n", newId, filePath.c_str());
 	meshes.push_back(newObjMesh);
-	return meshes.size() - 1;
+	return newId;
 }
 
 void sf::ObjImporter::Destroy(int id)

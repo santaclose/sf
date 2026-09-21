@@ -20,6 +20,10 @@ namespace sf::GltfImporter
 
 int sf::GltfImporter::Load(const std::string& filePath)
 {
+	static std::unordered_map <std::string, int> alreadyImportedCache;
+	if (alreadyImportedCache.find(filePath) != alreadyImportedCache.end())
+		return alreadyImportedCache[filePath];
+
 	std::string ext = std::string(FileUtils::ExtensionFromPath(filePath));
 	bool isGlb = ext == "glb";
 	bool isGltf = ext == "gltf";
@@ -56,10 +60,12 @@ int sf::GltfImporter::Load(const std::string& filePath)
 	if (!ret)
 		printf("[GltfImporter] Failed to parse glTF\n");
 
+	int newId = models.size();
+	alreadyImportedCache[filePath] = newId;
 
-	printf("[GltfImporter] Assigning ID %u to file %s\n", (uint32_t)models.size(), filePath.c_str());
+	printf("[GltfImporter] Assigning ID %u to file %s\n", newId, filePath.c_str());
 	models.push_back(newModel);
-	return models.size() - 1;
+	return newId;
 }
 
 void sf::GltfImporter::Destroy(int id)

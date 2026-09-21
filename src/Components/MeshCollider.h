@@ -4,6 +4,8 @@
 #include <Components/SphereCollider.h>
 #include <MeshData.h>
 
+#include <glm/gtx/norm.hpp>
+
 namespace sf
 {
 	struct MeshCollider
@@ -15,30 +17,29 @@ namespace sf
 		{
 			this->meshData = meshData;
 
-			glm::vec3 min, max;
-			for (uint32_t j = 0; j < meshData->indexCount; j++)
+			glm::vec3 min(std::numeric_limits<float>::max());
+			glm::vec3 max(-std::numeric_limits<float>::max());
+
+			for (uint32_t i = 0; i < meshData->vertexCount; i++)
 			{
-				glm::vec3* vertexPos = meshData->AccessVertexComponent<glm::vec3>(BufferComponent::Position, meshData->indexBuffer[j + 0]);
-				if (j == 0)
-				{
-					min = max = *vertexPos;
-					continue;
-				}
-				if (vertexPos->x > max.x)
-					max.x = vertexPos->x;
-				if (vertexPos->y > max.y)
-					max.y = vertexPos->y;
-				if (vertexPos->z > max.z)
-					max.z = vertexPos->z;
-				if (vertexPos->x < min.x)
-					min.x = vertexPos->x;
-				if (vertexPos->y < min.y)
-					min.y = vertexPos->y;
-				if (vertexPos->z < min.z)
-					min.z = vertexPos->z;
+				glm::vec3* vertexPos = meshData->AccessVertexComponent<glm::vec3>(BufferComponent::Position, i);
+
+				min = glm::min(min, *vertexPos);
+				max = glm::max(max, *vertexPos);
 			}
+
 			boundingSphere.center = (min + max) * 0.5f;
-			boundingSphere.radius = glm::length(boundingSphere.center - max);
+
+			float maxDistanceSq = 0.0f;
+			for (uint32_t i = 0; i < meshData->vertexCount; i++)
+			{
+				glm::vec3* vertexPos = meshData->AccessVertexComponent<glm::vec3>(BufferComponent::Position, i);
+				float distSq = glm::distance2(boundingSphere.center, *vertexPos);
+				if (distSq > maxDistanceSq)
+					maxDistanceSq = distSq;
+			}
+
+			boundingSphere.radius = glm::sqrt(maxDistanceSq);
 		}
 	};
 }

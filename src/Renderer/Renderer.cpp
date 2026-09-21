@@ -96,11 +96,11 @@ namespace sf::Renderer
 	uint32_t sharedGpuData_gl_ubo;
 	SharedGpuData sharedGpuData;
 
-	std::unordered_map<const sf::SkeletonData*, uint32_t> skeletonSsbos;
+	std::unordered_map<const SkeletonData*, uint32_t> skeletonSsbos;
 
-	std::unordered_map<const sf::MeshData*, MeshGpuData> meshGpuData;
+	std::unordered_map<const MeshData*, MeshGpuData> meshGpuData;
 
-	std::unordered_map<void*, ParticleSystemData> particleSystemData;
+	std::unordered_map<const ParticleSystem*, ParticleSystemData> particleSystemData;
 
 	std::unordered_map<const Material*, std::unordered_map<const BufferLayout*, GlMaterial*>> materials;
 
@@ -1065,6 +1065,45 @@ void sf::Renderer::DrawFramebuffer(const Framebuffer& framebuffer, float deltaTi
 	}
 }
 
+void sf::Renderer::InvalidateMeshData(const MeshData& meshData)
+{
+	if (meshGpuData.find(&meshData) == meshGpuData.end())
+		return;
+	MeshGpuData mgd = meshGpuData[&meshData];
+	glDeleteBuffers(1, &mgd.gl_vertexBuffer);
+	glDeleteBuffers(1, &mgd.gl_indexBuffer);
+	glDeleteVertexArrays(1, &mgd.gl_vao);
+	meshGpuData.erase(&meshData);
+}
+
+void sf::Renderer::InvalidateSkeletonData(const SkeletonData& skeletonData)
+{
+	if (skeletonSsbos.find(&skeletonData) == skeletonSsbos.end())
+		return;
+	glDeleteBuffers(1, &skeletonSsbos[&skeletonData]);
+	skeletonSsbos.erase(&skeletonData);
+}
+
+void sf::Renderer::InvalidateParticleSystem(const ParticleSystem& particleSystem)
+{
+	if (particleSystemData.find(&particleSystem) == particleSystemData.end())
+		return;
+	glDeleteBuffers(1, &particleSystemData[&particleSystem].gl_ssbo);
+	particleSystemData.erase(&particleSystem);
+}
+
+void sf::Renderer::InvalidateMaterial(const Material& material)
+{
+	if (materials.find(&material) == materials.end())
+		return;
+	for (auto& p : materials[&material])
+	{
+		p.second->Delete();
+		delete p.second;
+	}
+	materials.erase(&material);
+}
+
 void sf::Renderer::Terminate()
 {
 	for (auto& pair : meshGpuData)
@@ -1073,6 +1112,15 @@ void sf::Renderer::Terminate()
 		glDeleteBuffers(1, &(pair.second.gl_indexBuffer));
 		glDeleteBuffers(1, &(pair.second.gl_vertexBuffer));
 	}
+	meshGpuData.clear();
+
+	for (auto& pair : skeletonSsbos)
+		glDeleteBuffers(1, &pair.second);
+	skeletonSsbos.clear();
+
+	for (auto& pair : particleSystemData)
+		glDeleteBuffers(1, &pair.second.gl_ssbo);
+	particleSystemData.clear();
 
 	for (auto& pair : materials)
 	{
@@ -1082,6 +1130,8 @@ void sf::Renderer::Terminate()
 			delete p.second;
 		}
 	}
+	materials.clear();
+
 	drawLineShader.Delete();
 
 	environmentData.envTexture.Delete();

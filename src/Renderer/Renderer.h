@@ -62,5 +62,10 @@ namespace sf::Renderer {
 	// void DrawScene(Scene* scene, float deltaTime);
 	void DrawFramebuffer(const Framebuffer& framebuffer, float deltaTime);
 
+	void InvalidateMeshData(const MeshData& meshData);
+	void InvalidateSkeletonData(const SkeletonData& skeletonData);
+	void InvalidateParticleSystem(const ParticleSystem& particleSystem);
+	void InvalidateMaterial(const Material& material);
+
 	void Terminate();
 }

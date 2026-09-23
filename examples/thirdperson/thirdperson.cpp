@@ -39,6 +39,8 @@
 
 #define HOUSE_COUNT 400
 
+#include "houseObjectManager.h"
+
 namespace sf
 {
 	namespace Game
@@ -47,21 +49,27 @@ namespace sf
 		Entity gimbal, cameraObject;
 		Entity shanyung, fox, foxCol;
 
+		std::vector<Entity> houseObjects;
+
 		Entity houses[HOUSE_COUNT];
-		MeshData* houseMesh;
-		MeshData* houseColMesh;
+		MeshData* buildingMeshes[3];
+		MeshData* buildingColMeshes[3];
+		const std::vector<const char*> buildingMeshNames = {"ba2f", "ba3f", "house"};
+		std::vector<const std::vector<ObjImporter::ObjMarkerExt>*> perBuildingMarkers;
+		std::vector<LODGroup*> buildingLodGroups;
 
 		glm::vec3 targetGimbalRotation;
 
 		float cameraDistance;
 
-		BufferLayout collisionVertexLayout = BufferLayout({
-			BufferComponent::Position,
+		BufferLayout positionOnlyVertexLayout = BufferLayout({
+			BufferComponent::Position
 		});
 
-		BufferLayout staticVertexLayout = BufferLayout({
+		BufferLayout houseObjectVertexLayout = BufferLayout({
 			BufferComponent::Position,
 			BufferComponent::Normal,
+			BufferComponent::UV
 		});
 
 		BufferLayout characterVertexLayout = BufferLayout({
@@ -78,6 +86,7 @@ namespace sf
 		std::vector<glm::vec2> shanyungSpeedPerAnimation;
 		float shanyungVerticalSpeed = 0.0f;
 		float shanyungCapsuleSeparation;
+		LODGroup shanyungLodGroup;
 
 		SkeletonData* foxSkeleton;
 		MeshData* foxMesh;
@@ -90,6 +99,7 @@ namespace sf
 
 		Material characterMaterial;
 		Material vertexAoMaterial;
+		Material houseMaterial;
 		Terrain terrain;
 
 		float shanyungLodDistances[] = { 5.0f, 20.0f, 45.0f, 1000.0f };
@@ -206,6 +216,8 @@ namespace sf
 		characterMaterial.fragShaderFilePath = "assets/shaders/default.frag";
 		vertexAoMaterial.vertShaderFilePath = "assets/shaders/default.vert";
 		vertexAoMaterial.fragShaderFilePath = "assets/shaders/vertexAo.frag";
+		houseMaterial.vertShaderFilePath = "assets/shaders/default.vert";
+		houseMaterial.fragShaderFilePath = "assets/shaders/defaultFlat.frag";
 
 		targetGimbalRotation = glm::vec3(0.0, glm::radians(180.0f), 0.0);
 		cameraDistance = 3.0;
@@ -225,32 +237,42 @@ namespace sf
 		terrain.Create(scene, "../Downloads/Telegram Desktop/test.r16", 0.5566f, 152.0f, 41,
 			glm::vec3(-(float)(1025 - 1) * 0.5f * 0.5566f, 0.0f, (float)(1025 - 1) * 0.5f * 0.5566f));
 
+		hom::Initialize(houseObjectVertexLayout);
+
 		// Houses
 		{
-			houseMesh = new MeshData(&staticVertexLayout);
-			int objid = ObjImporter::Load("assets/examples/house.obj");
-			ObjImporter::GenerateMeshData(objid, *houseMesh);
-			MeshProcessor::ComputeNormals(*houseMesh);
-			std::vector<LOD> houseLods = GenerateLODs(*houseMesh, houseLodRatios, houseLodDistances, 2);
+			for (int i = 0; i < buildingMeshNames.size(); i++)
+			{
+				const char* name = buildingMeshNames[i];
+				std::string filePath = std::string("assets/examples/") + std::string(name) + std::string(".obj");
+				std::string colFilePath = std::string("assets/examples/") + std::string(name) + std::string("Col.obj");
+				buildingMeshes[i] = new MeshData();
+				int objid = ObjImporter::Load(filePath.c_str());
+				ObjImporter::GenerateMeshData(objid, positionOnlyVertexLayout, *buildingMeshes[i]);
+				buildingLodGroups.emplace_back();
+				buildingLodGroups.back() = new LODGroup();
+				buildingLodGroups.back()->Create(*buildingMeshes[i], houseLodRatios, houseLodDistances, 2);
 
-			houseColMesh = new MeshData(&collisionVertexLayout);
-			objid = ObjImporter::Load("assets/examples/houseCol.obj");
-			ObjImporter::GenerateMeshData(objid, *houseColMesh);
+				perBuildingMarkers.emplace_back();
+				perBuildingMarkers.back() = ObjImporter::GetMarkers(objid);
+				printf("BUILDING WITH NAME %s has %u markers\n", name, perBuildingMarkers.back()->size());
+
+				buildingColMeshes[i] = new MeshData();
+				objid = ObjImporter::Load(colFilePath.c_str());
+				ObjImporter::GenerateMeshData(objid, positionOnlyVertexLayout, *buildingColMeshes[i]);
+			}
 
 			for (int i = 0; i < HOUSE_COUNT; i++)
 			{
+				int buildingToUseIndex = Random::Int(3);
+				MeshData* buildingColToUseMesh = buildingColMeshes[buildingToUseIndex];
+
 				houses[i] = scene.CreateEntity();
-				houses[i].AddComponent<Mesh>(houseLods, &characterMaterial);
-				houses[i].AddComponent<MeshCollider>(houseColMesh);
+				houses[i].AddComponent<Mesh>(buildingLodGroups[buildingToUseIndex]->lods, &houseMaterial);
+				houses[i].AddComponent<MeshCollider>(buildingColToUseMesh);
 				Transform& houseT = houses[i].AddComponent<Transform>();
 				houseT.rotation = glm::quat(glm::vec3(0.0f, Random::Float() * 3.14159265 * 2.0f, 0.0f));
-				if (i == 0)
-				{
-					houseT.rotation = glm::quat(glm::vec3(0.0f, glm::radians(-10.0f) * 2.0f, 0.0f));
-					houseT.position.x = 10.0f;
-					terrain.Sample(houseT.position, houseT.position.y);
-					continue;
-				}
+
 				bool collidesWithOtherHouse;
 				do
 				{
@@ -267,6 +289,22 @@ namespace sf
 						}
 					}
 				} while (collidesWithOtherHouse);
+
+				const std::vector<ObjImporter::ObjMarkerExt>* markers = perBuildingMarkers[buildingToUseIndex];
+				for (const ObjImporter::ObjMarkerExt& marker : *markers)
+				{
+					houseObjects.emplace_back();
+					houseObjects.back() = scene.CreateEntity();
+
+					Transform& ho_t = houseObjects.back().AddComponent<Transform>();
+					ho_t = houseT;
+					Transform toApply;
+					toApply.position = marker.position;
+					toApply.rotation = marker.rotation;
+					ho_t.Apply(toApply);
+					houseObjects.back().AddComponent<Mesh>(hom::GetLodsByType(marker.name), &characterMaterial);
+					houseObjects.back().AddComponent<MeshCollider>(hom::GetLodsByType(marker.name)[0].meshData);
+				}
 			}
 		}
 
@@ -275,10 +313,10 @@ namespace sf
 			shanyung.AddComponent<Transform>();
 
 			shanyungSkeleton = new SkeletonData();
-			shanyungMesh = new MeshData(&characterVertexLayout);
+			shanyungMesh = new MeshData();
 			int gltfid = GltfImporter::Load("assets/examples/shanyung_blendspace2d.glb");
 			GltfImporter::GenerateSkeleton(gltfid, *shanyungSkeleton);
-			GltfImporter::GenerateMeshData(gltfid, *shanyungMesh);
+			GltfImporter::GenerateMeshData(gltfid, characterVertexLayout, *shanyungMesh);
 			MeshProcessor::RemoveUnusedBones(*shanyungMesh, *shanyungSkeleton);
 			{
 				Transform shanyungImportTransform;
@@ -288,7 +326,8 @@ namespace sf
 				MeshProcessor::TransformSkeleton(*shanyungSkeleton, shanyungImportTransform);
 			}
 
-			shanyung.AddComponent<SkinnedMesh>(GenerateLODs(*shanyungMesh, shanyungLodRatios, shanyungLodDistances, 4), shanyungSkeleton, &characterMaterial);
+			shanyungLodGroup.Create(*shanyungMesh, shanyungLodRatios, shanyungLodDistances, 4);
+			shanyung.AddComponent<SkinnedMesh>(shanyungLodGroup.lods, shanyungSkeleton, &characterMaterial);
 
 			CapsuleCollider& e_cc = shanyung.AddComponent<CapsuleCollider>();
 			e_cc.radius = 0.3;
@@ -309,10 +348,10 @@ namespace sf
 			fox.AddComponent<Transform>();
 
 			foxSkeleton = new SkeletonData();
-			foxMesh = new MeshData(&characterVertexLayout);
+			foxMesh = new MeshData();
 			int gltfid = GltfImporter::Load("assets/examples/Fox.glb");
 			GltfImporter::GenerateSkeleton(gltfid, *foxSkeleton);
-			GltfImporter::GenerateMeshData(gltfid, *foxMesh);
+			GltfImporter::GenerateMeshData(gltfid, characterVertexLayout, *foxMesh);
 			MeshProcessor::RemoveUnusedBones(*foxMesh, *foxSkeleton);
 			MeshProcessor::ComputeNormals(*foxMesh);
 			{
@@ -394,6 +433,22 @@ namespace sf
 			for (int i = 0; i < HOUSE_COUNT; i++)
 			{
 				if (EntityIntersect::CapsuleMesh(shanyung, houses[i], 4, &outNCount, outCd))
+				{
+					for (uint32_t i = 0; i < outNCount; i++)
+					{
+						glm::vec3 flatCapsuleNormal = glm::normalize(glm::vec3(outCd[i].normalA.x, 0.0f, outCd[i].normalA.z));
+						glm::vec3 flatTriNormal = glm::normalize(glm::vec3(outCd[i].normalB.x, 0.0f, outCd[i].normalB.z));
+
+						Renderer::AddLine(e_t.position + glm::vec3(0.0f, 0.3f, 0.0f), e_t.position + glm::vec3(0.0f, 0.3f, 0.0f) + flatTriNormal, glm::vec3(0.0f, 0.0f, 1.0f));
+						Renderer::AddLine(e_t.position + glm::vec3(0.0f, 0.4f, 0.0f), e_t.position + glm::vec3(0.0f, 0.4f, 0.0f) + flatCapsuleNormal, glm::vec3(1.0f, 0.0f, 0.0f));
+						if (glm::dot(disp, flatTriNormal) < 0.0f && glm::dot(flatCapsuleNormal, flatTriNormal) < -0.777f)
+							disp -= glm::dot(disp, flatTriNormal) * flatTriNormal;
+					}
+				}
+			}
+			for (int i = 0; i < houseObjects.size(); i++)
+			{
+				if (EntityIntersect::CapsuleMesh(shanyung, houseObjects[i], 4, &outNCount, outCd))
 				{
 					for (uint32_t i = 0; i < outNCount; i++)
 					{

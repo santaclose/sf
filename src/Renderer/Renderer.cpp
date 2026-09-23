@@ -102,7 +102,7 @@ namespace sf::Renderer
 
 	std::unordered_map<const ParticleSystem*, ParticleSystemData> particleSystemData;
 
-	std::unordered_map<const Material*, std::unordered_map<const BufferLayout*, GlMaterial*>> materials;
+	std::unordered_map<const Material*, std::unordered_map<uint32_t, GlMaterial*>> materials;
 
 	struct EnvironmentData
 	{
@@ -139,7 +139,7 @@ namespace sf::Renderer
 	void TransferVertexData(const sf::MeshData* mesh)
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, meshGpuData[mesh].gl_vertexBuffer);
-		glBufferData(GL_ARRAY_BUFFER, mesh->vertexCount * mesh->vertexBufferLayout->GetSize(), mesh->vertexBuffer, GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, mesh->vertexCount * mesh->vertexBufferLayout.GetSize(), mesh->vertexBuffer, GL_STATIC_DRAW);
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshGpuData[mesh].gl_indexBuffer);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->indexCount * sizeof(uint32_t), mesh->indexBuffer, GL_STATIC_DRAW);
@@ -156,35 +156,35 @@ namespace sf::Renderer
 		glBindBuffer(GL_ARRAY_BUFFER, meshGpuData[mesh].gl_vertexBuffer);
 
 		// update vertices
-		glBufferData(GL_ARRAY_BUFFER, mesh->vertexCount * mesh->vertexBufferLayout->GetSize(), mesh->vertexBuffer, GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, mesh->vertexCount * mesh->vertexBufferLayout.GetSize(), mesh->vertexBuffer, GL_STATIC_DRAW);
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshGpuData[mesh].gl_indexBuffer);
 		// update indices to draw
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->indexCount * sizeof(uint32_t), mesh->indexBuffer, GL_STATIC_DRAW);
 
-		const std::vector<BufferComponentInfo>& components = mesh->vertexBufferLayout->GetComponentInfos();
-		for (int i = 0; i < components.size(); i++)
+		std::vector<BufferComponentInfo> perComponentInfo = mesh->vertexBufferLayout.GetComponentInfos();
+		for (int i = 0; i < perComponentInfo.size(); i++)
 		{
 			glEnableVertexAttribArray(i);
-			switch (components[i].dataType)
+			switch (perComponentInfo[i].dataType)
 			{
 				case DataType::f32:
-					glVertexAttribPointer(i, 1, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout->GetSize(), (void*)(uint64_t)components[i].byteOffset);
+					glVertexAttribPointer(i, 1, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(uint64_t) perComponentInfo[i].byteOffset);
 					break;
 				case DataType::vec2f32:
-					glVertexAttribPointer(i, 2, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout->GetSize(), (void*)(uint64_t)components[i].byteOffset);
+					glVertexAttribPointer(i, 2, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(uint64_t) perComponentInfo[i].byteOffset);
 					break;
 				case DataType::vec3f32:
-					glVertexAttribPointer(i, 3, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout->GetSize(), (void*)(uint64_t)components[i].byteOffset);
+					glVertexAttribPointer(i, 3, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(uint64_t) perComponentInfo[i].byteOffset);
 					break;
 				case DataType::vec4f32:
-					glVertexAttribPointer(i, 4, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout->GetSize(), (void*)(uint64_t)components[i].byteOffset);
+					glVertexAttribPointer(i, 4, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(uint64_t) perComponentInfo[i].byteOffset);
 					break;
 				case DataType::vec4u8:
-					glVertexAttribPointer(i, 4, GL_UNSIGNED_BYTE, GL_FALSE, mesh->vertexBufferLayout->GetSize(), (void*)(uint64_t)components[i].byteOffset);
+					glVertexAttribPointer(i, 4, GL_UNSIGNED_BYTE, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(uint64_t) perComponentInfo[i].byteOffset);
 					break;
 				case DataType::vec4u16:
-					glVertexAttribPointer(i, 4, GL_UNSIGNED_SHORT, GL_FALSE, mesh->vertexBufferLayout->GetSize(), (void*)(uint64_t)components[i].byteOffset);
+					glVertexAttribPointer(i, 4, GL_UNSIGNED_SHORT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(uint64_t) perComponentInfo[i].byteOffset);
 					break;
 				default:
 					std::cout << "[Renderer] Vertex attribute skipped" << std::endl;
@@ -270,13 +270,16 @@ namespace sf::Renderer
 	GlMaterial* GetOrCreateMaterial(const Material* material, const BufferLayout* vertexBufferLayout)
 	{
 		assert(material != nullptr);
+
 		/* vertexBufferLayout can be null if using mesh shading */
-		if (materials.find(material) != materials.end() && materials[material].find(vertexBufferLayout) != materials[material].end())
-			return materials[material][vertexBufferLayout];
+		uint32_t secondKey = vertexBufferLayout == nullptr ? 0 : vertexBufferLayout->GetBitmask();
+
+		if (materials.find(material) != materials.end() && materials[material].find(secondKey) != materials[material].end())
+			return materials[material][secondKey];
 
 		GlMaterial* newMaterial = new GlMaterial();
 		newMaterial->Create(material, vertexBufferLayout);
-		materials[material][vertexBufferLayout] = newMaterial;
+		materials[material][secondKey] = newMaterial;
 		return newMaterial;
 	}
 
@@ -348,7 +351,7 @@ bool sf::Renderer::Initialize(const Window& window, const Game::InitData& gameIn
 	renderTargets.push_back(windowRenderTarget);
 
 	materials.clear();
-	materials.reserve(64);
+	materials.reserve(32);
 
 	if (!gladLoadGLLoader((GLADloadproc) window.GetOpenGlFunctionAddress()))
 	{
@@ -503,15 +506,15 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 
 	if (meshData->vertexCount == 0)
 		return;
-	assert(meshData->vertexBufferLayout->GetComponentInfo(BufferComponent::BoneIndices) == nullptr);
-	assert(meshData->vertexBufferLayout->GetComponentInfo(BufferComponent::BoneWeights) == nullptr);
+	assert(meshData->vertexBufferLayout.GetComponentInfo(BufferComponent::BoneIndices) == nullptr);
+	assert(meshData->vertexBufferLayout.GetComponentInfo(BufferComponent::BoneWeights) == nullptr);
 
 	if (meshGpuData.find(meshData) == meshGpuData.end()) // create mesh data if not there
 		CreateMeshGpuData(meshData);
 
 	for (uint32_t i = 0; i < meshData->pieceCount; i++)
 	{
-		GlMaterial* materialToUse = GetOrCreateMaterial(mesh.materials[i], meshData->vertexBufferLayout);
+		GlMaterial* materialToUse = GetOrCreateMaterial(mesh.materials[i], &meshData->vertexBufferLayout);
 		materialToUse->Bind(rendererUniformVector);
 
 		uint32_t drawStart = 0;
@@ -545,8 +548,8 @@ void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 	assert(meshData != nullptr);
 	if (meshData->vertexCount == 0)
 		return;
-	assert(meshData->vertexBufferLayout->GetComponentInfo(BufferComponent::BoneIndices) != nullptr);
-	assert(meshData->vertexBufferLayout->GetComponentInfo(BufferComponent::BoneWeights) != nullptr);
+	assert(meshData->vertexBufferLayout.GetComponentInfo(BufferComponent::BoneIndices) != nullptr);
+	assert(meshData->vertexBufferLayout.GetComponentInfo(BufferComponent::BoneWeights) != nullptr);
 
 	if (meshGpuData.find(meshData) == meshGpuData.end()) // create mesh data if not there
 		CreateMeshGpuData(meshData);
@@ -568,7 +571,7 @@ void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 
 	for (uint32_t i = 0; i < meshData->pieceCount; i++)
 	{
-		GlMaterial* materialToUse = GetOrCreateMaterial(mesh.materials[i], meshData->vertexBufferLayout);
+		GlMaterial* materialToUse = GetOrCreateMaterial(mesh.materials[i], &meshData->vertexBufferLayout);
 		materialToUse->Bind(rendererUniformVector);
 		materialToUse->m_shader->SetUniform1i("animate", mesh.skeletonData->m_animate);
 
@@ -593,10 +596,10 @@ void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 
 void sf::Renderer::DrawParticleSystem(ParticleSystem& particleSystem, Transform& transform, float deltaTime)
 {
-	GlMaterial* materialToUse = GetOrCreateMaterial(particleSystem.material, particleSystem.meshData->vertexBufferLayout);
+	GlMaterial* materialToUse = GetOrCreateMaterial(particleSystem.material, &particleSystem.meshData->vertexBufferLayout);
 	assert(!particleSystem.dynamic || particleSystem.material->buffers.size() == 1);
 	const BufferLayout* particleBufferLayout = particleSystem.material->buffers[0].layout;
-	void* perParticleBuffer = particleSystem.material->buffers[0].pointer;
+	uint8_t* perParticleBuffer = particleSystem.material->buffers[0].pointer;
 	uint32_t particleBufferSize = particleSystem.material->buffers[0].size;
 
 	if (meshGpuData.find(particleSystem.meshData) == meshGpuData.end()) // create mesh data if not there

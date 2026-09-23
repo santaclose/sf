@@ -235,29 +235,30 @@ void sf::ObjImporter::Destroy(int id)
 	meshes[id] = nullptr;
 }
 
-void sf::ObjImporter::GenerateMeshData(int id, MeshData& mesh)
+bool sf::ObjImporter::GenerateMeshData(int id, const BufferLayout& vertexLayout, MeshData& meshData)
 {
 	assert(id > -1 && id < meshes.size());
 	assert(meshes[id] != nullptr);
 
-	assert(mesh.pieces == nullptr && mesh.vertexBuffer == nullptr && mesh.indexBuffer == nullptr);
-	bool meshHasNormals = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::Normal) != nullptr;
-	bool meshHasUVs = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::UV) != nullptr;
+	// assert(mesh.pieces == nullptr && mesh.vertexBuffer == nullptr && mesh.indexBuffer == nullptr);
+	bool meshHasNormals = vertexLayout.GetComponentInfo(BufferComponent::Normal) != nullptr;
+	bool meshHasUVs = vertexLayout.GetComponentInfo(BufferComponent::UV) != nullptr;
 
-	DataType positionDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::Position)->dataType;
+	DataType positionDataType = vertexLayout.GetComponentInfo(BufferComponent::Position)->dataType;
 	assert(positionDataType == DataType::vec3f32);
 
 	if (meshHasNormals)
 	{
-		DataType normalDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::Normal)->dataType;
+		DataType normalDataType = vertexLayout.GetComponentInfo(BufferComponent::Normal)->dataType;
 		assert(normalDataType == DataType::vec3f32);
 	}
 	if (meshHasUVs)
 	{
-		DataType uvsDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::UV)->dataType;
+		DataType uvsDataType = vertexLayout.GetComponentInfo(BufferComponent::UV)->dataType;
 		assert(uvsDataType == DataType::vec2f32);
 	}
 
+	uint8_t* vertexBuffer = nullptr;
 	std::vector<uint32_t> indices;
 	std::vector<uint32_t> pieces;
 
@@ -294,30 +295,27 @@ void sf::ObjImporter::GenerateMeshData(int id, MeshData& mesh)
 		indices.push_back(uniqueVertices[v]);
 	}
 
-	mesh.vertexBuffer = new uint8_t[mesh.vertexBufferLayout->GetSize() * finalVertices.size()];
+	vertexBuffer = new uint8_t[vertexLayout.GetSize() * finalVertices.size()];
 	for (int i = 0; i < finalVertices.size(); i++)
 	{
-		glm::vec3* posPtr = mesh.AccessVertexComponent<glm::vec3>(BufferComponent::Position, i);
+		glm::vec3* posPtr = vertexLayout.Access<glm::vec3>(vertexBuffer, BufferComponent::Position, i);
 		*posPtr = meshes[id]->positions[finalVertices[i].posID];
 		if (meshes[id]->normals.size() > 0 && meshHasNormals)
 		{
-			glm::vec3* normalPtr = mesh.AccessVertexComponent<glm::vec3>(BufferComponent::Normal, i);
+			glm::vec3* normalPtr = vertexLayout.Access<glm::vec3>(vertexBuffer, BufferComponent::Normal, i);
 			*normalPtr = meshes[id]->normals[finalVertices[i].normalID];
 		}
 		if (meshes[id]->texCoords.size() > 0 && meshHasUVs)
 		{
-			glm::vec2* coordsPtr = mesh.AccessVertexComponent<glm::vec2>(BufferComponent::UV, i);
+			glm::vec2* coordsPtr = vertexLayout.Access<glm::vec2>(vertexBuffer, BufferComponent::UV, i);
 			*coordsPtr = meshes[id]->texCoords[finalVertices[i].coordsID];
 		}
 	}
-	mesh.vertexCount = finalVertices.size();
-	mesh.indexBuffer = new uint32_t[indices.size() + pieces.size()];
-	mesh.indexCount = indices.size();
-	mesh.pieces = mesh.indexBuffer + indices.size();
-	mesh.pieceCount = pieces.size();
-	memcpy(mesh.indexBuffer, indices.data(), indices.size() * sizeof(uint32_t));
-	memcpy(mesh.pieces, pieces.data(), pieces.size() * sizeof(uint32_t));
-	printf("[ObjImporter] Generated mesh data with %u vertices, %u indices, and %u pieces for ID %u\n", mesh.vertexCount, mesh.indexCount, mesh.pieceCount, id);
+
+	meshData.Destroy();
+	meshData.Create(&vertexLayout, vertexBuffer, finalVertices.size(), indices, pieces);
+	printf("[ObjImporter] Generated mesh data with %u vertices, %u indices, and %u pieces for ID %u\n", meshData.vertexCount, meshData.indexCount, meshData.pieceCount, id);
+	return true;
 }
 
 const std::vector<sf::ObjImporter::ObjMarkerExt>* sf::ObjImporter::GetMarkers(int id)

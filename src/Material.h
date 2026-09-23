@@ -6,6 +6,7 @@
 #include <cstdint>
 
 #include <BufferLayout.h>
+#include <Bitmap.h>
 
 namespace sf
 {
@@ -23,7 +24,7 @@ namespace sf
 	struct MaterialBuffer
 	{
 		const char* name;
-		void* pointer;
+		uint8_t* pointer;
 		const BufferLayout* layout;
 		uint32_t size;
 		DataType dataType;
@@ -65,7 +66,7 @@ namespace sf
 		std::string tessWinding;
 		uint32_t meshWorkGroupCount;
 	private:
-		std::unordered_set<void*> allocatedBitmaps;
+		std::unordered_set<Bitmap*> allocatedBitmaps;
 	public:
 		Material() = default;
 		void CreateFromFile(const std::string& filePath);

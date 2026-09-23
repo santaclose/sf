@@ -46,7 +46,7 @@ namespace sf
 			BufferComponent::Position,
 			BufferComponent::UV
 		});
-		MeshData shipMesh = MeshData(&shipVertexLayout);
+		MeshData shipMesh;
 
 		Entity* things;
 
@@ -124,7 +124,7 @@ namespace sf
 		e_ship = scene.CreateEntity();
 
 		int gltfid = GltfImporter::Load("examples/spaceship/ship.glb");
-		GltfImporter::GenerateMeshData(gltfid, shipMesh);
+		GltfImporter::GenerateMeshData(gltfid, shipVertexLayout, shipMesh);
 		Mesh& m_ship = e_ship.AddComponent<Mesh>(&shipMesh, &spaceshipMaterial);
 		Transform& t_ship = e_ship.AddComponent<Transform>();
 		ParticleSystem& ps_ship = e_ship.AddComponent<ParticleSystem>();
@@ -169,12 +169,11 @@ namespace sf
 			cachedMeshesPath[numberIndex + 0] = '0' + (i / 10);
 			cachedMeshesPath[numberIndex + 1] = '0' + (i % 10);
 			/* Assign layout to avoid creating a new one per model when loading */
-			generatedMeshes[i].vertexBufferLayout = &generatedMeshesVertexLayout;
 			if (generatedMeshes[i].LoadFromFile(cachedMeshesPath))
 				continue;
 			errt::seed = i;
 			errt::GenerateModel(generatedMeshes[i]);
-			generatedMeshes[i].ChangeVertexBufferLayout(&generatedMeshesVertexLayout);
+			generatedMeshes[i].ChangeVertexBufferLayout(generatedMeshesVertexLayout);
 			VoxelVolumeData vv;
 			vv.BuildFromMesh(generatedMeshes[i], 0.01f);
 			MeshProcessor::ComputeVertexAmbientOcclusion(generatedMeshes[i], &vv);

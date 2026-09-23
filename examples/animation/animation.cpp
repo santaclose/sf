@@ -104,8 +104,7 @@ namespace sf
 
 			gltfid = GltfImporter::Load("assets/examples/Fox.glb");
 			GltfImporter::GenerateSkeleton(gltfid, skeletons[0]);
-			meshes[0] = MeshData(&vertexLayout);
-			GltfImporter::GenerateMeshData(gltfid, meshes[0]);
+			GltfImporter::GenerateMeshData(gltfid, vertexLayout, meshes[0]);
 			MeshProcessor::RemoveUnusedBones(meshes[0], skeletons[0]);
 			MeshProcessor::ComputeNormals(meshes[0]);
 			{
@@ -126,8 +125,7 @@ namespace sf
 
 			gltfid = GltfImporter::Load("assets/examples/BrainStem.glb");
 			GltfImporter::GenerateSkeleton(gltfid, skeletons[1]);
-			meshes[1] = MeshData(&vertexLayout);
-			GltfImporter::GenerateMeshData(gltfid, meshes[1]);
+			GltfImporter::GenerateMeshData(gltfid, vertexLayout, meshes[1]);
 			MeshProcessor::RemoveUnusedBones(meshes[1], skeletons[1]);
 			{
 				Transform brainStemImportTransform;

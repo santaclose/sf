@@ -136,8 +136,7 @@ namespace sf
 			damagedHelmetMaterial.uniforms["aoTexture"] = { DataType::bitmap, &damagedHelmetAO };
 			damagedHelmetMaterial.uniforms["emissiveTexture"] = { DataType::bitmap, &damagedHelmetEmissive };
 
-			meshes[0] = MeshData(&meshVertexLayout);
-			GltfImporter::GenerateMeshData(gltfid, meshes[0]);
+			GltfImporter::GenerateMeshData(gltfid, meshVertexLayout, meshes[0]);
 			MeshProcessor::ComputeTangentSpace(meshes[0]);
 			Mesh& objectMesh = galleryObjects.back().AddComponent<Mesh>(&meshes[0], &damagedHelmetMaterial);
 		}
@@ -146,8 +145,7 @@ namespace sf
 			galleryObjects.back().AddComponent<Transform>();
 
 			gltfid = GltfImporter::Load("assets/examples/SciFiHelmet/SciFiHelmet.gltf");
-			meshes[1] = MeshData(&meshVertexLayout);
-			GltfImporter::GenerateMeshData(gltfid, meshes[1]);
+			GltfImporter::GenerateMeshData(gltfid, meshVertexLayout, meshes[1]);
 			MeshProcessor::ComputeTangentSpace(meshes[1]);
 
 			sciFiHelmetMaterial.CreateFromFile("examples/pbr/SciFiHelmet.mat");

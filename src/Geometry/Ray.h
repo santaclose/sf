@@ -163,9 +163,9 @@ namespace sf::Geometry
 		const MeshData* meshData = meshCollider.meshData;
 		for (uint32_t j = 0; j < meshData->indexCount; j += 3)
 		{
-			const glm::vec3* a = meshData->AccessVertexComponent<glm::vec3>(BufferComponent::Position, meshData->indexBuffer[j + 0]);
-			const glm::vec3* b = meshData->AccessVertexComponent<glm::vec3>(BufferComponent::Position, meshData->indexBuffer[j + 1]);
-			const glm::vec3* c = meshData->AccessVertexComponent<glm::vec3>(BufferComponent::Position, meshData->indexBuffer[j + 2]);
+			const glm::vec3* a = meshData->ReadVertexComponent<glm::vec3>(BufferComponent::Position, meshData->indexBuffer[j + 0]);
+			const glm::vec3* b = meshData->ReadVertexComponent<glm::vec3>(BufferComponent::Position, meshData->indexBuffer[j + 1]);
+			const glm::vec3* c = meshData->ReadVertexComponent<glm::vec3>(BufferComponent::Position, meshData->indexBuffer[j + 2]);
 			prevRh = rh;
 			if (IntersectRayTriangle(rayOrigin, rayDir, *a, *b, *c, &rh))
 			{
@@ -236,9 +236,9 @@ namespace sf::Geometry
 		const MeshData* meshData = meshCollider.meshData;
 		for (uint32_t j = 0; j < meshData->indexCount; j += 3)
 		{
-			const glm::vec3* a = meshData->AccessVertexComponent<glm::vec3>(BufferComponent::Position, meshData->indexBuffer[j + 0]);
-			const glm::vec3* b = meshData->AccessVertexComponent<glm::vec3>(BufferComponent::Position, meshData->indexBuffer[j + 1]);
-			const glm::vec3* c = meshData->AccessVertexComponent<glm::vec3>(BufferComponent::Position, meshData->indexBuffer[j + 2]);
+			const glm::vec3* a = meshData->ReadVertexComponent<glm::vec3>(BufferComponent::Position, meshData->indexBuffer[j + 0]);
+			const glm::vec3* b = meshData->ReadVertexComponent<glm::vec3>(BufferComponent::Position, meshData->indexBuffer[j + 1]);
+			const glm::vec3* c = meshData->ReadVertexComponent<glm::vec3>(BufferComponent::Position, meshData->indexBuffer[j + 2]);
 
 			if (MovingSphereTriangle(sphere, disp, *a, *b, *c, &rh) && rh.distance < frh.distance)
 				frh = rh;
@@ -356,9 +356,9 @@ namespace sf::Geometry
 		const MeshData* meshData = meshCollider.meshData;
 		for (uint32_t j = 0; j < meshData->indexCount; j += 3)
 		{
-			const glm::vec3* a = meshData->AccessVertexComponent<glm::vec3>(BufferComponent::Position, meshData->indexBuffer[j + 0]);
-			const glm::vec3* b = meshData->AccessVertexComponent<glm::vec3>(BufferComponent::Position, meshData->indexBuffer[j + 1]);
-			const glm::vec3* c = meshData->AccessVertexComponent<glm::vec3>(BufferComponent::Position, meshData->indexBuffer[j + 2]);
+			const glm::vec3* a = meshData->ReadVertexComponent<glm::vec3>(BufferComponent::Position, meshData->indexBuffer[j + 0]);
+			const glm::vec3* b = meshData->ReadVertexComponent<glm::vec3>(BufferComponent::Position, meshData->indexBuffer[j + 1]);
+			const glm::vec3* c = meshData->ReadVertexComponent<glm::vec3>(BufferComponent::Position, meshData->indexBuffer[j + 2]);
 
 			if (MovingCapsuleTriangle(capsule, disp, *a, *b, *c, &rh) && rh.distance < frh.distance)
 				frh = rh;

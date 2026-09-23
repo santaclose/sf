@@ -28,9 +28,9 @@ namespace sf {
 		for (int i = 0; i < mesh.indexCount; i += 3)
 		{
 			NDT faceNormal;
-			PDT* a = mesh.AccessVertexComponent<PDT>(BufferComponent::Position, mesh.indexBuffer[i + 0]);
-			PDT* b = mesh.AccessVertexComponent<PDT>(BufferComponent::Position, mesh.indexBuffer[i + 1]);
-			PDT* c = mesh.AccessVertexComponent<PDT>(BufferComponent::Position, mesh.indexBuffer[i + 2]);
+			const PDT* a = mesh.ReadVertexComponent<PDT>(BufferComponent::Position, mesh.indexBuffer[i + 0]);
+			const PDT* b = mesh.ReadVertexComponent<PDT>(BufferComponent::Position, mesh.indexBuffer[i + 1]);
+			const PDT* c = mesh.ReadVertexComponent<PDT>(BufferComponent::Position, mesh.indexBuffer[i + 2]);
 			NDT ab = (*b) - (*a);
 			NDT ac = (*c) - (*a);
 			faceNormal = glm::normalize(glm::cross(ab, ac));
@@ -63,12 +63,12 @@ namespace sf {
 
 		for (uint32_t i = 0; i < mesh.indexCount; i += 3)
 		{
-			PDT* ap = mesh.AccessVertexComponent<PDT>(BufferComponent::Position, mesh.indexBuffer[i + 0]);
-			PDT* bp = mesh.AccessVertexComponent<PDT>(BufferComponent::Position, mesh.indexBuffer[i + 1]);
-			PDT* cp = mesh.AccessVertexComponent<PDT>(BufferComponent::Position, mesh.indexBuffer[i + 2]);
-			UDT* au = mesh.AccessVertexComponent<UDT>(BufferComponent::UV, mesh.indexBuffer[i + 0]);
-			UDT* bu = mesh.AccessVertexComponent<UDT>(BufferComponent::UV, mesh.indexBuffer[i + 1]);
-			UDT* cu = mesh.AccessVertexComponent<UDT>(BufferComponent::UV, mesh.indexBuffer[i + 2]);
+			const PDT* ap = mesh.ReadVertexComponent<PDT>(BufferComponent::Position, mesh.indexBuffer[i + 0]);
+			const PDT* bp = mesh.ReadVertexComponent<PDT>(BufferComponent::Position, mesh.indexBuffer[i + 1]);
+			const PDT* cp = mesh.ReadVertexComponent<PDT>(BufferComponent::Position, mesh.indexBuffer[i + 2]);
+			const UDT* au = mesh.ReadVertexComponent<UDT>(BufferComponent::UV, mesh.indexBuffer[i + 0]);
+			const UDT* bu = mesh.ReadVertexComponent<UDT>(BufferComponent::UV, mesh.indexBuffer[i + 1]);
+			const UDT* cu = mesh.ReadVertexComponent<UDT>(BufferComponent::UV, mesh.indexBuffer[i + 2]);
 			TDT* at = mesh.AccessVertexComponent<TDT>(BufferComponent::Tangent, mesh.indexBuffer[i + 0]);
 			TDT* bt = mesh.AccessVertexComponent<TDT>(BufferComponent::Tangent, mesh.indexBuffer[i + 1]);
 			TDT* ct = mesh.AccessVertexComponent<TDT>(BufferComponent::Tangent, mesh.indexBuffer[i + 2]);
@@ -101,8 +101,8 @@ namespace sf {
 
 void sf::MeshProcessor::ComputeNormals(MeshData& mesh)
 {
-	DataType positionDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::Position)->dataType;
-	DataType normalDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::Normal)->dataType;
+	DataType positionDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::Position)->dataType;
+	DataType normalDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::Normal)->dataType;
 
 	assert(positionDataType == DataType::vec3f32 || positionDataType == DataType::vec3f64);
 	assert(normalDataType == DataType::vec3f32 || normalDataType == DataType::vec3f64);
@@ -125,9 +125,9 @@ void sf::MeshProcessor::ComputeNormals(MeshData& mesh)
 
 void sf::MeshProcessor::ComputeTangentSpace(MeshData& mesh)
 {
-	DataType positionDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::Position)->dataType;
-	DataType uvsDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::UV)->dataType;
-	DataType tangentDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::Tangent)->dataType;
+	DataType positionDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::Position)->dataType;
+	DataType uvsDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::UV)->dataType;
+	DataType tangentDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::Tangent)->dataType;
 
 	assert(positionDataType == DataType::vec3f32 || positionDataType == DataType::vec3f64);
 	assert(uvsDataType == DataType::vec2f32 || uvsDataType == DataType::vec2f64);
@@ -190,8 +190,8 @@ float sf::MeshProcessor::ComputeOcclusion(const std::vector<std::pair<bool, floa
 
 void sf::MeshProcessor::ComputeVertexAmbientOcclusion(MeshData& mesh, const VoxelVolumeData* voxelVolume, const VertexAmbientOcclusionBakerConfig* config)
 {
-	DataType positionDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::Position)->dataType;
-	DataType aoDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::AO)->dataType;
+	DataType positionDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::Position)->dataType;
+	DataType aoDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::AO)->dataType;
 
 	assert(positionDataType == DataType::vec3f32);
 	assert(aoDataType == DataType::f32);
@@ -207,10 +207,10 @@ void sf::MeshProcessor::ComputeVertexAmbientOcclusion(MeshData& mesh, const Voxe
 		else
 		{
 			glm::vec3 minvpos, maxvpos;
-			minvpos = maxvpos = *mesh.AccessVertexComponent<glm::vec3>(BufferComponent::Position, 0);
+			minvpos = maxvpos = *mesh.ReadVertexComponent<glm::vec3>(BufferComponent::Position, 0);
 			for (int i = 1; i < mesh.vertexCount; i++)
 			{
-				glm::vec3 vertexPos = *mesh.AccessVertexComponent<glm::vec3>(BufferComponent::Position, i);
+				glm::vec3 vertexPos = *mesh.ReadVertexComponent<glm::vec3>(BufferComponent::Position, i);
 				minvpos.x = std::min(vertexPos.x, minvpos.x);
 				minvpos.y = std::min(vertexPos.y, minvpos.y);
 				minvpos.z = std::min(vertexPos.z, minvpos.z);
@@ -229,7 +229,7 @@ void sf::MeshProcessor::ComputeVertexAmbientOcclusion(MeshData& mesh, const Voxe
 	#pragma omp parallel for
 	for (int q = 0; q < mesh.vertexCount; q++)
 	{
-		glm::vec3 vertexPos = *mesh.AccessVertexComponent<glm::vec3>(BufferComponent::Position, q);
+		glm::vec3 vertexPos = *mesh.ReadVertexComponent<glm::vec3>(BufferComponent::Position, q);
 		float* aoTarget = mesh.AccessVertexComponent<float>(BufferComponent::AO, q);
 
 		std::vector<std::pair<bool, float>> rayResults(config->rayCount);
@@ -257,9 +257,9 @@ void sf::MeshProcessor::ComputeVertexAmbientOcclusion(MeshData& mesh, const Voxe
 
 					Geometry::RayHit rh;
 					didHit = Geometry::IntersectRayTriangle(vertexPos + (rayDir * config->rayOriginOffset), rayDir,
-						*mesh.AccessVertexComponent<glm::vec3>(BufferComponent::Position, mesh.indexBuffer[j + 0]),
-						*mesh.AccessVertexComponent<glm::vec3>(BufferComponent::Position, mesh.indexBuffer[j + 1]),
-						*mesh.AccessVertexComponent<glm::vec3>(BufferComponent::Position, mesh.indexBuffer[j + 2]),
+						*mesh.ReadVertexComponent<glm::vec3>(BufferComponent::Position, mesh.indexBuffer[j + 0]),
+						*mesh.ReadVertexComponent<glm::vec3>(BufferComponent::Position, mesh.indexBuffer[j + 1]),
+						*mesh.ReadVertexComponent<glm::vec3>(BufferComponent::Position, mesh.indexBuffer[j + 2]),
 						&rh);
 					if (didHit)
 						distance = rh.distance;
@@ -276,13 +276,13 @@ void sf::MeshProcessor::ComputeVertexAmbientOcclusion(MeshData& mesh, const Voxe
 		for (int i = 0; i < mesh.indexCount; i += 3)
 		{
 			float average =
-				(*mesh.AccessVertexComponent<float>(BufferComponent::AO, mesh.indexBuffer[i + 0]) +
-					*mesh.AccessVertexComponent<float>(BufferComponent::AO, mesh.indexBuffer[i + 1]) +
-					*mesh.AccessVertexComponent<float>(BufferComponent::AO, mesh.indexBuffer[i + 2])) / 3.0f;
+				(*mesh.ReadVertexComponent<float>(BufferComponent::AO, mesh.indexBuffer[i + 0]) +
+					*mesh.ReadVertexComponent<float>(BufferComponent::AO, mesh.indexBuffer[i + 1]) +
+					*mesh.ReadVertexComponent<float>(BufferComponent::AO, mesh.indexBuffer[i + 2])) / 3.0f;
 
-			*mesh.AccessVertexComponent<float>(BufferComponent::AO, mesh.indexBuffer[i + 0]) = glm::mix(*mesh.AccessVertexComponent<float>(BufferComponent::AO, mesh.indexBuffer[i + 0]), average, config->denoiseWeight);
-			*mesh.AccessVertexComponent<float>(BufferComponent::AO, mesh.indexBuffer[i + 1]) = glm::mix(*mesh.AccessVertexComponent<float>(BufferComponent::AO, mesh.indexBuffer[i + 1]), average, config->denoiseWeight);
-			*mesh.AccessVertexComponent<float>(BufferComponent::AO, mesh.indexBuffer[i + 2]) = glm::mix(*mesh.AccessVertexComponent<float>(BufferComponent::AO, mesh.indexBuffer[i + 2]), average, config->denoiseWeight);
+			*mesh.AccessVertexComponent<float>(BufferComponent::AO, mesh.indexBuffer[i + 0]) = glm::mix(*mesh.ReadVertexComponent<float>(BufferComponent::AO, mesh.indexBuffer[i + 0]), average, config->denoiseWeight);
+			*mesh.AccessVertexComponent<float>(BufferComponent::AO, mesh.indexBuffer[i + 1]) = glm::mix(*mesh.ReadVertexComponent<float>(BufferComponent::AO, mesh.indexBuffer[i + 1]), average, config->denoiseWeight);
+			*mesh.AccessVertexComponent<float>(BufferComponent::AO, mesh.indexBuffer[i + 2]) = glm::mix(*mesh.ReadVertexComponent<float>(BufferComponent::AO, mesh.indexBuffer[i + 2]), average, config->denoiseWeight);
 		}
 	}
 }
@@ -292,15 +292,15 @@ void sf::MeshProcessor::GenerateGrid(MeshData& mesh, uint32_t sizeX, uint32_t si
 	assert(sizeX > 1u && sizeY > 1u);
 	float uvAdjustX = 1.0f / texResX / 2.0f;
 	float uvAdjustY = 1.0f / texResY / 2.0f;
-	DataType positionDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::Position)->dataType;
-	DataType uvDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::UV)->dataType;
+	DataType positionDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::Position)->dataType;
+	DataType uvDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::UV)->dataType;
 	assert(positionDataType == DataType::vec3f32);
 	assert(uvDataType == DataType::vec2f32);
 	uint32_t indicesPerCell = useQuads ? 4u : 6u;
 	mesh.vertexCountPerPrimitive = useQuads ? 4u : 3u;
 	mesh.vertexCount = sizeX * sizeY;
 	mesh.indexCount = (sizeX - 1u) * (sizeY - 1u) * indicesPerCell;
-	mesh.vertexBuffer = new uint8_t[mesh.vertexCount * mesh.vertexBufferLayout->GetSize()];
+	mesh.vertexBuffer = new uint8_t[mesh.vertexCount * mesh.vertexBufferLayout.GetSize()];
 	mesh.indexBuffer = new uint32_t[mesh.indexCount + 1u];
 	mesh.pieces = mesh.indexBuffer + mesh.indexCount;
 	mesh.pieceCount = 1u;
@@ -338,14 +338,14 @@ void sf::MeshProcessor::GenerateGrid(MeshData& mesh, uint32_t sizeX, uint32_t si
 void sf::MeshProcessor::RemoveUnusedBones(MeshData& mesh, SkeletonData& skeleton)
 {
 	// Mesh must have bone indices
-	assert(mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::BoneIndices) != nullptr);
+	assert(mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::BoneIndices) != nullptr);
 
 	// Find used bones, both in mesh and animations
 	std::unordered_set<uint32_t> bonesUsedByMesh;
 	std::unordered_set<uint32_t> bonesUsedByAnimation;
 	for (uint32_t i = 0; i < mesh.vertexCount; i++)
 	{
-		glm::vec4* boneIndicesPointer = mesh.AccessVertexComponent<glm::vec4>(BufferComponent::BoneIndices, i);
+		const glm::vec4* boneIndicesPointer = mesh.ReadVertexComponent<glm::vec4>(BufferComponent::BoneIndices, i);
 		bonesUsedByMesh.insert((uint32_t)boneIndicesPointer->x);
 		bonesUsedByMesh.insert((uint32_t)boneIndicesPointer->y);
 		bonesUsedByMesh.insert((uint32_t)boneIndicesPointer->z);
@@ -486,7 +486,7 @@ void sf::MeshProcessor::RemoveUnusedBones(MeshData& mesh, SkeletonData& skeleton
 void sf::MeshProcessor::Decimate(const MeshData& inputMesh, MeshData& outputMesh, float ratio)
 {
 	// Vertices must have positions
-	assert(inputMesh.vertexBufferLayout->GetComponentInfo(BufferComponent::Position) != nullptr);
+	assert(inputMesh.vertexBufferLayout.GetComponentInfo(BufferComponent::Position) != nullptr);
 	assert(inputMesh.vertexCountPerPrimitive == 3);
 	assert(ratio >= 0.0f && ratio <= 1.0f);
 
@@ -497,7 +497,7 @@ void sf::MeshProcessor::Decimate(const MeshData& inputMesh, MeshData& outputMesh
 	outputMesh.pieces = nullptr;
 	outputMesh.pieceCount = 1;
 
-	const glm::vec3* firstVertexPos = inputMesh.AccessVertexComponent<glm::vec3>(BufferComponent::Position, 0);
+	const glm::vec3* firstVertexPos = inputMesh.ReadVertexComponent<glm::vec3>(BufferComponent::Position, 0);
 	uint32_t* newIndices = new uint32_t[inputMesh.indexCount];
 	uint32_t actualIndexCount = meshopt_simplify(
 		newIndices,
@@ -505,7 +505,7 @@ void sf::MeshProcessor::Decimate(const MeshData& inputMesh, MeshData& outputMesh
 		inputMesh.indexCount,
 		&(firstVertexPos->x),
 		inputMesh.vertexCount,
-		inputMesh.vertexBufferLayout->GetSize(),
+		inputMesh.vertexBufferLayout.GetSize(),
 		targetIndexCount,
 		1e-2f
 	);
@@ -516,15 +516,15 @@ void sf::MeshProcessor::Decimate(const MeshData& inputMesh, MeshData& outputMesh
 
 void sf::MeshProcessor::TransformMesh(MeshData& mesh, const Transform& transform)
 {
-	DataType positionDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::Position)->dataType;
+	DataType positionDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::Position)->dataType;
 	DataType normalDataType;
 	DataType tangentDataType;
-	bool hasNormal = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::Normal) != nullptr;
-	bool hasTangent = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::Tangent) != nullptr;
+	bool hasNormal = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::Normal) != nullptr;
+	bool hasTangent = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::Tangent) != nullptr;
 	if (hasNormal)
-		normalDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::Normal)->dataType;
+		normalDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::Normal)->dataType;
 	if (hasTangent)
-		tangentDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::Tangent)->dataType;
+		tangentDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::Tangent)->dataType;
 
 	assert(positionDataType == DataType::vec3f32);
 	assert(!hasNormal || normalDataType == DataType::vec3f32);

@@ -114,8 +114,7 @@ namespace sf
 			Transform& e_t = humanModel.AddComponent<Transform>();
 			gltfid = GltfImporter::Load("assets/examples/mannequin_tpose/mannequin_tpose.gltf");
 			GltfImporter::GenerateSkeleton(gltfid, humanSkeleton);
-			humanMesh = MeshData(&vertexLayout);
-			GltfImporter::GenerateMeshData(gltfid, humanMesh);
+			GltfImporter::GenerateMeshData(gltfid, vertexLayout, humanMesh);
 			MeshProcessor::ComputeNormals(humanMesh);
 			SkinnedMesh& objectMesh = humanModel.AddComponent<SkinnedMesh>(&humanMesh, &humanSkeleton, &meshMaterial);
 			for (int i = 0; i < humanSkeleton.m_animations.size(); i++)

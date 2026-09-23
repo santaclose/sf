@@ -102,7 +102,7 @@ namespace sf
 		marchingCubesMaterial.fragShaderFilePath = "assets/shaders/solidColor.frag";
 		marchingCubesMaterial.meshWorkGroupCount = marchingCubesThreadsNeeded / 16 + 1;
 		marchingCubesMaterial.buffers.resize(1);
-		marchingCubesMaterial.buffers[0] = { "SVO_BUFFER", monkesvo.data.data(), nullptr, (uint32_t) (monkesvo.data.size() * sizeof(monkesvo.data[0])), DataType::u32 };
+		marchingCubesMaterial.buffers[0] = { "SVO_BUFFER", (uint8_t*) monkesvo.data.data(), nullptr, (uint32_t) (monkesvo.data.size() * sizeof(monkesvo.data[0])), DataType::u32 };
 		marchingCubesMaterial.uniforms["threadsNeeded"].dataType = DataType::u32;
 		marchingCubesMaterial.uniforms["threadsNeeded"].data.u32 = marchingCubesThreadsNeeded;
 		marchingCubesMaterial.uniforms["svoDepth"].dataType = DataType::u32;

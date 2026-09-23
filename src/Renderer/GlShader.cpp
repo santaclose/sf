@@ -31,7 +31,8 @@ namespace
 	{
 		uint32_t currentLocation = 0;
 		std::string out = "";
-		for (const sf::BufferComponentInfo& bci : vertexBufferLayout.GetComponentInfos())
+		std::vector<sf::BufferComponentInfo> perComponentInfo = vertexBufferLayout.GetComponentInfos();
+		for (const sf::BufferComponentInfo& bci : perComponentInfo)
 		{
 			if (isVertexShader)
 			{
@@ -103,7 +104,8 @@ namespace
 
 			if (mb.layout == nullptr)
 				continue;
-			for (const sf::BufferComponentInfo& bci : mb.layout->GetComponentInfos())
+			std::vector<sf::BufferComponentInfo> perComponentInfo = mb.layout->GetComponentInfos();
+			for (const sf::BufferComponentInfo& bci : perComponentInfo)
 			{
 				/* Only 4 byte element buffers are supported */
 				uint32_t stride = mb.layout->GetSize() / 4u;

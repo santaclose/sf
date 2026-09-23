@@ -22,7 +22,7 @@ namespace sf
 
 			for (uint32_t i = 0; i < meshData->vertexCount; i++)
 			{
-				glm::vec3* vertexPos = meshData->AccessVertexComponent<glm::vec3>(BufferComponent::Position, i);
+				const glm::vec3* vertexPos = meshData->ReadVertexComponent<glm::vec3>(BufferComponent::Position, i);
 
 				min = glm::min(min, *vertexPos);
 				max = glm::max(max, *vertexPos);
@@ -33,7 +33,7 @@ namespace sf
 			float maxDistanceSq = 0.0f;
 			for (uint32_t i = 0; i < meshData->vertexCount; i++)
 			{
-				glm::vec3* vertexPos = meshData->AccessVertexComponent<glm::vec3>(BufferComponent::Position, i);
+				const glm::vec3* vertexPos = meshData->ReadVertexComponent<glm::vec3>(BufferComponent::Position, i);
 				float distSq = glm::distance2(boundingSphere.center, *vertexPos);
 				if (distSq > maxDistanceSq)
 					maxDistanceSq = distSq;

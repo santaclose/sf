@@ -94,7 +94,7 @@ namespace errt
 		PushFace(capB, hSteps, false);
 	}
 
-	void GenerateModel(sf::MeshData& mesh, int hSteps = 8, int vSteps = 8)
+	void GenerateModel(sf::MeshData& meshData, int hSteps = 8, int vSteps = 8)
 	{
 		vertices.clear();
 		indices.clear();
@@ -185,15 +185,9 @@ namespace errt
 			vectors.push_back(newPosB);
 		}
 
-		mesh.vertexBufferLayout = &vertexBufferLayout;
-		mesh.vertexBuffer = malloc(vertices.size() * sizeof(glm::vec3));
-		memcpy(mesh.vertexBuffer, vertices.data(), vertices.size() * sizeof(glm::vec3));
-		mesh.vertexCount = vertices.size();
-		mesh.indexBuffer = new uint32_t[indices.size() + 1];
-		memcpy(mesh.indexBuffer, indices.data(), indices.size() * sizeof(uint32_t));
-		mesh.indexCount = indices.size();
-		mesh.pieces = mesh.indexBuffer + indices.size();
-		mesh.pieces[0] = 0;
-		mesh.pieceCount = 1;
+		uint8_t* newMeshVertexBuffer = new uint8_t[vertices.size() * sizeof(glm::vec3)];
+		memcpy(newMeshVertexBuffer, vertices.data(), vertices.size() * sizeof(glm::vec3));
+		meshData.Destroy();
+		meshData.Create(&vertexBufferLayout, newMeshVertexBuffer, vertices.size(), indices, { 0u });
 	}
 }

@@ -4,7 +4,6 @@
 #include <iostream>
 
 #include <DataTypes.h>
-#include <Bitmap.h>
 
 namespace sf {
 
@@ -160,6 +159,6 @@ void sf::Material::CreateFromFile(const std::string& filePath)
 
 sf::Material::~Material()
 {
-	for (void* p : allocatedBitmaps)
-		delete (Bitmap*) p;
+	for (Bitmap* p : allocatedBitmaps)
+		delete p;
 }

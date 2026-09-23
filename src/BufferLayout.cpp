@@ -1,44 +1,42 @@
 #include "BufferLayout.h"
 
-#include <assert.h>
-
-sf::DataType sf::BufferLayout::GetComponentDataType(BufferComponent component)
+void sf::BufferLayout::CreateFromBitmask(BufferLayoutBitmask bitmask)
 {
-	switch (component)
+	this->bitmask = bitmask;
+
+	this->sizeInBytes = 0;
+	for (uint32_t componentU32 = 0; componentU32 < (uint32_t) BufferComponent::MAX; componentU32++)
 	{
-	case BufferComponent::Position:
-	case BufferComponent::Normal:
-	case BufferComponent::Tangent:
-	case BufferComponent::Color:
-		return DataType::vec3f32;
-	case BufferComponent::UV:
-		return DataType::vec2f32;
-	case BufferComponent::BoneWeights:
-	case BufferComponent::BoneIndices:
-	case BufferComponent::Rotation:
-		return DataType::vec4f32;
-	case BufferComponent::AO:
-	case BufferComponent::Scale:
-	case BufferComponent::SpawnTime:
-		return DataType::f32;
-	default:
-		assert(false);
+		if (((1u << componentU32) & (this->bitmask)) == 0)
+		{
+			this->componentInfo[componentU32].component = BufferComponent::INVALID;
+			continue;
+		}
+
+		BufferComponent component = (BufferComponent) componentU32;
+		DataType componentDataType = GetBufferComponentDataType(component);
+
+		this->componentInfo[componentU32].component = component;
+		this->componentInfo[componentU32].dataType = componentDataType;
+		this->componentInfo[componentU32].byteOffset = this->sizeInBytes;
+		this->sizeInBytes += GetDataTypeSize(componentDataType);
 	}
 }
 
-sf::BufferLayout::BufferLayout(const std::vector<BufferComponent>& components)
+/* The order of components doesn't matter in the argument */
+void sf::BufferLayout::CreateFromVector(const std::vector<BufferComponent>& components)
 {
-	this->componentInfos.resize(components.size());
-	this->sizeInBytes = 0;
-	uint32_t i = 0;
+	BufferLayoutBitmask bitmask = (BufferLayoutBitmask) 0u;
 	for (BufferComponent component : components)
 	{
-		DataType componentDataType = GetComponentDataType(component);
-		this->componentMap[component] = i;
-		this->componentInfos[i].component = component;
-		this->componentInfos[i].dataType = componentDataType;
-		this->componentInfos[i].byteOffset = this->sizeInBytes;
-		this->sizeInBytes += GetDataTypeSize(componentDataType);
-		i++;
+		uint32_t componentU32 = (uint32_t) component;
+		assert(componentU32 < (uint32_t) BufferComponent::MAX);
+		bitmask |= (1u << componentU32);
 	}
+	CreateFromBitmask(bitmask);
+}
+
+void sf::BufferLayout::Destroy()
+{
+	*this = BufferLayout();
 }

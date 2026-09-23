@@ -83,10 +83,10 @@ namespace sf
 			entity = targetScene.CreateEntity();
 			entity.AddComponent<Transform>();
 			sd = new SkeletonData();
-			md = new MeshData(&modelVertexLayout);
+			md = new MeshData();
 			uint32_t gltfid = GltfImporter::Load(filePath);
 			GltfImporter::GenerateSkeleton(gltfid, *sd);
-			GltfImporter::GenerateMeshData(gltfid, *md);
+			GltfImporter::GenerateMeshData(gltfid, modelVertexLayout, *md);
 			MeshProcessor::ComputeNormals(*md);
 			MeshProcessor::RemoveUnusedBones(*md, *sd);
 			entity.AddComponent<SkinnedMesh>(md, sd, &modelMaterial);

@@ -14,9 +14,13 @@ void sf::VoxelVolumeData::BuildEmpty(const glm::uvec3& voxelCountPerAxis, const 
 
 void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, const BufferLayout* voxelBufferLayout)
 {
+	std::vector<BufferComponentInfo> perComponentInfo;
 	if (voxelBufferLayout != nullptr)
+	{
 		this->voxelBufferLayout = *voxelBufferLayout;
-	DataType positionDataType = mesh.vertexBufferLayout->GetComponentInfo(BufferComponent::Position)->dataType;
+		perComponentInfo = voxelBufferLayout->GetComponentInfos();
+	}
+	DataType positionDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::Position)->dataType;
 	assert(positionDataType == DataType::vec3f32);
 	assert(mesh.vertexCount > 0);
 	assert(voxelSize > 0.0f);
@@ -24,11 +28,11 @@ void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, c
 	this->voxelSize = voxelSize;
 
 	// compute mesh AABB
-	glm::vec3 minP = *mesh.AccessVertexComponent<glm::vec3>(BufferComponent::Position, 0);
+	glm::vec3 minP = *mesh.ReadVertexComponent<glm::vec3>(BufferComponent::Position, 0);
 	glm::vec3 maxP = minP;
 	for (int i = 1; i < mesh.vertexCount; i++)
 	{
-		glm::vec3* posPtr = mesh.AccessVertexComponent<glm::vec3>(BufferComponent::Position, i);
+		const glm::vec3* posPtr = mesh.ReadVertexComponent<glm::vec3>(BufferComponent::Position, i);
 		minP.x = glm::min(minP.x, posPtr->x);
 		minP.y = glm::min(minP.y, posPtr->y);
 		minP.z = glm::min(minP.z, posPtr->z);
@@ -53,9 +57,9 @@ void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, c
 		uint32_t indexB = mesh.indexBuffer[indexI + 1];
 		uint32_t indexC = mesh.indexBuffer[indexI + 2];
 
-		glm::vec3* posPtrA = mesh.AccessVertexComponent<glm::vec3>(BufferComponent::Position, indexA);
-		glm::vec3* posPtrB = mesh.AccessVertexComponent<glm::vec3>(BufferComponent::Position, indexB);
-		glm::vec3* posPtrC = mesh.AccessVertexComponent<glm::vec3>(BufferComponent::Position, indexC);
+		const glm::vec3* posPtrA = mesh.ReadVertexComponent<glm::vec3>(BufferComponent::Position, indexA);
+		const glm::vec3* posPtrB = mesh.ReadVertexComponent<glm::vec3>(BufferComponent::Position, indexB);
+		const glm::vec3* posPtrC = mesh.ReadVertexComponent<glm::vec3>(BufferComponent::Position, indexC);
 		glm::vec3 triNormal = glm::cross(
 			*posPtrB - *posPtrA,
 			*posPtrC - *posPtrA);
@@ -101,7 +105,7 @@ void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, c
 						else
 							voxelCollisions[existingVoxel]++;
 					}
-					for (const BufferComponentInfo& bci : voxelBufferLayout->GetComponentInfos())
+					for (const BufferComponentInfo& bci : perComponentInfo)
 					{
 						if (bci.component == BufferComponent::Position)
 						{
@@ -125,7 +129,7 @@ void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, c
 							default:
 								continue;
 						}
-						if (mesh.vertexBufferLayout->GetComponentInfo(targetVertexComponent) == nullptr)
+						if (mesh.vertexBufferLayout.GetComponentInfo(targetVertexComponent) == nullptr)
 							continue;
 
 						glm::vec2 toBlendVec2[3];
@@ -137,16 +141,16 @@ void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, c
 						switch (bci.dataType)
 						{
 							case DataType::vec2f32:
-								toBlendVec2[0] = *mesh.AccessVertexComponent<glm::vec2>(targetVertexComponent, indexA);
-								toBlendVec2[1] = *mesh.AccessVertexComponent<glm::vec2>(targetVertexComponent, indexB);
-								toBlendVec2[2] = *mesh.AccessVertexComponent<glm::vec2>(targetVertexComponent, indexC);
+								toBlendVec2[0] = *mesh.ReadVertexComponent<glm::vec2>(targetVertexComponent, indexA);
+								toBlendVec2[1] = *mesh.ReadVertexComponent<glm::vec2>(targetVertexComponent, indexB);
+								toBlendVec2[2] = *mesh.ReadVertexComponent<glm::vec2>(targetVertexComponent, indexC);
 								Math::WeightedBlend(toBlendVec2, &barycentricCoords.x, 3, blendVec2Out);
 								*AccessVoxelComponent<glm::vec2>(bci.component, currentVoxel) += blendVec2Out;
 								break;
 							case DataType::vec3f32:
-								toBlendVec3[0] = *mesh.AccessVertexComponent<glm::vec3>(targetVertexComponent, indexA);
-								toBlendVec3[1] = *mesh.AccessVertexComponent<glm::vec3>(targetVertexComponent, indexB);
-								toBlendVec3[2] = *mesh.AccessVertexComponent<glm::vec3>(targetVertexComponent, indexC);
+								toBlendVec3[0] = *mesh.ReadVertexComponent<glm::vec3>(targetVertexComponent, indexA);
+								toBlendVec3[1] = *mesh.ReadVertexComponent<glm::vec3>(targetVertexComponent, indexB);
+								toBlendVec3[2] = *mesh.ReadVertexComponent<glm::vec3>(targetVertexComponent, indexC);
 								Math::WeightedBlend(toBlendVec3, &barycentricCoords.x, 3, blendVec3Out);
 								*AccessVoxelComponent<glm::vec3>(bci.component, currentVoxel) += blendVec3Out;
 								break;
@@ -157,7 +161,7 @@ void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, c
 
 	for (const auto& pair : voxelCollisions)
 	{
-		for (const BufferComponentInfo& bci : voxelBufferLayout->GetComponentInfos())
+		for (const BufferComponentInfo& bci : perComponentInfo)
 		{
 			if (bci.component == BufferComponent::Position)
 				continue;

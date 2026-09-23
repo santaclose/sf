@@ -87,9 +87,8 @@ namespace sf
 			std::string& filePath = meshFilePaths[i];
 			galleryObjects.push_back(scene.CreateEntity());
 
-			sampleMeshes[i] = MeshData(&meshVertexBufferLayout);
 			int objid = ObjImporter::Load(filePath);
-			ObjImporter::GenerateMeshData(objid, sampleMeshes[i]);
+			ObjImporter::GenerateMeshData(objid, meshVertexBufferLayout, sampleMeshes[i]);
 			VoxelVolumeData vv;
 			vv.BuildFromMesh(sampleMeshes[i], 0.01f);
 			MeshProcessor::ComputeVertexAmbientOcclusion(sampleMeshes[i], &vv);

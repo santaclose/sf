@@ -19,9 +19,8 @@ namespace sf::Defaults
 	{
 		if (cubeMeshData.Initialized())
 			return cubeMeshData;
-		cubeMeshData.vertexBufferLayout = &defaultVertexLayout;
 		objId = ObjImporter::Load("assets/meshes/unitCube.obj");
-		ObjImporter::GenerateMeshData(objId, cubeMeshData);
+		ObjImporter::GenerateMeshData(objId, defaultVertexLayout, cubeMeshData);
 		return cubeMeshData;
 	}
 
@@ -29,9 +28,8 @@ namespace sf::Defaults
 	{
 		if (planeMeshData.Initialized())
 			return planeMeshData;
-		planeMeshData.vertexBufferLayout = &defaultVertexLayout;
 		objId = ObjImporter::Load("assets/meshes/unitPlane.obj");
-		ObjImporter::GenerateMeshData(objId, planeMeshData);
+		ObjImporter::GenerateMeshData(objId, defaultVertexLayout, planeMeshData);
 		return planeMeshData;
 	}
 
@@ -39,9 +37,8 @@ namespace sf::Defaults
 	{
 		if (sphereMeshData.Initialized())
 			return sphereMeshData;
-		sphereMeshData.vertexBufferLayout = &defaultVertexLayout;
 		objId = ObjImporter::Load("assets/meshes/unitSphere.obj");
-		ObjImporter::GenerateMeshData(objId, sphereMeshData);
+		ObjImporter::GenerateMeshData(objId, defaultVertexLayout, sphereMeshData);
 		return sphereMeshData;
 	}
 
@@ -49,9 +46,8 @@ namespace sf::Defaults
 	{
 		if (monkeyMeshData.Initialized())
 			return monkeyMeshData;
-		monkeyMeshData.vertexBufferLayout = &defaultVertexLayout;
 		objId = ObjImporter::Load("assets/meshes/monke.obj");
-		ObjImporter::GenerateMeshData(objId, monkeyMeshData);
+		ObjImporter::GenerateMeshData(objId, defaultVertexLayout, monkeyMeshData);
 		return monkeyMeshData;
 	}
 }

@@ -185,9 +185,9 @@ namespace errt
 			vectors.push_back(newPosB);
 		}
 
-		uint8_t* newMeshVertexBuffer = new uint8_t[vertices.size() * sizeof(glm::vec3)];
-		memcpy(newMeshVertexBuffer, vertices.data(), vertices.size() * sizeof(glm::vec3));
+		uint8_t* vertexBuffer = new uint8_t[vertices.size() * sizeof(glm::vec3)];
+		memcpy(vertexBuffer, vertices.data(), vertices.size() * sizeof(glm::vec3));
 		meshData.Destroy();
-		meshData.Create(&vertexBufferLayout, newMeshVertexBuffer, vertices.size(), indices, { 0u });
+		meshData.Create(&vertexBufferLayout, vertexBuffer, vertices.size(), indices, { 0u });
 	}
 }

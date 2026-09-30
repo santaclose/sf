@@ -107,6 +107,9 @@ namespace sf
 		float houseLodDistances[] = { 50.0f, 1000.0f };
 		float houseLodRatios[] = { 1.0f, 0.5f };
 
+		Entity testEntity;
+		MeshData testMeshData;
+
 		void UpdateCamera(float deltaTime, Entity targetCharacter, float gimbalOffsetY)
 		{
 			Transform& gimbalT = gimbal.GetComponent<Transform>();
@@ -205,6 +208,7 @@ namespace sf
 
 	void Game::Initialize(int argc, char** argv)
 	{
+		testEntity = scene.CreateEntity();
 		FileUtils::CreateFolder("assets/examples");
 		FileUtils::DownloadFiles({
 			"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Fox/glTF-Binary/Fox.glb",
@@ -268,7 +272,7 @@ namespace sf
 				MeshData* buildingColToUseMesh = buildingColMeshes[buildingToUseIndex];
 
 				houses[i] = scene.CreateEntity();
-				houses[i].AddComponent<Mesh>(buildingLodGroups[buildingToUseIndex]->lods, &houseMaterial);
+				houses[i].AddComponent<Mesh>(buildingLodGroups[buildingToUseIndex], &houseMaterial);
 				houses[i].AddComponent<MeshCollider>(buildingColToUseMesh);
 				Transform& houseT = houses[i].AddComponent<Transform>();
 				houseT.rotation = glm::quat(glm::vec3(0.0f, Random::Float() * 3.14159265 * 2.0f, 0.0f));
@@ -303,7 +307,7 @@ namespace sf
 					toApply.rotation = marker.rotation;
 					ho_t.Apply(toApply);
 					houseObjects.back().AddComponent<Mesh>(hom::GetLodsByType(marker.name), &characterMaterial);
-					houseObjects.back().AddComponent<MeshCollider>(hom::GetLodsByType(marker.name)[0].meshData);
+					houseObjects.back().AddComponent<MeshCollider>(hom::GetLodsByType(marker.name)->lods[0].meshData);
 				}
 			}
 		}
@@ -317,17 +321,26 @@ namespace sf
 			int gltfid = GltfImporter::Load("assets/examples/shanyung_blendspace2d.glb");
 			GltfImporter::GenerateSkeleton(gltfid, *shanyungSkeleton);
 			GltfImporter::GenerateMeshData(gltfid, characterVertexLayout, *shanyungMesh);
+			GltfImporter::GenerateMeshData(gltfid, positionOnlyVertexLayout, testMeshData);
 			MeshProcessor::RemoveUnusedBones(*shanyungMesh, *shanyungSkeleton);
 			{
 				Transform shanyungImportTransform;
 				shanyungImportTransform.rotation = glm::quat(glm::vec3(glm::radians(-90.0f), 0.0f, 0.0f));
 				shanyungImportTransform.rotation *= glm::quat(glm::vec3(0.0f, 0.0f, glm::radians(180.0f)));
 				MeshProcessor::TransformMesh(*shanyungMesh, shanyungImportTransform);
+				MeshProcessor::TransformMesh(testMeshData, shanyungImportTransform);
 				MeshProcessor::TransformSkeleton(*shanyungSkeleton, shanyungImportTransform);
 			}
 
 			shanyungLodGroup.Create(*shanyungMesh, shanyungLodRatios, shanyungLodDistances, 4);
-			shanyung.AddComponent<SkinnedMesh>(shanyungLodGroup.lods, shanyungSkeleton, &characterMaterial);
+			shanyung.AddComponent<SkinnedMesh>(&shanyungLodGroup, shanyungSkeleton, &characterMaterial);
+
+			Animation::SampleToBones(shanyungSkeleton->m_animations[2], shanyungSkeleton->m_core.m_boneLocalTransforms.data(), 0.5f);
+			shanyungSkeleton->m_core.PropagateLocalTransforms(nullptr, true);
+			MeshProcessor::ApplySkeleton(shanyungSkeleton->GetSkinMatrixBuffer(), *shanyungMesh, testMeshData);
+			Transform& testT = testEntity.AddComponent<Transform>();
+			terrain.Sample(testT.position, testT.position.y);
+			testEntity.AddComponent<Mesh>(&testMeshData, &houseMaterial);
 
 			CapsuleCollider& e_cc = shanyung.AddComponent<CapsuleCollider>();
 			e_cc.radius = 0.3;
@@ -439,8 +452,8 @@ namespace sf
 						glm::vec3 flatCapsuleNormal = glm::normalize(glm::vec3(outCd[i].normalA.x, 0.0f, outCd[i].normalA.z));
 						glm::vec3 flatTriNormal = glm::normalize(glm::vec3(outCd[i].normalB.x, 0.0f, outCd[i].normalB.z));
 
-						Renderer::AddLine(e_t.position + glm::vec3(0.0f, 0.3f, 0.0f), e_t.position + glm::vec3(0.0f, 0.3f, 0.0f) + flatTriNormal, glm::vec3(0.0f, 0.0f, 1.0f));
-						Renderer::AddLine(e_t.position + glm::vec3(0.0f, 0.4f, 0.0f), e_t.position + glm::vec3(0.0f, 0.4f, 0.0f) + flatCapsuleNormal, glm::vec3(1.0f, 0.0f, 0.0f));
+						Renderer::Debug::AddLine(e_t.position + glm::vec3(0.0f, 0.3f, 0.0f), e_t.position + glm::vec3(0.0f, 0.3f, 0.0f) + flatTriNormal, glm::vec3(0.0f, 0.0f, 1.0f));
+						Renderer::Debug::AddLine(e_t.position + glm::vec3(0.0f, 0.4f, 0.0f), e_t.position + glm::vec3(0.0f, 0.4f, 0.0f) + flatCapsuleNormal, glm::vec3(1.0f, 0.0f, 0.0f));
 						if (glm::dot(disp, flatTriNormal) < 0.0f && glm::dot(flatCapsuleNormal, flatTriNormal) < -0.777f)
 							disp -= glm::dot(disp, flatTriNormal) * flatTriNormal;
 					}
@@ -455,8 +468,8 @@ namespace sf
 						glm::vec3 flatCapsuleNormal = glm::normalize(glm::vec3(outCd[i].normalA.x, 0.0f, outCd[i].normalA.z));
 						glm::vec3 flatTriNormal = glm::normalize(glm::vec3(outCd[i].normalB.x, 0.0f, outCd[i].normalB.z));
 
-						Renderer::AddLine(e_t.position + glm::vec3(0.0f, 0.3f, 0.0f), e_t.position + glm::vec3(0.0f, 0.3f, 0.0f) + flatTriNormal, glm::vec3(0.0f, 0.0f, 1.0f));
-						Renderer::AddLine(e_t.position + glm::vec3(0.0f, 0.4f, 0.0f), e_t.position + glm::vec3(0.0f, 0.4f, 0.0f) + flatCapsuleNormal, glm::vec3(1.0f, 0.0f, 0.0f));
+						Renderer::Debug::AddLine(e_t.position + glm::vec3(0.0f, 0.3f, 0.0f), e_t.position + glm::vec3(0.0f, 0.3f, 0.0f) + flatTriNormal, glm::vec3(0.0f, 0.0f, 1.0f));
+						Renderer::Debug::AddLine(e_t.position + glm::vec3(0.0f, 0.4f, 0.0f), e_t.position + glm::vec3(0.0f, 0.4f, 0.0f) + flatCapsuleNormal, glm::vec3(1.0f, 0.0f, 0.0f));
 						if (glm::dot(disp, flatTriNormal) < 0.0f && glm::dot(flatCapsuleNormal, flatTriNormal) < -0.777f)
 							disp -= glm::dot(disp, flatTriNormal) * flatTriNormal;
 					}
@@ -521,8 +534,8 @@ namespace sf
 						glm::vec3 flatSphereNormal = glm::normalize(glm::vec3(outCd[i].normalA.x, 0.0f, outCd[i].normalA.z));
 						glm::vec3 flatTriNormal = glm::normalize(glm::vec3(outCd[i].normalB.x, 0.0f, outCd[i].normalB.z));
 
-						Renderer::AddLine(e_t.position + glm::vec3(0.0f, 0.3f, 0.0f), e_t.position + glm::vec3(0.0f, 0.3f, 0.0f) + flatTriNormal, glm::vec3(0.0f, 0.0f, 1.0f));
-						Renderer::AddLine(e_t.position + glm::vec3(0.0f, 0.4f, 0.0f), e_t.position + glm::vec3(0.0f, 0.4f, 0.0f) + flatSphereNormal, glm::vec3(1.0f, 0.0f, 0.0f));
+						Renderer::Debug::AddLine(e_t.position + glm::vec3(0.0f, 0.3f, 0.0f), e_t.position + glm::vec3(0.0f, 0.3f, 0.0f) + flatTriNormal, glm::vec3(0.0f, 0.0f, 1.0f));
+						Renderer::Debug::AddLine(e_t.position + glm::vec3(0.0f, 0.4f, 0.0f), e_t.position + glm::vec3(0.0f, 0.4f, 0.0f) + flatSphereNormal, glm::vec3(1.0f, 0.0f, 0.0f));
 						if (glm::dot(disp, flatTriNormal) < 0.0f && glm::dot(flatSphereNormal, flatTriNormal) < -0.777f)
 						{
 							disp -= glm::dot(disp, flatTriNormal) * flatTriNormal;
@@ -562,7 +575,6 @@ namespace sf
 				foxVerticalSpeed += 9.8f * deltaTime;
 				e_t.position.y -= foxVerticalSpeed * deltaTime;
 			}
-
 
 			UpdateCamera(deltaTime, fox, GIMBAL_OFFSET_FOX);
 		}

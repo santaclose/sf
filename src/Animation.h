@@ -133,6 +133,6 @@ namespace sf::Animation
 	void ComputeNodeDuration(Node& node);
 	void ComputeNodePose(Node& node);
 
-	void SampleToBones(SkeletalAnimation& animation, Transform* bones, float animationTime);
+	void SampleToBones(const SkeletalAnimation& animation, Transform* bones, float animationTime);
 	void AdvanceNode(Node& node, float deltaTime);
 }

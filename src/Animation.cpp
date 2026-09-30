@@ -189,11 +189,11 @@ void sf::Animation::ComputeNodePose(sf::Animation::Node& node)
 	}
 }
 
-void sf::Animation::SampleToBones(sf::Animation::SkeletalAnimation& animation, sf::Transform* bones, float animationTime)
+void sf::Animation::SampleToBones(const sf::Animation::SkeletalAnimation& animation, sf::Transform* bones, float animationTime)
 {
-	for (Channel& channel : animation.channels)
+	for (const Channel& channel : animation.channels)
 	{
-		Sampler& sampler = animation.samplers[channel.samplerIndex];
+		const Sampler& sampler = animation.samplers[channel.samplerIndex];
 		if (sampler.inputs.size() > sampler.outputsVec4.size())
 			continue;
 

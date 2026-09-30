@@ -8,7 +8,7 @@ namespace sf
 	{
 		float radius = 0.5f;
 		glm::vec3 center = glm::vec3(0.0f, 0.0f, 0.0f);
-		inline SphereCollider ApplyTransform(const Transform& transform)
+		inline SphereCollider ApplyTransform(const Transform& transform) const
 		{
 			SphereCollider out;
 			out.radius = this->radius * transform.scale;

@@ -9,47 +9,62 @@ namespace sf {
 
 	struct SkinnedMesh
 	{
-		std::vector<LOD> lods;
+		const LODGroup* lodGroup = nullptr;
 		const SkeletonData* skeletonData = nullptr;
 		std::vector<const Material*> materials;
+		bool usesLodGroup;
 
-		inline SkinnedMesh(const std::vector<LOD>& lods, const SkeletonData* skeletonData, const Material* material = nullptr)
+		inline SkinnedMesh(const LODGroup* lodGroup, const SkeletonData* skeletonData, const Material* material = nullptr)
 		{
-			assert(lods.size() > 0);
-			this->lods = lods;
+			assert(lodGroup != nullptr);
+			assert(lodGroup->lods.size() > 0);
+			this->lodGroup = lodGroup;
 			this->materials.clear();
-			this->materials.resize(lods[0].meshData->pieceCount, material);
+			this->materials.resize(lodGroup->sourceMesh->pieceCount, material);
 			this->skeletonData = skeletonData;
+			usesLodGroup = true;
 		}
 		inline SkinnedMesh(const MeshData* meshData, const SkeletonData* skeletonData, const Material* material = nullptr)
 		{
-			this->lods.resize(1);
-			this->lods[0].meshData = meshData;
+			/* Use the lodGroup pointer just as storage */
+			this->lodGroup = (LODGroup*) meshData;
 			this->materials.clear();
 			this->materials.resize(meshData->pieceCount, material);
 			this->skeletonData = skeletonData;
+			usesLodGroup = false;
 		}
 
-		inline const MeshData* GetMeshData(float camDistance2)
+		inline const MeshData* GetSourceMeshData() const
 		{
-			for (LOD& lod : lods)
+			if (!usesLodGroup)
+				return (const MeshData*) lodGroup;
+			return lodGroup->sourceMesh;
+		}
+
+		inline const MeshData* GetMeshData(float camDistance2) const
+		{
+			if (!usesLodGroup)
+				return (const MeshData*) lodGroup;
+
+			for (const LOD& lod : lodGroup->lods)
 			{
 				if (camDistance2 < lod.maxDistance * lod.maxDistance)
 					return lod.meshData;
 			}
-			return lods[lods.size() - 1].meshData;
+			return lodGroup->lods[lodGroup->lods.size() - 1].meshData;
 		}
 
-		inline uint32_t GetCurrentLOD(float camDistance2)
+		inline uint32_t GetCurrentLOD(float camDistance2) const
 		{
+			assert(usesLodGroup);
 			uint32_t out = 0;
-			for (LOD& lod : lods)
+			for (const LOD& lod : lodGroup->lods)
 			{
 				if (camDistance2 < lod.maxDistance * lod.maxDistance)
 					return out;
 				out++;
 			}
-			return uint32_t(lods.size() - 1);
+			return uint32_t(lodGroup->lods.size() - 1);
 		}
 	};
 }

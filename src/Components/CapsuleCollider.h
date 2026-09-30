@@ -9,7 +9,7 @@ namespace sf
 		float radius = 0.5f;
 		glm::vec3 centerA = glm::vec3(0.0f, -0.5f, 0.0f);
 		glm::vec3 centerB = glm::vec3(0.0f, 0.5f, 0.0f);
-		inline CapsuleCollider ApplyTransform(const Transform& transform)
+		inline CapsuleCollider ApplyTransform(const Transform& transform) const
 		{
 			CapsuleCollider out;
 			out.radius = this->radius * transform.scale;

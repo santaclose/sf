@@ -1,4 +1,5 @@
 #include "Renderer.h"
+#include "FrustumCulling.h"
 
 #include <assert.h>
 #include <cstring>
@@ -26,20 +27,16 @@
 
 namespace sf::Renderer
 {
+	Stats stats;
+
 	glm::uvec2 currentViewportSize;
 	std::vector<RenderTarget> renderTargets;
 	uint32_t boundRenderTargetId = 0;
 
-	BufferLayout positionColorVertexLayout = BufferLayout({
-		BufferComponent::Position,
-		BufferComponent::Color
-	});
 	BufferLayout positionUvVertexLayout = BufferLayout({
 		BufferComponent::Position,
 		BufferComponent::UV
 	});
-
-	GlShader drawLineShader;
 
 	struct MeshGpuData
 	{
@@ -97,11 +94,8 @@ namespace sf::Renderer
 	SharedGpuData sharedGpuData;
 
 	std::unordered_map<const SkeletonData*, uint32_t> skeletonSsbos;
-
 	std::unordered_map<const MeshData*, MeshGpuData> meshGpuData;
-
 	std::unordered_map<const ParticleSystem*, ParticleSystemData> particleSystemData;
-
 	std::unordered_map<const Material*, std::unordered_map<uint32_t, GlMaterial*>> materials;
 
 	struct EnvironmentData
@@ -116,16 +110,7 @@ namespace sf::Renderer
 	EnvironmentData environmentData;
 	uint32_t environment_gl_ubo;
 
-	struct LineVertex {
-		glm::vec3 pos;
-		glm::vec3 color;
-	};
-	std::vector<LineVertex> drawLineLines;
-	bool drawLineDataInitialized = false;
-	uint32_t drawLineVBO, drawLineVAO;
-
-	bool debugDrawEnabled = false;
-	glm::vec3 debugDrawColor = { 0.0f, 0.0f, 0.0f };
+	Debug::Config debugConfig;
 
 	uint32_t boundFramebuffer = 0;
 	void BindFramebufferForDraw(const Framebuffer& framebuffer)
@@ -424,9 +409,12 @@ void sf::Renderer::Clear(bool clearDepth)
 	glDisable(GL_SCISSOR_TEST);
 }
 
-void sf::Renderer::BindCamera(Camera& camera, Transform& cameraTransform)
+void sf::Renderer::BindCamera(const Camera& camera, const Transform& cameraTransform)
 {
 	float aspectRatio = (float) currentViewportSize.x / (float) currentViewportSize.y;
+
+	FrustumCulling::ComputePlaneNormals(aspectRatio, camera, cameraTransform);
+
 	glm::mat4 cameraProjection, cameraView;
 	if (camera.perspective)
 	{
@@ -466,9 +454,12 @@ void sf::Renderer::BindCamera(Camera& camera, Transform& cameraTransform)
 	GlSkybox::Draw(cameraView, cameraProjection);
 }
 
-void sf::Renderer::FrameEnd()
+sf::Renderer::Stats sf::Renderer::FrameEnd()
 {
-	drawLineLines.clear();
+	Debug::FrameEnd();
+	Stats toReturn = stats;
+	stats = Stats();
+	return toReturn;
 }
 
 void sf::Renderer::SetEnvironment(const std::string& hdrFilePath, DataType hdrDataType)
@@ -485,32 +476,54 @@ void sf::Renderer::SetEnvironment(const std::string& hdrFilePath, DataType hdrDa
 	GlSkybox::SetCubemap(&(environmentData.envCubemap));
 }
 
-void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
+void sf::Renderer::DrawMeshShading(const Mesh& mesh, const Transform& transform)
 {
-	float meshCamDis2 = glm::distance2(transform.position, sharedGpuData.cameraPosition);
-	const MeshData* meshData  = mesh.GetMeshData(meshCamDis2);
+	assert(mesh.materials.size() == 1);
+	assert(mesh.materials[0]->UsesMeshShader());
 
 	sharedGpuData.modelMatrix = transform.ComputeMatrix();
 	glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
 	glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SharedGpuData, modelMatrix), sizeof(sharedGpuData.modelMatrix), &sharedGpuData.modelMatrix);
 
-	if (meshData == nullptr)
+	GlMaterial* materialToUse = GetOrCreateMaterial(mesh.materials[0], nullptr);
+	materialToUse->Bind(rendererUniformVector);
+	glDrawMeshTasksNV(0, mesh.materials[0]->meshWorkGroupCount);
+}
+
+void sf::Renderer::DrawMesh(const Mesh& mesh, const Transform& transform)
+{
+	const MeshData* sourceMeshData = mesh.GetSourceMeshData();
+	if (sourceMeshData == nullptr)
 	{
-		assert(mesh.materials.size() == 1);
-		assert(mesh.materials[0]->UsesMeshShader());
-		GlMaterial* materialToUse = GetOrCreateMaterial(mesh.materials[0], nullptr);
-		materialToUse->Bind(rendererUniformVector);
-		glDrawMeshTasksNV(0, mesh.materials[0]->meshWorkGroupCount);
+		DrawMeshShading(mesh, transform);
 		return;
 	}
-
+	const SphereCollider& boundingSphere = FrustumCulling::GetOrCreateMeshBoundingSphere(sourceMeshData).ApplyTransform(transform);
+	if (!FrustumCulling::IsSphereVisible(boundingSphere, sharedGpuData.cameraPosition))
+		return;
+	if (debugConfig.frustumCullingSpheres)
+		Debug::AddFrustumCullingSphere(boundingSphere);
+	float meshCamDis2 = glm::distance2(boundingSphere.center, sharedGpuData.cameraPosition);
+	const MeshData* meshData = mesh.GetMeshData(meshCamDis2);
+	assert(meshData != nullptr);
 	if (meshData->vertexCount == 0)
 		return;
+	if (meshData->vertexCountPerPrimitive == 3)
+		stats.meshTriangles += meshData->indexCount / 3;
+	else
+	{
+		assert(meshData->vertexCountPerPrimitive == 4);
+		stats.meshQuads += meshData->indexCount / 4;
+	}
 	assert(meshData->vertexBufferLayout.GetComponentInfo(BufferComponent::BoneIndices) == nullptr);
 	assert(meshData->vertexBufferLayout.GetComponentInfo(BufferComponent::BoneWeights) == nullptr);
 
 	if (meshGpuData.find(meshData) == meshGpuData.end()) // create mesh data if not there
 		CreateMeshGpuData(meshData);
+
+	sharedGpuData.modelMatrix = transform.ComputeMatrix();
+	glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
+	glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SharedGpuData, modelMatrix), sizeof(sharedGpuData.modelMatrix), &sharedGpuData.modelMatrix);
 
 	for (uint32_t i = 0; i < meshData->pieceCount; i++)
 	{
@@ -541,13 +554,22 @@ void sf::Renderer::DrawMesh(Mesh& mesh, Transform& transform)
 	}
 }
 
-void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
+void sf::Renderer::DrawSkinnedMesh(const SkinnedMesh& mesh, const Transform& transform)
 {
-	float meshCamDis2 = glm::distance2(transform.position, sharedGpuData.cameraPosition);
+	const MeshData* sourceMeshData = mesh.GetSourceMeshData();
+	assert(sourceMeshData != nullptr && mesh.skeletonData != nullptr);
+	const SphereCollider& boundingSphere = FrustumCulling::GetOrCreateSkinnedMeshBoundingSphere(sourceMeshData, mesh.skeletonData).ApplyTransform(transform);
+	if (!FrustumCulling::IsSphereVisible(boundingSphere, sharedGpuData.cameraPosition))
+		return;
+	if (debugConfig.frustumCullingSpheres)
+		Debug::AddFrustumCullingSphere(boundingSphere);
+	float meshCamDis2 = glm::distance2(boundingSphere.center, sharedGpuData.cameraPosition);
 	const MeshData* meshData  = mesh.GetMeshData(meshCamDis2);
 	assert(meshData != nullptr);
 	if (meshData->vertexCount == 0)
 		return;
+	assert(meshData->vertexCountPerPrimitive == 3);
+	stats.skinnedMeshTriangles += meshData->indexCount / 3;
 	assert(meshData->vertexBufferLayout.GetComponentInfo(BufferComponent::BoneIndices) != nullptr);
 	assert(meshData->vertexBufferLayout.GetComponentInfo(BufferComponent::BoneWeights) != nullptr);
 
@@ -567,7 +589,7 @@ void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 	glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SharedGpuData, modelMatrix), sizeof(sharedGpuData.modelMatrix), &sharedGpuData.modelMatrix);
 
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, skeletonSsbos[mesh.skeletonData]);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, mesh.skeletonData->m_skinningMatrices.size() * sizeof(glm::mat4), &(mesh.skeletonData->m_skinningMatrices[0][0][0]), GL_DYNAMIC_DRAW);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, mesh.skeletonData->GetBoneCount() * sizeof(glm::mat4), mesh.skeletonData->GetSkinMatrixBuffer(), GL_DYNAMIC_DRAW);
 
 	for (uint32_t i = 0; i < meshData->pieceCount; i++)
 	{
@@ -590,11 +612,13 @@ void sf::Renderer::DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform)
 		glDrawElements(GL_TRIANGLES, drawEnd - drawStart, GL_UNSIGNED_INT, (void*)(drawStart * sizeof(uint32_t)));
 	}
 
-	if (debugDrawEnabled)
-		DebugDrawSkeleton(mesh, transform);
+	if (debugConfig.skeletons)
+		Debug::AddSkeleton(mesh, transform);
+	if (debugConfig.skeletonsModelSpace)
+		Debug::AddSkeletonModelSpace(mesh, transform);
 }
 
-void sf::Renderer::DrawParticleSystem(ParticleSystem& particleSystem, Transform& transform, float deltaTime)
+void sf::Renderer::DrawParticleSystem(const ParticleSystem& particleSystem, const Transform& transform, float deltaTime)
 {
 	GlMaterial* materialToUse = GetOrCreateMaterial(particleSystem.material, &particleSystem.meshData->vertexBufferLayout);
 	assert(!particleSystem.dynamic || particleSystem.material->buffers.size() == 1);
@@ -704,7 +728,7 @@ void sf::Renderer::DrawParticleSystem(ParticleSystem& particleSystem, Transform&
 	glDepthMask(GL_TRUE); // Restore depth mask
 }
 
-void sf::Renderer::DrawSprite(Sprite& sprite, ScreenCoordinates& screenCoordinates)
+void sf::Renderer::DrawSprite(const Sprite& sprite, const ScreenCoordinates& screenCoordinates)
 {
 	glDisable(GL_DEPTH_TEST);
 
@@ -742,7 +766,7 @@ void sf::Renderer::DrawSprite(Sprite& sprite, ScreenCoordinates& screenCoordinat
 	glEnable(GL_DEPTH_TEST);
 }
 
-void sf::Renderer::DrawText(Text& text, ScreenCoordinates& screenCoordinates)
+void sf::Renderer::DrawText(const Text& text, const ScreenCoordinates& screenCoordinates)
 {
 	glDisable(GL_DEPTH_TEST);
 
@@ -828,124 +852,21 @@ void sf::Renderer::DrawText(Text& text, ScreenCoordinates& screenCoordinates)
 	glEnable(GL_DEPTH_TEST);
 }
 
-void sf::Renderer::AddLine(const glm::vec3& a, const glm::vec3& b, const glm::vec3& color)
+sf::Renderer::Debug::Config& sf::Renderer::AccessDebugConfig()
 {
-	drawLineLines.resize(drawLineLines.size() + 2);
-	drawLineLines[drawLineLines.size() - 2] = { a, color };
-	drawLineLines[drawLineLines.size() - 1] = { b, color };
+	return debugConfig;
 }
 
-void sf::Renderer::SetDebugDrawEnabled(bool value)
+sf::SphereCollider sf::Renderer::GetFrustumCullingMeshSphere(const Mesh& mesh, const Transform& transform)
 {
-	debugDrawEnabled = value;
+	const MeshData* sourceMeshData = mesh.GetSourceMeshData();
+	return FrustumCulling::GetOrCreateMeshBoundingSphere(sourceMeshData).ApplyTransform(transform);
 }
 
-bool sf::Renderer::IsDebugDrawEnabled()
+sf::SphereCollider sf::Renderer::GetFrustumCullingSkinnedMeshSphere(const SkinnedMesh& mesh, const Transform& transform)
 {
-	return debugDrawEnabled;
-}
-
-void sf::Renderer::DebugDrawSkeleton(SkinnedMesh& mesh, Transform& transform)
-{
-	if (!debugDrawEnabled)
-		return;
-
-	if (meshGpuData.find(&Defaults::MeshDataCube()) == meshGpuData.end()) // create mesh data if not there
-		CreateMeshGpuData(&Defaults::MeshDataCube());
-
-	for (uint32_t i = 0; i < mesh.skeletonData->m_boneData.size(); i++)
-	{
-		const BoneData* currentBone = &(mesh.skeletonData->m_boneData[i]);
-		Transform parentT = transform;
-		if (currentBone->parent >= 0)
-			parentT.Apply(mesh.skeletonData->m_boneTransforms[currentBone->parent]);
-		Transform childT = transform;
-		childT.Apply(mesh.skeletonData->m_boneTransforms[i]);
-		float boneRatio = (float) i / (float) mesh.skeletonData->m_boneData.size();
-		AddLine(parentT.position, childT.position, glm::vec3(0.0f, 1.0f - boneRatio, boneRatio));
-	}
-}
-
-void sf::Renderer::DrawSphereCollider(const SphereCollider& sc, const glm::vec3& color)
-{
-	AddLine(sc.center + glm::vec3(sc.radius, 0.0f, 0.0f), sc.center - glm::vec3(sc.radius, 0.0f, 0.0f), color);
-	AddLine(sc.center + glm::vec3(0.0f, sc.radius, 0.0f), sc.center - glm::vec3(0.0f, sc.radius, 0.0f), color);
-	AddLine(sc.center + glm::vec3(0.0f, 0.0f, sc.radius), sc.center - glm::vec3(0.0f, 0.0f, sc.radius), color);
-}
-
-void sf::Renderer::DrawCapsuleCollider(const CapsuleCollider& cc, const glm::vec3& color)
-{
-	AddLine(cc.centerA + glm::vec3(cc.radius, 0.0f, 0.0f), cc.centerA - glm::vec3(cc.radius, 0.0f, 0.0f), color);
-	AddLine(cc.centerA + glm::vec3(0.0f, cc.radius, 0.0f), cc.centerA - glm::vec3(0.0f, cc.radius, 0.0f), color);
-	AddLine(cc.centerA + glm::vec3(0.0f, 0.0f, cc.radius), cc.centerA - glm::vec3(0.0f, 0.0f, cc.radius), color);
-	AddLine(cc.centerB + glm::vec3(cc.radius, 0.0f, 0.0f), cc.centerB - glm::vec3(cc.radius, 0.0f, 0.0f), color);
-	AddLine(cc.centerB + glm::vec3(0.0f, cc.radius, 0.0f), cc.centerB - glm::vec3(0.0f, cc.radius, 0.0f), color);
-	AddLine(cc.centerB + glm::vec3(0.0f, 0.0f, cc.radius), cc.centerB - glm::vec3(0.0f, 0.0f, cc.radius), color);
-	AddLine(cc.centerA, cc.centerB, color);
-}
-
-void sf::Renderer::DrawBoxCollider(const BoxCollider& bc, const glm::vec3& color)
-{
-	AddLine(bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, -bc.size.y * 0.5f, -bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, -bc.size.y * 0.5f, +bc.size.z * 0.5f), color);
-	AddLine(bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, -bc.size.y * 0.5f, +bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, -bc.size.y * 0.5f, +bc.size.z * 0.5f), color);
-	AddLine(bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, -bc.size.y * 0.5f, +bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, -bc.size.y * 0.5f, -bc.size.z * 0.5f), color);
-	AddLine(bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, -bc.size.y * 0.5f, -bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, -bc.size.y * 0.5f, -bc.size.z * 0.5f), color);
-
-	AddLine(bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, +bc.size.y * 0.5f, -bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, +bc.size.y * 0.5f, +bc.size.z * 0.5f), color);
-	AddLine(bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, +bc.size.y * 0.5f, +bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, +bc.size.y * 0.5f, +bc.size.z * 0.5f), color);
-	AddLine(bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, +bc.size.y * 0.5f, +bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, +bc.size.y * 0.5f, -bc.size.z * 0.5f), color);
-	AddLine(bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, +bc.size.y * 0.5f, -bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, +bc.size.y * 0.5f, -bc.size.z * 0.5f), color);
-
-	AddLine(bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, -bc.size.y * 0.5f, -bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, +bc.size.y * 0.5f, -bc.size.z * 0.5f), color);
-	AddLine(bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, -bc.size.y * 0.5f, +bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(-bc.size.x * 0.5f, +bc.size.y * 0.5f, +bc.size.z * 0.5f), color);
-	AddLine(bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, -bc.size.y * 0.5f, +bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, +bc.size.y * 0.5f, +bc.size.z * 0.5f), color);
-	AddLine(bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, -bc.size.y * 0.5f, -bc.size.z * 0.5f), bc.center + bc.orientation * glm::vec3(+bc.size.x * 0.5f, +bc.size.y * 0.5f, -bc.size.z * 0.5f), color);
-}
-
-void sf::Renderer::DrawLines()
-{
-	if (drawLineLines.size() == 0)
-		return;
-	glDisable(GL_DEPTH_TEST);
-	if (!drawLineDataInitialized)
-	{
-		glGenVertexArrays(1, &drawLineVAO);
-		glGenBuffers(1, &drawLineVBO);
-
-		glBindVertexArray(drawLineVAO);
-		glBindBuffer(GL_ARRAY_BUFFER, drawLineVBO);
-		glBufferData(GL_ARRAY_BUFFER, drawLineLines.size() * sizeof(LineVertex), drawLineLines.data(), GL_DYNAMIC_DRAW);
-
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(LineVertex), (void*)offsetof(LineVertex, pos));
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(LineVertex), (void*)offsetof(LineVertex, color));
-
-		Material lineMat;
-		lineMat.vertShaderFilePath = "assets/shaders/drawLines.vert";
-		lineMat.fragShaderFilePath = "assets/shaders/drawLines.frag";
-		drawLineShader.Create(lineMat, &positionColorVertexLayout);
-
-		drawLineDataInitialized = true;
-	}
-
-	drawLineShader.Bind();
-	glPolygonMode(GL_FRONT, GL_FILL);
-	glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
-	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
-
-	glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
-
-	glBindVertexArray(drawLineVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, drawLineVBO);
-
-	glBufferData(GL_ARRAY_BUFFER, drawLineLines.size() * sizeof(LineVertex), drawLineLines.data(), GL_DYNAMIC_DRAW);
-
-	glDrawArrays(GL_LINES, 0, drawLineLines.size());
-
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glEnable(GL_DEPTH_TEST);
+	const MeshData* sourceMeshData = mesh.GetSourceMeshData();
+	return FrustumCulling::GetOrCreateSkinnedMeshBoundingSphere(sourceMeshData, mesh.skeletonData).ApplyTransform(transform);
 }
 
 void sf::Renderer::DrawFramebuffer(const Framebuffer& framebuffer, float deltaTime)
@@ -1005,39 +926,39 @@ void sf::Renderer::DrawFramebuffer(const Framebuffer& framebuffer, float deltaTi
 				if (base.isEntityEnabled)
 					DrawParticleSystem(particleSystem, transform, deltaTime);
 			}
-			if (IsDebugDrawEnabled())
+			if (debugConfig.colliders)
 			{
 				auto sphereColliderRenderView = scene->GetRegistry().view<Base, SphereCollider, Transform>();
 				for (auto entity : sphereColliderRenderView)
 				{
 					auto [base, sc, transform] = sphereColliderRenderView.get<Base, SphereCollider, Transform>(entity);
 					if (base.isEntityEnabled)
-						DrawSphereCollider(sc.ApplyTransform(transform), glm::vec3(0.0f, 0.0f, 0.0f));
+						Debug::AddSphereCollider(sc, transform);
 				}
 				auto capsuleColliderRenderView = scene->GetRegistry().view<Base, CapsuleCollider, Transform>();
 				for (auto entity : capsuleColliderRenderView)
 				{
-					auto [base, sc, transform] = capsuleColliderRenderView.get<Base, CapsuleCollider, Transform>(entity);
+					auto [base, cc, transform] = capsuleColliderRenderView.get<Base, CapsuleCollider, Transform>(entity);
 					if (base.isEntityEnabled)
-						DrawCapsuleCollider(sc.ApplyTransform(transform), glm::vec3(0.0f, 0.0f, 0.0f));
+						Debug::AddCapsuleCollider(cc, transform);
 				}
 				auto boxColliderRenderView = scene->GetRegistry().view<Base, BoxCollider, Transform>();
 				for (auto entity : boxColliderRenderView)
 				{
 					auto [base, bc, transform] = boxColliderRenderView.get<Base, BoxCollider, Transform>(entity);
 					if (base.isEntityEnabled)
-						DrawBoxCollider(bc.ApplyTransform(transform), glm::vec3(0.0f, 0.0f, 0.0f));
+						Debug::AddBoxCollider(bc, transform);
 				}
 				auto meshColliderRenderView = scene->GetRegistry().view<Base, MeshCollider, Transform>();
 				for (auto entity : meshColliderRenderView)
 				{
 					auto [base, mc, transform] = meshColliderRenderView.get<Base, MeshCollider, Transform>(entity);
 					if (base.isEntityEnabled)
-						DrawSphereCollider(mc.boundingSphere.ApplyTransform(transform), glm::vec3(0.0f, 0.0f, 0.0f));
+						Debug::AddMeshCollider(mc, transform);
 				}
 			}
 
-			DrawLines();
+			Debug::Draw(sharedGpuData_gl_ubo);
 		}
 
 		for (uint32_t i = 0; i < renderTargets.size(); i++) // a bit brute force
@@ -1070,21 +991,49 @@ void sf::Renderer::DrawFramebuffer(const Framebuffer& framebuffer, float deltaTi
 
 void sf::Renderer::InvalidateMeshData(const MeshData& meshData)
 {
+	uint32_t count = FrustumCulling::InvalidateMeshData(&meshData);
+	printf("[Renderer] Invalidated %u bounding spheres for mesh %p\n", count, &meshData);
+
 	if (meshGpuData.find(&meshData) == meshGpuData.end())
 		return;
-	MeshGpuData mgd = meshGpuData[&meshData];
+	MeshGpuData& mgd = meshGpuData[&meshData];
 	glDeleteBuffers(1, &mgd.gl_vertexBuffer);
 	glDeleteBuffers(1, &mgd.gl_indexBuffer);
 	glDeleteVertexArrays(1, &mgd.gl_vao);
 	meshGpuData.erase(&meshData);
+	printf("[Renderer] Invalidated GPU mesh for %p\n", &meshData);
 }
 
 void sf::Renderer::InvalidateSkeletonData(const SkeletonData& skeletonData)
 {
+	uint32_t count = FrustumCulling::InvalidateSkeletonData(&skeletonData);
+	printf("[Renderer] Invalidated %u bounding spheres for skeleton data %p\n", count, &skeletonData);
+
 	if (skeletonSsbos.find(&skeletonData) == skeletonSsbos.end())
 		return;
 	glDeleteBuffers(1, &skeletonSsbos[&skeletonData]);
 	skeletonSsbos.erase(&skeletonData);
+	printf("[Renderer] Invalidated GPU skeleton for %p\n", &skeletonData);
+}
+
+void sf::Renderer::InvalidateLODGroup(const LODGroup& lodGroup)
+{
+	uint32_t count = FrustumCulling::InvalidateMeshData(lodGroup.sourceMesh);
+	printf("[Renderer] Invalidated %u bounding spheres for LOD group %p\n", count, &lodGroup);
+
+	count = 0;
+	for (const LOD& lod : lodGroup.lods)
+	{
+		if (meshGpuData.find(lod.meshData) == meshGpuData.end())
+			continue;
+		MeshGpuData& mgd = meshGpuData[lod.meshData];
+		glDeleteBuffers(1, &mgd.gl_vertexBuffer);
+		glDeleteBuffers(1, &mgd.gl_indexBuffer);
+		glDeleteVertexArrays(1, &mgd.gl_vao);
+		meshGpuData.erase(lod.meshData);
+		count++;
+	}
+	printf("[Renderer] Invalidated %u GPU meshes for LOD group %p\n", count, &lodGroup);
 }
 
 void sf::Renderer::InvalidateParticleSystem(const ParticleSystem& particleSystem)
@@ -1093,6 +1042,7 @@ void sf::Renderer::InvalidateParticleSystem(const ParticleSystem& particleSystem
 		return;
 	glDeleteBuffers(1, &particleSystemData[&particleSystem].gl_ssbo);
 	particleSystemData.erase(&particleSystem);
+	printf("[Renderer] Invalidated GPU particle system for %p\n", &particleSystem);
 }
 
 void sf::Renderer::InvalidateMaterial(const Material& material)
@@ -1105,6 +1055,7 @@ void sf::Renderer::InvalidateMaterial(const Material& material)
 		delete p.second;
 	}
 	materials.erase(&material);
+	printf("[Renderer] Invalidated GPU material for %p\n", &material);
 }
 
 void sf::Renderer::Terminate()
@@ -1135,7 +1086,7 @@ void sf::Renderer::Terminate()
 	}
 	materials.clear();
 
-	drawLineShader.Delete();
+	Debug::Terminate();
 
 	environmentData.envTexture.Delete();
 	environmentData.envCubemap.Delete();

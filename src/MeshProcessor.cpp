@@ -287,32 +287,30 @@ void sf::MeshProcessor::ComputeVertexAmbientOcclusion(MeshData& mesh, const Voxe
 	}
 }
 
-void sf::MeshProcessor::GenerateGrid(MeshData& mesh, uint32_t sizeX, uint32_t sizeY, uint32_t texResX, uint32_t texResY, float cellSize, bool useQuads)
+void sf::MeshProcessor::GenerateGrid(const BufferLayout& vertexLayout, MeshData& meshData, uint32_t sizeX, uint32_t sizeY, uint32_t texResX, uint32_t texResY, float cellSize, bool useQuads)
 {
 	assert(sizeX > 1u && sizeY > 1u);
 	float uvAdjustX = 1.0f / texResX / 2.0f;
 	float uvAdjustY = 1.0f / texResY / 2.0f;
-	DataType positionDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::Position)->dataType;
-	DataType uvDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::UV)->dataType;
+	DataType positionDataType = vertexLayout.GetComponentInfo(BufferComponent::Position)->dataType;
+	DataType uvDataType = vertexLayout.GetComponentInfo(BufferComponent::UV)->dataType;
 	assert(positionDataType == DataType::vec3f32);
 	assert(uvDataType == DataType::vec2f32);
 	uint32_t indicesPerCell = useQuads ? 4u : 6u;
-	mesh.vertexCountPerPrimitive = useQuads ? 4u : 3u;
-	mesh.vertexCount = sizeX * sizeY;
-	mesh.indexCount = (sizeX - 1u) * (sizeY - 1u) * indicesPerCell;
-	mesh.vertexBuffer = new uint8_t[mesh.vertexCount * mesh.vertexBufferLayout.GetSize()];
-	mesh.indexBuffer = new uint32_t[mesh.indexCount + 1u];
-	mesh.pieces = mesh.indexBuffer + mesh.indexCount;
-	mesh.pieceCount = 1u;
-	mesh.pieces[0] = 0u;
+
+	uint32_t indexCount = (sizeX - 1u) * (sizeY - 1u) * indicesPerCell;
+	std::vector<uint32_t> indices(indexCount);
+	uint32_t vertexCount = sizeX * sizeY;
+	uint8_t* vertexBuffer = new uint8_t[vertexCount * vertexLayout.GetSize()];
+	uint32_t vertexCountPerPrimitive = useQuads ? 4u : 3u;
 
 	uint32_t currentIndex = 0u;
 	for (int32_t y = 0; y < sizeY; y++)
 	{
 		for (int32_t x = 0; x < sizeX; x++)
 		{
-			glm::vec3* currentVertexPos = mesh.AccessVertexComponent<glm::vec3>(BufferComponent::Position, y * sizeX + x);
-			glm::vec2* currentVertexUV = mesh.AccessVertexComponent<glm::vec2>(BufferComponent::UV, y * sizeX + x);
+			glm::vec3* currentVertexPos = vertexLayout.Access<glm::vec3>(vertexBuffer, BufferComponent::Position, y * sizeX + x);
+			glm::vec2* currentVertexUV = vertexLayout.Access<glm::vec2>(vertexBuffer, BufferComponent::UV, y * sizeX + x);
 			currentVertexPos->x = (float) x * cellSize;
 			currentVertexPos->z = (float) (-y) * cellSize;
 			currentVertexPos->y = 0.0f;
@@ -320,19 +318,22 @@ void sf::MeshProcessor::GenerateGrid(MeshData& mesh, uint32_t sizeX, uint32_t si
 			currentVertexUV->y = (float)y / (float)(sizeY - 1) * ((float)(texResY - 1) / (float)texResY) + uvAdjustY;
 			if (x > 0u && y > 0u)
 			{
-				assert(useQuads && currentIndex + 3u < mesh.indexCount || !useQuads && currentIndex + 5u < mesh.indexCount);
-				mesh.indexBuffer[currentIndex++] = (y - 1u) * sizeX + (x - 1u);
-				mesh.indexBuffer[currentIndex++] = (y - 1u) * sizeX + (x - 0u);
-				mesh.indexBuffer[currentIndex++] = (y - 0u) * sizeX + (x - 0u);
+				assert(useQuads && currentIndex + 3u < indexCount || !useQuads && currentIndex + 5u < indexCount);
+				indices[currentIndex++] = (y - 1u) * sizeX + (x - 1u);
+				indices[currentIndex++] = (y - 1u) * sizeX + (x - 0u);
+				indices[currentIndex++] = (y - 0u) * sizeX + (x - 0u);
 				if (!useQuads)
 				{
-					mesh.indexBuffer[currentIndex++] = (y - 1u) * sizeX + (x - 1u);
-					mesh.indexBuffer[currentIndex++] = (y - 0u) * sizeX + (x - 0u);
+					indices[currentIndex++] = (y - 1u) * sizeX + (x - 1u);
+					indices[currentIndex++] = (y - 0u) * sizeX + (x - 0u);
 				}
-				mesh.indexBuffer[currentIndex++] = (y - 0u) * sizeX + (x - 1u);
+				indices[currentIndex++] = (y - 0u) * sizeX + (x - 1u);
 			}
 		}
 	}
+
+	meshData.Destroy();
+	meshData.Create(&vertexLayout, vertexBuffer, vertexCount, indices, { 0u }, vertexCountPerPrimitive);
 }
 
 void sf::MeshProcessor::RemoveUnusedBones(MeshData& mesh, SkeletonData& skeleton)
@@ -363,9 +364,9 @@ void sf::MeshProcessor::RemoveUnusedBones(MeshData& mesh, SkeletonData& skeleton
 	std::unordered_map<uint32_t, uint32_t> depthPerBone;
 	std::unordered_map<uint32_t, uint32_t> boneRemapping;
 	std::unordered_set<uint32_t> requiredUnusedParents;
-	for (uint32_t i = 0; i < skeleton.m_boneData.size(); i++)
+	for (uint32_t i = 0; i < skeleton.GetBoneCount(); i++)
 	{
-		uint32_t currentParent = skeleton.m_boneData[i].parent;
+		uint32_t currentParent = skeleton.GetBoneData(i).parent;
 		if (currentParent != -1 &&
 			usedBones.find(i) != usedBones.end() &&
 			usedBones.find(currentParent) == usedBones.end())
@@ -373,7 +374,7 @@ void sf::MeshProcessor::RemoveUnusedBones(MeshData& mesh, SkeletonData& skeleton
 			requiredUnusedParents.insert(currentParent);
 			while (true)
 			{
-				currentParent = skeleton.m_boneData[currentParent].parent;
+				currentParent = skeleton.GetBoneData(currentParent).parent;
 				if (currentParent == -1)
 					break;
 				requiredUnusedParents.insert(currentParent);
@@ -386,10 +387,10 @@ void sf::MeshProcessor::RemoveUnusedBones(MeshData& mesh, SkeletonData& skeleton
 #ifdef SF_DEBUG
 	printf("[MeshProcessor] Remove unused bones draft:\n");
 #endif
-	for (uint32_t i = 0; i < skeleton.m_boneData.size(); i++)
+	for (uint32_t i = 0; i < skeleton.GetBoneCount(); i++)
 	{
 #ifdef SF_DEBUG
-		uint32_t currentParent = skeleton.m_boneData[i].parent;
+		uint32_t currentParent = skeleton.GetBoneData(i).parent;
 		if (currentParent == -1)
 			depthPerBone[i] = 0;
 		else
@@ -427,7 +428,7 @@ void sf::MeshProcessor::RemoveUnusedBones(MeshData& mesh, SkeletonData& skeleton
 	requiredBones.insert(requiredUnusedParents.begin(), requiredUnusedParents.end());
 
 	uint32_t requiredBoneCount = (uint32_t)requiredBones.size();
-	uint32_t totalBoneCount = (uint32_t)skeleton.m_boneData.size();
+	uint32_t totalBoneCount = (uint32_t)skeleton.GetBoneCount();
 	assert(totalBoneCount >= requiredBoneCount);
 	if (totalBoneCount == requiredBoneCount)
 	{
@@ -440,19 +441,19 @@ void sf::MeshProcessor::RemoveUnusedBones(MeshData& mesh, SkeletonData& skeleton
 	std::vector<Transform> newBoneLocalTransforms(newBoneIndex);
 	std::vector<Transform> newBoneTransforms(newBoneIndex);
 	std::vector<BoneData> newBoneData(newBoneIndex);
-	for (uint32_t i = 0; i < skeleton.m_boneLocalTransforms.size(); i++)
+	for (uint32_t i = 0; i < skeleton.GetBoneCount(); i++)
 	{
 		if (requiredBones.find(i) == requiredBones.end())
 			continue;
 
 		uint32_t targetBone = boneRemapping[i];
-		newBoneLocalTransforms[targetBone] = skeleton.m_boneLocalTransforms[i];
-		newBoneTransforms[targetBone] = skeleton.m_boneTransforms[i];
-		newBoneData[targetBone] = skeleton.m_boneData[i];
-		if (skeleton.m_boneData[i].parent != -1)
-			newBoneData[targetBone].parent = boneRemapping[skeleton.m_boneData[i].parent];
+		newBoneLocalTransforms[targetBone] = skeleton.GetBoneLocalTransform(i);
+		newBoneTransforms[targetBone] = skeleton.GetBoneTransform(i);
+		newBoneData[targetBone] = skeleton.GetBoneData(i);
+		if (skeleton.GetBoneData(i).parent != -1)
+			newBoneData[targetBone].parent = boneRemapping[skeleton.GetBoneData(i).parent];
 	}
-	skeleton.m_skinningMatrices.resize(newBoneIndex);
+	skeleton.m_core.m_skinningMatrices.resize(newBoneIndex);
 	for (Animation::SkeletalAnimation& sa : skeleton.m_animations)
 	{
 		for (Animation::Channel& ch : sa.channels)
@@ -467,9 +468,9 @@ void sf::MeshProcessor::RemoveUnusedBones(MeshData& mesh, SkeletonData& skeleton
 		newIkData[boneRemapping[shoulderBone]] = data;
 		newIkData[boneRemapping[shoulderBone]].elbowBone = boneRemapping[newIkData[boneRemapping[shoulderBone]].elbowBone];
 	}
-	skeleton.m_boneLocalTransforms = newBoneLocalTransforms;
-	skeleton.m_boneTransforms = newBoneTransforms;
-	skeleton.m_boneData = newBoneData;
+	skeleton.m_core.m_boneLocalTransforms = newBoneLocalTransforms;
+	skeleton.m_core.m_boneTransforms = newBoneTransforms;
+	skeleton.m_core.m_boneData = newBoneData;
 	skeleton.m_ikData = newIkData;
 
 	// Update mesh
@@ -555,24 +556,20 @@ void sf::MeshProcessor::TransformSkeleton(SkeletonData& skeleton, const Transfor
 {
 	glm::mat4 transformMatrix = transform.ComputeMatrix();
 
-	Transform& blt = skeleton.m_boneLocalTransforms[0];
+	Transform& blt = skeleton.m_core.m_boneLocalTransforms[0];
 	Transform newBlt = transform;
 	newBlt.Apply(blt);
 	blt = newBlt;
 
-	for (BoneData& bd : skeleton.m_boneData)
-	{
+	for (BoneData& bd : skeleton.m_core.m_boneData)
 		bd.invModelTransform.Apply(transform.Inverse());
-	}
-
-	skeleton.PropagateLocalTransforms();
 
 	for (Animation::SkeletalAnimation& a : skeleton.m_animations)
 	{
 		for (Animation::Channel& c : a.channels)
 		{
 			/* We only need to transform the root */
-			if (skeleton.m_boneData[c.bone].parent >= 0)
+			if (skeleton.GetBoneData(c.bone).parent >= 0)
 			    continue;
 
 			switch (c.path)
@@ -602,4 +599,131 @@ void sf::MeshProcessor::TransformSkeleton(SkeletonData& skeleton, const Transfor
 			}
 		}
 	}
+}
+
+void sf::MeshProcessor::ApplySkeleton(const glm::mat4* skinMatrixBuffer, const MeshData& inputMesh, MeshData& outputMesh)
+{
+	assert(inputMesh.vertexBufferLayout.GetComponentInfo(BufferComponent::BoneIndices) != nullptr);
+	assert(inputMesh.vertexBufferLayout.GetComponentInfo(BufferComponent::BoneWeights) != nullptr);
+	assert(outputMesh.vertexBufferLayout.GetComponentInfo(BufferComponent::Position) != nullptr);
+
+	for (uint32_t i = 0; i < inputMesh.vertexCount; i++)
+	{
+		const glm::vec4* indices = inputMesh.ReadVertexComponent<glm::vec4>(BufferComponent::BoneIndices, i);
+		const glm::vec4* weights = inputMesh.ReadVertexComponent<glm::vec4>(BufferComponent::BoneWeights, i);
+
+		const glm::mat4* matA = &skinMatrixBuffer[(uint32_t) indices->x];
+		const glm::mat4* matB = &skinMatrixBuffer[(uint32_t) indices->y];
+		const glm::mat4* matC = &skinMatrixBuffer[(uint32_t) indices->z];
+		const glm::mat4* matD = &skinMatrixBuffer[(uint32_t) indices->w];
+
+		glm::mat4 skinMatrix = weights->x * *matA + weights->y * *matB + weights->z * *matC + weights->w * *matD;
+
+		const glm::vec3* inPos = inputMesh.ReadVertexComponent<glm::vec3>(BufferComponent::Position, i);
+		glm::vec3* outPos = outputMesh.AccessVertexComponent<glm::vec3>(BufferComponent::Position, i);
+
+		*outPos = skinMatrix * glm::vec4(inPos->x, inPos->y, inPos->z, 1.0f);
+	}
+}
+
+
+void sf::MeshProcessor::ComputeMeshBoundingSphere(const MeshData& inputMesh, SphereCollider& outputSphere)
+{
+	glm::vec3 min(std::numeric_limits<float>::max());
+	glm::vec3 max(-std::numeric_limits<float>::max());
+
+	for (uint32_t i = 0; i < inputMesh.vertexCount; i++)
+	{
+		const glm::vec3* vertexPos = inputMesh.ReadVertexComponent<glm::vec3>(BufferComponent::Position, i);
+
+		min = glm::min(min, *vertexPos);
+		max = glm::max(max, *vertexPos);
+	}
+
+	outputSphere.center = (min + max) * 0.5f;
+
+	float maxDistanceSq = 0.0f;
+	for (uint32_t i = 0; i < inputMesh.vertexCount; i++)
+	{
+		const glm::vec3* vertexPos = inputMesh.ReadVertexComponent<glm::vec3>(BufferComponent::Position, i);
+		float distSq = glm::distance2(outputSphere.center, *vertexPos);
+		if (distSq > maxDistanceSq)
+			maxDistanceSq = distSq;
+	}
+
+	outputSphere.radius = glm::sqrt(maxDistanceSq);
+}
+
+void sf::MeshProcessor::ComputeSkinnedMeshBoundingSphere(const SkeletonData& inputSkeleton, const MeshData& inputMesh, SphereCollider& outputSphere)
+{
+	static const BufferLayout positionOnlyVertexLayout = BufferLayout({
+		BufferComponent::Position
+	});
+	MeshData tempM;
+	tempM.vertexBufferLayout = positionOnlyVertexLayout;
+	tempM.vertexCount = inputMesh.vertexCount;
+	tempM.vertexBuffer = new uint8_t[sizeof(glm::vec3) * inputMesh.vertexCount];
+	SkeletonCoreData tempS = inputSkeleton.m_core;
+	const std::vector<Animation::SkeletalAnimation>& animations = inputSkeleton.m_animations;
+
+	/* Get keyframes */
+	std::vector<std::unordered_set<float>> allKeyFrameTimesPerAnimation(animations.size());
+	for (uint32_t i = 0; i < animations.size(); i++)
+	{
+		const Animation::SkeletalAnimation& anim = animations[i];
+		for (const Animation::Channel& channel : anim.channels)
+		{
+			const Animation::Sampler& sampler = anim.samplers[channel.samplerIndex];
+			if (sampler.inputs.size() > sampler.outputsVec4.size())
+				continue;
+
+			for (float samplerInput : sampler.inputs)
+				allKeyFrameTimesPerAnimation[i].insert(samplerInput);
+		}
+	}
+
+	/* Bounding box containing every animation */
+	glm::vec3 min(std::numeric_limits<float>::max());
+	glm::vec3 max(-std::numeric_limits<float>::max());
+	for (uint32_t i = 0; i < animations.size(); i++)
+	{
+		const Animation::SkeletalAnimation& anim = animations[i];
+		for (float kf : allKeyFrameTimesPerAnimation[i])
+		{
+			Animation::SampleToBones(anim, tempS.m_boneLocalTransforms.data(), kf);
+			tempS.PropagateLocalTransforms(nullptr, true);
+
+			ApplySkeleton(tempS.m_skinningMatrices.data(), inputMesh, tempM);
+			for (uint32_t vi = 0; vi < tempM.vertexCount; vi++)
+			{
+				const glm::vec3* vertexPos = tempM.ReadVertexComponent<glm::vec3>(BufferComponent::Position, vi);
+				min = glm::min(min, *vertexPos);
+				max = glm::max(max, *vertexPos);
+			}
+		}
+	}
+
+	/* Bounding sphere containing every animation */
+	outputSphere.center = (min + max) * 0.5f;
+	float maxDistanceSq = 0.0f;
+	for (uint32_t i = 0; i < animations.size(); i++)
+	{
+		const Animation::SkeletalAnimation& anim = animations[i];
+		for (float kf : allKeyFrameTimesPerAnimation[i])
+		{
+			Animation::SampleToBones(anim, tempS.m_boneLocalTransforms.data(), kf);
+			tempS.PropagateLocalTransforms(nullptr, true);
+
+			ApplySkeleton(tempS.m_skinningMatrices.data(), inputMesh, tempM);
+			for (uint32_t vi = 0; vi < tempM.vertexCount; vi++)
+			{
+				const glm::vec3* vertexPos = tempM.ReadVertexComponent<glm::vec3>(BufferComponent::Position, vi);
+				float distSq = glm::distance2(outputSphere.center, *vertexPos);
+				if (distSq > maxDistanceSq)
+					maxDistanceSq = distSq;
+			}
+		}
+	}
+	outputSphere.radius = glm::sqrt(maxDistanceSq);
+	tempM.Destroy();
 }

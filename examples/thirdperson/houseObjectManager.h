@@ -142,56 +142,56 @@ namespace hom
 		}
 	}
 
-	const std::vector<sf::LOD>& GetLodsByType(const std::string type)
+	const sf::LODGroup* GetLodsByType(const std::string type)
 	{
 		if (type == "toilet")
 		{
 			if (sf::Random::Int(2) == 0)
-				return lodGroupPerObject["assets/examples/rb3d/MotelToilet_7890507_f.glb"]->lods;
+				return lodGroupPerObject["assets/examples/rb3d/MotelToilet_7890507_f.glb"];
 			else
-				return lodGroupPerObject["assets/examples/rb3d/Toilet_7291921_f.glb"]->lods;
+				return lodGroupPerObject["assets/examples/rb3d/Toilet_7291921_f.glb"];
 		}
 		else if (type == "sink")
 		{
-			return lodGroupPerObject["assets/examples/rb3d/Sink_4325117_f.glb"]->lods;
+			return lodGroupPerObject["assets/examples/rb3d/Sink_4325117_f.glb"];
 		}
 		else if (type == "shower")
 		{
-			return lodGroupPerObject["assets/examples/rb3d/MotelShower_4150183_f.glb"]->lods;
+			return lodGroupPerObject["assets/examples/rb3d/MotelShower_4150183_f.glb"];
 		}
 		else if (type == "washingMachine")
 		{
-			return lodGroupPerObject["assets/examples/rb3d/WashingMachine_9800066_f.glb"]->lods;
+			return lodGroupPerObject["assets/examples/rb3d/WashingMachine_9800066_f.glb"];
 		}
 		else if (type == "dryer")
 		{
-			return lodGroupPerObject["assets/examples/rb3d/Dryer_4537255_f.glb"]->lods;
+			return lodGroupPerObject["assets/examples/rb3d/Dryer_4537255_f.glb"];
 		}
 		else if (type == "nightStand")
 		{
-			return lodGroupPerObject["assets/examples/rb3d/Nightstand_2001378_f.glb"]->lods;
+			return lodGroupPerObject["assets/examples/rb3d/Nightstand_2001378_f.glb"];
 		}
 		else if (type == "sofa")
 		{
-			return lodGroupPerObject["assets/examples/rb3d/UpholsteredWoodBaseSofa_8248509_f.glb"]->lods;
+			return lodGroupPerObject["assets/examples/rb3d/UpholsteredWoodBaseSofa_8248509_f.glb"];
 		}
 		else if (type == "towelRack")
 		{
 			if (sf::Random::Int(2) == 0)
-				return lodGroupPerObject["assets/examples/rb3d/Towel Rack_7188108_f.glb"]->lods;
+				return lodGroupPerObject["assets/examples/rb3d/Towel Rack_7188108_f.glb"];
 			else
-				return lodGroupPerObject["assets/examples/rb3d/TowelRack_8073790_f.glb"]->lods;
+				return lodGroupPerObject["assets/examples/rb3d/TowelRack_8073790_f.glb"];
 		}
 		else if (type == "bed")
 		{
 			if (sf::Random::Int(2) == 0)
-				return lodGroupPerObject["assets/examples/rb3d/MotelBed-a_8538645_f.glb"]->lods;
+				return lodGroupPerObject["assets/examples/rb3d/MotelBed-a_8538645_f.glb"];
 			else
-				return lodGroupPerObject["assets/examples/rb3d/MotelBed-b_4880464_f.glb"]->lods;
+				return lodGroupPerObject["assets/examples/rb3d/MotelBed-b_4880464_f.glb"];
 		}
 		else // if (type == "fridge")
 		{
-			return lodGroupPerObject["assets/examples/rb3d/1950s Refrigerator_6463987_f.glb"]->lods;
+			return lodGroupPerObject["assets/examples/rb3d/1950s Refrigerator_6463987_f.glb"];
 		}
 	}
 }

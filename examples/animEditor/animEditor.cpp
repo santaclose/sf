@@ -97,10 +97,10 @@ namespace sf
 					animNames[i] = sd->m_animations[i].name;
 				editorNodes.push_back(new RetargetNode());
 				RetargetNodeInitialize(RetargetNodeType::InputBones, *editorNodes.back());
-				editorNodes.back()->inputBones.localTransforms = &sd->m_boneLocalTransforms;
-				editorNodes.back()->inputBones.boneNames = (const char**)calloc(sd->m_boneData.size(), sizeof(char*));
-				for (int i = 0; i < sd->m_boneData.size(); i++)
-					editorNodes.back()->inputBones.boneNames[i] = sd->m_boneData[i].name;
+				editorNodes.back()->inputBones.localTransforms = &sd->m_core.m_boneLocalTransforms;
+				editorNodes.back()->inputBones.boneNames = (const char**)calloc(sd->GetBoneCount(), sizeof(char*));
+				for (int i = 0; i < sd->GetBoneCount(); i++)
+					editorNodes.back()->inputBones.boneNames[i] = sd->GetBoneData(i).name;
 			}
 			else // is output model file
 			{
@@ -109,13 +109,13 @@ namespace sf
 					animNames[i] = sd->m_animations[i].name;
 				editorNodes.push_back(new RetargetNode());
 				RetargetNodeInitialize(RetargetNodeType::OutputBones, *editorNodes.back());
-				editorNodes.back()->outputBones.localTransforms = &sd->m_boneLocalTransforms;
-				editorNodes.back()->outputBones.boneNames = (const char**)calloc(sd->m_boneData.size(), sizeof(char*));
-				editorNodes.back()->outputBones.inputPos = (const glm::vec3**)calloc(sd->m_boneLocalTransforms.size(), sizeof(glm::vec3*));
-				editorNodes.back()->outputBones.inputRot = (const glm::quat**)calloc(sd->m_boneLocalTransforms.size(), sizeof(glm::quat*));
-				editorNodes.back()->outputBones.inputScale = (const float**)calloc(sd->m_boneLocalTransforms.size(), sizeof(float*));
-				for (int i = 0; i < sd->m_boneData.size(); i++)
-					editorNodes.back()->outputBones.boneNames[i] = sd->m_boneData[i].name;
+				editorNodes.back()->outputBones.localTransforms = &sd->m_core.m_boneLocalTransforms;
+				editorNodes.back()->outputBones.boneNames = (const char**)calloc(sd->GetBoneCount(), sizeof(char*));
+				editorNodes.back()->outputBones.inputPos = (const glm::vec3**)calloc(sd->GetBoneCount(), sizeof(glm::vec3*));
+				editorNodes.back()->outputBones.inputRot = (const glm::quat**)calloc(sd->GetBoneCount(), sizeof(glm::quat*));
+				editorNodes.back()->outputBones.inputScale = (const float**)calloc(sd->GetBoneCount(), sizeof(float*));
+				for (int i = 0; i < sd->GetBoneCount(); i++)
+					editorNodes.back()->outputBones.boneNames[i] = sd->GetBoneData(i).name;
 				return;
 			}
 		}
@@ -207,7 +207,7 @@ namespace sf
 					ExecuteNodeAndDependants(i); // nodes with no dependencies
 
 			// update output skeleton
-			outputModelSkeleton->PropagateLocalTransforms();
+			outputModelSkeleton->m_core.PropagateLocalTransforms(nullptr, true);
 		}
 	}
 

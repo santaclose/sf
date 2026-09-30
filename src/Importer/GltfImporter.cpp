@@ -340,19 +340,19 @@ bool sf::GltfImporter::GenerateBitmap(int id, int index, Bitmap& bitmap)
 
 namespace sf::GltfImporter
 {
-	void GenerateSkeletonProcessNodes(const tinygltf::Model& model, int node, SkeletonData& skeleton, std::unordered_map<uint32_t, uint32_t>& nodeToBone, int parentBone = -1)
+	void GenerateSkeletonProcessNodes(const tinygltf::Model& model, int node, SkeletonCoreData& skeletonCore, std::unordered_map<uint32_t, uint32_t>& nodeToBone, int parentBone = -1)
 	{
 		if (node < 0)
 		{
 			for (int node = 0; node < model.nodes.size(); node++)
-				GenerateSkeletonProcessNodes(model, node, skeleton, nodeToBone, parentBone);
+				GenerateSkeletonProcessNodes(model, node, skeletonCore, nodeToBone, parentBone);
 			return;
 		}
 
-		skeleton.m_boneData.emplace_back();
-		skeleton.m_boneLocalTransforms.emplace_back();
-		BoneData& currentBone = skeleton.m_boneData.back();
-		Transform& currentBoneTransform = skeleton.m_boneLocalTransforms.back();
+		skeletonCore.m_boneData.emplace_back();
+		skeletonCore.m_boneLocalTransforms.emplace_back();
+		BoneData& currentBone = skeletonCore.m_boneData.back();
+		Transform& currentBoneTransform = skeletonCore.m_boneLocalTransforms.back();
 
 		if (model.nodes[node].scale.size() == 3)
 			currentBoneTransform.SetScale(glm::vec3(model.nodes[node].scale[0], model.nodes[node].scale[1], model.nodes[node].scale[2]));
@@ -369,12 +369,12 @@ namespace sf::GltfImporter
 			currentBoneTransform = Transform::FromMatrix(tempmat);
 		}
 
-		int currentBoneIndex = skeleton.m_boneData.size() - 1;
+		int currentBoneIndex = skeletonCore.m_boneData.size() - 1;
 		nodeToBone[node] = currentBoneIndex;
 		currentBone.parent = parentBone;
 
 		for (int child : model.nodes[node].children)
-			GenerateSkeletonProcessNodes(model, child, skeleton, nodeToBone, currentBoneIndex);
+			GenerateSkeletonProcessNodes(model, child, skeletonCore, nodeToBone, currentBoneIndex);
 	}
 }
 
@@ -385,18 +385,19 @@ bool sf::GltfImporter::GenerateSkeleton(int id, SkeletonData& skeleton, int inde
 
 	tinygltf::Model& model = *models[id];
 
-	assert(skeleton.m_boneLocalTransforms.size() == 0 && skeleton.m_boneTransforms.size() == 0 && skeleton.m_boneData.size() == 0 && skeleton.m_skinningMatrices.size() == 0 && skeleton.m_animations.size() == 0 && skeleton.m_nodes.size() == 0);
-
 	if (model.skins.size() <= index)
 		return false;
 
-	// generate skeleton
+	skeleton.Destroy();
+	SkeletonCoreData& skeletonCore = skeleton.m_core;
+
+	/* Generate skeleton */
 	int rootBoneNode = model.skins[index].skeleton;
 	nodeToBonePerModel[id] = std::unordered_map<uint32_t, uint32_t>();
-	GenerateSkeletonProcessNodes(model, rootBoneNode, skeleton, nodeToBonePerModel[id]);
-	skeleton.m_boneTransforms.resize(skeleton.m_boneLocalTransforms.size());
+	GenerateSkeletonProcessNodes(model, rootBoneNode, skeletonCore, nodeToBonePerModel[id]);
+	skeletonCore.m_boneTransforms.resize(skeletonCore.m_boneLocalTransforms.size());
 
-	// copy inverse model matrix for each bone
+	/* Copy inverse model matrix for each bone */
 	std::vector<glm::mat4> invModelMatricesTemp;
 	const tinygltf::Accessor& accessor = model.accessors[model.skins[index].inverseBindMatrices];
 	const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
@@ -405,17 +406,17 @@ bool sf::GltfImporter::GenerateSkeleton(int id, SkeletonData& skeleton, int inde
 	memcpy(invModelMatricesTemp.data(), &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(glm::mat4));
 	for (size_t i = 0; i < model.skins[index].joints.size(); i++)
 	{
-		BoneData& targetBoneData = skeleton.m_boneData[nodeToBonePerModel[id][model.skins[index].joints[i]]];
+		BoneData& targetBoneData = skeletonCore.m_boneData[nodeToBonePerModel[id][model.skins[index].joints[i]]];
 		targetBoneData.invModelTransform = Transform::FromMatrix(invModelMatricesTemp[i]);
 		targetBoneData.name = model.nodes[model.skins[index].joints[i]].name.c_str();
 	}
 
-	std::cout << "[GltfImporter] Generated skeleton with " << skeleton.m_boneData.size() << " bones\n";
+	std::cout << "[GltfImporter] Generated skeleton with " << skeletonCore.m_boneData.size() << " bones\n";
 
-	// reserve space for skinning matrices
-	skeleton.m_skinningMatrices.resize(skeleton.m_boneData.size());
+	/* Reserve space for skinning matrices */
+	skeletonCore.m_skinningMatrices.resize(skeletonCore.m_boneData.size());
 
-	// load animations
+	/* Load animations */
 	for (tinygltf::Animation& anim : model.animations)
 	{
 		skeleton.m_animations.emplace_back();

@@ -8,46 +8,61 @@ namespace sf {
 	
 	struct Mesh
 	{
-		std::vector<LOD> lods;
+		const LODGroup* lodGroup = nullptr;
 		std::vector<const Material*> materials;
+		bool usesLodGroup;
 
-		inline Mesh(const std::vector<LOD>& lods, const Material* material = nullptr)
+		inline Mesh(const LODGroup* lodGroup, const Material* material = nullptr)
 		{
-			assert(lods.size() > 0);
-			this->lods = lods;
+			assert(lodGroup != nullptr);
+			assert(lodGroup->lods.size() > 0);
+			this->lodGroup = lodGroup;
 			/* If material uses task/mesh shaders, no need to have mesh data */
 			this->materials.clear();
-			this->materials.resize(lods[0].meshData->pieceCount, material);
+			this->materials.resize(lodGroup->sourceMesh->pieceCount, material);
+			usesLodGroup = true;
 		}
 		inline Mesh(const MeshData* meshData, const Material* material = nullptr)
 		{
-			this->lods.resize(1);
-			this->lods[0].meshData = meshData;
+			/* Use the lodGroup pointer just as storage */
+			this->lodGroup = (LODGroup*) meshData;
 			/* If material uses task/mesh shaders, no need to have mesh data */
 			this->materials.clear();
 			this->materials.resize(meshData == nullptr ? 1 : meshData->pieceCount, material);
+			usesLodGroup = false;
 		}
 
-		inline const MeshData* GetMeshData(float camDistance2)
+		inline const MeshData* GetSourceMeshData() const
 		{
-			for (LOD& lod : lods)
+			if (!usesLodGroup)
+				return (const MeshData*) lodGroup;
+			return lodGroup->sourceMesh;
+		}
+
+		inline const MeshData* GetMeshData(float camDistance2) const
+		{
+			if (!usesLodGroup)
+				return (const MeshData*) lodGroup;
+
+			for (const LOD& lod : lodGroup->lods)
 			{
 				if (camDistance2 < lod.maxDistance * lod.maxDistance)
 					return lod.meshData;
 			}
-			return lods[lods.size() - 1].meshData;
+			return lodGroup->lods[lodGroup->lods.size() - 1].meshData;
 		}
 
-		inline uint32_t GetCurrentLOD(float camDistance2)
+		inline uint32_t GetCurrentLOD(float camDistance2) const
 		{
+			assert(usesLodGroup);
 			uint32_t out = 0;
-			for (LOD& lod : lods)
+			for (const LOD& lod : lodGroup->lods)
 			{
 				if (camDistance2 < lod.maxDistance * lod.maxDistance)
 					return out;
 				out++;
 			}
-			return uint32_t(lods.size() - 1);
+			return uint32_t(lodGroup->lods.size() - 1);
 		}
 	};
 }

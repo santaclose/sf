@@ -1,4 +1,5 @@
-#include <MeshData.h>
+#include "MeshData.h"
+
 #include <cstring>
 #include <cassert>
 #include <fstream>
@@ -81,6 +82,9 @@ void sf::MeshData::SaveToFile(const char* targetFile)
 	BufferLayoutBitmask bitmask = vertexBufferLayout.GetBitmask();
 	file.write((char*) &bitmask, sizeof(bitmask));
 
+	// Vertices per primitive
+	file.write((char*) &vertexCountPerPrimitive, sizeof(vertexCountPerPrimitive));
+
 	// Indices
 	file.write((char*) &indexCount, sizeof(indexCount));
 	file.write((char*) indexBuffer, indexCount * sizeof(uint32_t));
@@ -110,6 +114,9 @@ bool sf::MeshData::LoadFromFile(const char* targetFile)
 	file.read((char*) &bitmask, sizeof(bitmask));
 	vertexBufferLayout.Destroy();
 	vertexBufferLayout.CreateFromBitmask(bitmask);
+
+	// Vertices per primitive
+	file.read((char*) &vertexCountPerPrimitive, sizeof(vertexCountPerPrimitive));
 
 	// Indices
 	file.read((char*) &indexCount, sizeof(indexCount));

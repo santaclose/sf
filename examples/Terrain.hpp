@@ -43,8 +43,7 @@ namespace sf
 			this->material.uniforms["maxHeight"].data.f32 = this->maxHeight;
 			this->material.drawMode = MaterialDrawMode::Lines;
 
-			this->mesh.vertexBufferLayout = this->vertexBufferLayout;
-			MeshProcessor::GenerateGrid(this->mesh, patchCount + 1, patchCount + 1, this->heightmapResolution, this->heightmapResolution, heightmapPixelSize * ((float)(this->heightmapResolution - 1) / (float)patchCount), true);
+			MeshProcessor::GenerateGrid(this->vertexBufferLayout, this->mesh, patchCount + 1, patchCount + 1, this->heightmapResolution, this->heightmapResolution, heightmapPixelSize * ((float)(this->heightmapResolution - 1) / (float)patchCount), true);
 
 			this->entity = scene.CreateEntity();
 			Transform& e_t = this->entity.AddComponent<Transform>();

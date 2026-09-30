@@ -136,7 +136,7 @@ namespace sf
 
 		{
 			galleryObjects.push_back(scene.CreateEntity());
-			galleryObjects.back().AddComponent<Mesh>(nullptr, &marchingCubesMaterial);
+			galleryObjects.back().AddComponent<Mesh>((const MeshData*)nullptr, &marchingCubesMaterial);
 			galleryObjects.back().AddComponent<Transform>();
 		}
 

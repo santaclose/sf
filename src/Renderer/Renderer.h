@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Renderer/RenderTarget.h>
+#include <Renderer/DebugDraw.h>
 
 #include <Game.h>
 
@@ -30,40 +31,43 @@
 
 namespace sf::Renderer {
 
+	struct Stats
+	{
+		uint32_t meshTriangles = 0u;
+		uint32_t meshQuads = 0u;
+		uint32_t skinnedMeshTriangles = 0u;
+	};
+
 	std::vector<RenderTarget>& GetRenderTargets();
 
 	bool Initialize(const Window& window, const Game::InitData& gameInitData);
 
 	void BindRenderTarget(uint32_t renderTargetId);
 	void Clear(bool clearDepth);
-	void BindCamera(Camera& camera, Transform& cameraTransform);
-	void FrameEnd();
+	void BindCamera(const Camera& camera, const Transform& cameraTransform);
+	Stats FrameEnd();
 
 	void SetEnvironment(const std::string& hdrFilePath, DataType hdrDataType = DataType::f16);
 
-	void DrawMesh(Mesh& mesh, Transform& transform);
-	void DrawSkinnedMesh(SkinnedMesh& mesh, Transform& transform);
-	void DrawParticleSystem(ParticleSystem& particleSystem, Transform& transform, float deltaTime);
+	void DrawMeshShading(const Mesh& mesh, const Transform& transform);
+	void DrawMesh(const Mesh& mesh, const Transform& transform);
+	void DrawSkinnedMesh(const SkinnedMesh& mesh, const Transform& transform);
+	void DrawParticleSystem(const ParticleSystem& particleSystem, const Transform& transform, float deltaTime);
 
-	void DrawSprite(Sprite& sprite, ScreenCoordinates& screenCoordinates);
-	void DrawText(Text& text, ScreenCoordinates& screenCoordinates);
+	void DrawSprite(const Sprite& sprite, const ScreenCoordinates& screenCoordinates);
+	void DrawText(const Text& text, const ScreenCoordinates& screenCoordinates);
 
-	void AddLine(const glm::vec3& a, const glm::vec3& b, const glm::vec3& color);
+	Debug::Config& AccessDebugConfig();
 
-	void SetDebugDrawEnabled(bool value);
-	bool IsDebugDrawEnabled();
-	void DebugDrawSkeleton(SkinnedMesh& mesh, Transform& transform);
-
-	void DrawSphereCollider(const SphereCollider& sc, const glm::vec3& color);
-	void DrawCapsuleCollider(const CapsuleCollider& cc, const glm::vec3& color);
-	void DrawBoxCollider(const BoxCollider& bc, const glm::vec3& color);
-	void DrawLines();
+	SphereCollider GetFrustumCullingMeshSphere(const Mesh& mesh, const Transform& transform);
+	SphereCollider GetFrustumCullingSkinnedMeshSphere(const SkinnedMesh& mesh, const Transform& transform);
 
 	// void DrawScene(Scene* scene, float deltaTime);
 	void DrawFramebuffer(const Framebuffer& framebuffer, float deltaTime);
 
 	void InvalidateMeshData(const MeshData& meshData);
 	void InvalidateSkeletonData(const SkeletonData& skeletonData);
+	void InvalidateLODGroup(const LODGroup& lodGroup);
 	void InvalidateParticleSystem(const ParticleSystem& particleSystem);
 	void InvalidateMaterial(const Material& material);
 

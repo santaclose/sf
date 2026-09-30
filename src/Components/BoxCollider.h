@@ -9,7 +9,7 @@ namespace sf
 		glm::vec3 size = glm::vec3(1.0f, 1.0f, 1.0f);
 		glm::vec3 center = glm::vec3(0.0f, 0.0f, 0.0f);
 		glm::quat orientation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
-		inline BoxCollider ApplyTransform(const Transform& transform)
+		inline BoxCollider ApplyTransform(const Transform& transform) const
 		{
 			BoxCollider out;
 			out.size = this->size * transform.scale;

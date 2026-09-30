@@ -35,6 +35,23 @@ namespace sf::ImGuiController
 		sf::Renderer::Framebuffer dpFramebuffer = displayPanels[panelId]->GetFramebufferToDraw();
 		sf::Renderer::DrawFramebuffer(dpFramebuffer, deltaTime);
 	}
+
+	const char* FormatThousands(uint32_t value)
+	{
+		// Large enough to hold max uint32_t (4,294,967,295) + null terminator
+		static char buffer[32];
+		char* ptr = buffer + sizeof(buffer) - 1;
+		*ptr = '\0';
+		int digitCount = 0;
+		do {
+			if (digitCount > 0 && digitCount % 3 == 0)
+				*(--ptr) = ',';
+			*(--ptr) = '0' + (value % 10);
+			value /= 10;
+			digitCount++;
+		} while (value > 0);
+		return ptr;
+	}
 }
 
 void sf::ImGuiController::Initialize(Window& window, const Game::InitData& gameInitData)
@@ -150,7 +167,7 @@ void sf::ImGuiController::Tick(float deltaTime)
 			hoveredDisplayPanel = i;
 	}
 	Input::SetEnabled(!ImGui::GetIO().WantCaptureMouse || GetActiveDisplayPanel() != ~0);
-	sf::Renderer::FrameEnd();
+	sf::Renderer::Stats rendererStats = sf::Renderer::FrameEnd();
 
 	if (window->GetToolBarEnabled())
 	{
@@ -160,8 +177,12 @@ void sf::ImGuiController::Tick(float deltaTime)
 			{
 				ImGui::MenuItem("Stats", NULL, &statsEnabled);
 				ImGui::MenuItem("Logs", NULL, &logsEnabled);
-				if (ImGui::MenuItem("Debug Draw", NULL, &debugDrawEnabled))
-					Renderer::SetDebugDrawEnabled(debugDrawEnabled);
+				ImGui::MenuItem("Debug draw colliders", NULL, &Renderer::AccessDebugConfig().colliders);
+				ImGui::MenuItem("Debug draw skeletons", NULL, &Renderer::AccessDebugConfig().skeletons);
+				ImGui::MenuItem("Debug draw skeletons model space", NULL, &Renderer::AccessDebugConfig().skeletonsModelSpace);
+				ImGui::MenuItem("Debug draw frustum culling spheres", NULL, &Renderer::AccessDebugConfig().frustumCullingSpheres);
+				// if (ImGui::MenuItem("Debug Draw", NULL, &debugDrawEnabled))
+					// Renderer::SetDebugDrawEnabled(debugDrawEnabled);
 				if (ImGui::MenuItem("Menu bar", "Esc", window->GetToolBarEnabled()))
 					window->SetToolBarEnabled(false);
 				if (ImGui::MenuItem("Cursor required", "F2", window->GetCursorRequired()))
@@ -185,6 +206,9 @@ void sf::ImGuiController::Tick(float deltaTime)
 		ImGui::Begin("Stats");
 		ImGui::Text("Frame time: %.3f ms", 1000.0f * deltaTime);
 		ImGui::Text("FPS: %.1f", 1.0f / deltaTime);
+		ImGui::Text("Mesh triangles: %s", FormatThousands(rendererStats.meshTriangles));
+		ImGui::Text("Mesh quads: %s", FormatThousands(rendererStats.meshQuads));
+		ImGui::Text("Skinned mesh triangles: %s", FormatThousands(rendererStats.skinnedMeshTriangles));
 		ImGui::End();
 	}
 	if (logsEnabled)

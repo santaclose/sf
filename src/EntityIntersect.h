@@ -13,6 +13,20 @@ namespace sf::EntityIntersect {
 		return entity.GetComponent<T>().ApplyTransform(entity.GetComponent<Transform>());
 	}
 
+	bool SphereCapsule(Entity sphereEntity, Entity capsuleEntity, Geometry::ContactData* out = nullptr)
+	{
+		SphereCollider worldSpaceA = WorldSpace<SphereCollider>(sphereEntity);
+		CapsuleCollider worldSpaceB = WorldSpace<CapsuleCollider>(capsuleEntity);
+		return Geometry::IntersectSphereCapsule(worldSpaceA, worldSpaceB, out);
+	}
+
+	bool CapsuleCapsule(Entity entityA, Entity entityB, Geometry::ContactData* out = nullptr)
+	{
+		CapsuleCollider worldSpaceA = WorldSpace<CapsuleCollider>(entityA);
+		CapsuleCollider worldSpaceB = WorldSpace<CapsuleCollider>(entityB);
+		return Geometry::IntersectCapsuleCapsule(worldSpaceA, worldSpaceB, out);
+	}
+
 	bool SphereMesh(Entity sphereEntity, Entity meshEntity, uint32_t outMax = 0, uint32_t* outCount = nullptr, Geometry::ContactData* out = nullptr)
 	{
 		Transform& meshTransform = meshEntity.GetComponent<Transform>();

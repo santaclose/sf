@@ -515,6 +515,29 @@ void sf::MeshProcessor::Decimate(const MeshData& inputMesh, MeshData& outputMesh
 	outputMesh.indexBuffer = newIndices;
 }
 
+void sf::MeshProcessor::Remesh(const MeshData& inputMesh, MeshData& outputMesh, int resolution)
+{
+	const glm::vec3* firstVertexPos = inputMesh.ReadVertexComponent<glm::vec3>(BufferComponent::Position, 0);
+	const unsigned int options = meshopt_RemeshSolve;
+	size_t capacity = meshopt_remesh(nullptr, 0, inputMesh.indexBuffer, inputMesh.indexCount, &firstVertexPos->x, inputMesh.vertexCount, inputMesh.vertexBufferLayout.GetSize(), resolution, options);
+	std::vector<float> triangles(capacity * 3 * 3);
+	size_t triCount = meshopt_remesh(&triangles[0], capacity, inputMesh.indexBuffer, inputMesh.indexCount, &firstVertexPos->x, inputMesh.vertexCount, inputMesh.vertexBufferLayout.GetSize(), resolution, options);
+	triangles.resize(triCount * 3 * 3);
+
+	uint8_t* vertexBuffer = new uint8_t[triCount * 3 * sizeof(glm::vec3)];
+	memcpy(vertexBuffer, triangles.data(), triangles.size() * sizeof(float));
+	std::vector<uint32_t> indices(triCount * 3);
+	for (uint32_t i = 0; i < triCount * 3; i++)
+		indices[i] = i;
+
+	static BufferLayout positionOnlyVertexLayout = BufferLayout({
+		BufferComponent::Position
+	});
+
+	outputMesh.Destroy();
+	outputMesh.Create(&positionOnlyVertexLayout, vertexBuffer, triCount * 3, indices, {0});
+}
+
 void sf::MeshProcessor::TransformMesh(MeshData& mesh, const Transform& transform)
 {
 	DataType positionDataType = mesh.vertexBufferLayout.GetComponentInfo(BufferComponent::Position)->dataType;

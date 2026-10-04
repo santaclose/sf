@@ -49,6 +49,7 @@ project "sf"
 		"vendor/sebtext/*.cpp",
 		"vendor/imnodes/imnodes.cpp",
 		"vendor/meshoptimizer/src/simplifier.cpp",
+		"vendor/meshoptimizer/src/remesher.cpp",
 		"vendor/vendor.cpp"
 	}
 

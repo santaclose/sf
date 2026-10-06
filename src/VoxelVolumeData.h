@@ -1,6 +1,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include <glm/gtx/hash.hpp>
 #include <unordered_set>
 #include <MeshData.h>
 #include <Hash.h>
@@ -15,7 +16,7 @@ namespace sf {
 		glm::vec3 offset; // from center to min corner
 		glm::uvec3 voxelCountPerAxis;
 
-		std::unordered_map<glm::uvec3, uint32_t, Hash::UVec3Hash> map;
+		std::unordered_map<glm::uvec3, uint32_t> map;
 		std::vector<uint8_t> voxelBuffer;
 		BufferLayout voxelBufferLayout;
 

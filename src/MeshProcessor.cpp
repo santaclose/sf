@@ -11,6 +11,7 @@
 
 #include <meshoptimizer.h>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/hash.hpp>
 
 namespace sf {
 
@@ -333,7 +334,7 @@ void sf::MeshProcessor::GenerateGrid(const BufferLayout& vertexLayout, MeshData&
 	}
 
 	meshData.Destroy();
-	meshData.Create(&vertexLayout, vertexBuffer, vertexCount, indices, { 0u }, vertexCountPerPrimitive);
+	meshData.Create(&vertexLayout, vertexBuffer, vertexCount, indices, nullptr, vertexCountPerPrimitive);
 }
 
 void sf::MeshProcessor::RemoveUnusedBones(MeshData& mesh, SkeletonData& skeleton)
@@ -486,6 +487,7 @@ void sf::MeshProcessor::RemoveUnusedBones(MeshData& mesh, SkeletonData& skeleton
 
 void sf::MeshProcessor::Decimate(const MeshData& inputMesh, MeshData& outputMesh, float ratio)
 {
+	assert(&inputMesh != &outputMesh);
 	// Vertices must have positions
 	assert(inputMesh.vertexBufferLayout.GetComponentInfo(BufferComponent::Position) != nullptr);
 	assert(inputMesh.vertexCountPerPrimitive == 3);
@@ -497,6 +499,7 @@ void sf::MeshProcessor::Decimate(const MeshData& inputMesh, MeshData& outputMesh
 	outputMesh = inputMesh;
 	outputMesh.pieces = nullptr;
 	outputMesh.pieceCount = 1;
+	outputMesh.usesExternalVertexBuffer = true;
 
 	const glm::vec3* firstVertexPos = inputMesh.ReadVertexComponent<glm::vec3>(BufferComponent::Position, 0);
 	uint32_t* newIndices = new uint32_t[inputMesh.indexCount];
@@ -517,6 +520,7 @@ void sf::MeshProcessor::Decimate(const MeshData& inputMesh, MeshData& outputMesh
 
 void sf::MeshProcessor::Remesh(const MeshData& inputMesh, MeshData& outputMesh, int resolution)
 {
+	/* Run mesh optimizer remesh */
 	const glm::vec3* firstVertexPos = inputMesh.ReadVertexComponent<glm::vec3>(BufferComponent::Position, 0);
 	const unsigned int options = meshopt_RemeshSolve;
 	size_t capacity = meshopt_remesh(nullptr, 0, inputMesh.indexBuffer, inputMesh.indexCount, &firstVertexPos->x, inputMesh.vertexCount, inputMesh.vertexBufferLayout.GetSize(), resolution, options);
@@ -524,18 +528,34 @@ void sf::MeshProcessor::Remesh(const MeshData& inputMesh, MeshData& outputMesh, 
 	size_t triCount = meshopt_remesh(&triangles[0], capacity, inputMesh.indexBuffer, inputMesh.indexCount, &firstVertexPos->x, inputMesh.vertexCount, inputMesh.vertexBufferLayout.GetSize(), resolution, options);
 	triangles.resize(triCount * 3 * 3);
 
-	uint8_t* vertexBuffer = new uint8_t[triCount * 3 * sizeof(glm::vec3)];
-	memcpy(vertexBuffer, triangles.data(), triangles.size() * sizeof(float));
-	std::vector<uint32_t> indices(triCount * 3);
+	/* Build indexed mesh */
+	std::vector<uint32_t> indices;
+	std::vector<glm::vec3> positions;
+	std::unordered_map<glm::vec3, uint32_t> posIndexMap;
 	for (uint32_t i = 0; i < triCount * 3; i++)
-		indices[i] = i;
+	{
+		glm::vec3 currentVertexPos = glm::vec3(triangles[i * 3 + 0], triangles[i * 3 + 1], triangles[i * 3 + 2]);
+		if (posIndexMap.find(currentVertexPos) != posIndexMap.end())
+		{
+			indices.push_back(posIndexMap[currentVertexPos]);
+		}
+		else
+		{
+			indices.push_back(positions.size());
+			positions.push_back(currentVertexPos);
+			posIndexMap[positions.back()] = indices.back();
+		}
+	}
 
 	static BufferLayout positionOnlyVertexLayout = BufferLayout({
 		BufferComponent::Position
 	});
 
+	uint8_t* vertexBuffer = new uint8_t[positions.size() * sizeof(glm::vec3)];
+	memcpy(vertexBuffer, positions.data(), positions.size() * sizeof(glm::vec3));
+
 	outputMesh.Destroy();
-	outputMesh.Create(&positionOnlyVertexLayout, vertexBuffer, triCount * 3, indices, {0});
+	outputMesh.Create(&positionOnlyVertexLayout, vertexBuffer, positions.size(), indices);
 }
 
 void sf::MeshProcessor::TransformMesh(MeshData& mesh, const Transform& transform)

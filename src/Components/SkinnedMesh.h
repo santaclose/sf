@@ -46,25 +46,25 @@ namespace sf {
 			if (!usesLodGroup)
 				return (const MeshData*) lodGroup;
 
-			for (const LOD& lod : lodGroup->lods)
+			for (uint32_t i = 0; i < lodGroup->GetLODCount(); i++)
 			{
+				const LOD& lod = lodGroup->lods[i];
 				if (camDistance2 < lod.maxDistance * lod.maxDistance)
-					return lod.meshData;
+					return lodGroup->GetMeshDataForLOD(i);
 			}
-			return lodGroup->lods[lodGroup->lods.size() - 1].meshData;
+			return lodGroup->GetMeshDataForLOD(lodGroup->GetLODCount() - 1);
 		}
 
 		inline uint32_t GetCurrentLOD(float camDistance2) const
 		{
 			assert(usesLodGroup);
-			uint32_t out = 0;
-			for (const LOD& lod : lodGroup->lods)
+			for (uint32_t i = 0; i < lodGroup->GetLODCount(); i++)
 			{
+				const LOD& lod = lodGroup->lods[i];
 				if (camDistance2 < lod.maxDistance * lod.maxDistance)
-					return out;
-				out++;
+					return i;
 			}
-			return uint32_t(lodGroup->lods.size() - 1);
+			return lodGroup->GetLODCount() - 1;
 		}
 	};
 }

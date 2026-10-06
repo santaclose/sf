@@ -9,11 +9,11 @@ void sf::MeshData::Create(
 	uint8_t* vertexBuffer,
 	uint32_t vertexCount,
 	const std::vector<uint32_t>& indexVector,
-	const std::vector<uint32_t>& pieceVector,
+	const std::vector<uint32_t>* pieceVector,
 	uint8_t vertexCountPerPrimitive)
 {
 	assert((vertexCount == 0 && indexCount == 0) ||
-		(vertexBufferLayout != nullptr && vertexBuffer != nullptr && indexVector.size() > 0 && pieceVector.size() > 0));
+		(vertexBufferLayout != nullptr && vertexBuffer != nullptr && indexVector.size() > 0));
 	if (vertexBufferLayout != nullptr)
 		this->vertexBufferLayout = *vertexBufferLayout;
 	this->vertexBuffer = vertexBuffer;
@@ -21,19 +21,27 @@ void sf::MeshData::Create(
 
 	this->indexBuffer = new uint32_t[indexVector.size()];
 	this->indexCount = indexVector.size();
-
-	this->pieces = new uint32_t[pieceVector.size()];
-	this->pieceCount = pieceVector.size();
-
 	memcpy(this->indexBuffer, indexVector.data(), indexVector.size() * sizeof(uint32_t));
-	memcpy(this->pieces, pieceVector.data(), pieceVector.size() * sizeof(uint32_t));
+
+	if (pieceVector != nullptr)
+	{
+		this->pieces = new uint32_t[pieceVector->size()];
+		this->pieceCount = pieceVector->size();
+		memcpy(this->pieces, pieceVector->data(), pieceVector->size() * sizeof(uint32_t));
+	}
+	else
+	{
+		this->pieces = nullptr;
+		this->pieceCount = 1;
+	}
 
 	this->vertexCountPerPrimitive = vertexCountPerPrimitive;
+	this->usesExternalVertexBuffer = false;
 }
 
 void sf::MeshData::Destroy()
 {
-	if (vertexBuffer != nullptr)
+	if (vertexBuffer != nullptr && !usesExternalVertexBuffer)
 		delete[] vertexBuffer;
 	if (indexBuffer != nullptr)
 		delete[] indexBuffer;
@@ -73,10 +81,12 @@ void sf::MeshData::ChangeVertexBufferLayout(const sf::BufferLayout& newLayout)
 	this->vertexBuffer = newVertexBuffer;
 }
 
-void sf::MeshData::SaveToFile(const char* targetFile)
+bool sf::MeshData::SaveToFile(const char* targetFile)
 {
 	std::ofstream file;
 	file.open(targetFile, std::ios::trunc | std::ios::binary);
+	if (!file)
+		return false;
 
 	// Vertex layout
 	BufferLayoutBitmask bitmask = vertexBufferLayout.GetBitmask();
@@ -91,7 +101,8 @@ void sf::MeshData::SaveToFile(const char* targetFile)
 
 	// Pieces
 	file.write((char*) &pieceCount, sizeof(pieceCount));
-	file.write((char*) pieces, pieceCount * sizeof(uint32_t));
+	if (pieceCount > 1)
+		file.write((char*) pieces, pieceCount * sizeof(uint32_t));
 
 	// Vertices
 	file.write((char*) &vertexCount, sizeof(vertexCount));
@@ -99,6 +110,8 @@ void sf::MeshData::SaveToFile(const char* targetFile)
 	file.write((char*) vertexBuffer, vertexBufferSizeInBytes);
 
 	file.close();
+
+	return true;
 }
 
 bool sf::MeshData::LoadFromFile(const char* targetFile)
@@ -125,8 +138,13 @@ bool sf::MeshData::LoadFromFile(const char* targetFile)
 
 	// Pieces
 	file.read((char*) &pieceCount, sizeof(pieceCount));
-	pieces = new uint32_t[pieceCount];
-	file.read((char*) pieces, pieceCount * sizeof(uint32_t));
+	if (pieceCount > 1)
+	{
+		pieces = new uint32_t[pieceCount];
+		file.read((char*) pieces, pieceCount * sizeof(uint32_t));
+	}
+	else
+		pieces = nullptr;
 
 	// Vertices
 	file.read((char*) &vertexCount, sizeof(vertexCount));

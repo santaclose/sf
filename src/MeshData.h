@@ -17,6 +17,7 @@ namespace sf {
 		uint32_t* pieces = nullptr;
 		uint32_t pieceCount = 0;
 		uint8_t vertexCountPerPrimitive = 3;
+		bool usesExternalVertexBuffer = false;
 
 		MeshData() = default;
 		void Create(
@@ -24,7 +25,7 @@ namespace sf {
 			uint8_t* vertexBuffer,
 			uint32_t vertexCount,
 			const std::vector<uint32_t>& indexVector,
-			const std::vector<uint32_t>& pieceVector,
+			const std::vector<uint32_t>* pieceVector = nullptr,
 			uint8_t vertexCountPerPrimitive = 3);
 		void Destroy();
 
@@ -43,7 +44,7 @@ namespace sf {
 			return vertexBufferLayout.Access<T>(vertexBuffer, component, index);
 		}
 
-		void SaveToFile(const char* targetFile);
+		bool SaveToFile(const char* targetFile);
 		bool LoadFromFile(const char* targetFile);
 	};
 }

@@ -1031,6 +1031,7 @@ void sf::Renderer::InvalidateLODGroup(const LODGroup& lodGroup)
 		glDeleteBuffers(1, &mgd.gl_indexBuffer);
 		glDeleteVertexArrays(1, &mgd.gl_vao);
 		meshGpuData.erase(lod.meshData);
+		printf("[Renderer] Invalidated GPU mesh for %p\n", lod.meshData);
 		count++;
 	}
 	printf("[Renderer] Invalidated %u GPU meshes for LOD group %p\n", count, &lodGroup);

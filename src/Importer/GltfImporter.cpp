@@ -280,7 +280,7 @@ bool sf::GltfImporter::GenerateMeshData(int id, const BufferLayout& vertexLayout
 	}
 
 	meshData.Destroy();
-	meshData.Create(&vertexLayout, vertexBuffer, vertexCount, indices, pieces);
+	meshData.Create(&vertexLayout, vertexBuffer, vertexCount, indices, &pieces);
 	printf("[GltfImporter] Generated mesh data with %u vertices, %u indices, and %u pieces for ID %u\n", meshData.vertexCount, meshData.indexCount, meshData.pieceCount, id);
 	return true;
 }

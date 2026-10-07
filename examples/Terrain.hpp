@@ -7,7 +7,7 @@ namespace sf
 {
 	struct Terrain
 	{
-		BufferLayout vertexBufferLayout;
+		Buffer::Layout vertexBufferLayout;
 		Bitmap heightmap;
 		glm::vec3 origin;
 		Material material;
@@ -19,7 +19,7 @@ namespace sf
 
 		void Create(Scene& scene, const std::string& heightmapFilePath, float heightmapPixelSize, float maxHeight, uint32_t heightmapPixelsPerPatch, const glm::vec3& origin)
 		{
-			this->vertexBufferLayout = BufferLayout({BufferComponent::Position, BufferComponent::UV});
+			this->vertexBufferLayout = Buffer::Layout({Buffer::Component::Position, Buffer::Component::UV});
 			this->origin = origin;
 			this->maxHeight = maxHeight;
 			this->heightmapPixelSize = heightmapPixelSize;

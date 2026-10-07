@@ -5,17 +5,15 @@
 #include <fstream>
 
 void sf::MeshData::Create(
-	const BufferLayout* vertexBufferLayout,
+	Buffer::Layout vertexBufferLayout,
 	uint8_t* vertexBuffer,
 	uint32_t vertexCount,
 	const std::vector<uint32_t>& indexVector,
 	const std::vector<uint32_t>* pieceVector,
 	uint8_t vertexCountPerPrimitive)
 {
-	assert((vertexCount == 0 && indexCount == 0) ||
-		(vertexBufferLayout != nullptr && vertexBuffer != nullptr && indexVector.size() > 0));
-	if (vertexBufferLayout != nullptr)
-		this->vertexBufferLayout = *vertexBufferLayout;
+	assert((vertexCount == 0 && indexCount == 0) || (vertexBuffer != nullptr && indexVector.size() > 0));
+	this->vertexBufferLayout = vertexBufferLayout;
 	this->vertexBuffer = vertexBuffer;
 	this->vertexCount = vertexCount;
 
@@ -50,7 +48,7 @@ void sf::MeshData::Destroy()
 	*this = MeshData();
 }
 
-void sf::MeshData::ChangeVertexBufferLayout(const sf::BufferLayout& newLayout)
+void sf::MeshData::ChangeVertexBufferLayout(Buffer::Layout newLayout)
 {
 	if (this->vertexBuffer == nullptr)
 	{
@@ -58,21 +56,22 @@ void sf::MeshData::ChangeVertexBufferLayout(const sf::BufferLayout& newLayout)
 		return;
 	}
 
-	std::vector<BufferComponentInfo> oldComponents = this->vertexBufferLayout.GetComponentInfos();
-	uint8_t* newVertexBuffer = new uint8_t[newLayout.GetSize() * this->vertexCount];
+	const Buffer::LayoutInfo& layoutToChange = this->vertexBufferLayout.GetInfo();
+	const Buffer::LayoutInfo& layout = newLayout.GetInfo();
+
+	uint8_t* newVertexBuffer = new uint8_t[layout.GetSize() * this->vertexCount];
 	for (int i = 0; i < this->vertexCount; i++)
 	{
-		for (int j = 0; j < oldComponents.size(); j++)
+		for (const auto& [component, componentInfo] : layoutToChange.components)
 		{
-			const BufferComponentInfo* dataComponentInNewLayout = newLayout.GetComponentInfo(oldComponents[j].component);
-			if (dataComponentInNewLayout == nullptr) // new layout does not have this component
+			const Buffer::ComponentInfo* newComponentInfo = layout.GetComponentInfo(component);
+			if (newComponentInfo == nullptr)
+				/* New layout does not have this component */
 				continue;
-			if (oldComponents[j].dataType != dataComponentInNewLayout->dataType)
-				continue; // cannot use the data in this component
 
-			uint32_t dataTypeSize = GetDataTypeSize(oldComponents[j].dataType);
-			void* targetPointer = newLayout.Access<void>(newVertexBuffer, oldComponents[j].component, i);
-			void* sourcePointer = this->vertexBufferLayout.Access<void>(this->vertexBuffer, oldComponents[j].component, i);
+			uint32_t dataTypeSize = GetDataTypeSize(componentInfo.dataType);
+			uint8_t* targetPointer = layout.Access<uint8_t>(newVertexBuffer, component, i);
+			uint8_t* sourcePointer = layoutToChange.Access<uint8_t>(this->vertexBuffer, component, i);
 			memcpy(targetPointer, sourcePointer, dataTypeSize);
 		}
 	}
@@ -89,8 +88,7 @@ bool sf::MeshData::SaveToFile(const char* targetFile)
 		return false;
 
 	// Vertex layout
-	BufferLayoutBitmask bitmask = vertexBufferLayout.GetBitmask();
-	file.write((char*) &bitmask, sizeof(bitmask));
+	file.write((char*) &vertexBufferLayout.bitmask, sizeof(vertexBufferLayout.bitmask));
 
 	// Vertices per primitive
 	file.write((char*) &vertexCountPerPrimitive, sizeof(vertexCountPerPrimitive));
@@ -123,10 +121,7 @@ bool sf::MeshData::LoadFromFile(const char* targetFile)
 		return false;
 
 	// Vertex layout
-	BufferLayoutBitmask bitmask;
-	file.read((char*) &bitmask, sizeof(bitmask));
-	vertexBufferLayout.Destroy();
-	vertexBufferLayout.CreateFromBitmask(bitmask);
+	file.read((char*) &vertexBufferLayout.bitmask, sizeof(vertexBufferLayout.bitmask));
 
 	// Vertices per primitive
 	file.read((char*) &vertexCountPerPrimitive, sizeof(vertexCountPerPrimitive));

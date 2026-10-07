@@ -18,7 +18,7 @@ namespace sf::ObjImporter
 
 	int Load(const std::string& filePath);
 	void Destroy(int id);
-	bool GenerateMeshData(int id, const BufferLayout& vertexLayout, MeshData& meshData);
+	bool GenerateMeshData(int id, Buffer::Layout vertexLayout, MeshData& meshData);
 	const std::vector<ObjMarkerExt>* GetMarkers(int id);
 	void FreeMeshData(MeshData& mesh);
 }

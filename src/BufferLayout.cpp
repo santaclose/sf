@@ -1,42 +1,23 @@
 #include "BufferLayout.h"
 
-void sf::BufferLayout::CreateFromBitmask(BufferLayoutBitmask bitmask)
-{
-	this->bitmask = bitmask;
+#include <unordered_map>
 
-	this->sizeInBytes = 0;
-	for (uint32_t componentU32 = 0; componentU32 < (uint32_t) BufferComponent::MAX; componentU32++)
+const sf::Buffer::LayoutInfo& sf::Buffer::Layout::GetInfo() const
+{
+	static std::unordered_map<uint32_t, LayoutInfo> infoCache;
+	if (infoCache.find(bitmask) == infoCache.end())
 	{
-		if (((1u << componentU32) & (this->bitmask)) == 0)
+		infoCache[bitmask].sizeInBytes = 0;
+		for (uint32_t componentU32 = 0; componentU32 < (uint32_t) Component::MAX; componentU32++)
 		{
-			this->componentInfo[componentU32].component = BufferComponent::INVALID;
-			continue;
+			if (((1u << componentU32) & (this->bitmask)) == 0)
+				continue;
+			Component component = (Component) componentU32;
+			DataType componentDataType = GetComponentDataType(component);
+			infoCache[bitmask].components[component].dataType = componentDataType;
+			infoCache[bitmask].components[component].byteOffset = infoCache[bitmask].sizeInBytes;
+			infoCache[bitmask].sizeInBytes += GetDataTypeSize(componentDataType);
 		}
-
-		BufferComponent component = (BufferComponent) componentU32;
-		DataType componentDataType = GetBufferComponentDataType(component);
-
-		this->componentInfo[componentU32].component = component;
-		this->componentInfo[componentU32].dataType = componentDataType;
-		this->componentInfo[componentU32].byteOffset = this->sizeInBytes;
-		this->sizeInBytes += GetDataTypeSize(componentDataType);
 	}
-}
-
-/* The order of components doesn't matter in the argument */
-void sf::BufferLayout::CreateFromVector(const std::vector<BufferComponent>& components)
-{
-	BufferLayoutBitmask bitmask = (BufferLayoutBitmask) 0u;
-	for (BufferComponent component : components)
-	{
-		uint32_t componentU32 = (uint32_t) component;
-		assert(componentU32 < (uint32_t) BufferComponent::MAX);
-		bitmask |= (1u << componentU32);
-	}
-	CreateFromBitmask(bitmask);
-}
-
-void sf::BufferLayout::Destroy()
-{
-	*this = BufferLayout();
+	return infoCache[bitmask];
 }

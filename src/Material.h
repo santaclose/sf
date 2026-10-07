@@ -25,7 +25,7 @@ namespace sf
 	{
 		const char* name;
 		uint8_t* pointer;
-		const BufferLayout* layout;
+		Buffer::Layout layout;
 		uint32_t size;
 		DataType dataType;
 	};

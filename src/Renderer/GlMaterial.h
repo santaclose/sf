@@ -19,7 +19,7 @@ namespace sf {
 		std::unordered_map<void*, uint32_t> m_ssbos;
 
 	public:
-		void Create(const Material* material, const BufferLayout* vertexBufferLayout);
+		void Create(const Material* material, Buffer::Layout vertexBufferLayout);
 		void Delete();
 		void Bind(const std::vector<void*>& rendererUniformVector);
 		void UpdateBufferData(uint32_t bufferIndex, uint32_t location = ~0, uint32_t size = ~0);

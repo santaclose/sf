@@ -35,11 +35,11 @@ namespace sf
 		Scene scene;
 		ExampleViewer viewer;
 
-		BufferLayout vertexLayout = BufferLayout({
-			BufferComponent::Position,
-			BufferComponent::Normal,
-			BufferComponent::BoneIndices,
-			BufferComponent::BoneWeights
+		Buffer::Layout vertexLayout = Buffer::Layout({
+			Buffer::Component::Position,
+			Buffer::Component::Normal,
+			Buffer::Component::BoneIndices,
+			Buffer::Component::BoneWeights
 		});
 
 		Material meshMaterial;

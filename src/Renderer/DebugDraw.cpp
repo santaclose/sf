@@ -16,9 +16,9 @@ namespace sf::Renderer::Debug {
 	bool lineDataInitialized = false;
 	uint32_t lineVBO, lineVAO;
 	GlShader lineShader;
-	BufferLayout positionColorVertexLayout = BufferLayout({
-		BufferComponent::Position,
-		BufferComponent::Color
+	Buffer::Layout positionColorVertexLayout = Buffer::Layout({
+		Buffer::Component::Position,
+		Buffer::Component::Color
 	});
 }
 
@@ -135,7 +135,7 @@ void sf::Renderer::Debug::Draw(uint32_t sharedGpuDataUbo)
 		Material lineMat;
 		lineMat.vertShaderFilePath = "assets/shaders/drawLines.vert";
 		lineMat.fragShaderFilePath = "assets/shaders/drawLines.frag";
-		lineShader.Create(lineMat, &positionColorVertexLayout);
+		lineShader.Create(lineMat, positionColorVertexLayout);
 
 		lineDataInitialized = true;
 	}

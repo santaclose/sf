@@ -10,7 +10,7 @@ const sf::MeshData* sf::LODGroup::GetMeshDataForLOD(uint32_t lod) const
 
 void sf::LODGroup::Create(const MeshData& meshData, float* ratios, float* maxDistances, uint32_t lodCount, uint32_t* remeshRes)
 {
-	static BufferLayout postionNormal = BufferLayout({BufferComponent::Position, BufferComponent::Normal});
+	static Buffer::Layout postionNormal = Buffer::Layout({Buffer::Component::Position, Buffer::Component::Normal});
 	Destroy();
 
 	printf("[LOD] Generating from mesh with %u primitives\n", meshData.indexCount / 3);

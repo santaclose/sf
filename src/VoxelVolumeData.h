@@ -18,13 +18,13 @@ namespace sf {
 
 		std::unordered_map<glm::uvec3, uint32_t> map;
 		std::vector<uint8_t> voxelBuffer;
-		BufferLayout voxelBufferLayout;
+		Buffer::Layout voxelBufferLayout = 0u;
 
 		VoxelVolumeData() = default;
 		~VoxelVolumeData() = default;
 
-		void BuildEmpty(const glm::uvec3& voxelCountPerAxis, const BufferLayout* voxelBufferLayout = nullptr, float voxelSize = 1.0f, const glm::vec3& offset = { 0.0f, 0.0f, 0.0f });
-		void BuildFromMesh(const MeshData& meshData, float voxelSize, const BufferLayout* voxelBufferLayout = nullptr);
+		void BuildEmpty(const glm::uvec3& voxelCountPerAxis, Buffer::Layout voxelBufferLayout = 0u, float voxelSize = 1.0f, const glm::vec3& offset = { 0.0f, 0.0f, 0.0f });
+		void BuildFromMesh(const MeshData& meshData, float voxelSize, Buffer::Layout voxelBufferLayout = 0u);
 
 		void* CastRay(const glm::vec3& origin, const glm::vec3& direction, bool avoidEarlyCollision = true, float* out_t = nullptr) const;
 
@@ -45,14 +45,14 @@ namespace sf {
 				offset.z + (voxelSize * (float)coords.z) + voxelSize / 2.0f);
 		}
 		template <typename T>
-		inline T* AccessVoxelComponent(BufferComponent component, const glm::uvec3& coords)
+		inline T* AccessVoxelComponent(Buffer::Component component, const glm::uvec3& coords)
 		{
 			if (map.find(coords) == map.end())
 				return nullptr;
 			return voxelBufferLayout.Access<T>(voxelBuffer.data(), component, map.at(coords));
 		}
 		template <typename T>
-		inline const T* ReadVoxelComponent(BufferComponent component, const glm::uvec3& coords) const
+		inline const T* ReadVoxelComponent(Buffer::Component component, const glm::uvec3& coords) const
 		{
 			if (map.find(coords) == map.end())
 				return nullptr;

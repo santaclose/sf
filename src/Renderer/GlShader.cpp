@@ -27,17 +27,20 @@ namespace
 		}
 	}
 
-	std::string GenerateVertexAttributeShaderHeader(const sf::BufferLayout& vertexBufferLayout, bool isVertexShader = true)
+	std::string GenerateVertexAttributeShaderHeader(sf::Buffer::Layout vertexBufferLayout, bool isVertexShader = true)
 	{
 		uint32_t currentLocation = 0;
 		std::string out = "";
-		std::vector<sf::BufferComponentInfo> perComponentInfo = vertexBufferLayout.GetComponentInfos();
-		for (const sf::BufferComponentInfo& bci : perComponentInfo)
+		// std::vector<sf::BufferComponentInfo> perComponentInfo = vertexBufferLayout.GetComponentInfos();
+		// for (const sf::BufferComponentInfo& bci : perComponentInfo)
+
+		const sf::Buffer::LayoutInfo& layout = vertexBufferLayout.GetInfo();
+		for (const auto& [component, componentInfo] : layout.components)
 		{
 			if (isVertexShader)
 			{
 				out += "layout(location = " + std::to_string(currentLocation) + ") in ";
-				switch (bci.dataType)
+				switch (componentInfo.dataType)
 				{
 					case sf::DataType::f32:
 						out += "float"; break;
@@ -52,23 +55,23 @@ namespace
 				}
 				out += " ";
 			}
-			switch (bci.component)
+			switch (component)
 			{
-				case sf::BufferComponent::Position:
+				case sf::Buffer::Component::Position:
 					out += (isVertexShader ? "VA_Position;\n#define HAS_VA_Position 1\n" : "#define HAS_VA_Position 1\n"); break;
-				case sf::BufferComponent::Normal:
+				case sf::Buffer::Component::Normal:
 					out += (isVertexShader ? "VA_Normal;\n#define HAS_VA_Normal 1\n" : "#define HAS_VA_Normal 1\n"); break;
-				case sf::BufferComponent::Tangent:
+				case sf::Buffer::Component::Tangent:
 					out += (isVertexShader ? "VA_Tangent;\n#define HAS_VA_Tangent 1\n" : "#define HAS_VA_Tangent 1\n"); break;
-				case sf::BufferComponent::Color:
+				case sf::Buffer::Component::Color:
 					out += (isVertexShader ? "VA_Color;\n#define HAS_VA_Color 1\n" : "#define HAS_VA_Color 1\n"); break;
-				case sf::BufferComponent::UV:
+				case sf::Buffer::Component::UV:
 					out += (isVertexShader ? "VA_UV;\n#define HAS_VA_UV 1\n" : "#define HAS_VA_UV 1\n"); break;
-				case sf::BufferComponent::AO:
+				case sf::Buffer::Component::AO:
 					out += (isVertexShader ? "VA_AO;\n#define HAS_VA_AO 1\n" : "#define HAS_VA_AO 1\n"); break;
-				case sf::BufferComponent::BoneWeights:
+				case sf::Buffer::Component::BoneWeights:
 					out += (isVertexShader ? "VA_BoneWeights;\n#define HAS_VA_BoneWeights 1\n" : "#define HAS_VA_BoneWeights 1\n"); break;
-				case sf::BufferComponent::BoneIndices:
+				case sf::Buffer::Component::BoneIndices:
 					out += (isVertexShader ? "VA_BoneIndices;\n#define HAS_VA_BoneIndices 1\n" : "#define HAS_VA_BoneIndices 1\n"); break;
 			}
 			currentLocation++;
@@ -102,34 +105,35 @@ namespace
 			out += " " + std::string(mb.name) + "[];\n";
 			out += "};\n";
 
-			if (mb.layout == nullptr)
+			if (mb.layout == 0u)
 				continue;
-			std::vector<sf::BufferComponentInfo> perComponentInfo = mb.layout->GetComponentInfos();
-			for (const sf::BufferComponentInfo& bci : perComponentInfo)
+
+			const sf::Buffer::LayoutInfo& layout =  mb.layout.GetInfo();
+			for (const auto& [component, componentInfo] : layout.components)
 			{
 				/* Only 4 byte element buffers are supported */
-				uint32_t stride = mb.layout->GetSize() / 4u;
-				uint32_t baseOffset = bci.byteOffset / 4u;
-				switch (bci.component)
+				uint32_t stride = layout.GetSize() / 4u;
+				uint32_t baseOffset = componentInfo.byteOffset / 4u;
+				switch (component)
 				{
-				case sf::BufferComponent::Position:
+				case sf::Buffer::Component::Position:
 					out += "#define " + std::string(mb.name) + "_LOAD_POSITION vec3(" +
 						std::string(mb.name) + "[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 0) + "], " +
 						std::string(mb.name) + "[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 1) + "], " +
 						std::string(mb.name) + "[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 2) + "])\n";
 					break;
-				case sf::BufferComponent::Rotation:
+				case sf::Buffer::Component::Rotation:
 					out += "#define " + std::string(mb.name) + "_LOAD_ROTATION vec4(" +
 						std::string(mb.name) + "[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 0) + "], " +
 						std::string(mb.name) + "[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 1) + "], " +
 						std::string(mb.name) + "[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 2) + "], " +
 						std::string(mb.name) + "[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 3) + "])\n";
 					break;
-				case sf::BufferComponent::Scale:
+				case sf::Buffer::Component::Scale:
 					out += "#define " + std::string(mb.name) + "_LOAD_SCALE " +
 						std::string(mb.name) + "[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 0) + "]\n";
 					break;
-				case sf::BufferComponent::SpawnTime:
+				case sf::Buffer::Component::SpawnTime:
 					out += "#define " + std::string(mb.name) + "_LOAD_SPAWN_TIME " +
 						std::string(mb.name) + "[gl_InstanceID * " + std::to_string(stride) + " + " + std::to_string(baseOffset + 0) + "]\n";
 					break;
@@ -213,7 +217,7 @@ uint32_t sf::GlShader::CompileShader(uint32_t type, const std::string& source)
 	return id;
 }
 
-void sf::GlShader::Create(const Material& material, const BufferLayout* vertexBufferLayout)
+void sf::GlShader::Create(const Material& material, Buffer::Layout vertexBufferLayout)
 {
 	if (material.UsesMeshShader())
 	{
@@ -335,15 +339,15 @@ void sf::GlShader::Create(const Material& material, const BufferLayout* vertexBu
 		(std::istreambuf_iterator<char>()));
 
 	vertShaderSource = GenerateBufferShaderHeader(material) + vertShaderSource;
-	vertShaderSource = GenerateVertexAttributeShaderHeader(*vertexBufferLayout) + vertShaderSource;
+	vertShaderSource = GenerateVertexAttributeShaderHeader(vertexBufferLayout) + vertShaderSource;
 	vertShaderSource = "#version 460\n" + vertShaderSource;
 	if (material.UsesTessellation())
 	{
-		tescShaderSource = GenerateVertexAttributeShaderHeader(*vertexBufferLayout, false) + tescShaderSource;
+		tescShaderSource = GenerateVertexAttributeShaderHeader(vertexBufferLayout, false) + tescShaderSource;
 		tescShaderSource = "layout (vertices=" + std::to_string(material.tessPatchVertexCount) + ") out;\n#define VERTICES_PER_PATCH " +
 			std::to_string(material.tessPatchVertexCount) + std::string("\n") + tescShaderSource;
 		tescShaderSource = "#version 460\n" + tescShaderSource;
-		teseShaderSource = GenerateVertexAttributeShaderHeader(*vertexBufferLayout, false) + teseShaderSource;
+		teseShaderSource = GenerateVertexAttributeShaderHeader(vertexBufferLayout, false) + teseShaderSource;
 		teseShaderSource = "layout (" + std::string(material.tessPatchVertexCount == 3 ? "triangles" : "quads") + ", " + material.tessSpacing + ", " + material.tessWinding + ") in;\n#define VERTICES_PER_PATCH " +
 			std::to_string(material.tessPatchVertexCount) + std::string("\n") + teseShaderSource;
 		teseShaderSource = "#version 460\n" + teseShaderSource;

@@ -39,11 +39,11 @@ namespace sf
 		std::vector<const char*> inputAnimNames, outputAnimNames;
 
 		Material modelMaterial;
-		BufferLayout modelVertexLayout = BufferLayout({
-			BufferComponent::Position,
-			BufferComponent::Normal,
-			BufferComponent::BoneIndices,
-			BufferComponent::BoneWeights
+		Buffer::Layout modelVertexLayout = Buffer::Layout({
+			Buffer::Component::Position,
+			Buffer::Component::Normal,
+			Buffer::Component::BoneIndices,
+			Buffer::Component::BoneWeights
 		});
 
 		Transform inputModelBaseTransform, outputModelBaseTransform;

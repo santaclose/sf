@@ -40,7 +40,7 @@ namespace sf
 
 		bool rotationEnabled;
 
-		BufferLayout voxelLayout = BufferLayout({BufferComponent::Position});
+		Buffer::Layout voxelLayout = Buffer::Layout({Buffer::Component::Position});
 		VoxelVolumeData monkevvd;
 		VoxelVolumeData monkevvd2;
 		SparseVoxelOctree monkesvo;
@@ -79,8 +79,8 @@ namespace sf
 
 		viewer.Initialize(scene);
 
-		monkevvd.BuildFromMesh(Defaults::MeshDataMonkey(), 0.007f, &voxelLayout);
-		monkevvd2.BuildFromMesh(Defaults::MeshDataMonkey(), 0.04f, &voxelLayout);
+		monkevvd.BuildFromMesh(Defaults::MeshDataMonkey(), 0.007f, voxelLayout);
+		monkevvd2.BuildFromMesh(Defaults::MeshDataMonkey(), 0.04f, voxelLayout);
 		monkesvo.CreateFromVoxelVolumeData(monkevvd2);
 
 		meshMaterial.vertShaderFilePath = "assets/shaders/default.vert";
@@ -88,8 +88,8 @@ namespace sf
 		voxelVolumeMaterial.vertShaderFilePath = "assets/shaders/voxelVolume.vert";
 		voxelVolumeMaterial.fragShaderFilePath = "assets/shaders/uv.frag";
 		voxelVolumeMaterial.buffers.resize(2);
-		voxelVolumeMaterial.buffers[0] = { "VOXELS_SMALL", monkevvd.voxelBuffer.data(), &voxelLayout, (uint32_t) monkevvd.voxelBuffer.size(), DataType::f32 };
-		voxelVolumeMaterial.buffers[1] = { "VOXELS_BIG", monkevvd2.voxelBuffer.data(), &voxelLayout, (uint32_t) monkevvd2.voxelBuffer.size(), DataType::f32 };
+		voxelVolumeMaterial.buffers[0] = { "VOXELS_SMALL", monkevvd.voxelBuffer.data(), voxelLayout, (uint32_t) monkevvd.voxelBuffer.size(), DataType::f32 };
+		voxelVolumeMaterial.buffers[1] = { "VOXELS_BIG", monkevvd2.voxelBuffer.data(), voxelLayout, (uint32_t) monkevvd2.voxelBuffer.size(), DataType::f32 };
 		voxelVolumeMaterial.uniforms["voxelSize"].dataType = DataType::f32;
 		voxelVolumeMaterial.uniforms["voxelSize"].data.f32 = monkevvd.voxelSize;
 		voxelVolumeMaterial.uniforms["bufferSelect"].dataType = DataType::u32;
@@ -102,7 +102,7 @@ namespace sf
 		marchingCubesMaterial.fragShaderFilePath = "assets/shaders/solidColor.frag";
 		marchingCubesMaterial.meshWorkGroupCount = marchingCubesThreadsNeeded / 16 + 1;
 		marchingCubesMaterial.buffers.resize(1);
-		marchingCubesMaterial.buffers[0] = { "SVO_BUFFER", (uint8_t*) monkesvo.data.data(), nullptr, (uint32_t) (monkesvo.data.size() * sizeof(monkesvo.data[0])), DataType::u32 };
+		marchingCubesMaterial.buffers[0] = { "SVO_BUFFER", (uint8_t*) monkesvo.data.data(), 0u, (uint32_t) (monkesvo.data.size() * sizeof(monkesvo.data[0])), DataType::u32 };
 		marchingCubesMaterial.uniforms["threadsNeeded"].dataType = DataType::u32;
 		marchingCubesMaterial.uniforms["threadsNeeded"].data.u32 = marchingCubesThreadsNeeded;
 		marchingCubesMaterial.uniforms["svoDepth"].dataType = DataType::u32;

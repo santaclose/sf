@@ -33,9 +33,9 @@ namespace sf::Renderer
 	std::vector<RenderTarget> renderTargets;
 	uint32_t boundRenderTargetId = 0;
 
-	BufferLayout positionUvVertexLayout = BufferLayout({
-		BufferComponent::Position,
-		BufferComponent::UV
+	Buffer::Layout positionUvVertexLayout = Buffer::Layout({
+		Buffer::Component::Position,
+		Buffer::Component::UV
 	});
 
 	struct MeshGpuData
@@ -147,35 +147,37 @@ namespace sf::Renderer
 		// update indices to draw
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->indexCount * sizeof(uint32_t), mesh->indexBuffer, GL_STATIC_DRAW);
 
-		std::vector<BufferComponentInfo> perComponentInfo = mesh->vertexBufferLayout.GetComponentInfos();
-		for (int i = 0; i < perComponentInfo.size(); i++)
+		int i = 0;
+		const Buffer::LayoutInfo& layout =  mesh->vertexBufferLayout.GetInfo();
+		for (const auto& [component, componentInfo] : layout.components)
 		{
 			glEnableVertexAttribArray(i);
-			switch (perComponentInfo[i].dataType)
+			switch (componentInfo.dataType)
 			{
 				case DataType::f32:
-					glVertexAttribPointer(i, 1, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(uint64_t) perComponentInfo[i].byteOffset);
+					glVertexAttribPointer(i, 1, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(uint64_t) componentInfo.byteOffset);
 					break;
 				case DataType::vec2f32:
-					glVertexAttribPointer(i, 2, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(uint64_t) perComponentInfo[i].byteOffset);
+					glVertexAttribPointer(i, 2, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(uint64_t) componentInfo.byteOffset);
 					break;
 				case DataType::vec3f32:
-					glVertexAttribPointer(i, 3, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(uint64_t) perComponentInfo[i].byteOffset);
+					glVertexAttribPointer(i, 3, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(uint64_t) componentInfo.byteOffset);
 					break;
 				case DataType::vec4f32:
-					glVertexAttribPointer(i, 4, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(uint64_t) perComponentInfo[i].byteOffset);
+					glVertexAttribPointer(i, 4, GL_FLOAT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(uint64_t) componentInfo.byteOffset);
 					break;
 				case DataType::vec4u8:
-					glVertexAttribPointer(i, 4, GL_UNSIGNED_BYTE, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(uint64_t) perComponentInfo[i].byteOffset);
+					glVertexAttribPointer(i, 4, GL_UNSIGNED_BYTE, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(uint64_t) componentInfo.byteOffset);
 					break;
 				case DataType::vec4u16:
-					glVertexAttribPointer(i, 4, GL_UNSIGNED_SHORT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(uint64_t) perComponentInfo[i].byteOffset);
+					glVertexAttribPointer(i, 4, GL_UNSIGNED_SHORT, GL_FALSE, mesh->vertexBufferLayout.GetSize(), (void*)(uint64_t) componentInfo.byteOffset);
 					break;
 				default:
 					std::cout << "[Renderer] Vertex attribute skipped" << std::endl;
 					assert(false);
 					break;
 			}
+			i++;
 		}
 
 		TransferVertexData(mesh);
@@ -187,7 +189,7 @@ namespace sf::Renderer
 		Material spriteMat;
 		spriteMat.vertShaderFilePath = "assets/shaders/sprite.vert";
 		spriteMat.fragShaderFilePath = "assets/shaders/sprite.frag";
-		spriteShader.Create(spriteMat, &positionUvVertexLayout);
+		spriteShader.Create(spriteMat, positionUvVertexLayout);
 
 		// quad uvs and indices won't change
 		spriteQuad.vertices[1] = { 0.0f, 0.0f };
@@ -252,12 +254,12 @@ namespace sf::Renderer
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(SebText::LayoutSettings), &textLayoutSettings, GL_DYNAMIC_DRAW);
 	}
 
-	GlMaterial* GetOrCreateMaterial(const Material* material, const BufferLayout* vertexBufferLayout)
+	GlMaterial* GetOrCreateMaterial(const Material* material, Buffer::Layout vertexBufferLayout)
 	{
 		assert(material != nullptr);
 
 		/* vertexBufferLayout can be null if using mesh shading */
-		uint32_t secondKey = vertexBufferLayout == nullptr ? 0 : vertexBufferLayout->GetBitmask();
+		uint32_t secondKey = vertexBufferLayout.GetBitmask();
 
 		if (materials.find(material) != materials.end() && materials[material].find(secondKey) != materials[material].end())
 			return materials[material][secondKey];
@@ -485,7 +487,7 @@ void sf::Renderer::DrawMeshShading(const Mesh& mesh, const Transform& transform)
 	glBindBuffer(GL_UNIFORM_BUFFER, sharedGpuData_gl_ubo);
 	glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SharedGpuData, modelMatrix), sizeof(sharedGpuData.modelMatrix), &sharedGpuData.modelMatrix);
 
-	GlMaterial* materialToUse = GetOrCreateMaterial(mesh.materials[0], nullptr);
+	GlMaterial* materialToUse = GetOrCreateMaterial(mesh.materials[0], 0u);
 	materialToUse->Bind(rendererUniformVector);
 	glDrawMeshTasksNV(0, mesh.materials[0]->meshWorkGroupCount);
 }
@@ -515,8 +517,8 @@ void sf::Renderer::DrawMesh(const Mesh& mesh, const Transform& transform)
 		assert(meshData->vertexCountPerPrimitive == 4);
 		stats.meshQuads += meshData->indexCount / 4;
 	}
-	assert(meshData->vertexBufferLayout.GetComponentInfo(BufferComponent::BoneIndices) == nullptr);
-	assert(meshData->vertexBufferLayout.GetComponentInfo(BufferComponent::BoneWeights) == nullptr);
+	assert(meshData->vertexBufferLayout.GetComponentInfo(Buffer::Component::BoneIndices) == nullptr);
+	assert(meshData->vertexBufferLayout.GetComponentInfo(Buffer::Component::BoneWeights) == nullptr);
 
 	if (meshGpuData.find(meshData) == meshGpuData.end()) // create mesh data if not there
 		CreateMeshGpuData(meshData);
@@ -527,7 +529,7 @@ void sf::Renderer::DrawMesh(const Mesh& mesh, const Transform& transform)
 
 	for (uint32_t i = 0; i < meshData->pieceCount; i++)
 	{
-		GlMaterial* materialToUse = GetOrCreateMaterial(mesh.materials[i], &meshData->vertexBufferLayout);
+		GlMaterial* materialToUse = GetOrCreateMaterial(mesh.materials[i], meshData->vertexBufferLayout);
 		materialToUse->Bind(rendererUniformVector);
 
 		uint32_t drawStart = 0;
@@ -570,8 +572,8 @@ void sf::Renderer::DrawSkinnedMesh(const SkinnedMesh& mesh, const Transform& tra
 		return;
 	assert(meshData->vertexCountPerPrimitive == 3);
 	stats.skinnedMeshTriangles += meshData->indexCount / 3;
-	assert(meshData->vertexBufferLayout.GetComponentInfo(BufferComponent::BoneIndices) != nullptr);
-	assert(meshData->vertexBufferLayout.GetComponentInfo(BufferComponent::BoneWeights) != nullptr);
+	assert(meshData->vertexBufferLayout.GetComponentInfo(Buffer::Component::BoneIndices) != nullptr);
+	assert(meshData->vertexBufferLayout.GetComponentInfo(Buffer::Component::BoneWeights) != nullptr);
 
 	if (meshGpuData.find(meshData) == meshGpuData.end()) // create mesh data if not there
 		CreateMeshGpuData(meshData);
@@ -593,7 +595,7 @@ void sf::Renderer::DrawSkinnedMesh(const SkinnedMesh& mesh, const Transform& tra
 
 	for (uint32_t i = 0; i < meshData->pieceCount; i++)
 	{
-		GlMaterial* materialToUse = GetOrCreateMaterial(mesh.materials[i], &meshData->vertexBufferLayout);
+		GlMaterial* materialToUse = GetOrCreateMaterial(mesh.materials[i], meshData->vertexBufferLayout);
 		materialToUse->Bind(rendererUniformVector);
 		materialToUse->m_shader->SetUniform1i("animate", mesh.skeletonData->m_animate);
 
@@ -620,9 +622,9 @@ void sf::Renderer::DrawSkinnedMesh(const SkinnedMesh& mesh, const Transform& tra
 
 void sf::Renderer::DrawParticleSystem(const ParticleSystem& particleSystem, const Transform& transform, float deltaTime)
 {
-	GlMaterial* materialToUse = GetOrCreateMaterial(particleSystem.material, &particleSystem.meshData->vertexBufferLayout);
+	GlMaterial* materialToUse = GetOrCreateMaterial(particleSystem.material, particleSystem.meshData->vertexBufferLayout);
 	assert(!particleSystem.dynamic || particleSystem.material->buffers.size() == 1);
-	const BufferLayout* particleBufferLayout = particleSystem.material->buffers[0].layout;
+	Buffer::Layout particleBufferLayout = particleSystem.material->buffers[0].layout;
 	uint8_t* perParticleBuffer = particleSystem.material->buffers[0].pointer;
 	uint32_t particleBufferSize = particleSystem.material->buffers[0].size;
 
@@ -662,10 +664,10 @@ void sf::Renderer::DrawParticleSystem(const ParticleSystem& particleSystem, cons
 			for (uint32_t i = 0; i < particleSystem.particlesPerEmission; i++)
 			{
 				uint32_t emittingParticle = (particleSystemData[&particleSystem].currentParticle + i) % particleSystem.particleCount;
-				glm::vec3* emittingParticlePosition = particleBufferLayout->Access<glm::vec3>(perParticleBuffer, BufferComponent::Position, emittingParticle);
-				glm::quat* emittingParticleRotation = particleBufferLayout->Access<glm::quat>(perParticleBuffer, BufferComponent::Rotation, emittingParticle);
-				float* emittingParticleScale = particleBufferLayout->Access<float>(perParticleBuffer, BufferComponent::Scale, emittingParticle);
-				float* emittingParticleSpawnTime = particleBufferLayout->Access<float>(perParticleBuffer, BufferComponent::SpawnTime, emittingParticle);
+				glm::vec3* emittingParticlePosition = particleBufferLayout.Access<glm::vec3>(perParticleBuffer, Buffer::Component::Position, emittingParticle);
+				glm::quat* emittingParticleRotation = particleBufferLayout.Access<glm::quat>(perParticleBuffer, Buffer::Component::Rotation, emittingParticle);
+				float* emittingParticleScale = particleBufferLayout.Access<float>(perParticleBuffer, Buffer::Component::Scale, emittingParticle);
+				float* emittingParticleSpawnTime = particleBufferLayout.Access<float>(perParticleBuffer, Buffer::Component::SpawnTime, emittingParticle);
 
 				*emittingParticlePosition = transform.position;
 				*emittingParticleRotation = transform.rotation;
@@ -686,8 +688,8 @@ void sf::Renderer::DrawParticleSystem(const ParticleSystem& particleSystem, cons
 			for (uint32_t i = 0; i < particleSystem.particlesPerEmission; i++)
 			{
 				uint32_t disablingParticle = (particleSystemData[&particleSystem].currentParticle + i) % particleSystem.particleCount;
-				float* disablingParticleScale = particleBufferLayout->Access<float>(perParticleBuffer, BufferComponent::Scale, disablingParticle);
-				float* disablingParticleSpawnTime = particleBufferLayout->Access<float>(perParticleBuffer, BufferComponent::SpawnTime, disablingParticle);
+				float* disablingParticleScale = particleBufferLayout.Access<float>(perParticleBuffer, Buffer::Component::Scale, disablingParticle);
+				float* disablingParticleSpawnTime = particleBufferLayout.Access<float>(perParticleBuffer, Buffer::Component::SpawnTime, disablingParticle);
 
 				*disablingParticleScale = 0.0f;
 				*disablingParticleSpawnTime = -1.0f;
@@ -695,8 +697,8 @@ void sf::Renderer::DrawParticleSystem(const ParticleSystem& particleSystem, cons
 		}
 
 		materialToUse->UpdateBufferData(0,
-			particleBufferLayout->GetSize() * particleSystemData[&particleSystem].currentParticle,
-			particleBufferLayout->GetSize() * particleSystem.particlesPerEmission);
+			particleBufferLayout.GetSize() * particleSystemData[&particleSystem].currentParticle,
+			particleBufferLayout.GetSize() * particleSystem.particlesPerEmission);
 
 		particleSystemData[&particleSystem].emissionTimer += particleSystem.timeBetweenEmissions;
 		if (particleSystem.emit)
@@ -827,7 +829,7 @@ void sf::Renderer::DrawText(const Text& text, const ScreenCoordinates& screenCoo
 		Material textMat;
 		textMat.vertShaderFilePath = "vendor/sebtext/shader.vert";
 		textMat.fragShaderFilePath = "vendor/sebtext/shader.frag";
-		textShader.Create(textMat, &positionUvVertexLayout);
+		textShader.Create(textMat, positionUvVertexLayout);
 	}
 
 	textShader.Bind();

@@ -3,6 +3,8 @@
 #include <iostream>
 #include <fstream>
 
+#include <glm/gtx/rotate_vector.hpp>
+
 #include <Defaults.h>
 #include <Game.h>
 #include <Math.hpp>
@@ -37,7 +39,7 @@
 #define GIMBAL_OFFSET_SHANYUNG 1.0f
 #define GIMBAL_OFFSET_FOX 0.5f
 
-#define HOUSE_COUNT 400
+#define TREE_COUNT 500
 
 #include "houseObjectManager.h"
 
@@ -51,32 +53,40 @@ namespace sf
 
 		std::vector<Entity> houseObjects;
 
-		Entity houses[HOUSE_COUNT];
 		MeshData* buildingMeshes[3];
 		MeshData* buildingColMeshes[3];
 		const std::vector<const char*> buildingMeshNames = {"ba2f", "ba3f", "house"};
 		std::vector<const std::vector<ObjImporter::ObjMarkerExt>*> perBuildingMarkers;
 		std::vector<LODGroup*> buildingLodGroups;
+		uint32_t houseCountPerGroup[] = { 4, 6, 8 };
+		std::vector<Entity> houses;
 
+		std::vector<Entity> trees;
 		glm::vec3 targetGimbalRotation;
 
 		float cameraDistance;
 
-		BufferLayout positionOnlyVertexLayout = BufferLayout({
-			BufferComponent::Position
+		Buffer::Layout positionOnlyVertexLayout = Buffer::Layout({
+			Buffer::Component::Position
 		});
 
-		BufferLayout houseObjectVertexLayout = BufferLayout({
-			BufferComponent::Position,
-			BufferComponent::Normal,
-			BufferComponent::UV
+		Buffer::Layout treeObjectVertexLayout = Buffer::Layout({
+			Buffer::Component::Position,
+			Buffer::Component::Normal,
+			Buffer::Component::AO
 		});
 
-		BufferLayout characterVertexLayout = BufferLayout({
-			BufferComponent::Position,
-			BufferComponent::Normal,
-			BufferComponent::BoneIndices,
-			BufferComponent::BoneWeights
+		Buffer::Layout houseObjectVertexLayout = Buffer::Layout({
+			Buffer::Component::Position,
+			Buffer::Component::Normal,
+			Buffer::Component::UV
+		});
+
+		Buffer::Layout characterVertexLayout = Buffer::Layout({
+			Buffer::Component::Position,
+			Buffer::Component::Normal,
+			Buffer::Component::BoneIndices,
+			Buffer::Component::BoneWeights
 		});
 		SkeletonData* shanyungSkeleton;
 		MeshData* shanyungMesh;
@@ -100,6 +110,7 @@ namespace sf
 		Material characterMaterial;
 		Material vertexAoMaterial;
 		Material houseMaterial;
+		Material treeMaterial;
 		Terrain terrain;
 
 		float shanyungLodDistances[] = { 5.0f, 20.0f, 45.0f, 1000.0f };
@@ -129,7 +140,7 @@ namespace sf
 			camT.position = gimbalT.position + gimbalT.Forward() * cameraDistance;
 
 			Geometry::RayHit rh;
-			for (uint32_t i = 0; i < HOUSE_COUNT; i++)
+			for (uint32_t i = 0; i < houses.size(); i++)
 			{
 				if (EntityIntersect::MovingSphereMesh(gimbal, camT.position - gimbalT.position, houses[i], &rh))
 					camT.position = gimbalT.position + gimbalT.Forward() * rh.distance;
@@ -155,7 +166,7 @@ namespace sf
 
 			bool hitMesh = false;
 			Geometry::RayHit rh;
-			for (int i = 0; i < HOUSE_COUNT; i++)
+			for (int i = 0; i < houses.size(); i++)
 			{
 				if (EntityIntersect::MovingCapsuleMesh(charEntity, glm::vec3(0.0f, -shanyungCapsuleSeparation * 2.0f, 0.0f), houses[i], &rh))
 				{
@@ -178,7 +189,7 @@ namespace sf
 		{
 			bool hitMesh = false;
 			Geometry::RayHit rh;
-			for (int i = 0; i < HOUSE_COUNT; i++)
+			for (int i = 0; i < houses.size(); i++)
 			{
 				if (EntityIntersect::MovingSphereMesh(charEntity, glm::vec3(0.0f, -foxSphereSeparation * 2.0f, 0.0f), houses[i], &rh))
 				{
@@ -213,7 +224,8 @@ namespace sf
 		FileUtils::DownloadFiles({
 			"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Fox/glTF-Binary/Fox.glb",
 			"https://us.v-cdn.net/5021068/uploads/editor/ha/7frj09nru4zu.png",
-			"https://github.com/santaclose/sample_models/raw/master/shanyung_blendspace2d.glb"
+			"https://github.com/santaclose/sample_models/raw/master/shanyung_blendspace2d.glb",
+			"https://casual-effects.com/g3d/data10/research/model/horseChestnut/chestnut.zip"
 			}, "assets/examples/");
 
 		characterMaterial.vertShaderFilePath = "assets/shaders/default.vert";
@@ -222,6 +234,9 @@ namespace sf
 		vertexAoMaterial.fragShaderFilePath = "assets/shaders/vertexAo.frag";
 		houseMaterial.vertShaderFilePath = "assets/shaders/default.vert";
 		houseMaterial.fragShaderFilePath = "assets/shaders/defaultFlat.frag";
+		treeMaterial.vertShaderFilePath = "assets/shaders/default.vert";
+		treeMaterial.fragShaderFilePath = "assets/shaders/vertexAo.frag";
+		treeMaterial.isDoubleSided = true;
 
 		targetGimbalRotation = glm::vec3(0.0, glm::radians(180.0f), 0.0);
 		cameraDistance = 3.0;
@@ -266,49 +281,167 @@ namespace sf
 				ObjImporter::GenerateMeshData(objid, positionOnlyVertexLayout, *buildingColMeshes[i]);
 			}
 
-			for (int i = 0; i < HOUSE_COUNT; i++)
+			uint32_t attempts = 0;
+			while (attempts < 5000)
 			{
 				int buildingToUseIndex = Random::Int(3);
-				MeshData* buildingColToUseMesh = buildingColMeshes[buildingToUseIndex];
+				LODGroup* buildingLODGroup = buildingLodGroups[buildingToUseIndex];
+				MeshData* buildingColMesh = buildingColMeshes[buildingToUseIndex];
 
-				houses[i] = scene.CreateEntity();
-				houses[i].AddComponent<Mesh>(buildingLodGroups[buildingToUseIndex], &houseMaterial);
-				houses[i].AddComponent<MeshCollider>(buildingColToUseMesh);
-				Transform& houseT = houses[i].AddComponent<Transform>();
-				houseT.rotation = glm::quat(glm::vec3(0.0f, Random::Float() * 3.14159265 * 2.0f, 0.0f));
+				int numberOfBuildings = houseCountPerGroup[Random::Int(sizeof(houseCountPerGroup) / sizeof(houseCountPerGroup[0]))];
+				houses.emplace_back();
+				houses.back() = scene.CreateEntity();
+				float houseBoundingSphereRadius = houses.back().AddComponent<MeshCollider>(buildingColMesh).boundingSphere.radius;
 
-				bool collidesWithOtherHouse;
-				do
+				glm::vec2 area;
+				uint32_t numStepsX;
+				switch (numberOfBuildings)
 				{
-					houseT.position.x = (Random::Float() - 0.5f) * 1025.0f * 0.5566f;
-					houseT.position.z = (Random::Float() - 0.5f) * 1025.0f * 0.5566f;
-					terrain.Sample(houseT.position, houseT.position.y);
-					collidesWithOtherHouse = false;
-					for (int j = 0; j < i; j++)
+				case 4:
+					area.x = houseBoundingSphereRadius * 2.0f * 2.0f;
+					area.y = houseBoundingSphereRadius * 2.0f * 2.0f;
+					numStepsX = 2;
+					break;
+				case 6:
+					area.x = houseBoundingSphereRadius * 2.0f * 3.0f;
+					area.y = houseBoundingSphereRadius * 2.0f * 2.0f;
+					numStepsX = 3;
+					break;
+				case 8:
+					area.x = houseBoundingSphereRadius * 2.0f * 4.0f;
+					area.y = houseBoundingSphereRadius * 2.0f * 2.0f;
+					numStepsX = 4;
+					break;
+				default:
+					assert(false);
+					break;
+				}
+
+				bool areaIsAvailable = true;
+				glm::vec2 areaCenter;
+				areaCenter.x = (Random::Float() - 0.5f) * 1025.0f * 0.5f;
+				areaCenter.y = (Random::Float() - 0.5f) * 1025.0f * 0.5f;
+				const float maxDeltaY = 0.02f;
+				float areaRotation = Random::Float() * 2 * glm::pi<float>();
+				uint32_t areaSampleCount = 1000;
+				for ( ; areaSampleCount > 0; areaSampleCount--)
+				{
+					glm::vec2 right = glm::rotate(glm::vec2(area.x / 2.0f, 0.0f), areaRotation) * ((Random::Float() - 0.5f) * 2.0f);
+					glm::vec2 forward = glm::rotate(glm::vec2(0.0f, area.y / 2.0f), areaRotation) * ((Random::Float() - 0.5f) * 2.0f);
+					glm::vec3 sample = glm::vec3(areaCenter.x, 0.0f, areaCenter.y) + glm::vec3(right.x, 0.0f, right.y) + glm::vec3(forward.x, 0.0f, forward.y);
+					for (int i = 0; i < houses.size() - 1; i++) // -1 because we added one to check the bounding sphere
 					{
-						if (EntityIntersect::MeshBoundingSpheres(houses[i], houses[j]))
+						SphereCollider houseSphere = houses[i].GetComponent<MeshCollider>().boundingSphere.ApplyTransform(houses[i].GetComponent<Transform>());
+						if (glm::distance2(glm::vec2(sample.x, sample.z), glm::vec2(houseSphere.center.x, houseSphere.center.z)) < houseSphere.radius * houseSphere.radius)
 						{
-							collidesWithOtherHouse = true;
+							areaIsAvailable = false;
 							break;
 						}
 					}
-				} while (collidesWithOtherHouse);
-
-				const std::vector<ObjImporter::ObjMarkerExt>* markers = perBuildingMarkers[buildingToUseIndex];
-				for (const ObjImporter::ObjMarkerExt& marker : *markers)
-				{
-					houseObjects.emplace_back();
-					houseObjects.back() = scene.CreateEntity();
-
-					Transform& ho_t = houseObjects.back().AddComponent<Transform>();
-					ho_t = houseT;
-					Transform toApply;
-					toApply.position = marker.position;
-					toApply.rotation = marker.rotation;
-					ho_t.Apply(toApply);
-					houseObjects.back().AddComponent<Mesh>(hom::GetLodsByType(marker.name), &characterMaterial);
-					houseObjects.back().AddComponent<MeshCollider>(hom::GetLodsByType(marker.name)->lods[0].meshData);
+					if (!areaIsAvailable)
+						break;
+					terrain.Sample(sample, sample.y);
+					glm::vec3 sampleX = sample + glm::vec3(0.1f, 0.0f, 0.0f);
+					terrain.Sample(sampleX, sampleX.y);
+					glm::vec3 sampleZ = sample + glm::vec3(0.0f, 0.0f, 0.1f);
+					terrain.Sample(sampleZ, sampleZ.y);
+					if (glm::abs(sampleX.y - sample.y) > maxDeltaY || glm::abs(sampleZ.y - sample.y) > maxDeltaY)
+					{
+						areaIsAvailable = false;
+						break;
+					}
 				}
+				if (!areaIsAvailable)
+				{
+					attempts++;
+					scene.DestroyEntity(houses.back());
+					houses.resize(houses.size() - 1);
+				}
+				else
+				{
+					attempts = 0;
+					houses.resize(houses.size() + numberOfBuildings - 1);
+					for (int i = 0; i < numberOfBuildings -1; i++)
+					{
+						houses[houses.size() - 1 - i] = scene.CreateEntity();
+						houses[houses.size() - 1 - i].AddComponent<MeshCollider>(buildingColMesh);
+					}
+					glm::vec2 right = glm::rotate(glm::vec2(1.0f, 0.0f), areaRotation);
+					glm::vec2 forward = glm::rotate(glm::vec2(0.0f, 1.0f), areaRotation);
+					glm::vec2 origin = areaCenter - right * area.x * 0.5f - forward * area.y * 0.5f;
+
+					for (int i = 0; i < numberOfBuildings; i++)
+					{
+						glm::vec2 cursor = origin + right * (houseBoundingSphereRadius * (1 + 2 * (i % numStepsX))) + forward * (houseBoundingSphereRadius * (1 + 2 * (i / numStepsX)));
+						houses[houses.size() - 1 - i].AddComponent<Mesh>(buildingLODGroup, &houseMaterial);
+						Transform& t = houses[houses.size() - 1 - i].AddComponent<Transform>();
+						t.position = glm::vec3(cursor.x, 0.0f, cursor.y);
+						t.rotation = glm::quat(glm::vec3(0.0f, -areaRotation, 0.0f));
+						terrain.Sample(t.position, t.position.y);
+
+						const std::vector<ObjImporter::ObjMarkerExt>* markers = perBuildingMarkers[buildingToUseIndex];
+						for (const ObjImporter::ObjMarkerExt& marker : *markers)
+						{
+							houseObjects.emplace_back();
+							houseObjects.back() = scene.CreateEntity();
+
+							Transform& ho_t = houseObjects.back().AddComponent<Transform>();
+							ho_t = t;
+							Transform toApply;
+							toApply.position = marker.position;
+							toApply.rotation = marker.rotation;
+							ho_t.Apply(toApply);
+							houseObjects.back().AddComponent<Mesh>(hom::GetLodsByType(marker.name), &characterMaterial);
+							houseObjects.back().AddComponent<MeshCollider>(hom::GetLodsByType(marker.name)->sourceMesh);
+						}
+					}
+				}
+			}
+
+			trees.reserve(TREE_COUNT);
+			for (int i = 0; i < TREE_COUNT; i++)
+			{
+				trees.emplace_back();
+				trees.back() = scene.CreateEntity();
+				const LODGroup* treeLodGroup = hom::GetLodsByType("tree");
+				trees.back().AddComponent<Mesh>(treeLodGroup, &characterMaterial);
+				trees.back().AddComponent<MeshCollider>(treeLodGroup->GetMeshDataForLOD(0));
+				Transform& t = trees.back().AddComponent<Transform>();
+
+				bool treeIsInAvailablePlace;
+				do
+				{
+					treeIsInAvailablePlace = true;
+					glm::vec2 treeCenter;
+					treeCenter.x = (Random::Float() - 0.5f) * 1025.0f * 0.5f;
+					treeCenter.y = (Random::Float() - 0.5f) * 1025.0f * 0.5f;
+					t.position = glm::vec3(treeCenter.x, 0.0f, treeCenter.y);
+					terrain.Sample(t.position, t.position.y);
+					glm::vec3 sampleX = t.position + glm::vec3(0.1f, 0.0f, 0.0f);
+					terrain.Sample(sampleX, sampleX.y);
+					glm::vec3 sampleZ = t.position + glm::vec3(0.0f, 0.0f, 0.1f);
+					terrain.Sample(sampleZ, sampleZ.y);
+					float maxDeltaY = 0.02f;
+					if (glm::abs(sampleX.y - t.position.y) > maxDeltaY || glm::abs(sampleZ.y - t.position.y) > maxDeltaY)
+					{
+						treeIsInAvailablePlace = false;
+						continue;
+					}
+					t.rotation = glm::quat(glm::vec3(0.0f, Math::Pi * 2.0f * Random::Float(), 0.0f));
+					t.scale = Random::Float() + 1.0;
+
+					for (Entity h : houses)
+					{
+						if (EntityIntersect::MeshBoundingSpheres(h, trees.back()))
+							treeIsInAvailablePlace = false;
+					}
+				}
+				while (!treeIsInAvailablePlace);
+				trees.back().RemoveComponent<MeshCollider>();
+				CapsuleCollider& cc = trees.back().AddComponent<CapsuleCollider>();
+				cc.centerA = glm::vec3(0.0f, 0.0f, 0.0f);
+				cc.centerB = glm::vec3(0.0f, 2.0f, 0.0f);
+				cc.radius = 0.2f * t.scale;
 			}
 		}
 
@@ -338,6 +471,7 @@ namespace sf
 			Animation::SampleToBones(shanyungSkeleton->m_animations[2], shanyungSkeleton->m_core.m_boneLocalTransforms.data(), 0.5f);
 			shanyungSkeleton->m_core.PropagateLocalTransforms(nullptr, true);
 			MeshProcessor::ApplySkeleton(shanyungSkeleton->GetSkinMatrixBuffer(), *shanyungMesh, testMeshData);
+			MeshProcessor::Remesh(testMeshData, testMeshData, 10);
 			Transform& testT = testEntity.AddComponent<Transform>();
 			terrain.Sample(testT.position, testT.position.y);
 			testEntity.AddComponent<Mesh>(&testMeshData, &houseMaterial);
@@ -443,7 +577,7 @@ namespace sf
 
 			uint32_t outNCount;
 			Geometry::ContactData outCd[4];
-			for (int i = 0; i < HOUSE_COUNT; i++)
+			for (int i = 0; i < houses.size(); i++)
 			{
 				if (EntityIntersect::CapsuleMesh(shanyung, houses[i], 4, &outNCount, outCd))
 				{
@@ -473,6 +607,19 @@ namespace sf
 						if (glm::dot(disp, flatTriNormal) < 0.0f && glm::dot(flatCapsuleNormal, flatTriNormal) < -0.777f)
 							disp -= glm::dot(disp, flatTriNormal) * flatTriNormal;
 					}
+				}
+			}
+			for (int i = 0; i < TREE_COUNT; i++)
+			{
+				if (EntityIntersect::CapsuleCapsule(shanyung, trees[i], outCd))
+				{
+					glm::vec3 flatNormalA = glm::normalize(glm::vec3(outCd[0].normalA.x, 0.0f, outCd[0].normalA.z));
+					glm::vec3 flatNormalB = glm::normalize(glm::vec3(outCd[0].normalB.x, 0.0f, outCd[0].normalB.z));
+
+					Renderer::Debug::AddLine(e_t.position + glm::vec3(0.0f, 0.3f, 0.0f), e_t.position + glm::vec3(0.0f, 0.3f, 0.0f) + flatNormalA, glm::vec3(0.0f, 0.0f, 1.0f));
+					Renderer::Debug::AddLine(e_t.position + glm::vec3(0.0f, 0.4f, 0.0f), e_t.position + glm::vec3(0.0f, 0.4f, 0.0f) + flatNormalB, glm::vec3(1.0f, 0.0f, 0.0f));
+					if (glm::dot(disp, flatNormalB) < 0.0f && glm::dot(flatNormalA, flatNormalB) < -0.777f)
+						disp -= glm::dot(disp, flatNormalB) * flatNormalB;
 				}
 			}
 			e_t.position += disp;
@@ -525,7 +672,7 @@ namespace sf
 			bool collidedWithWall = false;
 			uint32_t outNCount;
 			Geometry::ContactData outCd[4];
-			for (int i = 0; i < HOUSE_COUNT; i++)
+			for (int i = 0; i < houses.size(); i++)
 			{
 				if (EntityIntersect::SphereMesh(foxCol, houses[i], 4, &outNCount, outCd))
 				{

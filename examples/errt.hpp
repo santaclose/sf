@@ -9,7 +9,7 @@ namespace errt
 	int seed = 0;
 	int maxCount = 40;
 
-	sf::BufferLayout vertexBufferLayout = sf::BufferLayout({sf::BufferComponent::Position});
+	sf::Buffer::Layout vertexBufferLayout = sf::Buffer::Layout({sf::Buffer::Component::Position});
 	std::vector<glm::vec3> vertices;
 	std::vector<uint32_t> indices;
 
@@ -188,6 +188,6 @@ namespace errt
 		uint8_t* vertexBuffer = new uint8_t[vertices.size() * sizeof(glm::vec3)];
 		memcpy(vertexBuffer, vertices.data(), vertices.size() * sizeof(glm::vec3));
 		meshData.Destroy();
-		meshData.Create(&vertexBufferLayout, vertexBuffer, vertices.size(), indices, { 0u });
+		meshData.Create(vertexBufferLayout, vertexBuffer, vertices.size(), indices);
 	}
 }

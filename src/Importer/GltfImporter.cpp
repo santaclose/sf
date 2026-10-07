@@ -81,7 +81,7 @@ void sf::GltfImporter::Destroy(int id)
 }
 
 // https://github.com/SaschaWillems/Vulkan/blob/master/examples/gltfloading/gltfloading.cpp
-bool sf::GltfImporter::GenerateMeshData(int id, const BufferLayout& vertexLayout, MeshData& meshData)
+bool sf::GltfImporter::GenerateMeshData(int id, Buffer::Layout vertexLayout, MeshData& meshData)
 {
 	assert(id > -1 && id < models.size());
 	assert(models[id] != nullptr);
@@ -89,22 +89,22 @@ bool sf::GltfImporter::GenerateMeshData(int id, const BufferLayout& vertexLayout
 	tinygltf::Model& model = *(models[id]);
 
 	// assert(mesh.pieces == nullptr && mesh.vertexBuffer == nullptr && mesh.indexBuffer == nullptr);
-	bool meshHasNormals = vertexLayout.GetComponentInfo(BufferComponent::Normal) != nullptr;
-	bool meshHasUVs = vertexLayout.GetComponentInfo(BufferComponent::UV) != nullptr;
-	bool meshHasBoneIndices = vertexLayout.GetComponentInfo(BufferComponent::BoneIndices) != nullptr;
-	bool meshHasBoneWeights = vertexLayout.GetComponentInfo(BufferComponent::BoneWeights) != nullptr;
+	bool meshHasNormals = vertexLayout.GetComponentInfo(Buffer::Component::Normal) != nullptr;
+	bool meshHasUVs = vertexLayout.GetComponentInfo(Buffer::Component::UV) != nullptr;
+	bool meshHasBoneIndices = vertexLayout.GetComponentInfo(Buffer::Component::BoneIndices) != nullptr;
+	bool meshHasBoneWeights = vertexLayout.GetComponentInfo(Buffer::Component::BoneWeights) != nullptr;
 
-	DataType positionDataType = vertexLayout.GetComponentInfo(BufferComponent::Position)->dataType;
+	DataType positionDataType = vertexLayout.GetComponentInfo(Buffer::Component::Position)->dataType;
 	assert(positionDataType == DataType::vec3f32);
 
 	if (meshHasNormals)
 	{
-		DataType normalDataType = vertexLayout.GetComponentInfo(BufferComponent::Normal)->dataType;
+		DataType normalDataType = vertexLayout.GetComponentInfo(Buffer::Component::Normal)->dataType;
 		assert(normalDataType == DataType::vec3f32);
 	}
 	if (meshHasUVs)
 	{
-		DataType uvsDataType = vertexLayout.GetComponentInfo(BufferComponent::UV)->dataType;
+		DataType uvsDataType = vertexLayout.GetComponentInfo(Buffer::Component::UV)->dataType;
 		assert(uvsDataType == DataType::vec2f32);
 	}
 
@@ -175,26 +175,26 @@ bool sf::GltfImporter::GenerateMeshData(int id, const BufferLayout& vertexLayout
 				// Create Vertices
 				for (uint32_t i = 0; i < primitiveVertexCount; i++)
 				{
-					glm::vec3* posPtr = vertexLayout.Access<glm::vec3>(vertexBuffer, BufferComponent::Position, vertexStart + i);
+					glm::vec3* posPtr = vertexLayout.Access<glm::vec3>(vertexBuffer, Buffer::Component::Position, vertexStart + i);
 					*posPtr = { positionBuffer[i * 3 + 0], positionBuffer[i * 3 + 1], positionBuffer[i * 3 + 2] };
 					if (normalsBuffer && meshHasNormals)
 					{
-						glm::vec3* normalPtr = vertexLayout.Access<glm::vec3>(vertexBuffer, BufferComponent::Normal, vertexStart + i);
+						glm::vec3* normalPtr = vertexLayout.Access<glm::vec3>(vertexBuffer, Buffer::Component::Normal, vertexStart + i);
 						*normalPtr = glm::normalize(glm::vec3(normalsBuffer[i * 3 + 0], normalsBuffer[i * 3 + 1], normalsBuffer[i * 3 + 2]));
 					}
 					if (texCoordsBuffer && meshHasUVs)
 					{
-						glm::vec2* uvsPtr = vertexLayout.Access<glm::vec2>(vertexBuffer, BufferComponent::UV, vertexStart + i);
+						glm::vec2* uvsPtr = vertexLayout.Access<glm::vec2>(vertexBuffer, Buffer::Component::UV, vertexStart + i);
 						*uvsPtr = { texCoordsBuffer[i * 2 + 0], 1.0 - texCoordsBuffer[i * 2 + 1] };
 					}
 					if (jointsBuffer && meshHasBoneIndices)
 					{
-						DataType boneIndicesDataType = vertexLayout.GetComponentInfo(BufferComponent::BoneIndices)->dataType;
+						DataType boneIndicesDataType = vertexLayout.GetComponentInfo(Buffer::Component::BoneIndices)->dataType;
 						assert(nodeToBonePerModel.find(id) != nodeToBonePerModel.end()); // need mapping from gltf node to bone index to set vertex bone indices
 						if (jointComponentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE)
 						{
 							const uint8_t* buf = static_cast<const uint8_t*>(jointsBuffer);
-							glm::vec4* boneIndicesPtr = vertexLayout.Access<glm::vec4>(vertexBuffer, BufferComponent::BoneIndices, vertexStart + i);
+							glm::vec4* boneIndicesPtr = vertexLayout.Access<glm::vec4>(vertexBuffer, Buffer::Component::BoneIndices, vertexStart + i);
 							*boneIndicesPtr = {
 								(float)nodeToBonePerModel[id][model.skins[0].joints[buf[i * 4 + 0]]],
 								(float)nodeToBonePerModel[id][model.skins[0].joints[buf[i * 4 + 1]]],
@@ -204,7 +204,7 @@ bool sf::GltfImporter::GenerateMeshData(int id, const BufferLayout& vertexLayout
 						else // unsigned short
 						{
 							const uint16_t* buf = static_cast<const uint16_t*>(jointsBuffer);
-							glm::vec4* boneIndicesPtr = vertexLayout.Access<glm::vec4>(vertexBuffer, BufferComponent::BoneIndices, vertexStart + i);
+							glm::vec4* boneIndicesPtr = vertexLayout.Access<glm::vec4>(vertexBuffer, Buffer::Component::BoneIndices, vertexStart + i);
 							*boneIndicesPtr = {
 								(float)nodeToBonePerModel[id][model.skins[0].joints[buf[i * 4 + 0]]],
 								(float)nodeToBonePerModel[id][model.skins[0].joints[buf[i * 4 + 1]]],
@@ -214,7 +214,7 @@ bool sf::GltfImporter::GenerateMeshData(int id, const BufferLayout& vertexLayout
 					}
 					if (boneWeightsBuffer && meshHasBoneWeights)
 					{
-						glm::vec4* boneWeightsPtr = vertexLayout.Access<glm::vec4>(vertexBuffer, BufferComponent::BoneWeights, vertexStart + i);
+						glm::vec4* boneWeightsPtr = vertexLayout.Access<glm::vec4>(vertexBuffer, Buffer::Component::BoneWeights, vertexStart + i);
 						*boneWeightsPtr = { boneWeightsBuffer[i * 4 + 0], boneWeightsBuffer[i * 4 + 1], boneWeightsBuffer[i * 4 + 2], boneWeightsBuffer[i * 4 + 3] };
 					}
 				}
@@ -280,7 +280,7 @@ bool sf::GltfImporter::GenerateMeshData(int id, const BufferLayout& vertexLayout
 	}
 
 	meshData.Destroy();
-	meshData.Create(&vertexLayout, vertexBuffer, vertexCount, indices, &pieces);
+	meshData.Create(vertexLayout, vertexBuffer, vertexCount, indices, &pieces);
 	printf("[GltfImporter] Generated mesh data with %u vertices, %u indices, and %u pieces for ID %u\n", meshData.vertexCount, meshData.indexCount, meshData.pieceCount, id);
 	return true;
 }

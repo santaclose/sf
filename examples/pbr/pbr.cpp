@@ -43,11 +43,11 @@ namespace sf
 		std::vector<std::string> environments;
 
 		MeshData* meshes;
-		BufferLayout meshVertexLayout = BufferLayout({
-			BufferComponent::Position,
-			BufferComponent::Normal,
-			BufferComponent::Tangent,
-			BufferComponent::UV
+		Buffer::Layout meshVertexLayout = Buffer::Layout({
+			Buffer::Component::Position,
+			Buffer::Component::Normal,
+			Buffer::Component::Tangent,
+			Buffer::Component::UV
 		});
 
 		int selectedModel;

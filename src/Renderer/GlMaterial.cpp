@@ -5,7 +5,7 @@
 #include <Renderer/GlTexture.h>
 #include <Renderer/GlCubemap.h>
 
-void sf::GlMaterial::Create(const Material* material, const BufferLayout* vertexBufferLayout)
+void sf::GlMaterial::Create(const Material* material, Buffer::Layout vertexBufferLayout)
 {
 	m_material = material;
 	assert(m_material != nullptr);

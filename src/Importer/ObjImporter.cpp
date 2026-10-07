@@ -235,26 +235,26 @@ void sf::ObjImporter::Destroy(int id)
 	meshes[id] = nullptr;
 }
 
-bool sf::ObjImporter::GenerateMeshData(int id, const BufferLayout& vertexLayout, MeshData& meshData)
+bool sf::ObjImporter::GenerateMeshData(int id, Buffer::Layout vertexLayout, MeshData& meshData)
 {
 	assert(id > -1 && id < meshes.size());
 	assert(meshes[id] != nullptr);
 
 	// assert(mesh.pieces == nullptr && mesh.vertexBuffer == nullptr && mesh.indexBuffer == nullptr);
-	bool meshHasNormals = vertexLayout.GetComponentInfo(BufferComponent::Normal) != nullptr;
-	bool meshHasUVs = vertexLayout.GetComponentInfo(BufferComponent::UV) != nullptr;
+	bool meshHasNormals = vertexLayout.GetComponentInfo(Buffer::Component::Normal) != nullptr;
+	bool meshHasUVs = vertexLayout.GetComponentInfo(Buffer::Component::UV) != nullptr;
 
-	DataType positionDataType = vertexLayout.GetComponentInfo(BufferComponent::Position)->dataType;
+	DataType positionDataType = vertexLayout.GetComponentInfo(Buffer::Component::Position)->dataType;
 	assert(positionDataType == DataType::vec3f32);
 
 	if (meshHasNormals)
 	{
-		DataType normalDataType = vertexLayout.GetComponentInfo(BufferComponent::Normal)->dataType;
+		DataType normalDataType = vertexLayout.GetComponentInfo(Buffer::Component::Normal)->dataType;
 		assert(normalDataType == DataType::vec3f32);
 	}
 	if (meshHasUVs)
 	{
-		DataType uvsDataType = vertexLayout.GetComponentInfo(BufferComponent::UV)->dataType;
+		DataType uvsDataType = vertexLayout.GetComponentInfo(Buffer::Component::UV)->dataType;
 		assert(uvsDataType == DataType::vec2f32);
 	}
 
@@ -298,22 +298,22 @@ bool sf::ObjImporter::GenerateMeshData(int id, const BufferLayout& vertexLayout,
 	vertexBuffer = new uint8_t[vertexLayout.GetSize() * finalVertices.size()];
 	for (int i = 0; i < finalVertices.size(); i++)
 	{
-		glm::vec3* posPtr = vertexLayout.Access<glm::vec3>(vertexBuffer, BufferComponent::Position, i);
+		glm::vec3* posPtr = vertexLayout.Access<glm::vec3>(vertexBuffer, Buffer::Component::Position, i);
 		*posPtr = meshes[id]->positions[finalVertices[i].posID];
 		if (meshes[id]->normals.size() > 0 && meshHasNormals)
 		{
-			glm::vec3* normalPtr = vertexLayout.Access<glm::vec3>(vertexBuffer, BufferComponent::Normal, i);
+			glm::vec3* normalPtr = vertexLayout.Access<glm::vec3>(vertexBuffer, Buffer::Component::Normal, i);
 			*normalPtr = meshes[id]->normals[finalVertices[i].normalID];
 		}
 		if (meshes[id]->texCoords.size() > 0 && meshHasUVs)
 		{
-			glm::vec2* coordsPtr = vertexLayout.Access<glm::vec2>(vertexBuffer, BufferComponent::UV, i);
+			glm::vec2* coordsPtr = vertexLayout.Access<glm::vec2>(vertexBuffer, Buffer::Component::UV, i);
 			*coordsPtr = meshes[id]->texCoords[finalVertices[i].coordsID];
 		}
 	}
 
 	meshData.Destroy();
-	meshData.Create(&vertexLayout, vertexBuffer, finalVertices.size(), indices, &pieces);
+	meshData.Create(vertexLayout, vertexBuffer, finalVertices.size(), indices, &pieces);
 	printf("[ObjImporter] Generated mesh data with %u vertices, %u indices, and %u pieces for ID %u\n", meshData.vertexCount, meshData.indexCount, meshData.pieceCount, id);
 	return true;
 }

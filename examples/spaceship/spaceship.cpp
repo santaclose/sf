@@ -42,27 +42,27 @@ namespace sf
 
 		float shipSpeed;
 		
-		BufferLayout shipVertexLayout = BufferLayout({
-			BufferComponent::Position,
-			BufferComponent::UV
+		Buffer::Layout shipVertexLayout = Buffer::Layout({
+			Buffer::Component::Position,
+			Buffer::Component::UV
 		});
 		MeshData shipMesh;
 
 		Entity* things;
 
 		MeshData* generatedMeshes;
-		BufferLayout generatedMeshesVertexLayout = BufferLayout({
-			BufferComponent::Position,
-			BufferComponent::Normal,
-			BufferComponent::UV,
-			BufferComponent::AO
+		Buffer::Layout generatedMeshesVertexLayout = Buffer::Layout({
+			Buffer::Component::Position,
+			Buffer::Component::Normal,
+			Buffer::Component::UV,
+			Buffer::Component::AO
 		});
 
-		BufferLayout particleBufferLayout = BufferLayout({
-			BufferComponent::Position,
-			BufferComponent::Rotation,
-			BufferComponent::Scale,
-			BufferComponent::SpawnTime
+		Buffer::Layout particleBufferLayout = Buffer::Layout({
+			Buffer::Component::Position,
+			Buffer::Component::Rotation,
+			Buffer::Component::Scale,
+			Buffer::Component::SpawnTime
 		});
 		std::vector<uint8_t> particleBuffer;
 
@@ -119,7 +119,7 @@ namespace sf
 		particleMaterial.isDoubleSided = true;
 		particleBuffer.resize(particleCount * particleBufferLayout.GetSize());
 		particleMaterial.buffers.resize(1);
-		particleMaterial.buffers[0] = { "PARTICLES" , particleBuffer.data(), &particleBufferLayout, (uint32_t) particleBuffer.size(), DataType::f32 };
+		particleMaterial.buffers[0] = { "PARTICLES" , particleBuffer.data(), particleBufferLayout, (uint32_t) particleBuffer.size(), DataType::f32 };
 
 		e_ship = scene.CreateEntity();
 

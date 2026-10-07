@@ -8,7 +8,7 @@ namespace sf {
 
 	struct MeshData
 	{
-		BufferLayout vertexBufferLayout;
+		Buffer::Layout vertexBufferLayout;
 
 		uint8_t* vertexBuffer = nullptr;
 		uint32_t vertexCount = 0;
@@ -21,7 +21,7 @@ namespace sf {
 
 		MeshData() = default;
 		void Create(
-			const BufferLayout* vertexBufferLayout,
+			Buffer::Layout vertexBufferLayout,
 			uint8_t* vertexBuffer,
 			uint32_t vertexCount,
 			const std::vector<uint32_t>& indexVector,
@@ -29,17 +29,17 @@ namespace sf {
 			uint8_t vertexCountPerPrimitive = 3);
 		void Destroy();
 
-		void ChangeVertexBufferLayout(const BufferLayout& newLayout);
+		void ChangeVertexBufferLayout(Buffer::Layout newLayout);
 		bool Initialized() { return vertexBuffer != nullptr; }
 
 		template<typename T>
-		inline T* AccessVertexComponent(BufferComponent component, uint32_t index)
+		inline T* AccessVertexComponent(Buffer::Component component, uint32_t index)
 		{
 			return vertexBufferLayout.Access<T>(vertexBuffer, component, index);
 		}
 
 		template<typename T>
-		inline const T* ReadVertexComponent(BufferComponent component, uint32_t index) const
+		inline const T* ReadVertexComponent(Buffer::Component component, uint32_t index) const
 		{
 			return vertexBufferLayout.Access<T>(vertexBuffer, component, index);
 		}

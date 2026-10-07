@@ -13,6 +13,8 @@ void sf::VoxelVolumeData::BuildEmpty(const glm::uvec3& voxelCountPerAxis, Buffer
 
 void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, Buffer::Layout voxelBufferLayout)
 {
+	float voxelBoundingSphereRadius = glm::sqrt(voxelSize * voxelSize * 3) / 2.0f;
+
 	this->voxelBufferLayout = voxelBufferLayout;
 	const Buffer::LayoutInfo& layout = voxelBufferLayout.GetInfo();
 
@@ -82,10 +84,9 @@ void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, B
 					glm::vec3 currentVoxelMax = currentVoxelMin + glm::vec3(voxelSize, voxelSize, voxelSize);
 					glm::vec3 currentVoxelCenter = (currentVoxelMin + currentVoxelMax) / 2.0f;
 
-					// approximation is good and fast
+					/* Approximate intersection using voxel bounding sphere */
 					glm::vec3 voxelCenterOnTriangle = Geometry::ClosestPointPointTriangle(currentVoxelCenter, *posPtrA, *posPtrB, *posPtrC);
-					bool shouldFill = glm::distance2(voxelCenterOnTriangle, currentVoxelCenter) < voxelSize * voxelSize;
-					// bool shouldFill = Geometry::IntersectAABBTriangle(currentVoxelMin, currentVoxelMax, *posPtrA, *posPtrB, *posPtrC);
+					bool shouldFill = glm::distance2(voxelCenterOnTriangle, currentVoxelCenter) < voxelBoundingSphereRadius * voxelBoundingSphereRadius;
 
 					if (!shouldFill)
 						continue;
@@ -110,22 +111,15 @@ void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, B
 								*voxelPosPointer = currentVoxelCenter;
 							continue;
 						}
-						Buffer::Component targetVertexComponent;
-						switch (component)
-						{
-							case Buffer::Component::Normal:
-								targetVertexComponent = Buffer::Component::Normal;
-								break;
-							case Buffer::Component::Color:
-								targetVertexComponent = Buffer::Component::Color;
-								break;
-							case Buffer::Component::UV:
-								targetVertexComponent = Buffer::Component::UV;
-								break;
-							default:
-								continue;
-						}
-						if (mesh.vertexBufferLayout.GetComponentInfo(targetVertexComponent) == nullptr)
+
+						/* Source mesh doesn't have this component */
+						if (mesh.vertexBufferLayout.GetComponentInfo(component) == nullptr)
+							continue;
+
+						/* We only support copying these */
+						if (component != Buffer::Component::Normal &&
+							component != Buffer::Component::Color &&
+							component != Buffer::Component::UV)
 							continue;
 
 						glm::vec2 toBlendVec2[3];
@@ -137,16 +131,16 @@ void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, B
 						switch (componentInfo.dataType)
 						{
 							case DataType::vec2f32:
-								toBlendVec2[0] = *mesh.ReadVertexComponent<glm::vec2>(targetVertexComponent, indexA);
-								toBlendVec2[1] = *mesh.ReadVertexComponent<glm::vec2>(targetVertexComponent, indexB);
-								toBlendVec2[2] = *mesh.ReadVertexComponent<glm::vec2>(targetVertexComponent, indexC);
+								toBlendVec2[0] = *mesh.ReadVertexComponent<glm::vec2>(component, indexA);
+								toBlendVec2[1] = *mesh.ReadVertexComponent<glm::vec2>(component, indexB);
+								toBlendVec2[2] = *mesh.ReadVertexComponent<glm::vec2>(component, indexC);
 								Math::WeightedBlend(toBlendVec2, &barycentricCoords.x, 3, blendVec2Out);
 								*AccessVoxelComponent<glm::vec2>(component, currentVoxel) += blendVec2Out;
 								break;
 							case DataType::vec3f32:
-								toBlendVec3[0] = *mesh.ReadVertexComponent<glm::vec3>(targetVertexComponent, indexA);
-								toBlendVec3[1] = *mesh.ReadVertexComponent<glm::vec3>(targetVertexComponent, indexB);
-								toBlendVec3[2] = *mesh.ReadVertexComponent<glm::vec3>(targetVertexComponent, indexC);
+								toBlendVec3[0] = *mesh.ReadVertexComponent<glm::vec3>(component, indexA);
+								toBlendVec3[1] = *mesh.ReadVertexComponent<glm::vec3>(component, indexB);
+								toBlendVec3[2] = *mesh.ReadVertexComponent<glm::vec3>(component, indexC);
 								Math::WeightedBlend(toBlendVec3, &barycentricCoords.x, 3, blendVec3Out);
 								*AccessVoxelComponent<glm::vec3>(component, currentVoxel) += blendVec3Out;
 								break;

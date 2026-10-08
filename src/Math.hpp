@@ -85,7 +85,7 @@ namespace sf {
 		inline uint32_t CountTrailingZeroes(uint32_t v)
 		{
 			uint32_t i = 0;
-			for (; !((v >> i) & 1) && i < 32; i++);
+			for (; i < 32 && !((v >> i) & 1); ++i);
 			return i;
 		}
 

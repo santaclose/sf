@@ -70,6 +70,9 @@ namespace sf {
 			}
 		}
 
+		void PointWeighting1D(float sample, const float* points, float* outWeights, int count, int pointStride = sizeof(float));
+		void PointWeighting2D(const glm::vec2& sample, const glm::vec2* points, float* outWeights, int count, int pointStride = sizeof(glm::vec2));
+
 		inline uint32_t NextPowerOf2(uint32_t v)
 		{
 			v--;

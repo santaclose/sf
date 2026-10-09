@@ -87,14 +87,18 @@ namespace sf::Buffer
 		{
 			bitmask = bm;
 		}
-		Layout& operator=(uint32_t bm)
+		inline Layout& operator=(uint32_t bm)
 		{
 			bitmask = bm;
 			return *this;
 		}
-		bool operator==(uint32_t bm) const
+		inline bool operator==(uint32_t bm) const
 		{
 			return bitmask == bm;
+		}
+		inline bool operator==(const Layout& other) const
+		{
+			return bitmask == other.bitmask;
 		}
 		inline uint32_t GetBitmask() const
 		{

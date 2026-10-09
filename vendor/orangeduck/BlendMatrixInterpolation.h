@@ -436,9 +436,10 @@ namespace BlendMatrixInterpolation
 	}
 
 	// Fit the blend matrix to the given animation parameters
+	template <typename T>
 	void fit_blend_matrix(
 		slice2d<float> blend_matrix,
-		const glm::vec2* animation_points,
+		const T* animation_points,
 		int animation_count)
 	{
 		// Compute Pairwise Distances
@@ -446,16 +447,7 @@ namespace BlendMatrixInterpolation
 		for (int i = 0; i < animation_count; i++)
 		{
 			for (int j = 0; j < animation_count; j++)
-			{
-				distances(i, j) = 0.0f;
-				distances(i, j) += glm::pow(
-					animation_points[i].x -
-					animation_points[j].x, 2.0f);
-				distances(i, j) += glm::pow(
-					animation_points[i].y -
-					animation_points[j].y, 2.0f);
-				distances(i, j) = glm::sqrt(distances(i, j));
-			}
+				distances(i, j) = glm::distance(animation_points[i], animation_points[j]);
 		}
 
 		// Subtract epsilon from diagonal this helps the stability

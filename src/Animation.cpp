@@ -2,8 +2,6 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
-#include <BlendMatrixInterpolation.h>
-
 void sf::Animation::ComputeNodeWeights(sf::Animation::Node& node)
 {
 	switch (node.single.type)
@@ -15,28 +13,9 @@ void sf::Animation::ComputeNodeWeights(sf::Animation::Node& node)
 	{
 		uint32_t pointCount = node.bs1d.pointCount;
 		float* outWeights = node.bs1d.weightsQuery;
-		assert(pointCount > 1);
 		if (outWeights == nullptr)
 			outWeights = (float*)alloca(sizeof(float) * pointCount);
-		if (node.bs1d.pos < node.bs1d.points[0].pos)
-			node.bs1d.pos = node.bs1d.points[0].pos;
-		else if (node.bs1d.pos > node.bs1d.points[pointCount - 1].pos)
-			node.bs1d.pos = node.bs1d.points[pointCount - 1].pos;
-		for (int i = 0; i < pointCount; i++)
-		{
-			assert(i == 0 || node.bs1d.points[i].pos > node.bs1d.points[i - 1].pos);
-			if (i < pointCount - 1 && node.bs1d.points[i].pos < node.bs1d.pos && node.bs1d.points[i + 1].pos > node.bs1d.pos)
-			{
-				float distance = node.bs1d.points[i + 1].pos - node.bs1d.points[i].pos;
-				outWeights[i + 1] = (node.bs1d.pos - node.bs1d.points[i].pos) / distance;
-				outWeights[i] = 1.0f - outWeights[i + 1];
-				i++;
-			}
-			else if (node.bs1d.points[i].pos == node.bs1d.pos)
-				outWeights[i] = 1.0f;
-			else
-				outWeights[i] = 0.0f;
-		}
+		Math::PointWeighting1D(node.bs1d.pos, &node.bs1d.points[0].pos, outWeights, pointCount, sizeof(BlendSpacePoint1D));
 		for (int i = 0; i < pointCount; i++)
 			node.bs2d.points[i].weight = outWeights[i];
 		break;
@@ -45,22 +24,10 @@ void sf::Animation::ComputeNodeWeights(sf::Animation::Node& node)
 	{
 		uint32_t pointCount = node.bs2d.pointCount;
 		float* outWeights = node.bs2d.weightsQuery;
-		BlendMatrixInterpolation::slice2d<float> blend_matrix(pointCount, pointCount, node.bs2d.blendMatrix);
 		assert(pointCount > 1);
 		if (outWeights == nullptr)
 			outWeights = (float*)alloca(sizeof(float) * pointCount);
-		if (node.bs2d.needsToComputeBlendMatrix)
-		{
-			glm::vec2* bs2dPoints = (glm::vec2*)alloca(sizeof(glm::vec2) * pointCount);
-			for (int i = 0; i < pointCount; i++)
-				bs2dPoints[i] = node.bs2d.points[i].pos;
-			BlendMatrixInterpolation::fit_blend_matrix(blend_matrix, bs2dPoints, pointCount);
-			node.bs2d.needsToComputeBlendMatrix = false;
-		}
-		float* bs2dDistances = (float*)alloca(sizeof(float) * pointCount);
-		for (int i = 0; i < pointCount; i++)
-			bs2dDistances[i] = glm::length(node.bs2d.points[i].pos- node.bs2d.pos);
-		BlendMatrixInterpolation::compute_blend_weights(BlendMatrixInterpolation::slice1d<float>(pointCount, outWeights), BlendMatrixInterpolation::slice1d<float>(pointCount, bs2dDistances), blend_matrix);
+		Math::PointWeighting2D(node.bs2d.pos, &node.bs2d.points[0].pos, outWeights, pointCount, sizeof(BlendSpacePoint2D));
 		for (int i = 0; i < pointCount; i++)
 			node.bs2d.points[i].weight = outWeights[i];
 		break;

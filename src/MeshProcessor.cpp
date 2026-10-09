@@ -770,3 +770,47 @@ void sf::MeshProcessor::ComputeSkinnedMeshBoundingSphere(const SkeletonData& inp
 	outputSphere.radius = glm::sqrt(maxDistanceSq);
 	tempM.Destroy();
 }
+
+void sf::MeshProcessor::TransferVertexAttributesFromClosest(const MeshData& inputMesh, MeshData& outputMesh)
+{
+	assert(inputMesh.vertexBufferLayout == outputMesh.vertexBufferLayout);
+
+	const Buffer::LayoutInfo& layout = inputMesh.vertexBufferLayout.GetInfo();
+	for (int i = 0; i < outputMesh.vertexCount; i++)
+	{
+		const glm::vec3* outPos = outputMesh.ReadVertexComponent<glm::vec3>(Buffer::Component::Position, i);
+		float dis2 = std::numeric_limits<float>::max();
+		int wantedIndex = 0;
+		for (int j = 0; j < inputMesh.vertexCount; j++)
+		{
+			const glm::vec3* inPos = inputMesh.ReadVertexComponent<glm::vec3>(Buffer::Component::Position, j);
+			float currentDis2 = glm::distance2(*inPos, *outPos);
+			if (currentDis2 < dis2)
+			{
+				dis2 = currentDis2;
+				wantedIndex = j;
+			}
+		}
+
+		for (const auto& [component, componentInfo] : layout.components)
+		{
+			if (component == Buffer::Component::Position)
+				continue;
+			switch (componentInfo.dataType)
+			{
+			case DataType::vec4f32:
+				*outputMesh.AccessVertexComponent<glm::vec4>(component, i) = *inputMesh.ReadVertexComponent<glm::vec4>(component, wantedIndex);
+				break;
+			case DataType::vec3f32:
+				*outputMesh.AccessVertexComponent<glm::vec3>(component, i) = *inputMesh.ReadVertexComponent<glm::vec3>(component, wantedIndex);
+				break;
+			case DataType::vec2f32:
+				*outputMesh.AccessVertexComponent<glm::vec2>(component, i) = *inputMesh.ReadVertexComponent<glm::vec2>(component, wantedIndex);
+				break;
+			case DataType::f32:
+				*outputMesh.AccessVertexComponent<float>(component, i) = *inputMesh.ReadVertexComponent<float>(component, wantedIndex);
+				break;
+			}
+		}
+	}
+}

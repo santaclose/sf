@@ -37,5 +37,6 @@ namespace sf {
 		static void ApplySkeleton(const glm::mat4* skinMatrixBuffer, const MeshData& inputMesh, MeshData& outputMesh);
 		static void ComputeMeshBoundingSphere(const MeshData& inputMesh, SphereCollider& outputSphere);
 		static void ComputeSkinnedMeshBoundingSphere(const SkeletonData& inputSkeleton, const MeshData& inputMesh, SphereCollider& outputSphere);
+		static void TransferVertexAttributesFromClosest(const MeshData& inputMesh, MeshData& outputMesh);
 	};
 }

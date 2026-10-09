@@ -256,7 +256,7 @@ namespace sf
 		terrain.Create(scene, "../Downloads/Telegram Desktop/test.r16", 0.5566f, 152.0f, 41,
 			glm::vec3(-(float)(1025 - 1) * 0.5f * 0.5566f, 0.0f, (float)(1025 - 1) * 0.5f * 0.5566f));
 
-		hom::Initialize(houseObjectVertexLayout);
+		hom::Initialize(treeObjectVertexLayout);
 
 		// Houses
 		{
@@ -267,7 +267,12 @@ namespace sf
 				std::string colFilePath = std::string("assets/examples/") + std::string(name) + std::string("Col.obj");
 				buildingMeshes[i] = new MeshData();
 				int objid = ObjImporter::Load(filePath.c_str());
-				ObjImporter::GenerateMeshData(objid, positionOnlyVertexLayout, *buildingMeshes[i]);
+				ObjImporter::GenerateMeshData(objid, treeObjectVertexLayout, *buildingMeshes[i]);
+
+				sf::VoxelVolumeData vv;
+				vv.BuildFromMesh(*buildingMeshes[i], 0.03f);
+				sf::MeshProcessor::ComputeVertexAmbientOcclusion(*buildingMeshes[i], &vv);
+
 				buildingLodGroups.emplace_back();
 				buildingLodGroups.back() = new LODGroup();
 				buildingLodGroups.back()->Create(*buildingMeshes[i], houseLodRatios, houseLodDistances, 2);
@@ -373,7 +378,7 @@ namespace sf
 					for (int i = 0; i < numberOfBuildings; i++)
 					{
 						glm::vec2 cursor = origin + right * (houseBoundingSphereRadius * (1 + 2 * (i % numStepsX))) + forward * (houseBoundingSphereRadius * (1 + 2 * (i / numStepsX)));
-						houses[houses.size() - 1 - i].AddComponent<Mesh>(buildingLODGroup, &houseMaterial);
+						houses[houses.size() - 1 - i].AddComponent<Mesh>(buildingLODGroup, &treeMaterial);
 						Transform& t = houses[houses.size() - 1 - i].AddComponent<Transform>();
 						t.position = glm::vec3(cursor.x, 0.0f, cursor.y);
 						t.rotation = glm::quat(glm::vec3(0.0f, -areaRotation, 0.0f));
@@ -391,7 +396,7 @@ namespace sf
 							toApply.position = marker.position;
 							toApply.rotation = marker.rotation;
 							ho_t.Apply(toApply);
-							houseObjects.back().AddComponent<Mesh>(hom::GetLodsByType(marker.name), &characterMaterial);
+							houseObjects.back().AddComponent<Mesh>(hom::GetLodsByType(marker.name), &treeMaterial);
 							houseObjects.back().AddComponent<MeshCollider>(hom::GetLodsByType(marker.name)->sourceMesh);
 						}
 					}
@@ -404,7 +409,7 @@ namespace sf
 				trees.emplace_back();
 				trees.back() = scene.CreateEntity();
 				const LODGroup* treeLodGroup = hom::GetLodsByType("tree");
-				trees.back().AddComponent<Mesh>(treeLodGroup, &characterMaterial);
+				trees.back().AddComponent<Mesh>(treeLodGroup, &treeMaterial);
 				trees.back().AddComponent<MeshCollider>(treeLodGroup->GetMeshDataForLOD(0));
 				Transform& t = trees.back().AddComponent<Transform>();
 

@@ -10,7 +10,6 @@ const sf::MeshData* sf::LODGroup::GetMeshDataForLOD(uint32_t lod) const
 
 void sf::LODGroup::Create(const MeshData& meshData, float* ratios, float* maxDistances, uint32_t lodCount, uint32_t* remeshRes)
 {
-	static Buffer::Layout postionNormal = Buffer::Layout({Buffer::Component::Position, Buffer::Component::Normal});
 	Destroy();
 
 	printf("[LOD] Generating from mesh with %u primitives\n", meshData.indexCount / 3);
@@ -42,8 +41,7 @@ void sf::LODGroup::Create(const MeshData& meshData, float* ratios, float* maxDis
 		{
 			MeshData temp;
 			MeshProcessor::Remesh(meshData, temp, remeshRes[i]);
-			temp.ChangeVertexBufferLayout(postionNormal);
-			MeshProcessor::ComputeNormals(temp);
+			temp.ChangeVertexBufferLayout(meshData.vertexBufferLayout);
 			if (ratios[i] == 1.0f)
 				lodMeshes[i] = temp;
 			else
@@ -52,6 +50,8 @@ void sf::LODGroup::Create(const MeshData& meshData, float* ratios, float* maxDis
 				/* vertex buffer starts belonging to lodMeshes[i] */
 				lodMeshes[i].usesExternalVertexBuffer = false;
 			}
+
+			MeshProcessor::TransferVertexAttributesFromClosest(meshData, lodMeshes[i]);
 
 			lods[i] = { &lodMeshes[i], maxDistances[i] };
 		}

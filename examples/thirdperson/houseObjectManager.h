@@ -1,4 +1,6 @@
 #include <FileUtils.h>
+#include <VoxelVolumeData.h>
+#include <MeshProcessor.h>
 
 #include <fstream>
 #include <sstream>
@@ -79,16 +81,27 @@ namespace hom
 
 	void LoadAsset(const std::string& path, const sf::Buffer::Layout& vertexBufferLayout)
 	{
-		int gltfid = sf::GltfImporter::Load(path);
+		std::string cachedMeshPath = sf::FileUtils::RemoveExtension(path) + std::string(".mesh");
+		std::string lodPath = sf::FileUtils::RemoveExtension(path) + std::string(".lod");
 
 		std::vector<uint32_t> remeshResVector;
 		std::vector<float> ratioVector;
 		std::vector<float> distanceVector;
-		bool lodReadResult = ReadLodFile(sf::FileUtils::RemoveExtension(path) + std::string(".lod"), remeshResVector, ratioVector, distanceVector);
+		bool lodReadResult = ReadLodFile(lodPath, remeshResVector, ratioVector, distanceVector);
 		assert(lodReadResult);
 
 		meshDataPerObject[path] = new sf::MeshData();
-		sf::GltfImporter::GenerateMeshData(gltfid, vertexBufferLayout, *meshDataPerObject[path]);
+		if (!meshDataPerObject[path]->LoadFromFile(cachedMeshPath.c_str()))
+		{
+			int gltfid = sf::GltfImporter::Load(path);
+			sf::GltfImporter::GenerateMeshData(gltfid, vertexBufferLayout, *meshDataPerObject[path]);
+
+			sf::VoxelVolumeData vv;
+			vv.BuildFromMesh(*meshDataPerObject[path], 0.03f);
+			sf::MeshProcessor::ComputeVertexAmbientOcclusion(*meshDataPerObject[path], &vv);
+			meshDataPerObject[path]->SaveToFile(cachedMeshPath.c_str());
+		}
+
 		lodGroupPerObject[path] = new sf::LODGroup();
 		lodGroupPerObject[path]->Create(*meshDataPerObject[path], ratioVector.data(), distanceVector.data(), ratioVector.size(), remeshResVector.data());
 	}

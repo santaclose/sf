@@ -110,7 +110,7 @@ namespace sf::Geometry
 		{
 			if (out != nullptr)
 			{
-				out->normalA = glm::normalize(sphere.center - pointOnLine);
+				out->normalA = glm::normalize(pointOnLine - sphere.center);
 				out->normalB = -out->normalA;
 				out->depth = radiusSum - glm::sqrt(dis2);
 			}

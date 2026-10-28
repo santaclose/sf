@@ -138,17 +138,18 @@ uint32_t sf::SkeletonData::AddNodeBlendSpace1D(const std::vector<BlendSpacePoint
 	m_nodes.back().bs1d.timer = 0.0f;
 	m_nodes.back().bs1d.duration = -1.0f;
 	m_nodes.back().bs1d.prevFrameDuration = -1.0f;
-	m_nodes.back().bs1d.points = new Animation::BlendSpacePoint1D[points.size()];
+	Animation::BlendSpacePoint1D* blendSpacePoints = new Animation::BlendSpacePoint1D[points.size()];
 	m_nodes.back().bs1d.pointCount = points.size();
 	for (int i = 0; i < points.size(); i++)
 	{
-		m_nodes.back().bs1d.points[i].animation = &m_animations[points[i].animationIndex];
-		m_nodes.back().bs1d.points[i].pos = points[i].pos;
-		m_nodes.back().bs1d.points[i].speed = points[i].speed;
-		m_nodes.back().bs1d.points[i].pose = new Transform[boneCount];
+		blendSpacePoints[i].animation = &m_animations[points[i].animationIndex];
+		blendSpacePoints[i].pos = points[i].pos;
+		blendSpacePoints[i].speed = points[i].speed;
+		blendSpacePoints[i].pose = new Transform[boneCount];
 		/* We need to memcpy because not all data comes from animation samplers */
-		memcpy(m_nodes.back().bs1d.points[i].pose, GetLocalTransformBuffer(), boneCount * sizeof(Transform));
+		memcpy(blendSpacePoints[i].pose, GetLocalTransformBuffer(), boneCount * sizeof(Transform));
 	}
+	m_nodes.back().bs1d.points = blendSpacePoints;
 	m_nodes.back().bs1d.pos = pos;
 	m_nodes.back().bs1d.pose = new Transform[boneCount];
 	m_nodes.back().bs1d.boneCount = boneCount;
@@ -166,22 +167,24 @@ uint32_t sf::SkeletonData::AddNodeBlendSpace2D(const std::vector<BlendSpacePoint
 	m_nodes.back().bs2d.timer = 0.0f;
 	m_nodes.back().bs2d.duration = -1.0f;
 	m_nodes.back().bs2d.prevFrameDuration = -1.0f;
-	m_nodes.back().bs2d.points = new Animation::BlendSpacePoint2D[points.size()];
+	Animation::BlendSpacePoint2D* blendSpacePoints = new Animation::BlendSpacePoint2D[points.size()];
 	m_nodes.back().bs2d.pointCount = points.size();
 	for (int i = 0; i < points.size(); i++)
 	{
-		m_nodes.back().bs2d.points[i].animation = &m_animations[points[i].animationIndex];
-		m_nodes.back().bs2d.points[i].pos = points[i].pos;
-		m_nodes.back().bs2d.points[i].speed = points[i].speed;
-		m_nodes.back().bs2d.points[i].pose = new Transform[boneCount];
+		blendSpacePoints[i].animation = &m_animations[points[i].animationIndex];
+		blendSpacePoints[i].pos = points[i].pos;
+		blendSpacePoints[i].speed = points[i].speed;
+		blendSpacePoints[i].pose = new Transform[boneCount];
 		/* We need to memcpy because not all data comes from animation samplers */
-		memcpy(m_nodes.back().bs2d.points[i].pose, GetLocalTransformBuffer(), boneCount * sizeof(Transform));
+		memcpy(blendSpacePoints[i].pose, GetLocalTransformBuffer(), boneCount * sizeof(Transform));
 	}
+	m_nodes.back().bs2d.points = blendSpacePoints;
 	m_nodes.back().bs2d.pos = pos;
 	m_nodes.back().bs2d.pose = new Transform[boneCount];
 	m_nodes.back().bs2d.boneCount = boneCount;
-	m_nodes.back().bs2d.blendMatrix = new float[points.size() * points.size()];
-	m_nodes.back().bs2d.needsToComputeBlendMatrix = true;
+	float* blendMatrix = new float[points.size() * points.size()];
+	Math::ComputePointWeightBlendMatrix2D(&blendSpacePoints[0].pos, points.size(), blendMatrix, sizeof(Animation::BlendSpacePoint2D));
+	m_nodes.back().bs2d.blendMatrix = blendMatrix;
 	m_nodes.back().bs2d.weightsQuery = weightsQuery;
 	return m_nodes.size() - 1;
 }

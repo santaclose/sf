@@ -38,10 +38,31 @@ namespace sf {
 			return vertexBufferLayout.Access<T>(vertexBuffer, component, index);
 		}
 
+		inline uint8_t* AccessVertex(uint32_t index)
+		{
+			return vertexBufferLayout.Access(vertexBuffer, index);
+		}
+
 		template<typename T>
 		inline const T* ReadVertexComponent(Buffer::Component component, uint32_t index) const
 		{
 			return vertexBufferLayout.Access<T>(vertexBuffer, component, index);
+		}
+
+		inline const uint8_t* ReadVertex(uint32_t index) const
+		{
+			return vertexBufferLayout.Access(vertexBuffer, index);
+		}
+
+		inline const void GetPieceLimits(uint32_t i, uint32_t& outStart, uint32_t& outEnd) const
+		{
+			outStart = 0;
+			outEnd = indexCount;
+			if (pieceCount > 1)
+			{
+				outStart = pieces[i];
+				outEnd = pieceCount > i + 1 ? pieces[i + 1] : indexCount;
+			}
 		}
 
 		bool SaveToFile(const char* targetFile);

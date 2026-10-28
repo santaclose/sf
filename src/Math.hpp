@@ -29,49 +29,53 @@ namespace sf {
 			return ret;
 		}
 
-		inline void WeightedBlend(const float* input, const float* weights, int count, float& output)
+		inline void WeightedBlend(const float* input, const float* weights, int count, float& output, uint32_t inputStride = sizeof(float))
 		{
 			assert(count > 1);
+#define INPUT(i) ((const float*)(((const uint8_t*)input) + (inputStride * (i))))[0]
 
 			output = 0.0f;
 			for (int i = 0; i < count; i++)
-				output += input[i] * weights[i];
+				output += INPUT(i) * weights[i];
+#undef INPUT
 		}
 
-		inline void WeightedBlend(const glm::vec2* input, const float* weights, int count, glm::vec2& output)
+		template <typename T>
+		inline void WeightedBlend(const T* input, const float* weights, int count, T& output, uint32_t inputStride = sizeof(T))
 		{
 			assert(count > 1);
+#define INPUT(i) ((const T*)(((const uint8_t*)input) + (inputStride * (i))))[0]
 
-			output = { 0.0f, 0.0f };
+			output = T(0.0f);
 			for (int i = 0; i < count; i++)
-				output += input[i] * weights[i];
+				output += INPUT(i) * weights[i];
+#undef INPUT
 		}
 
-		inline void WeightedBlend(const glm::vec3* input, const float* weights, int count, glm::vec3& output)
+		inline void WeightedBlend(const glm::quat* input, const float* weights, int count, glm::quat& output, uint32_t inputStride = sizeof(glm::quat))
 		{
 			assert(count > 1);
-
-			output = { 0.0f, 0.0f, 0.0f };
-			for (int i = 0; i < count; i++)
-				output += input[i] * weights[i];
-		}
-
-		inline void WeightedBlend(const glm::quat* input, const float* weights, int count, glm::quat& output)
-		{
-			assert(count > 1);
+#define INPUT(i) ((const glm::quat*)(((const uint8_t*)input) + (inputStride * (i))))[0]
 
 			float total = weights[0];
-			output = input[0];
+			output = INPUT(0);
 			for (int i = 1; i < count; i++)
 			{
 				total += weights[i];
 				bool totalIsZero = glm::abs(total) < 0.0000001f;
-				output = glm::slerp(output, input[i], totalIsZero ? weights[i] : weights[i] / total);
+				output = glm::slerp(output, INPUT(i), totalIsZero ? weights[i] : weights[i] / total);
 			}
+#undef INPUT
 		}
 
 		void PointWeighting1D(float sample, const float* points, float* outWeights, int count, int pointStride = sizeof(float));
-		void PointWeighting2D(const glm::vec2& sample, const glm::vec2* points, float* outWeights, int count, int pointStride = sizeof(glm::vec2));
+		void PointWeightingBlendMatrix2D(const glm::vec2& sample, const glm::vec2* points, const float* blendMatrix, float* outWeights, int count, int pointStride = sizeof(glm::vec2));
+		void PointWeightingBlendMatrix3D(const glm::vec3& sample, const glm::vec3* points, const float* blendMatrix, float* outWeights, int count, int pointStride = sizeof(glm::vec3));
+
+		void ComputePointWeightBlendMatrix2D(const glm::vec2* points, int count, float* outBlendMatrix, int pointStride = sizeof(glm::vec2));
+		void ComputePointWeightBlendMatrix3D(const glm::vec3* points, int count, float* outBlendMatrix, int pointStride = sizeof(glm::vec3));
+
+		void ClosestPoints(const glm::vec3& target, const glm::vec3* points, int count, int wantedCount, std::vector<glm::vec3>& outPoints, std::vector<uint32_t>& outIndices, int pointStride = sizeof(glm::vec3));
 
 		inline uint32_t NextPowerOf2(uint32_t v)
 		{

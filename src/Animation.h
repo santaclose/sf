@@ -117,8 +117,7 @@ namespace sf::Animation
 		uint32_t pointCount;
 		float prevFrameDuration; /* Needed to adjust timer while blending animations */
 		glm::vec2 pos;
-		float* blendMatrix; /* Used for generating point weights */
-		bool needsToComputeBlendMatrix; /* Needs to be computed whenever a point position changes */
+		const float* blendMatrix; /* Used for generating point weights, computed from points */
 		float* weightsQuery; /* nullptr or array with one weight per point */
 	};
 

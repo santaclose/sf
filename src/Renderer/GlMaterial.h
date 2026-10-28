@@ -15,13 +15,13 @@ namespace sf {
 		GlShader* m_shader = nullptr;
 	private:
 		const Material* m_material = nullptr;
-		std::unordered_map<void*, GlTexture*> m_textures;
-		std::unordered_map<void*, uint32_t> m_ssbos;
+		std::unordered_map<const void*, GlTexture*> m_textures;
+		std::unordered_map<const void*, uint32_t> m_ssbos;
 
 	public:
 		void Create(const Material* material, Buffer::Layout vertexBufferLayout);
 		void Delete();
-		void Bind(const std::vector<void*>& rendererUniformVector);
+		void Bind(const std::vector<void*>& rendererUniformVector, const std::unordered_map<std::string, UniformData>* uniformOverrides = nullptr);
 		void UpdateBufferData(uint32_t bufferIndex, uint32_t location = ~0, uint32_t size = ~0);
 	};
 }

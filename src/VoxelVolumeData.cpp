@@ -11,9 +11,10 @@ void sf::VoxelVolumeData::BuildEmpty(const glm::uvec3& voxelCountPerAxis, Buffer
 	this->voxelCountPerAxis = voxelCountPerAxis;
 }
 
-void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, Buffer::Layout voxelBufferLayout)
+void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, Buffer::Layout voxelBufferLayout, uint32_t marginVoxelCount)
 {
-	float voxelBoundingSphereRadius = glm::sqrt(voxelSize * voxelSize * 3) / 2.0f;
+	float voxelDiag = glm::sqrt(voxelSize * voxelSize * 3);
+	float voxelBoundingSphereRadius = voxelDiag / 2.0f;
 
 	this->voxelBufferLayout = voxelBufferLayout;
 	const Buffer::LayoutInfo& layout = voxelBufferLayout.GetInfo();
@@ -39,12 +40,12 @@ void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, B
 		maxP.z = glm::max(maxP.z, posPtr->z);
 	}
 
-	this->offset = minP;
+	this->offset = minP - glm::vec3(voxelDiag * marginVoxelCount);
 
 	voxelCountPerAxis = {
-		(uint32_t)glm::ceil((maxP.x - minP.x) / voxelSize),
-		(uint32_t)glm::ceil((maxP.y - minP.y) / voxelSize),
-		(uint32_t)glm::ceil((maxP.z - minP.z) / voxelSize)
+		(uint32_t)glm::ceil((maxP.x - minP.x) / voxelSize) + marginVoxelCount * 2,
+		(uint32_t)glm::ceil((maxP.y - minP.y) / voxelSize) + marginVoxelCount * 2,
+		(uint32_t)glm::ceil((maxP.z - minP.z) / voxelSize) + marginVoxelCount * 2
 	};
 
 	// voxelize
@@ -65,14 +66,14 @@ void sf::VoxelVolumeData::BuildFromMesh(const MeshData& mesh, float voxelSize, B
 		glm::vec3 trianglebbmin = glm::min(glm::min(*posPtrA, *posPtrB), *posPtrC);
 		glm::vec3 trianglebbmax = glm::max(glm::max(*posPtrA, *posPtrB), *posPtrC);
 		glm::uvec3 minVoxelCoords = {
-			glm::clamp((int)((trianglebbmin.x - minP.x) / voxelSize), 0, (int)(voxelCountPerAxis.x - 1)),
-			glm::clamp((int)((trianglebbmin.y - minP.y) / voxelSize), 0, (int)(voxelCountPerAxis.y - 1)),
-			glm::clamp((int)((trianglebbmin.z - minP.z) / voxelSize), 0, (int)(voxelCountPerAxis.z - 1))
+			glm::clamp((int)((trianglebbmin.x - this->offset.x) / voxelSize), 0, (int)(voxelCountPerAxis.x - 1)),
+			glm::clamp((int)((trianglebbmin.y - this->offset.y) / voxelSize), 0, (int)(voxelCountPerAxis.y - 1)),
+			glm::clamp((int)((trianglebbmin.z - this->offset.z) / voxelSize), 0, (int)(voxelCountPerAxis.z - 1))
 		};
 		glm::uvec3 maxVoxelCoords = {
-			glm::clamp((int)((trianglebbmax.x - minP.x) / voxelSize) + 1, 0, (int)(voxelCountPerAxis.x - 1)),
-			glm::clamp((int)((trianglebbmax.y - minP.y) / voxelSize) + 1, 0, (int)(voxelCountPerAxis.y - 1)),
-			glm::clamp((int)((trianglebbmax.z - minP.z) / voxelSize) + 1, 0, (int)(voxelCountPerAxis.z - 1))
+			glm::clamp((int)((trianglebbmax.x - this->offset.x) / voxelSize) + 1, 0, (int)(voxelCountPerAxis.x - 1)),
+			glm::clamp((int)((trianglebbmax.y - this->offset.y) / voxelSize) + 1, 0, (int)(voxelCountPerAxis.y - 1)),
+			glm::clamp((int)((trianglebbmax.z - this->offset.z) / voxelSize) + 1, 0, (int)(voxelCountPerAxis.z - 1))
 		};
 
 		glm::uvec3 currentVoxel;

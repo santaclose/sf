@@ -362,10 +362,6 @@ bool sf::Renderer::Initialize(const Window& window, const Game::InitData& gameIn
 	std::cout << "[Renderer] Renderer: " << glGetString(GL_RENDERER) << std::endl;
 	std::cout << "[Renderer] OpenGL version supported " << glGetString(GL_VERSION) << std::endl;
 
-	glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
-	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
-	glEnable(GL_BLEND);
-
 	glPolygonMode(GL_FRONT, GL_FILL);
 	glCullFace(GL_BACK);
 
@@ -494,6 +490,8 @@ void sf::Renderer::DrawMeshShading(const Mesh& mesh, const Transform& transform)
 
 void sf::Renderer::DrawMesh(const Mesh& mesh, const Transform& transform)
 {
+	glEnable(GL_DEPTH_TEST);
+
 	const MeshData* sourceMeshData = mesh.GetSourceMeshData();
 	if (sourceMeshData == nullptr)
 	{
@@ -530,15 +528,10 @@ void sf::Renderer::DrawMesh(const Mesh& mesh, const Transform& transform)
 	for (uint32_t i = 0; i < meshData->pieceCount; i++)
 	{
 		GlMaterial* materialToUse = GetOrCreateMaterial(mesh.materials[i], meshData->vertexBufferLayout);
-		materialToUse->Bind(rendererUniformVector);
+		materialToUse->Bind(rendererUniformVector, &mesh.uniformOverrides[i]);
 
-		uint32_t drawStart = 0;
-		uint32_t drawEnd = meshData->indexCount;
-		if (meshData->pieceCount > 1)
-		{
-			drawStart = meshData->pieces[i];
-			drawEnd = meshData->pieceCount > i + 1 ? meshData->pieces[i + 1] : meshData->indexCount;
-		}
+		uint32_t drawStart, drawEnd;
+		meshData->GetPieceLimits(i, drawStart, drawEnd);
 
 		glBindVertexArray(meshGpuData[meshData].gl_vao);
 		glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
@@ -558,6 +551,8 @@ void sf::Renderer::DrawMesh(const Mesh& mesh, const Transform& transform)
 
 void sf::Renderer::DrawSkinnedMesh(const SkinnedMesh& mesh, const Transform& transform)
 {
+	glEnable(GL_DEPTH_TEST);
+
 	const MeshData* sourceMeshData = mesh.GetSourceMeshData();
 	assert(sourceMeshData != nullptr && mesh.skeletonData != nullptr);
 	const SphereCollider& boundingSphere = FrustumCulling::GetOrCreateSkinnedMeshBoundingSphere(sourceMeshData, mesh.skeletonData).ApplyTransform(transform);
@@ -596,16 +591,11 @@ void sf::Renderer::DrawSkinnedMesh(const SkinnedMesh& mesh, const Transform& tra
 	for (uint32_t i = 0; i < meshData->pieceCount; i++)
 	{
 		GlMaterial* materialToUse = GetOrCreateMaterial(mesh.materials[i], meshData->vertexBufferLayout);
-		materialToUse->Bind(rendererUniformVector);
+		materialToUse->Bind(rendererUniformVector, &mesh.uniformOverrides[i]);
 		materialToUse->m_shader->SetUniform1i("animate", mesh.skeletonData->m_animate);
 
-		uint32_t drawStart = 0;
-		uint32_t drawEnd = meshData->indexCount;
-		if (meshData->pieceCount > 1)
-		{
-			drawStart = meshData->pieces[i];
-			drawEnd = meshData->pieceCount > i + 1 ? meshData->pieces[i + 1] : meshData->indexCount;
-		}
+		uint32_t drawStart, drawEnd;
+		meshData->GetPieceLimits(i, drawStart, drawEnd);
 
 		glBindVertexArray(meshGpuData[meshData].gl_vao);
 		glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
@@ -733,6 +723,7 @@ void sf::Renderer::DrawParticleSystem(const ParticleSystem& particleSystem, cons
 void sf::Renderer::DrawSprite(const Sprite& sprite, const ScreenCoordinates& screenCoordinates)
 {
 	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
 
 	if (!spriteShader.Initialized())
 		CreateSpriteGpuData();
@@ -764,13 +755,12 @@ void sf::Renderer::DrawSprite(const Sprite& sprite, const ScreenCoordinates& scr
 
 	glBindBufferBase(GL_UNIFORM_BUFFER, 0, sharedGpuData_gl_ubo);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-	glEnable(GL_DEPTH_TEST);
 }
 
 void sf::Renderer::DrawText(const Text& text, const ScreenCoordinates& screenCoordinates)
 {
 	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
 
 	unsigned fontPathHash = Hash::SimpleStringHash(text.fontPath);
 	unsigned stringHash = Hash::SimpleStringHash(text.string);
@@ -850,8 +840,6 @@ void sf::Renderer::DrawText(const Text& text, const ScreenCoordinates& screenCoo
 	glBindBufferBase(GL_UNIFORM_BUFFER, 5, fontPathAndStringToTextData[fontPathHash].at(stringHash).gl_ubo_layoutData);
 
 	glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)0, fontPathAndStringToTextData[fontPathHash].at(stringHash).textData.PrintableCharacters.size());
-
-	glEnable(GL_DEPTH_TEST);
 }
 
 sf::Renderer::Debug::Config& sf::Renderer::AccessDebugConfig()
@@ -962,6 +950,8 @@ void sf::Renderer::DrawFramebuffer(const Framebuffer& framebuffer, float deltaTi
 
 			Debug::Draw(sharedGpuData_gl_ubo);
 		}
+
+		glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
 
 		for (uint32_t i = 0; i < renderTargets.size(); i++) // a bit brute force
 		{

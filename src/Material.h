@@ -10,15 +10,18 @@
 
 namespace sf
 {
+	union UniformData
+	{
+		const void* p;
+		float f32;
+		int32_t i32;
+		uint32_t u32;
+	};
+
 	struct Uniform
 	{
 		DataType dataType;
-		union {
-			void* p;
-			float f32;
-			int32_t i32;
-			uint32_t u32;
-		} data;
+		UniformData data;
 	};
 
 	struct MaterialBuffer
@@ -43,7 +46,7 @@ namespace sf
 	};
 	enum class MaterialBlendMode
 	{
-		Alpha, Multiply, Add
+		None, Alpha, Multiply, Add
 	};
 	enum class MaterialDrawMode
 	{
@@ -59,12 +62,14 @@ namespace sf
 		std::unordered_map<std::string, RendererUniform> rendererUniforms;
 		std::vector<MaterialBuffer> buffers;
 		bool isDoubleSided = false;
+		bool usesAlphaToCoverage = false;
 		MaterialDrawMode drawMode = MaterialDrawMode::Fill;
 		MaterialBlendMode blendMode = MaterialBlendMode::Alpha;
 		uint32_t tessPatchVertexCount;
 		std::string tessSpacing;
 		std::string tessWinding;
 		uint32_t meshWorkGroupCount;
+		void* updateFunction;
 	private:
 		std::unordered_set<Bitmap*> allocatedBitmaps;
 	public:

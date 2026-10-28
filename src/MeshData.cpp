@@ -23,9 +23,17 @@ void sf::MeshData::Create(
 
 	if (pieceVector != nullptr)
 	{
-		this->pieces = new uint32_t[pieceVector->size()];
-		this->pieceCount = pieceVector->size();
-		memcpy(this->pieces, pieceVector->data(), pieceVector->size() * sizeof(uint32_t));
+		if (pieceVector->size() == 1)
+		{
+			assert(pieceVector->at(0) == 0);
+			this->pieceCount = 1;
+		}
+		else
+		{
+			this->pieces = new uint32_t[pieceVector->size()];
+			this->pieceCount = pieceVector->size();
+			memcpy(this->pieces, pieceVector->data(), pieceVector->size() * sizeof(uint32_t));
+		}
 	}
 	else
 	{

@@ -24,7 +24,7 @@ namespace sf {
 		~VoxelVolumeData() = default;
 
 		void BuildEmpty(const glm::uvec3& voxelCountPerAxis, Buffer::Layout voxelBufferLayout = 0u, float voxelSize = 1.0f, const glm::vec3& offset = { 0.0f, 0.0f, 0.0f });
-		void BuildFromMesh(const MeshData& meshData, float voxelSize, Buffer::Layout voxelBufferLayout = 0u);
+		void BuildFromMesh(const MeshData& meshData, float voxelSize, Buffer::Layout voxelBufferLayout = 0u, uint32_t marginVoxelCount = 0);
 
 		void* CastRay(const glm::vec3& origin, const glm::vec3& direction, bool avoidEarlyCollision = true, float* out_t = nullptr) const;
 

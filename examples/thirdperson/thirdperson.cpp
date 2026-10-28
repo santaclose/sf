@@ -53,13 +53,25 @@ namespace sf
 
 		std::vector<Entity> houseObjects;
 
+		struct BitmapAoData
+		{
+			glm::vec3 origin;
+			glm::vec3 size;
+		};
 		MeshData* buildingMeshes[3];
 		MeshData* buildingColMeshes[3];
+		Bitmap buildingAoBitmaps[3];
+		BitmapAoData buildingAoData[3];
 		const std::vector<const char*> buildingMeshNames = {"ba2f", "ba3f", "house"};
 		std::vector<const std::vector<ObjImporter::ObjMarkerExt>*> perBuildingMarkers;
 		std::vector<LODGroup*> buildingLodGroups;
 		uint32_t houseCountPerGroup[] = { 4, 6, 8 };
-		std::vector<Entity> houses;
+		struct BuildingData
+		{
+			Entity entity;
+			uint32_t type;
+		};
+		std::vector<BuildingData> houses;
 
 		std::vector<Entity> trees;
 		glm::vec3 targetGimbalRotation;
@@ -73,6 +85,7 @@ namespace sf
 		Buffer::Layout treeObjectVertexLayout = Buffer::Layout({
 			Buffer::Component::Position,
 			Buffer::Component::Normal,
+			Buffer::Component::UV,
 			Buffer::Component::AO
 		});
 
@@ -83,10 +96,11 @@ namespace sf
 		});
 
 		Buffer::Layout characterVertexLayout = Buffer::Layout({
-			Buffer::Component::Position,
-			Buffer::Component::Normal,
 			Buffer::Component::BoneIndices,
-			Buffer::Component::BoneWeights
+			Buffer::Component::BoneWeights,
+			Buffer::Component::Position,
+			Buffer::Component::UV,
+			Buffer::Component::AO
 		});
 		SkeletonData* shanyungSkeleton;
 		MeshData* shanyungMesh;
@@ -107,19 +121,25 @@ namespace sf
 		float foxVerticalSpeed = 0.0f;
 		float foxSphereSeparation;
 
+		Material buildingMaterial;
+		Material buildingObjectMaterial;
+		Material buildingFlatMaterial;
 		Material characterMaterial;
-		Material vertexAoMaterial;
-		Material houseMaterial;
-		Material treeMaterial;
+		Material genericMaterial;
 		Terrain terrain;
 
-		float shanyungLodDistances[] = { 5.0f, 20.0f, 45.0f, 1000.0f };
-		float shanyungLodRatios[] = { 1.0f, 0.25f, 0.0625f, 0.001f };
-		float houseLodDistances[] = { 50.0f, 1000.0f };
-		float houseLodRatios[] = { 1.0f, 0.5f };
+		const glm::vec3 treeLeavesColor = { 0.0f, 0.44f, 0.0f };
+		const glm::vec3 treeBranchColor = { 128.0f / 255.0f, 96.0f / 255.0f, 89.0f / 255.0f };
+		const glm::vec3 skinColor = { 0.82f, 0.66f, 0.52f };
+		const glm::vec3 eyeColor = { 1.0f, 1.0f, 1.0f };
+		const glm::vec3 foxColor = { 213.0f / 255.0f, 119.0f / 255.0f, 5.0f / 255.0f };
 
-		Entity testEntity;
-		MeshData testMeshData;
+		LODSpec houseLodSpec;
+		LODSpec shanyungLodSpec;
+
+		Bitmap eyeColorBitmap;
+		Bitmap euroAshBranchBitmap;
+		Bitmap euroAshLeafBitmap;
 
 		void UpdateCamera(float deltaTime, Entity targetCharacter, float gimbalOffsetY)
 		{
@@ -142,7 +162,7 @@ namespace sf
 			Geometry::RayHit rh;
 			for (uint32_t i = 0; i < houses.size(); i++)
 			{
-				if (EntityIntersect::MovingSphereMesh(gimbal, camT.position - gimbalT.position, houses[i], &rh))
+				if (EntityIntersect::MovingSphereMesh(gimbal, camT.position - gimbalT.position, houses[i].entity, &rh))
 					camT.position = gimbalT.position + gimbalT.Forward() * rh.distance;
 			}
 
@@ -165,12 +185,14 @@ namespace sf
 			CapsuleCollider& cc = charEntity.GetComponent<CapsuleCollider>();
 
 			bool hitMesh = false;
+			int hitMeshIndex;
 			Geometry::RayHit rh;
 			for (int i = 0; i < houses.size(); i++)
 			{
-				if (EntityIntersect::MovingCapsuleMesh(charEntity, glm::vec3(0.0f, -shanyungCapsuleSeparation * 2.0f, 0.0f), houses[i], &rh))
+				if (EntityIntersect::MovingCapsuleMesh(charEntity, glm::vec3(0.0f, -30.0f, 0.0f), houses[i].entity, &rh))
 				{
 					hitMesh = true;
+					hitMeshIndex = i;
 					break;
 				}
 			}
@@ -180,20 +202,36 @@ namespace sf
 			terrain.Sample(capsuleBottom, terrainY);
 			float terrainDis = capsuleBottom.y - terrainY;
 			if (hitMesh)
+			{
+				Transform& buildingTransform = houses[hitMeshIndex].entity.GetComponent<Transform>();
+				SkinnedMesh& sm = shanyung.GetComponent<SkinnedMesh>();
+				sm.uniformOverrides[0]["useAoSampler"].u32 = sm.uniformOverrides[1]["useAoSampler"].u32 = 1;
+				sm.uniformOverrides[0]["aoSampler"].p = sm.uniformOverrides[1]["aoSampler"].p = &buildingAoBitmaps[houses[hitMeshIndex].type];
+				sm.uniformOverrides[0]["aoSamplerOrigin"].p = sm.uniformOverrides[1]["aoSamplerOrigin"].p = &buildingAoData[houses[hitMeshIndex].type].origin;
+				sm.uniformOverrides[0]["aoSamplerSize"].p = sm.uniformOverrides[1]["aoSamplerSize"].p = &buildingAoData[houses[hitMeshIndex].type].size;
+				sm.uniformOverrides[0]["aoSamplerModelPosition"].p = sm.uniformOverrides[1]["aoSamplerModelPosition"].p = &buildingTransform.position;
+				sm.uniformOverrides[0]["aoSamplerModelRotation"].p = sm.uniformOverrides[1]["aoSamplerModelRotation"].p = &buildingTransform.rotation;
 				return glm::min(terrainDis, rh.distance);
+			}
 			else
+			{
+				SkinnedMesh& sm = shanyung.GetComponent<SkinnedMesh>();
+				sm.uniformOverrides[0]["useAoSampler"].u32 = sm.uniformOverrides[1]["useAoSampler"].u32 = 0;
 				return terrainDis;
+			}
 		}
 
 		float CharacterStepCastFox(Entity charEntity)
 		{
 			bool hitMesh = false;
+			int hitMeshIndex;
 			Geometry::RayHit rh;
 			for (int i = 0; i < houses.size(); i++)
 			{
-				if (EntityIntersect::MovingSphereMesh(charEntity, glm::vec3(0.0f, -foxSphereSeparation * 2.0f, 0.0f), houses[i], &rh))
+				if (EntityIntersect::MovingSphereMesh(charEntity, glm::vec3(0.0f, -30.0f, 0.0f), houses[i].entity, &rh))
 				{
 					hitMesh = true;
+					hitMeshIndex = i;
 					break;
 				}
 			}
@@ -203,9 +241,23 @@ namespace sf
 			terrain.Sample(sphereBottom, terrainY);
 			float terrainDis = sphereBottom.y - terrainY;
 			if (hitMesh)
+			{
+				Transform& buildingTransform = houses[hitMeshIndex].entity.GetComponent<Transform>();
+				SkinnedMesh& sm = fox.GetComponent<SkinnedMesh>();
+				sm.uniformOverrides[0]["useAoSampler"].u32 = 1;
+				sm.uniformOverrides[0]["aoSampler"].p = &buildingAoBitmaps[houses[hitMeshIndex].type];
+				sm.uniformOverrides[0]["aoSamplerOrigin"].p = &buildingAoData[houses[hitMeshIndex].type].origin;
+				sm.uniformOverrides[0]["aoSamplerSize"].p = &buildingAoData[houses[hitMeshIndex].type].size;
+				sm.uniformOverrides[0]["aoSamplerModelPosition"].p = &buildingTransform.position;
+				sm.uniformOverrides[0]["aoSamplerModelRotation"].p = &buildingTransform.rotation;
 				return glm::min(terrainDis, rh.distance);
+			}
 			else
+			{
+				SkinnedMesh& sm = fox.GetComponent<SkinnedMesh>();
+				sm.uniformOverrides[0]["useAoSampler"].u32 = 0;
 				return terrainDis;
+			}
 		}
 	}
 
@@ -219,7 +271,6 @@ namespace sf
 
 	void Game::Initialize(int argc, char** argv)
 	{
-		testEntity = scene.CreateEntity();
 		FileUtils::CreateFolder("assets/examples");
 		FileUtils::DownloadFiles({
 			"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Fox/glTF-Binary/Fox.glb",
@@ -228,15 +279,47 @@ namespace sf
 			"https://casual-effects.com/g3d/data10/research/model/horseChestnut/chestnut.zip"
 			}, "assets/examples/");
 
+		eyeColorBitmap.CreateFromFile("assets/examples/eye_c.png");
+
 		characterMaterial.vertShaderFilePath = "assets/shaders/default.vert";
-		characterMaterial.fragShaderFilePath = "assets/shaders/default.frag";
-		vertexAoMaterial.vertShaderFilePath = "assets/shaders/default.vert";
-		vertexAoMaterial.fragShaderFilePath = "assets/shaders/vertexAo.frag";
-		houseMaterial.vertShaderFilePath = "assets/shaders/default.vert";
-		houseMaterial.fragShaderFilePath = "assets/shaders/defaultFlat.frag";
-		treeMaterial.vertShaderFilePath = "assets/shaders/default.vert";
-		treeMaterial.fragShaderFilePath = "assets/shaders/vertexAo.frag";
-		treeMaterial.isDoubleSided = true;
+		characterMaterial.fragShaderFilePath = "examples/thirdperson/buildingObject.frag";
+		characterMaterial.uniforms["useAoSampler"] = { DataType::b, 0 };
+		characterMaterial.uniforms["aoSampler"] = { DataType::bitmap, nullptr };
+		characterMaterial.uniforms["aoSamplerOrigin"] = { DataType::vec3f32, nullptr };
+		characterMaterial.uniforms["aoSamplerSize"] = { DataType::vec3f32, nullptr };
+		characterMaterial.uniforms["aoSamplerModelPosition"] = { DataType::vec3f32, nullptr };
+		characterMaterial.uniforms["aoSamplerModelRotation"] = { DataType::vec4f32, nullptr };
+
+		buildingFlatMaterial.vertShaderFilePath = "assets/shaders/default.vert";
+		buildingFlatMaterial.fragShaderFilePath = "assets/shaders/defaultFlat.frag";
+
+		genericMaterial.vertShaderFilePath = "assets/shaders/default.vert";
+		genericMaterial.fragShaderFilePath = "examples/thirdperson/generic.frag";
+		genericMaterial.uniforms["color"] = { DataType::vec3f32, nullptr };
+		genericMaterial.uniforms["useColorSampler"] = { DataType::b, 0 };
+		genericMaterial.uniforms["colorSampler"] = { DataType::bitmap, nullptr };
+		genericMaterial.uniforms["useAoSampler"] = { DataType::b, 0 };
+		genericMaterial.uniforms["aoSampler"] = { DataType::bitmap, nullptr };
+		genericMaterial.uniforms["aoSamplerOrigin"] = { DataType::vec3f32, nullptr };
+		genericMaterial.uniforms["aoSamplerSize"] = { DataType::vec3f32, nullptr };
+		genericMaterial.uniforms["aoSamplerModelPosition"] = { DataType::vec3f32, nullptr };
+		genericMaterial.uniforms["aoSamplerModelRotation"] = { DataType::vec4f32, nullptr };
+
+		buildingMaterial.vertShaderFilePath = "assets/shaders/default.vert";
+		buildingMaterial.fragShaderFilePath = "examples/thirdperson/building.frag";
+		buildingMaterial.uniforms["aoSampler"] = { DataType::bitmap, nullptr };
+		buildingMaterial.uniforms["aoSamplerOrigin"] = { DataType::vec3f32, nullptr };
+		buildingMaterial.uniforms["aoSamplerSize"] = { DataType::vec3f32, nullptr };
+		buildingMaterial.uniforms["aoSamplerModelPosition"] = { DataType::vec3f32, nullptr };
+		buildingMaterial.uniforms["aoSamplerModelRotation"] = { DataType::vec4f32, nullptr };
+
+		buildingObjectMaterial.vertShaderFilePath = "assets/shaders/default.vert";
+		buildingObjectMaterial.fragShaderFilePath = "examples/thirdperson/buildingObject.frag";
+		buildingObjectMaterial.uniforms["aoSampler"] = { DataType::bitmap, nullptr };
+		buildingObjectMaterial.uniforms["aoSamplerOrigin"] = { DataType::vec3f32, nullptr };
+		buildingObjectMaterial.uniforms["aoSamplerSize"] = { DataType::vec3f32, nullptr };
+		buildingObjectMaterial.uniforms["aoSamplerModelPosition"] = { DataType::vec3f32, nullptr };
+		buildingObjectMaterial.uniforms["aoSamplerModelRotation"] = { DataType::vec4f32, nullptr };
 
 		targetGimbalRotation = glm::vec3(0.0, glm::radians(180.0f), 0.0);
 		cameraDistance = 3.0;
@@ -260,6 +343,8 @@ namespace sf
 
 		// Houses
 		{
+			bool loadSucceeded = houseLodSpec.LoadFromFile("assets/examples/building.lod");
+			assert(loadSucceeded);
 			for (int i = 0; i < buildingMeshNames.size(); i++)
 			{
 				const char* name = buildingMeshNames[i];
@@ -269,13 +354,21 @@ namespace sf
 				int objid = ObjImporter::Load(filePath.c_str());
 				ObjImporter::GenerateMeshData(objid, treeObjectVertexLayout, *buildingMeshes[i]);
 
-				sf::VoxelVolumeData vv;
-				vv.BuildFromMesh(*buildingMeshes[i], 0.03f);
-				sf::MeshProcessor::ComputeVertexAmbientOcclusion(*buildingMeshes[i], &vv);
+				sf::VoxelVolumeData vv2;
+				vv2.BuildFromMesh(*buildingMeshes[i], 0.12, 0u, 2);
+				std::string aoBitmapFileName = std::string("assets/examples/") + std::string(name) + std::string(".bitmap");
+				if (!buildingAoBitmaps[i].LoadFromFile(aoBitmapFileName.c_str()))
+				{
+					sf::MeshProcessor::AmbientOcclusionBitmapFromVoxelVolume(vv2, buildingAoBitmaps[i]);
+					buildingAoBitmaps[i].SaveToFile(aoBitmapFileName.c_str());
+				}
+
+				buildingAoData[i].origin = vv2.offset;
+				buildingAoData[i].size = glm::vec3((float) vv2.voxelCountPerAxis.x * vv2.voxelSize, (float) vv2.voxelCountPerAxis.y * vv2.voxelSize, (float) vv2.voxelCountPerAxis.z * vv2.voxelSize);
 
 				buildingLodGroups.emplace_back();
 				buildingLodGroups.back() = new LODGroup();
-				buildingLodGroups.back()->Create(*buildingMeshes[i], houseLodRatios, houseLodDistances, 2);
+				buildingLodGroups.back()->Create(*buildingMeshes[i], houseLodSpec);
 
 				perBuildingMarkers.emplace_back();
 				perBuildingMarkers.back() = ObjImporter::GetMarkers(objid);
@@ -295,8 +388,9 @@ namespace sf
 
 				int numberOfBuildings = houseCountPerGroup[Random::Int(sizeof(houseCountPerGroup) / sizeof(houseCountPerGroup[0]))];
 				houses.emplace_back();
-				houses.back() = scene.CreateEntity();
-				float houseBoundingSphereRadius = houses.back().AddComponent<MeshCollider>(buildingColMesh).boundingSphere.radius;
+				houses.back().type = buildingToUseIndex;
+				houses.back().entity = scene.CreateEntity();
+				float houseBoundingSphereRadius = houses.back().entity.AddComponent<MeshCollider>(buildingColMesh).boundingSphere.radius;
 
 				glm::vec2 area;
 				uint32_t numStepsX;
@@ -336,7 +430,7 @@ namespace sf
 					glm::vec3 sample = glm::vec3(areaCenter.x, 0.0f, areaCenter.y) + glm::vec3(right.x, 0.0f, right.y) + glm::vec3(forward.x, 0.0f, forward.y);
 					for (int i = 0; i < houses.size() - 1; i++) // -1 because we added one to check the bounding sphere
 					{
-						SphereCollider houseSphere = houses[i].GetComponent<MeshCollider>().boundingSphere.ApplyTransform(houses[i].GetComponent<Transform>());
+						SphereCollider houseSphere = houses[i].entity.GetComponent<MeshCollider>().boundingSphere.ApplyTransform(houses[i].entity.GetComponent<Transform>());
 						if (glm::distance2(glm::vec2(sample.x, sample.z), glm::vec2(houseSphere.center.x, houseSphere.center.z)) < houseSphere.radius * houseSphere.radius)
 						{
 							areaIsAvailable = false;
@@ -359,7 +453,7 @@ namespace sf
 				if (!areaIsAvailable)
 				{
 					attempts++;
-					scene.DestroyEntity(houses.back());
+					scene.DestroyEntity(houses.back().entity);
 					houses.resize(houses.size() - 1);
 				}
 				else
@@ -368,8 +462,9 @@ namespace sf
 					houses.resize(houses.size() + numberOfBuildings - 1);
 					for (int i = 0; i < numberOfBuildings -1; i++)
 					{
-						houses[houses.size() - 1 - i] = scene.CreateEntity();
-						houses[houses.size() - 1 - i].AddComponent<MeshCollider>(buildingColMesh);
+						houses[houses.size() - 1 - i].entity = scene.CreateEntity();
+						houses[houses.size() - 1 - i].entity.AddComponent<MeshCollider>(buildingColMesh);
+						houses[houses.size() - 1 - i].type = buildingToUseIndex;
 					}
 					glm::vec2 right = glm::rotate(glm::vec2(1.0f, 0.0f), areaRotation);
 					glm::vec2 forward = glm::rotate(glm::vec2(0.0f, 1.0f), areaRotation);
@@ -378,11 +473,16 @@ namespace sf
 					for (int i = 0; i < numberOfBuildings; i++)
 					{
 						glm::vec2 cursor = origin + right * (houseBoundingSphereRadius * (1 + 2 * (i % numStepsX))) + forward * (houseBoundingSphereRadius * (1 + 2 * (i / numStepsX)));
-						houses[houses.size() - 1 - i].AddComponent<Mesh>(buildingLODGroup, &treeMaterial);
-						Transform& t = houses[houses.size() - 1 - i].AddComponent<Transform>();
+						Mesh& m = houses[houses.size() - 1 - i].entity.AddComponent<Mesh>(buildingLODGroup, &buildingMaterial);
+						Transform& t = houses[houses.size() - 1 - i].entity.AddComponent<Transform>();
 						t.position = glm::vec3(cursor.x, 0.0f, cursor.y);
 						t.rotation = glm::quat(glm::vec3(0.0f, -areaRotation, 0.0f));
 						terrain.Sample(t.position, t.position.y);
+						m.uniformOverrides[0]["aoSampler"].p = &buildingAoBitmaps[buildingToUseIndex];
+						m.uniformOverrides[0]["aoSamplerOrigin"].p = &buildingAoData[buildingToUseIndex].origin;
+						m.uniformOverrides[0]["aoSamplerSize"].p = &buildingAoData[buildingToUseIndex].size;
+						m.uniformOverrides[0]["aoSamplerModelPosition"].p = &t.position;
+						m.uniformOverrides[0]["aoSamplerModelRotation"].p = &t.rotation;
 
 						const std::vector<ObjImporter::ObjMarkerExt>* markers = perBuildingMarkers[buildingToUseIndex];
 						for (const ObjImporter::ObjMarkerExt& marker : *markers)
@@ -396,7 +496,12 @@ namespace sf
 							toApply.position = marker.position;
 							toApply.rotation = marker.rotation;
 							ho_t.Apply(toApply);
-							houseObjects.back().AddComponent<Mesh>(hom::GetLodsByType(marker.name), &treeMaterial);
+							Mesh& ho_m = houseObjects.back().AddComponent<Mesh>(hom::GetLodsByType(marker.name), &buildingObjectMaterial);
+							ho_m.uniformOverrides[0]["aoSampler"].p = &buildingAoBitmaps[buildingToUseIndex];
+							ho_m.uniformOverrides[0]["aoSamplerOrigin"].p = &buildingAoData[buildingToUseIndex].origin;
+							ho_m.uniformOverrides[0]["aoSamplerSize"].p = &buildingAoData[buildingToUseIndex].size;
+							ho_m.uniformOverrides[0]["aoSamplerModelPosition"].p = &t.position;
+							ho_m.uniformOverrides[0]["aoSamplerModelRotation"].p = &t.rotation;
 							houseObjects.back().AddComponent<MeshCollider>(hom::GetLodsByType(marker.name)->sourceMesh);
 						}
 					}
@@ -409,7 +514,11 @@ namespace sf
 				trees.emplace_back();
 				trees.back() = scene.CreateEntity();
 				const LODGroup* treeLodGroup = hom::GetLodsByType("tree");
-				trees.back().AddComponent<Mesh>(treeLodGroup, &treeMaterial);
+				Mesh& m = trees.back().AddComponent<Mesh>(treeLodGroup, &genericMaterial);
+				assert(m.uniformOverrides.size() == 2);
+				m.uniformOverrides[0]["color"].p = &treeBranchColor;
+				m.uniformOverrides[1]["color"].p = &treeLeavesColor;
+				// m.materials[0] = &treeBranchMaterial;
 				trees.back().AddComponent<MeshCollider>(treeLodGroup->GetMeshDataForLOD(0));
 				Transform& t = trees.back().AddComponent<Transform>();
 
@@ -435,9 +544,9 @@ namespace sf
 					t.rotation = glm::quat(glm::vec3(0.0f, Math::Pi * 2.0f * Random::Float(), 0.0f));
 					t.scale = Random::Float() + 1.0;
 
-					for (Entity h : houses)
+					for (const BuildingData& h : houses)
 					{
-						if (EntityIntersect::MeshBoundingSpheres(h, trees.back()))
+						if (EntityIntersect::MeshBoundingSpheres(h.entity, trees.back()))
 							treeIsInAvailablePlace = false;
 					}
 				}
@@ -459,27 +568,32 @@ namespace sf
 			int gltfid = GltfImporter::Load("assets/examples/shanyung_blendspace2d.glb");
 			GltfImporter::GenerateSkeleton(gltfid, *shanyungSkeleton);
 			GltfImporter::GenerateMeshData(gltfid, characterVertexLayout, *shanyungMesh);
-			GltfImporter::GenerateMeshData(gltfid, positionOnlyVertexLayout, testMeshData);
 			MeshProcessor::RemoveUnusedBones(*shanyungMesh, *shanyungSkeleton);
 			{
+				Transform shanyungAoBakeTransform;
+				shanyungAoBakeTransform.rotation = glm::quat(glm::vec3(glm::radians(180.0f), 0.0f, 0.0f));
+				MeshProcessor::TransformMesh(*shanyungMesh, shanyungAoBakeTransform);
+				sf::VoxelVolumeData shyvv;
+				shyvv.BuildFromMesh(*shanyungMesh, 0.005);
+				sf::MeshProcessor::ComputeVertexAmbientOcclusion(*shanyungMesh, &shyvv);
+				MeshProcessor::TransformMesh(*shanyungMesh, shanyungAoBakeTransform.Inverse());
+
 				Transform shanyungImportTransform;
 				shanyungImportTransform.rotation = glm::quat(glm::vec3(glm::radians(-90.0f), 0.0f, 0.0f));
 				shanyungImportTransform.rotation *= glm::quat(glm::vec3(0.0f, 0.0f, glm::radians(180.0f)));
 				MeshProcessor::TransformMesh(*shanyungMesh, shanyungImportTransform);
-				MeshProcessor::TransformMesh(testMeshData, shanyungImportTransform);
 				MeshProcessor::TransformSkeleton(*shanyungSkeleton, shanyungImportTransform);
 			}
 
-			shanyungLodGroup.Create(*shanyungMesh, shanyungLodRatios, shanyungLodDistances, 4);
-			shanyung.AddComponent<SkinnedMesh>(&shanyungLodGroup, shanyungSkeleton, &characterMaterial);
 
-			Animation::SampleToBones(shanyungSkeleton->m_animations[2], shanyungSkeleton->m_core.m_boneLocalTransforms.data(), 0.5f);
-			shanyungSkeleton->m_core.PropagateLocalTransforms(nullptr, true);
-			MeshProcessor::ApplySkeleton(shanyungSkeleton->GetSkinMatrixBuffer(), *shanyungMesh, testMeshData);
-			MeshProcessor::Remesh(testMeshData, testMeshData, 10);
-			Transform& testT = testEntity.AddComponent<Transform>();
-			terrain.Sample(testT.position, testT.position.y);
-			testEntity.AddComponent<Mesh>(&testMeshData, &houseMaterial);
+			bool loadSucceeded = shanyungLodSpec.LoadFromFile("assets/examples/shanyung.lod");
+			assert(loadSucceeded);
+			shanyungLodGroup.Create(*shanyungMesh, shanyungLodSpec);
+			SkinnedMesh& sm = shanyung.AddComponent<SkinnedMesh>(&shanyungLodGroup, shanyungSkeleton, &genericMaterial);
+			assert(sm.uniformOverrides.size() == 2);
+			sm.uniformOverrides[0]["useColorSampler"].u32 = 1;
+			sm.uniformOverrides[0]["colorSampler"].p = &eyeColorBitmap;
+			sm.uniformOverrides[1]["color"].p = &skinColor;
 
 			CapsuleCollider& e_cc = shanyung.AddComponent<CapsuleCollider>();
 			e_cc.radius = 0.3;
@@ -505,15 +619,19 @@ namespace sf
 			GltfImporter::GenerateSkeleton(gltfid, *foxSkeleton);
 			GltfImporter::GenerateMeshData(gltfid, characterVertexLayout, *foxMesh);
 			MeshProcessor::RemoveUnusedBones(*foxMesh, *foxSkeleton);
-			MeshProcessor::ComputeNormals(*foxMesh);
 			{
 				Transform foxImportTransform;
 				foxImportTransform.rotation = glm::quat(glm::vec3(0.0f, glm::radians(180.0f), 0.0f));
 				foxImportTransform.scale = 0.01f;
 				MeshProcessor::TransformMesh(*foxMesh, foxImportTransform);
 				MeshProcessor::TransformSkeleton(*foxSkeleton, foxImportTransform);
+				sf::VoxelVolumeData foxvv;
+				foxvv.BuildFromMesh(*foxMesh, 0.005);
+				sf::MeshProcessor::ComputeVertexAmbientOcclusion(*foxMesh, &foxvv);
 			}
-			fox.AddComponent<SkinnedMesh>(foxMesh, foxSkeleton, &characterMaterial);
+			SkinnedMesh& sm = fox.AddComponent<SkinnedMesh>(foxMesh, foxSkeleton, &genericMaterial);
+			assert(sm.uniformOverrides.size() == 1);
+			sm.uniformOverrides[0]["color"].p = &foxColor;
 
 			foxCol = scene.CreateEntity();
 			foxCol.AddComponent<Transform>();
@@ -584,7 +702,7 @@ namespace sf
 			Geometry::ContactData outCd[4];
 			for (int i = 0; i < houses.size(); i++)
 			{
-				if (EntityIntersect::CapsuleMesh(shanyung, houses[i], 4, &outNCount, outCd))
+				if (EntityIntersect::CapsuleMesh(shanyung, houses[i].entity, 4, &outNCount, outCd))
 				{
 					for (uint32_t i = 0; i < outNCount; i++)
 					{
@@ -679,7 +797,7 @@ namespace sf
 			Geometry::ContactData outCd[4];
 			for (int i = 0; i < houses.size(); i++)
 			{
-				if (EntityIntersect::SphereMesh(foxCol, houses[i], 4, &outNCount, outCd))
+				if (EntityIntersect::SphereMesh(foxCol, houses[i].entity, 4, &outNCount, outCd))
 				{
 					for (uint32_t i = 0; i < outNCount; i++)
 					{
@@ -694,6 +812,35 @@ namespace sf
 							collidedWithWall = true;
 						}
 					}
+				}
+			}
+			for (int i = 0; i < houseObjects.size(); i++)
+			{
+				if (EntityIntersect::SphereMesh(foxCol, houseObjects[i], 4, &outNCount, outCd))
+				{
+					for (uint32_t i = 0; i < outNCount; i++)
+					{
+						glm::vec3 flatCapsuleNormal = glm::normalize(glm::vec3(outCd[i].normalA.x, 0.0f, outCd[i].normalA.z));
+						glm::vec3 flatTriNormal = glm::normalize(glm::vec3(outCd[i].normalB.x, 0.0f, outCd[i].normalB.z));
+
+						Renderer::Debug::AddLine(e_t.position + glm::vec3(0.0f, 0.3f, 0.0f), e_t.position + glm::vec3(0.0f, 0.3f, 0.0f) + flatTriNormal, glm::vec3(0.0f, 0.0f, 1.0f));
+						Renderer::Debug::AddLine(e_t.position + glm::vec3(0.0f, 0.4f, 0.0f), e_t.position + glm::vec3(0.0f, 0.4f, 0.0f) + flatCapsuleNormal, glm::vec3(1.0f, 0.0f, 0.0f));
+						if (glm::dot(disp, flatTriNormal) < 0.0f && glm::dot(flatCapsuleNormal, flatTriNormal) < -0.777f)
+							disp -= glm::dot(disp, flatTriNormal) * flatTriNormal;
+					}
+				}
+			}
+			for (int i = 0; i < TREE_COUNT; i++)
+			{
+				if (EntityIntersect::SphereCapsule(foxCol, trees[i], outCd))
+				{
+					glm::vec3 flatNormalA = glm::normalize(glm::vec3(outCd[0].normalA.x, 0.0f, outCd[0].normalA.z));
+					glm::vec3 flatNormalB = glm::normalize(glm::vec3(outCd[0].normalB.x, 0.0f, outCd[0].normalB.z));
+
+					Renderer::Debug::AddLine(e_t.position + glm::vec3(0.0f, 0.3f, 0.0f), e_t.position + glm::vec3(0.0f, 0.3f, 0.0f) + flatNormalA, glm::vec3(0.0f, 0.0f, 1.0f));
+					Renderer::Debug::AddLine(e_t.position + glm::vec3(0.0f, 0.4f, 0.0f), e_t.position + glm::vec3(0.0f, 0.4f, 0.0f) + flatNormalB, glm::vec3(1.0f, 0.0f, 0.0f));
+					if (glm::dot(disp, flatNormalB) < 0.0f && glm::dot(flatNormalA, flatNormalB) < -0.777f)
+						disp -= glm::dot(disp, flatNormalB) * flatNormalB;
 				}
 			}
 			e_t.position += disp;

@@ -29,72 +29,28 @@ namespace hom
 		"assets/examples/rb3d/Sugar Maple 01_2988619.glb",
 	};
 
-	bool ReadLodFile(const std::string& filename,
-					std::vector<uint32_t>& remeshResVector,
-					std::vector<float>& ratioVector,
-					std::vector<float>& distanceVector)
-	{
-		remeshResVector.clear();
-		ratioVector.clear();
-		distanceVector.clear();
-
-		std::ifstream file(filename);
-		if (!file.is_open())
-		{
-			std::cerr << "Error: Could not open file " << filename << '\n';
-			return false;
-		}
-
-		std::string line;
-		if (std::getline(file, line))
-		{
-			std::stringstream ss(line);
-			uint32_t val;
-			while (ss >> val)
-				remeshResVector.push_back(val);
-		}
-		else
-			return false;
-
-		if (std::getline(file, line))
-		{
-			std::stringstream ss(line);
-			float val;
-			while (ss >> val)
-				ratioVector.push_back(val);
-		}
-		else
-			return false;
-
-		if (std::getline(file, line))
-		{
-			std::stringstream ss(line);
-			float val;
-			while (ss >> val)
-				distanceVector.push_back(val);
-		}
-		else
-			return false;
-
-		return true;
-	}
-
 	void LoadAsset(const std::string& path, const sf::Buffer::Layout& vertexBufferLayout)
 	{
 		std::string cachedMeshPath = sf::FileUtils::RemoveExtension(path) + std::string(".mesh");
 		std::string lodPath = sf::FileUtils::RemoveExtension(path) + std::string(".lod");
 
-		std::vector<uint32_t> remeshResVector;
-		std::vector<float> ratioVector;
-		std::vector<float> distanceVector;
-		bool lodReadResult = ReadLodFile(lodPath, remeshResVector, ratioVector, distanceVector);
-		assert(lodReadResult);
+		sf::LODSpec ls;
+		bool loadSucceeded = ls.LoadFromFile(lodPath.c_str());
+		assert(loadSucceeded);
 
 		meshDataPerObject[path] = new sf::MeshData();
 		if (!meshDataPerObject[path]->LoadFromFile(cachedMeshPath.c_str()))
 		{
-			int gltfid = sf::GltfImporter::Load(path);
-			sf::GltfImporter::GenerateMeshData(gltfid, vertexBufferLayout, *meshDataPerObject[path]);
+			if (sf::FileUtils::ExtensionIs(path, "obj"))
+			{
+				int objid = sf::ObjImporter::Load(path);
+				sf::ObjImporter::GenerateMeshData(objid, vertexBufferLayout, *meshDataPerObject[path]);
+			}
+			else
+			{
+				int gltfid = sf::GltfImporter::Load(path);
+				sf::GltfImporter::GenerateMeshData(gltfid, vertexBufferLayout, *meshDataPerObject[path]);
+			}
 
 			sf::VoxelVolumeData vv;
 			vv.BuildFromMesh(*meshDataPerObject[path], 0.03f);
@@ -103,7 +59,7 @@ namespace hom
 		}
 
 		lodGroupPerObject[path] = new sf::LODGroup();
-		lodGroupPerObject[path]->Create(*meshDataPerObject[path], ratioVector.data(), distanceVector.data(), ratioVector.size(), remeshResVector.data());
+		lodGroupPerObject[path]->Create(*meshDataPerObject[path], ls);
 	}
 
 	void Initialize(const sf::Buffer::Layout& vertexBufferLayout)

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <cstring>
 #include <glm/glm.hpp>
 #include <DataTypes.h>
 
@@ -12,15 +13,18 @@ namespace sf
 		uint8_t channelCount = 3;
 		uint32_t width = 0;
 		uint32_t height = 0;
+		uint32_t depth = 0;
 		uint8_t* buffer = nullptr;
 
 		Bitmap() = default;
-		void CreateSolid(DataType dataType, uint8_t channelCount, uint32_t width, uint32_t height, const void* pixelValue = nullptr);
+		void CreateSolid(DataType dataType, uint8_t channelCount, uint32_t width, uint32_t height, uint32_t depth = 1, const void* pixelValue = nullptr);
 		void CreateFromFile(const std::string& filePath, bool flipVertically = true, bool limitRangeTo16bitFloat = false);
 		void AddChannels(uint8_t channelCount = 1);
 		void CopyChannel(const Bitmap& source, uint8_t sourceChannel, uint8_t targetChannel);
 		void WritePng(const std::string& filePath);
 		void WritePpm(const std::string& filePath);
+		inline uint32_t GetBufferSize() { return GetDataTypeSize(dataType) * channelCount * width * height * depth; }
+
 		template <typename T>
 		inline float Sample(const glm::vec2& uv, uint8_t channel) const
 		{
@@ -50,6 +54,43 @@ namespace sf
 			float df = (float)(*d) / (float)((1 << (sizeof(T) * 8)) - 1);
 			return glm::mix(glm::mix(af, bf, uFraction), glm::mix(cf, df, uFraction), vFraction);
 		}
+		inline uint8_t* AccessPixel(const glm::uvec2& coords)
+		{
+			assert(depth == 1);
+			assert(coords.x < width);
+			assert(coords.y < height);
+			uint32_t index = coords.y * width + coords.x;
+			return buffer + (index * channelCount * GetDataTypeSize(dataType));
+		}
+		inline uint8_t* AccessPixel(const glm::uvec3& coords)
+		{
+			assert(coords.x < width);
+			assert(coords.y < height);
+			assert(coords.z < depth);
+			uint32_t index = coords.z * width * height + coords.y * width + coords.x;
+			return buffer + (index * channelCount * GetDataTypeSize(dataType));
+		}
+		inline void SetPixel(const glm::uvec2& coords, uint8_t* value)
+		{
+			assert(depth == 1);
+			assert(coords.x < width);
+			assert(coords.y < height);
+			uint32_t index = coords.y * width + coords.x;
+			uint8_t* target = buffer + (index * channelCount * GetDataTypeSize(dataType));
+			memcpy(target, value, channelCount * GetDataTypeSize(dataType));
+		}
+		inline void SetPixel(const glm::uvec3& coords, uint8_t* value)
+		{
+			assert(coords.x < width);
+			assert(coords.y < height);
+			assert(coords.z < depth);
+			uint32_t index = coords.z * width * height + coords.y * width + coords.x;
+			uint8_t* target = buffer + (index * channelCount * GetDataTypeSize(dataType));
+			memcpy(target, value, channelCount * GetDataTypeSize(dataType));
+		}
 		void Destroy();
+
+		bool SaveToFile(const char* targetFile);
+		bool LoadFromFile(const char* targetFile);
 	};
 }

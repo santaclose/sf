@@ -9,7 +9,7 @@
 #include <stb_image.h>
 #include <stb_image_write.h>
 
-void sf::Bitmap::CreateSolid(DataType dataType, uint8_t channelCount, uint32_t width, uint32_t height, const void* pixelValue)
+void sf::Bitmap::CreateSolid(DataType dataType, uint8_t channelCount, uint32_t width, uint32_t height, uint32_t depth, const void* pixelValue)
 {
 	uint32_t dataTypeSize = GetDataTypeSize(dataType);
 
@@ -17,13 +17,14 @@ void sf::Bitmap::CreateSolid(DataType dataType, uint8_t channelCount, uint32_t w
 	this->channelCount = channelCount;
 	this->width = width;
 	this->height = height;
-	this->buffer = new uint8_t[dataTypeSize * (this->width) * (this->height) * (this->channelCount)];
+	this->depth = depth;
+	this->buffer = new uint8_t[dataTypeSize * (this->width) * (this->height) * (this->depth) * (this->channelCount)];
 
 	if (pixelValue == nullptr)
 		return; // leave uninitialized
 
 	assert(sizeof(uint8_t) == 1);
-	for (int i = 0; i < (this->width) * (this->height); i++)
+	for (int i = 0; i < (this->width) * (this->height) * (this->depth); i++)
 	{
 		memcpy(this->buffer + (i * dataTypeSize * this->channelCount), pixelValue, dataTypeSize * (this->channelCount));
 	}
@@ -33,6 +34,8 @@ void sf::Bitmap::CreateFromFile(const std::string& filePath, bool flipVertically
 {
 	assert(GetDataTypeSize(DataType::f32) == sizeof(float));
 	assert(GetDataTypeSize(DataType::u8) == sizeof(stbi_uc));
+
+	this->depth = 1;
 
 	void* stb_buffer;
 	stbi_set_flip_vertically_on_load(flipVertically);
@@ -99,7 +102,7 @@ void sf::Bitmap::AddChannels(uint8_t channelCount)
 	uint8_t originalChannelCount = this->channelCount;
 
 	this->channelCount += channelCount;
-	this->buffer = new uint8_t[GetDataTypeSize(this->dataType) * (this->width) * (this->height) * (this->channelCount)];
+	this->buffer = new uint8_t[GetDataTypeSize(this->dataType) * (this->width) * (this->height) * (this->depth) * (this->channelCount)];
 
 	uint32_t dataTypeSize = GetDataTypeSize(this->dataType);
 
@@ -107,7 +110,7 @@ void sf::Bitmap::AddChannels(uint8_t channelCount)
 		return; // nothing to copy 
 
 	assert(sizeof(uint8_t) == 1);
-	for (int i = 0; i < (this->width) * (this->height); i++)
+	for (int i = 0; i < (this->width) * (this->height) * (this->depth); i++)
 	{
 		memcpy(
 			this->buffer + (i * dataTypeSize * (this->channelCount)),
@@ -127,7 +130,7 @@ void sf::Bitmap::CopyChannel(const Bitmap& source, uint8_t sourceChannel, uint8_
 	uint32_t dataTypeSize = GetDataTypeSize(this->dataType);
 
 	assert(sizeof(uint8_t) == 1);
-	for (int i = 0; i < (this->width) * (this->height); i++)
+	for (int i = 0; i < (this->width) * (this->height) * (this->depth); i++)
 	{
 		memcpy(
 			this->buffer + (i * dataTypeSize * (this->channelCount)) + (dataTypeSize * targetChannel),
@@ -138,6 +141,7 @@ void sf::Bitmap::CopyChannel(const Bitmap& source, uint8_t sourceChannel, uint8_
 
 void sf::Bitmap::WritePng(const std::string& filePath)
 {
+	assert(this->depth == 1);
 	assert(this->dataType == DataType::u8);
 	assert(this->channelCount < 5 && this->channelCount > 0);
 	stbi_write_png(filePath.c_str(), this->width, this->height, this->channelCount, this->buffer, (this->width) * (this->channelCount));
@@ -145,6 +149,7 @@ void sf::Bitmap::WritePng(const std::string& filePath)
 
 void sf::Bitmap::WritePpm(const std::string& filePath)
 {
+	assert(this->depth == 1);
 	assert(this->dataType == DataType::u8);
 	assert(this->channelCount == 3);
 
@@ -177,4 +182,46 @@ void sf::Bitmap::Destroy()
 	if (this->buffer != nullptr)
 		delete[] this->buffer;
 	*this = Bitmap();
+}
+
+bool sf::Bitmap::SaveToFile(const char* targetFile)
+{
+	std::ofstream file;
+	file.open(targetFile, std::ios::trunc | std::ios::binary);
+	if (!file)
+		return false;
+
+	uint32_t bufferSize = GetBufferSize();
+	file.write((char*) &dataType, sizeof(dataType));
+	file.write((char*) &channelCount, sizeof(channelCount));
+	file.write((char*) &width, sizeof(width));
+	file.write((char*) &height, sizeof(height));
+	file.write((char*) &depth, sizeof(depth));
+	file.write((char*) buffer, bufferSize);
+
+	file.close();
+
+	return true;
+}
+
+bool sf::Bitmap::LoadFromFile(const char* targetFile)
+{
+	std::ifstream file;
+	file.open(targetFile, std::ios::binary);
+	if (!file)
+		return false;
+
+	file.read((char*) &dataType, sizeof(dataType));
+	file.read((char*) &channelCount, sizeof(channelCount));
+	file.read((char*) &width, sizeof(width));
+	file.read((char*) &height, sizeof(height));
+	file.read((char*) &depth, sizeof(depth));
+	uint32_t bufferSize = GetBufferSize();
+
+	buffer = new uint8_t[bufferSize];
+	file.read((char*) buffer, bufferSize);
+
+	file.close();
+
+	return true;
 }

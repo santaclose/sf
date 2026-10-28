@@ -72,6 +72,10 @@ namespace sf::Buffer
 		{
 			return (T*)(buffer + (sizeInBytes * index) + components.at(component).byteOffset);
 		}
+		inline uint8_t* Access(uint8_t* buffer, uint32_t index) const
+		{
+			return buffer + (sizeInBytes * index);
+		}
 	};
 
 	struct Layout
@@ -117,6 +121,10 @@ namespace sf::Buffer
 		inline T* Access(uint8_t* buffer, Component component, uint32_t index) const
 		{
 			return GetInfo().Access<T>(buffer, component, index);
+		}
+		inline uint8_t* Access(uint8_t* buffer, uint32_t index) const
+		{
+			return GetInfo().Access(buffer, index);
 		}
 	};
 }

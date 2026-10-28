@@ -5,6 +5,7 @@
 #include <cstring>
 #include <unordered_set>
 #include <unordered_map>
+#include <set>
 
 #include <Random.h>
 #include <Geometry/Geometry.h>
@@ -226,7 +227,6 @@ void sf::MeshProcessor::ComputeVertexAmbientOcclusion(MeshData& mesh, const Voxe
 		config = &autoConfig;
 	}
 
-
 	#pragma omp parallel for
 	for (int q = 0; q < mesh.vertexCount; q++)
 	{
@@ -285,6 +285,110 @@ void sf::MeshProcessor::ComputeVertexAmbientOcclusion(MeshData& mesh, const Voxe
 			*mesh.AccessVertexComponent<float>(Buffer::Component::AO, mesh.indexBuffer[i + 1]) = glm::mix(*mesh.ReadVertexComponent<float>(Buffer::Component::AO, mesh.indexBuffer[i + 1]), average, config->denoiseWeight);
 			*mesh.AccessVertexComponent<float>(Buffer::Component::AO, mesh.indexBuffer[i + 2]) = glm::mix(*mesh.ReadVertexComponent<float>(Buffer::Component::AO, mesh.indexBuffer[i + 2]), average, config->denoiseWeight);
 		}
+	}
+}
+
+void sf::MeshProcessor::AmbientOcclusionBitmapFromVoxelVolume(const VoxelVolumeData& voxelVolume, Bitmap& bitmap, const VertexAmbientOcclusionBakerConfig* config)
+{
+	glm::uvec3 res = voxelVolume.voxelCountPerAxis;
+	bitmap.Destroy();
+	bitmap.CreateSolid(DataType::u8, 1, res.x, res.y, res.z);
+	assert(bitmap.width == voxelVolume.voxelCountPerAxis.x);
+	assert(bitmap.height == voxelVolume.voxelCountPerAxis.y);
+	assert(bitmap.depth == voxelVolume.voxelCountPerAxis.z);
+
+	VertexAmbientOcclusionBakerConfig autoConfig;
+	if (config == nullptr)
+	{
+		glm::vec3 volumeSize = glm::vec3(voxelVolume.voxelCountPerAxis) * voxelVolume.voxelSize;
+		autoConfig.rayDistance = volumeSize.length();
+		autoConfig.falloff = autoConfig.rayDistance * 1.1f;
+		autoConfig.denoisePasses = 30;
+		autoConfig.onlyCastRaysUpwards = true;
+		config = &autoConfig;
+	}
+
+	#pragma omp parallel for
+	for (int i = 0; i < bitmap.width; i++)
+		for (int j = 0; j < bitmap.height; j++)
+			for (int k = 0; k < bitmap.depth; k++)
+			{
+				glm::vec3 centerOfVoxel = voxelVolume.offset + glm::vec3(
+					voxelVolume.voxelSize * (0.5f + (float) i),
+					voxelVolume.voxelSize * (0.5f + (float) j),
+					voxelVolume.voxelSize * (0.5f + (float) k));
+
+				std::vector<std::pair<bool, float>> rayResults(config->rayCount);
+				for (int i = 0; i < config->rayCount; i++)
+				{
+					glm::vec3 rayDir = Random::UnitVec3();
+					if (config->onlyCastRaysUpwards && rayDir.y < 0.0f)
+						rayDir.y = -rayDir.y;
+
+					bool didHit = false;
+					float distance;
+					didHit = voxelVolume.CastRay(centerOfVoxel + (rayDir * config->rayOriginOffset), rayDir, false, &distance) != nullptr;
+					if (distance > config->rayDistance)
+						distance = config->rayDistance;
+					rayResults[i] = { didHit, distance };
+				}
+				float ao = ComputeOcclusion(rayResults, config->rayDistance, config->falloff);
+				uint8_t aou8 = (uint8_t) (ao * 255.0f);
+				bitmap.SetPixel({i, j, k}, &aou8);
+			}
+
+	for (int pass = 0; pass < config->denoisePasses; pass++)
+	{
+		for (int i = 0; i < bitmap.width; i++)
+			for (int j = 0; j < bitmap.height; j++)
+				for (int k = 0; k < bitmap.depth; k++)
+				{
+					float sum = (float) *bitmap.AccessPixel({i, j, k});
+					uint32_t count = 1;
+					if (i > 0 && (voxelVolume.GetVoxel({i - 1, j, k}) != nullptr) == (voxelVolume.GetVoxel({i, j, k}) != nullptr))
+					{
+						sum += (float) *bitmap.AccessPixel({i - 1, j, k});
+						count++;
+					}
+					if (i < bitmap.width - 1 && (voxelVolume.GetVoxel({i + 1, j, k}) != nullptr) == (voxelVolume.GetVoxel({i, j, k}) != nullptr))
+					{
+						sum += (float) *bitmap.AccessPixel({i + 1, j, k});
+						count++;
+					}
+					if (j > 0 && (voxelVolume.GetVoxel({i, j - 1, k}) != nullptr) == (voxelVolume.GetVoxel({i, j, k}) != nullptr))
+					{
+						sum += (float) *bitmap.AccessPixel({i, j - 1, k});
+						count++;
+					}
+					if (j < bitmap.height - 1 && (voxelVolume.GetVoxel({i, j + 1, k}) != nullptr) == (voxelVolume.GetVoxel({i, j, k}) != nullptr))
+					{
+						sum += (float) *bitmap.AccessPixel({i, j + 1, k});
+						count++;
+					}
+					if (k > 0 && (voxelVolume.GetVoxel({i, j, k - 1}) != nullptr) == (voxelVolume.GetVoxel({i, j, k}) != nullptr))
+					{
+						sum += (float) *bitmap.AccessPixel({i, j, k - 1});
+						count++;
+					}
+					if (k < bitmap.depth - 1 && (voxelVolume.GetVoxel({i, j, k + 1}) != nullptr) == (voxelVolume.GetVoxel({i, j, k}) != nullptr))
+					{
+						sum += (float) *bitmap.AccessPixel({i, j, k + 1});
+						count++;
+					}
+					float average = sum / (float) count;
+					*bitmap.AccessPixel({i, j, k}) = (uint8_t) glm::mix((float) *bitmap.AccessPixel({i, j, k}), average, config->denoiseWeight);
+				}
+		// for (int i = 0; i < mesh.indexCount; i += 3)
+		// {
+		// 	float average =
+		// 		(*mesh.ReadVertexComponent<float>(Buffer::Component::AO, mesh.indexBuffer[i + 0]) +
+		// 			*mesh.ReadVertexComponent<float>(Buffer::Component::AO, mesh.indexBuffer[i + 1]) +
+		// 			*mesh.ReadVertexComponent<float>(Buffer::Component::AO, mesh.indexBuffer[i + 2])) / 3.0f;
+
+		// 	*mesh.AccessVertexComponent<float>(Buffer::Component::AO, mesh.indexBuffer[i + 0]) = glm::mix(*mesh.ReadVertexComponent<float>(Buffer::Component::AO, mesh.indexBuffer[i + 0]), average, config->denoiseWeight);
+		// 	*mesh.AccessVertexComponent<float>(Buffer::Component::AO, mesh.indexBuffer[i + 1]) = glm::mix(*mesh.ReadVertexComponent<float>(Buffer::Component::AO, mesh.indexBuffer[i + 1]), average, config->denoiseWeight);
+		// 	*mesh.AccessVertexComponent<float>(Buffer::Component::AO, mesh.indexBuffer[i + 2]) = glm::mix(*mesh.ReadVertexComponent<float>(Buffer::Component::AO, mesh.indexBuffer[i + 2]), average, config->denoiseWeight);
+		// }
 	}
 }
 
@@ -485,7 +589,7 @@ void sf::MeshProcessor::RemoveUnusedBones(MeshData& mesh, SkeletonData& skeleton
 	}
 }
 
-void sf::MeshProcessor::Decimate(const MeshData& inputMesh, MeshData& outputMesh, float ratio)
+void sf::MeshProcessor::Decimate(const MeshData& inputMesh, MeshData& outputMesh, float ratio, float error)
 {
 	assert(&inputMesh != &outputMesh);
 	// Vertices must have positions
@@ -493,69 +597,118 @@ void sf::MeshProcessor::Decimate(const MeshData& inputMesh, MeshData& outputMesh
 	assert(inputMesh.vertexCountPerPrimitive == 3);
 	assert(ratio >= 0.0f && ratio <= 1.0f);
 
-	uint32_t targetIndexCount = (uint32_t(inputMesh.indexCount * ratio) / 3) * 3;
-
+	uint32_t pieceCount = inputMesh.pieceCount;
 	outputMesh.Destroy();
 	outputMesh = inputMesh;
-	outputMesh.pieces = nullptr;
-	outputMesh.pieceCount = 1;
 	outputMesh.usesExternalVertexBuffer = true;
 
+	uint32_t totalIndexCount = 0;
+	std::vector<std::pair<uint32_t, uint32_t*>> perPiece(pieceCount);
 	const glm::vec3* firstVertexPos = inputMesh.ReadVertexComponent<glm::vec3>(Buffer::Component::Position, 0);
-	uint32_t* newIndices = new uint32_t[inputMesh.indexCount];
-	uint32_t actualIndexCount = meshopt_simplify(
-		newIndices,
-		inputMesh.indexBuffer,
-		inputMesh.indexCount,
-		&(firstVertexPos->x),
-		inputMesh.vertexCount,
-		inputMesh.vertexBufferLayout.GetSize(),
-		targetIndexCount,
-		1e-2f
-	);
+	for (uint32_t i = 0; i < pieceCount; i++)
+	{
+		uint32_t pieceStart, pieceEnd;
+		inputMesh.GetPieceLimits(i, pieceStart, pieceEnd);
+		uint32_t pieceIndexCount = pieceEnd - pieceStart;
+		uint32_t* newIndices = new uint32_t[pieceIndexCount];
+		uint32_t targetIndexCount = (uint32_t(pieceIndexCount * ratio) / 3) * 3;
+		uint32_t actualIndexCount = meshopt_simplify(
+			newIndices,
+			inputMesh.indexBuffer + pieceStart,
+			pieceIndexCount,
+			&(firstVertexPos->x),
+			inputMesh.vertexCount,
+			inputMesh.vertexBufferLayout.GetSize(),
+			targetIndexCount,
+			error
+		);
+		uint32_t* tightIndices = new uint32_t[actualIndexCount];
+		memcpy(tightIndices, newIndices, sizeof(uint32_t) * actualIndexCount);
+		delete[] newIndices;
+		perPiece[i] = { actualIndexCount, tightIndices };
+		totalIndexCount += actualIndexCount;
+	}
 
-	outputMesh.indexCount = actualIndexCount;
-	outputMesh.indexBuffer = newIndices;
+	uint32_t pieceIndex = 0;
+	uint32_t currentOffset = 0;
+	uint32_t* finalIndexBuffer = new uint32_t[totalIndexCount];
+	uint32_t* pieceBuffer = new uint32_t[perPiece.size()];
+	for (auto& pieceInfo : perPiece)
+	{
+		pieceBuffer[pieceIndex] = currentOffset;
+		memcpy(finalIndexBuffer + currentOffset, pieceInfo.second, sizeof(uint32_t) * pieceInfo.first);
+		currentOffset += pieceInfo.first;
+		delete[] pieceInfo.second;
+		pieceIndex++;
+	}
+
+	outputMesh.indexCount = totalIndexCount;
+	outputMesh.indexBuffer = finalIndexBuffer;
+	outputMesh.pieces = pieceBuffer;
 }
 
 void sf::MeshProcessor::Remesh(const MeshData& inputMesh, MeshData& outputMesh, int resolution)
 {
-	/* Run mesh optimizer remesh */
-	const glm::vec3* firstVertexPos = inputMesh.ReadVertexComponent<glm::vec3>(Buffer::Component::Position, 0);
-	const unsigned int options = meshopt_RemeshSolve;
-	size_t capacity = meshopt_remesh(nullptr, 0, inputMesh.indexBuffer, inputMesh.indexCount, &firstVertexPos->x, inputMesh.vertexCount, inputMesh.vertexBufferLayout.GetSize(), resolution, options);
-	std::vector<float> triangles(capacity * 3 * 3);
-	size_t triCount = meshopt_remesh(&triangles[0], capacity, inputMesh.indexBuffer, inputMesh.indexCount, &firstVertexPos->x, inputMesh.vertexCount, inputMesh.vertexBufferLayout.GetSize(), resolution, options);
-	triangles.resize(triCount * 3 * 3);
-
-	/* Build indexed mesh */
-	std::vector<uint32_t> indices;
-	std::vector<glm::vec3> positions;
-	std::unordered_map<glm::vec3, uint32_t> posIndexMap;
-	for (uint32_t i = 0; i < triCount * 3; i++)
-	{
-		glm::vec3 currentVertexPos = glm::vec3(triangles[i * 3 + 0], triangles[i * 3 + 1], triangles[i * 3 + 2]);
-		if (posIndexMap.find(currentVertexPos) != posIndexMap.end())
-		{
-			indices.push_back(posIndexMap[currentVertexPos]);
-		}
-		else
-		{
-			indices.push_back(positions.size());
-			positions.push_back(currentVertexPos);
-			posIndexMap[positions.back()] = indices.back();
-		}
-	}
-
 	static Buffer::Layout positionOnlyVertexLayout = Buffer::Layout({
 		Buffer::Component::Position
 	});
 
-	uint8_t* vertexBuffer = new uint8_t[positions.size() * sizeof(glm::vec3)];
-	memcpy(vertexBuffer, positions.data(), positions.size() * sizeof(glm::vec3));
+	const glm::vec3* firstVertexPos = inputMesh.ReadVertexComponent<glm::vec3>(Buffer::Component::Position, 0);
+	const unsigned int options = meshopt_RemeshSolve;
+
+	uint32_t totalIndexCount = 0;
+	uint32_t totalVertexCount = 0;
+	std::vector<std::vector<uint32_t>> indices(inputMesh.pieceCount);
+	std::vector<std::vector<glm::vec3>> positions(inputMesh.pieceCount);
+	for (uint32_t i = 0; i < inputMesh.pieceCount; i++)
+	{
+		uint32_t pieceStart, pieceEnd;
+		inputMesh.GetPieceLimits(i, pieceStart, pieceEnd);
+		uint32_t pieceIndexCount = pieceEnd - pieceStart;
+
+		size_t capacity = meshopt_remesh(nullptr, 0, inputMesh.indexBuffer + pieceStart, pieceIndexCount, &firstVertexPos->x, inputMesh.vertexCount, inputMesh.vertexBufferLayout.GetSize(), resolution, options);
+		assert(capacity != 0);
+		std::vector<float> triangles(capacity * 3 * 3);
+		size_t triCount = meshopt_remesh(&triangles[0], capacity, inputMesh.indexBuffer + pieceStart, pieceIndexCount, &firstVertexPos->x, inputMesh.vertexCount, inputMesh.vertexBufferLayout.GetSize(), resolution, options);
+
+		/* Build indexed mesh */
+		std::unordered_map<glm::vec3, uint32_t> posIndexMap;
+		for (uint32_t j = 0; j < triCount * 3; j++)
+		{
+			glm::vec3 currentVertexPos = glm::vec3(triangles[j * 3 + 0], triangles[j * 3 + 1], triangles[j * 3 + 2]);
+			if (posIndexMap.find(currentVertexPos) != posIndexMap.end())
+			{
+				indices[i].push_back(posIndexMap[currentVertexPos]);
+			}
+			else
+			{
+				uint32_t newIndex = positions.back().size() + totalVertexCount;
+				indices[i].push_back(newIndex);
+				positions[i].push_back(currentVertexPos);
+				posIndexMap[positions[i].back()] = newIndex;
+			}
+		}
+
+		totalVertexCount += positions[i].size();
+		totalIndexCount += indices[i].size();
+	}
+
+	uint32_t vertexOffset = 0;
+	uint32_t indexOffset = 0;
+	uint8_t* vertexBuffer = new uint8_t[totalVertexCount * sizeof(glm::vec3)];
+	std::vector<uint32_t> finalIndices(totalIndexCount);
+	std::vector<uint32_t> finalPieces;
+	for (uint32_t i = 0; i < inputMesh.pieceCount; i++)
+	{
+		finalPieces.push_back(indexOffset);
+		memcpy(vertexBuffer + vertexOffset * sizeof(glm::vec3), positions[i].data(), positions[i].size() * sizeof(glm::vec3));
+		memcpy(finalIndices.data() + indexOffset, indices[i].data(), indices[i].size() * sizeof(uint32_t));
+		vertexOffset += positions[i].size();
+		indexOffset += indices[i].size();
+	}
 
 	outputMesh.Destroy();
-	outputMesh.Create(positionOnlyVertexLayout, vertexBuffer, positions.size(), indices);
+	outputMesh.Create(positionOnlyVertexLayout, vertexBuffer, totalVertexCount, finalIndices, &finalPieces);
 }
 
 void sf::MeshProcessor::TransformMesh(MeshData& mesh, const Transform& transform)
@@ -669,20 +822,22 @@ void sf::MeshProcessor::ApplySkeleton(const glm::mat4* skinMatrixBuffer, const M
 	}
 }
 
-
-void sf::MeshProcessor::ComputeMeshBoundingSphere(const MeshData& inputMesh, SphereCollider& outputSphere)
+void sf::MeshProcessor::ComputeMeshAABB(const MeshData& inputMesh, glm::vec3& outMin, glm::vec3& outMax)
 {
-	glm::vec3 min(std::numeric_limits<float>::max());
-	glm::vec3 max(-std::numeric_limits<float>::max());
-
+	outMin = glm::vec3(std::numeric_limits<float>::max());
+	outMax = glm::vec3(-std::numeric_limits<float>::max());
 	for (uint32_t i = 0; i < inputMesh.vertexCount; i++)
 	{
 		const glm::vec3* vertexPos = inputMesh.ReadVertexComponent<glm::vec3>(Buffer::Component::Position, i);
-
-		min = glm::min(min, *vertexPos);
-		max = glm::max(max, *vertexPos);
+		outMin = glm::min(outMin, *vertexPos);
+		outMax = glm::max(outMax, *vertexPos);
 	}
+}
 
+void sf::MeshProcessor::ComputeMeshBoundingSphere(const MeshData& inputMesh, SphereCollider& outputSphere)
+{
+	glm::vec3 min, max;
+	ComputeMeshAABB(inputMesh, min, max);
 	outputSphere.center = (min + max) * 0.5f;
 
 	float maxDistanceSq = 0.0f;
@@ -810,7 +965,62 @@ void sf::MeshProcessor::TransferVertexAttributesFromClosest(const MeshData& inpu
 			case DataType::f32:
 				*outputMesh.AccessVertexComponent<float>(component, i) = *inputMesh.ReadVertexComponent<float>(component, wantedIndex);
 				break;
+			default:
+				printf("[MeshProcessor] Skipping transfer of vertex attribute: %u\n", (uint32_t) component);
+				break;
 			}
 		}
 	}
+}
+
+void sf::MeshProcessor::TransferVertexAttributesInterpolatingBlendMatrix(const MeshData& inputMesh, MeshData& outputMesh, uint32_t maxVertices)
+{
+	assert(inputMesh.vertexBufferLayout == outputMesh.vertexBufferLayout);
+
+	const Buffer::LayoutInfo& layout = inputMesh.vertexBufferLayout.GetInfo();
+	uint32_t vertexStride = layout.GetSize();
+
+	#pragma omp parallel for
+	for (int i = 0; i < outputMesh.vertexCount; i++)
+	{
+		const glm::vec3* outPos = outputMesh.ReadVertexComponent<glm::vec3>(Buffer::Component::Position, i);
+
+		std::vector<glm::vec3> closestPoints;
+		std::vector<uint32_t> closestPointIndices;
+		Math::ClosestPoints(*outPos, inputMesh.ReadVertexComponent<glm::vec3>(Buffer::Component::Position, 0), inputMesh.vertexCount, 20, closestPoints, closestPointIndices, vertexStride);
+
+		assert(closestPoints.size() == 20);
+		float* blendMatrix = new float[closestPoints.size() * closestPoints.size() * closestPoints.size()];
+		float* weights = new float[closestPoints.size()];
+		Math::ComputePointWeightBlendMatrix3D(closestPoints.data(), closestPoints.size(), blendMatrix);
+		Math::PointWeightingBlendMatrix3D(*outPos, closestPoints.data(), blendMatrix, weights, closestPoints.size(), vertexStride);
+		uint8_t* tempVertices = new uint8_t[vertexStride * closestPoints.size()];
+		for (int j = 0; j < closestPoints.size(); j++)
+			memcpy(layout.Access(tempVertices, j), inputMesh.ReadVertex(closestPointIndices[j]), vertexStride);
+
+		for (const auto& [component, componentInfo] : layout.components)
+		{
+			if (component == Buffer::Component::Position)
+				continue;
+			switch (componentInfo.dataType)
+			{
+			case DataType::vec3f32:
+				Math::WeightedBlend(layout.Access<glm::vec3>(tempVertices, component, 0), weights, closestPoints.size(), *outputMesh.AccessVertexComponent<glm::vec3>(component, i), vertexStride);
+				break;
+			case DataType::vec2f32:
+				Math::WeightedBlend(layout.Access<glm::vec2>(tempVertices, component, 0), weights, closestPoints.size(), *outputMesh.AccessVertexComponent<glm::vec2>(component, i), vertexStride);
+				break;
+			case DataType::f32:
+				Math::WeightedBlend(layout.Access<float>(tempVertices, component, 0), weights, closestPoints.size(), *outputMesh.AccessVertexComponent<float>(component, i), vertexStride);
+				break;
+			default:
+				printf("[MeshProcessor] Skipping transfer of vertex attribute: %u\n", (uint32_t) component);
+				break;
+			}
+		}
+		delete[] tempVertices;
+		delete[] weights;
+		delete[] blendMatrix;
+	}
+
 }

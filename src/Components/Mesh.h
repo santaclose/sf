@@ -3,6 +3,7 @@
 #include <Material.h>
 #include <LOD.h>
 #include <vector>
+#include <unordered_map>
 
 namespace sf {
 	
@@ -10,6 +11,7 @@ namespace sf {
 	{
 		const LODGroup* lodGroup = nullptr;
 		std::vector<const Material*> materials;
+		std::vector<std::unordered_map<std::string, UniformData>> uniformOverrides;
 		bool usesLodGroup;
 
 		inline Mesh(const LODGroup* lodGroup, const Material* material = nullptr)
@@ -20,6 +22,7 @@ namespace sf {
 			/* If material uses task/mesh shaders, no need to have mesh data */
 			this->materials.clear();
 			this->materials.resize(lodGroup->sourceMesh->pieceCount, material);
+			this->uniformOverrides.resize(lodGroup->sourceMesh->pieceCount);
 			usesLodGroup = true;
 		}
 		inline Mesh(const MeshData* meshData, const Material* material = nullptr)
@@ -29,6 +32,7 @@ namespace sf {
 			/* If material uses task/mesh shaders, no need to have mesh data */
 			this->materials.clear();
 			this->materials.resize(meshData == nullptr ? 1 : meshData->pieceCount, material);
+			this->uniformOverrides.resize(meshData == nullptr ? 1 : meshData->pieceCount);
 			usesLodGroup = false;
 		}
 

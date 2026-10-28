@@ -17,7 +17,7 @@ void sf::Animation::ComputeNodeWeights(sf::Animation::Node& node)
 			outWeights = (float*)alloca(sizeof(float) * pointCount);
 		Math::PointWeighting1D(node.bs1d.pos, &node.bs1d.points[0].pos, outWeights, pointCount, sizeof(BlendSpacePoint1D));
 		for (int i = 0; i < pointCount; i++)
-			node.bs2d.points[i].weight = outWeights[i];
+			node.bs1d.points[i].weight = outWeights[i];
 		break;
 	}
 	case NodeType::BlendSpace2D:
@@ -27,7 +27,7 @@ void sf::Animation::ComputeNodeWeights(sf::Animation::Node& node)
 		assert(pointCount > 1);
 		if (outWeights == nullptr)
 			outWeights = (float*)alloca(sizeof(float) * pointCount);
-		Math::PointWeighting2D(node.bs2d.pos, &node.bs2d.points[0].pos, outWeights, pointCount, sizeof(BlendSpacePoint2D));
+		Math::PointWeightingBlendMatrix2D(node.bs2d.pos, &node.bs2d.points[0].pos, node.bs2d.blendMatrix, outWeights, pointCount, sizeof(BlendSpacePoint2D));
 		for (int i = 0; i < pointCount; i++)
 			node.bs2d.points[i].weight = outWeights[i];
 		break;

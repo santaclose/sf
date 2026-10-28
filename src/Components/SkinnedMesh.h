@@ -4,6 +4,7 @@
 #include <LOD.h>
 #include <SkeletonData.h>
 #include <vector>
+#include <unordered_map>
 
 namespace sf {
 
@@ -12,6 +13,7 @@ namespace sf {
 		const LODGroup* lodGroup = nullptr;
 		const SkeletonData* skeletonData = nullptr;
 		std::vector<const Material*> materials;
+		std::vector<std::unordered_map<std::string, UniformData>> uniformOverrides;
 		bool usesLodGroup;
 
 		inline SkinnedMesh(const LODGroup* lodGroup, const SkeletonData* skeletonData, const Material* material = nullptr)
@@ -21,6 +23,7 @@ namespace sf {
 			this->lodGroup = lodGroup;
 			this->materials.clear();
 			this->materials.resize(lodGroup->sourceMesh->pieceCount, material);
+			this->uniformOverrides.resize(lodGroup->sourceMesh->pieceCount);
 			this->skeletonData = skeletonData;
 			usesLodGroup = true;
 		}
@@ -30,6 +33,7 @@ namespace sf {
 			this->lodGroup = (LODGroup*) meshData;
 			this->materials.clear();
 			this->materials.resize(meshData->pieceCount, material);
+			this->uniformOverrides.resize(meshData->pieceCount);
 			this->skeletonData = skeletonData;
 			usesLodGroup = false;
 		}

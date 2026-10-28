@@ -439,38 +439,41 @@ namespace BlendMatrixInterpolation
 	template <typename T>
 	void fit_blend_matrix(
 		slice2d<float> blend_matrix,
-		const T* animation_points,
-		int animation_count)
+		const T* points,
+		int point_count,
+		int point_stride = sizeof(T))
 	{
+#define POINT(i) ((const T*)(((const uint8_t*)points) + (point_stride * (i))))[0]
 		// Compute Pairwise Distances
-		array2d<float> distances(animation_count, animation_count);
-		for (int i = 0; i < animation_count; i++)
+		array2d<float> distances(point_count, point_count);
+		for (int i = 0; i < point_count; i++)
 		{
-			for (int j = 0; j < animation_count; j++)
-				distances(i, j) = glm::distance(animation_points[i], animation_points[j]);
+			for (int j = 0; j < point_count; j++)
+				distances(i, j) = glm::distance(POINT(i), POINT(j));
 		}
+#undef POINT
 
 		// Subtract epsilon from diagonal this helps the stability
 		// of the decomposition and solve
-		for (int i = 0; i < animation_count; i++)
+		for (int i = 0; i < point_count; i++)
 			distances(i, i) -= 1e-4f;
 
 		// Decompose in place
-		array1d<int> row_order(animation_count);
-		array1d<float> row_scale(animation_count);
+		array1d<int> row_order(point_count);
+		array1d<float> row_scale(point_count);
 
 		bool success = mat_lu_decompose_inplace(distances, row_order, row_scale);
 		assert(success);
 
 		// Write associated blend weights into blend matrix
-		for (int i = 0; i < animation_count; i++)
+		for (int i = 0; i < point_count; i++)
 		{
-			for (int j = 0; j < animation_count; j++)
+			for (int j = 0; j < point_count; j++)
 				blend_matrix(i, j) = i == j ? 1.0f : 0.0f;
 		}
 
 		// Solve for blend matrix in-place
-		for (int i = 0; i < animation_count; i++)
+		for (int i = 0; i < point_count; i++)
 			mat_lu_solve_inplace(blend_matrix(i), distances, row_order);
 	}
 

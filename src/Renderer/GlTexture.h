@@ -16,13 +16,16 @@ namespace sf {
 
 		bool isInitialized = false;
 		uint32_t gl_id;
-		int width, height, channelCount;
+		int width, height, depth, channelCount;
 		DataType storageDataType;
 		WrapMode wrapMode;
+
+		uint32_t GetTarget() const { return depth > 1 ? GL_TEXTURE_3D : GL_TEXTURE_2D; }
 
 		void Create(
 			uint32_t width,
 			uint32_t height,
+			uint32_t depth = 1,
 			int channelCount = 3,
 			DataType storageDataType = DataType::u8,
 			WrapMode wrapMode = WrapMode::Repeat,

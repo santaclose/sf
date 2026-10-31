@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <unordered_map>
+#include <string>
 
 #include <Animation.h>
 #include <Components/Transform.h>
@@ -19,13 +20,13 @@ namespace sf
 	};
 	struct BlendSpacePoint1DCreateInfo
 	{
-		uint32_t animationIndex;
+		const char* animationName;
 		float speed;
 		float pos;
 	};
 	struct BlendSpacePoint2DCreateInfo
 	{
-		uint32_t animationIndex;
+		const char* animationName;
 		float speed;
 		glm::vec2 pos;
 	};
@@ -53,11 +54,12 @@ namespace sf
 	{
 		SkeletonCoreData m_core;
 		std::vector<Animation::SkeletalAnimation> m_animations;
+		std::unordered_map<std::string, uint32_t> m_animationMap;
 		std::vector<Animation::Node> m_nodes;
 		std::unordered_map<uint32_t, TwoBoneIkData> m_ikData;
 		bool m_animate = false;
 
-		uint32_t AddNodeSingle(uint32_t animationIndex, float speed = 1.0f);
+		uint32_t AddNodeSingle(const char* animationName, float speed = 1.0f);
 		uint32_t AddNodeBlendSpace1D(const std::vector<BlendSpacePoint1DCreateInfo>& points, float pos, float* weightsQuery = nullptr);
 		uint32_t AddNodeBlendSpace2D(const std::vector<BlendSpacePoint2DCreateInfo>& points, const glm::vec2& pos, float* weightsQuery = nullptr);
 

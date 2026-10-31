@@ -422,6 +422,7 @@ bool sf::GltfImporter::GenerateSkeleton(int id, SkeletonData& skeleton, int inde
 		skeleton.m_animations.emplace_back();
 		Animation::SkeletalAnimation& skeletonAnimation = skeleton.m_animations.back();
 		skeletonAnimation.name = anim.name.c_str();
+		skeleton.m_animationMap[skeletonAnimation.name] = (uint32_t) (skeleton.m_animations.size() - 1);
 		std::cout << "[GltfImporter] Importing animation " << skeletonAnimation.name << std::endl;
 		for (auto& samp : anim.samplers)
 		{

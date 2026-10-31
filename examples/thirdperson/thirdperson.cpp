@@ -518,7 +518,6 @@ namespace sf
 				assert(m.uniformOverrides.size() == 2);
 				m.uniformOverrides[0]["color"].p = &treeBranchColor;
 				m.uniformOverrides[1]["color"].p = &treeLeavesColor;
-				// m.materials[0] = &treeBranchMaterial;
 				trees.back().AddComponent<MeshCollider>(treeLodGroup->GetMeshDataForLOD(0));
 				Transform& t = trees.back().AddComponent<Transform>();
 
@@ -604,7 +603,25 @@ namespace sf
 			shanyungWeights.resize(10);
 			shanyungSpeedPerAnimation = { {0.0f, 0.0f}, {0.0f, 6.0f}, {-6.0f, 0.0f}, {6.0f, 0.0f}, {0.0f, 1.68f}, {0.0f, -1.08f}, {-0.763f, -0.763f}, {0.763f, -0.763f}, {-1.68f, 0.0f}, {1.68f, 0.0f} };
 			shanyungBlendSpace = shanyungSkeleton->AddNodeBlendSpace2D(
-				{ {0, 1.0f, {0.0f, 0.0f}}, {1, 1.0f, {0.0f, 1.0f}}, {2, 1.0f, {-1.0f, 0.0f}}, {3, 1.0f, {1.0f, 0.0f}}, {4, 1.0f, {0.0f, 0.5f}}, {5, 1.0f, {0.0f, -0.5f}}, {6, 1.0f, {-0.5f, -0.5f}}, {7, 1.0f, {0.5f, -0.5f}}, {8, 1.0f, {-0.5f, 0.0f}}, {9, 1.0f, {0.5f, 0.0f}} },
+				{
+					{"Idle", 1.0f, {0.0f, 0.0f}},
+					{"Run", 1.0f,
+					{0.0f, 1.0f}},
+					{"RunLeft", 1.0f,
+					{-1.0f, 0.0f}},
+					{"RunRight", 1.0f,
+					{1.0f, 0.0f}},
+					{"Walk", 1.0f,
+					{0.0f, 0.5f}},
+					{"WalkBack", 1.0f,
+					{0.0f, -0.5f}},
+					{"WalkBackL", 1.0f,
+					{-0.5f, -0.5f}},
+					{"WalkBackR", 1.0f,
+					{0.5f, -0.5f}},
+					{"WalkLeft", 1.0f,
+					{-0.5f, 0.0f}},
+					{"WalkRight", 1.0f, {0.5f, 0.0f}} },
 				{ 0.0f, 0.0f },
 				shanyungWeights.data());
 			shanyungSkeleton->SetAnimate(true);
@@ -642,7 +659,7 @@ namespace sf
 
 			foxWeights.resize(4);
 			foxSpeedPerAnimation = { 0.0f, 1.5f, 6.0f };
-			foxBlendSpace = foxSkeleton->AddNodeBlendSpace1D({ {0, 1.0f, 0.0f}, {1, 1.0f, 0.5f}, {2, 2.3f, 1.0f} }, 0.0f, foxWeights.data());
+			foxBlendSpace = foxSkeleton->AddNodeBlendSpace1D({ {"Survey", 1.0f, 0.0f}, {"Walk", 1.0f, 0.5f}, {"Run", 2.3f, 1.0f} }, 0.0f, foxWeights.data());
 			foxSkeleton->SetAnimate(true);
 		}
 

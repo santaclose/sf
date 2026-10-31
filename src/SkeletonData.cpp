@@ -111,7 +111,7 @@ void sf::SkeletonCoreData::PropagateLocalTransforms(const std::unordered_map<uin
 	}
 }
 
-uint32_t sf::SkeletonData::AddNodeSingle(uint32_t animationIndex, float speed)
+uint32_t sf::SkeletonData::AddNodeSingle(const char* animationName, float speed)
 {
 	uint32_t boneCount = GetBoneCount();
 	m_nodes.emplace_back();
@@ -119,7 +119,7 @@ uint32_t sf::SkeletonData::AddNodeSingle(uint32_t animationIndex, float speed)
 	if (m_nodes.size() == 1)
 		m_nodes.back().single.weight = 1.0f;
 	m_nodes.back().single.timer = 0.0f;
-	m_nodes.back().single.animation = &m_animations[animationIndex];
+	m_nodes.back().single.animation = &m_animations[m_animationMap[animationName]];
 	m_nodes.back().single.speed = speed;
 	m_nodes.back().single.pose = new Transform[boneCount];
 	/* We need to memcpy because not all data comes from animation samplers */
@@ -142,7 +142,7 @@ uint32_t sf::SkeletonData::AddNodeBlendSpace1D(const std::vector<BlendSpacePoint
 	m_nodes.back().bs1d.pointCount = points.size();
 	for (int i = 0; i < points.size(); i++)
 	{
-		blendSpacePoints[i].animation = &m_animations[points[i].animationIndex];
+		blendSpacePoints[i].animation = &m_animations[m_animationMap[points[i].animationName]];
 		blendSpacePoints[i].pos = points[i].pos;
 		blendSpacePoints[i].speed = points[i].speed;
 		blendSpacePoints[i].pose = new Transform[boneCount];
@@ -171,7 +171,7 @@ uint32_t sf::SkeletonData::AddNodeBlendSpace2D(const std::vector<BlendSpacePoint
 	m_nodes.back().bs2d.pointCount = points.size();
 	for (int i = 0; i < points.size(); i++)
 	{
-		blendSpacePoints[i].animation = &m_animations[points[i].animationIndex];
+		blendSpacePoints[i].animation = &m_animations[m_animationMap[points[i].animationName]];
 		blendSpacePoints[i].pos = points[i].pos;
 		blendSpacePoints[i].speed = points[i].speed;
 		blendSpacePoints[i].pose = new Transform[boneCount];

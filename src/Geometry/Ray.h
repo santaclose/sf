@@ -155,7 +155,7 @@ namespace sf::Geometry
 		const MeshCollider& meshCollider,
 		RayHit* out = nullptr)
 	{
-		if (!IntersectRaySphere(rayOrigin, rayDir, meshCollider.boundingSphere))
+		if (!IntersectRaySphere(rayOrigin, rayDir, meshCollider.GetBoundingSphere()))
 			return false;
 
 		RayHit rh, prevRh;
@@ -228,7 +228,7 @@ namespace sf::Geometry
 		capsule.centerA = sphere.center;
 		capsule.centerB = sphere.center + disp;
 		capsule.radius = sphere.radius;
-		if (!IntersectSphereCapsule(meshCollider.boundingSphere, capsule))
+		if (!IntersectSphereCapsule(meshCollider.GetBoundingSphere(), capsule))
 			return false;
 
 		RayHit frh, rh;
@@ -348,7 +348,7 @@ namespace sf::Geometry
 		boundingCapsule.centerA = (capsule.centerA + capsule.centerB) / 2.0f;
 		boundingCapsule.centerB = boundingCapsule.centerA + disp;
 		boundingCapsule.radius = capsule.radius * 2 + glm::distance(capsule.centerA, capsule.centerB);
-		if (!IntersectSphereCapsule(meshCollider.boundingSphere, boundingCapsule))
+		if (!IntersectSphereCapsule(meshCollider.GetBoundingSphere(), boundingCapsule))
 			return false;
 
 		RayHit frh, rh;

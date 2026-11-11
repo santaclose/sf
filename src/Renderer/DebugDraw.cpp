@@ -6,7 +6,8 @@ namespace sf::Renderer::Debug {
 
 	Config config;
 	glm::vec3 colliderColor = { 0.0f, 0.0f, 0.0f };
-	glm::vec3 frustumCullingSphereColor = { 0.0f, 1.0f, 0.0f };
+	glm::vec3 meshSphereColor = { 0.0f, 1.0f, 0.0f };
+	glm::vec3 skinnedMeshSphereColor = { 0.0f, 0.8f, 0.8f };
 
 	struct LineVertex {
 		glm::vec3 pos;
@@ -70,7 +71,7 @@ void sf::Renderer::Debug::AddBoxCollider(const BoxCollider& boxCollider, const T
 }
 void sf::Renderer::Debug::AddMeshCollider(const MeshCollider& meshCollider, const Transform& transform, const glm::vec3* color)
 {
-	AddSphereCollider(meshCollider.boundingSphere, transform, color);
+	AddSphereCollider(meshCollider.GetBoundingSphere(), transform, color);
 }
 
 void sf::Renderer::Debug::AddSkeleton(const SkinnedMesh& mesh, const Transform& transform)
@@ -88,7 +89,6 @@ void sf::Renderer::Debug::AddSkeleton(const SkinnedMesh& mesh, const Transform& 
 		AddLine(parentT.position, childT.position, glm::vec3(0.0f, 1.0f - boneRatio, boneRatio));
 	}
 }
-
 void sf::Renderer::Debug::AddSkeletonModelSpace(const SkinnedMesh& mesh, const Transform& transform)
 {
 	uint32_t boneCount = mesh.skeletonData->GetBoneCount();
@@ -105,12 +105,19 @@ void sf::Renderer::Debug::AddSkeletonModelSpace(const SkinnedMesh& mesh, const T
 	}
 }
 
-void sf::Renderer::Debug::AddFrustumCullingSphere(const SphereCollider& sphereCollider)
+void sf::Renderer::Debug::AddMeshBoundingSphere(const SphereCollider& sphereCollider)
 {
 	const SphereCollider& sc = sphereCollider;
-	AddLine(sc.center + glm::vec3(sc.radius, 0.0f, 0.0f), sc.center - glm::vec3(sc.radius, 0.0f, 0.0f), frustumCullingSphereColor);
-	AddLine(sc.center + glm::vec3(0.0f, sc.radius, 0.0f), sc.center - glm::vec3(0.0f, sc.radius, 0.0f), frustumCullingSphereColor);
-	AddLine(sc.center + glm::vec3(0.0f, 0.0f, sc.radius), sc.center - glm::vec3(0.0f, 0.0f, sc.radius), frustumCullingSphereColor);
+	AddLine(sc.center + glm::vec3(sc.radius, 0.0f, 0.0f), sc.center - glm::vec3(sc.radius, 0.0f, 0.0f), meshSphereColor);
+	AddLine(sc.center + glm::vec3(0.0f, sc.radius, 0.0f), sc.center - glm::vec3(0.0f, sc.radius, 0.0f), meshSphereColor);
+	AddLine(sc.center + glm::vec3(0.0f, 0.0f, sc.radius), sc.center - glm::vec3(0.0f, 0.0f, sc.radius), meshSphereColor);
+}
+void sf::Renderer::Debug::AddSkinnedMeshBoundingSphere(const SphereCollider& sphereCollider)
+{
+	const SphereCollider& sc = sphereCollider;
+	AddLine(sc.center + glm::vec3(sc.radius, 0.0f, 0.0f), sc.center - glm::vec3(sc.radius, 0.0f, 0.0f), skinnedMeshSphereColor);
+	AddLine(sc.center + glm::vec3(0.0f, sc.radius, 0.0f), sc.center - glm::vec3(0.0f, sc.radius, 0.0f), skinnedMeshSphereColor);
+	AddLine(sc.center + glm::vec3(0.0f, 0.0f, sc.radius), sc.center - glm::vec3(0.0f, 0.0f, sc.radius), skinnedMeshSphereColor);
 }
 
 void sf::Renderer::Debug::Draw(uint32_t sharedGpuDataUbo)

@@ -498,11 +498,12 @@ void sf::Renderer::DrawMesh(const Mesh& mesh, const Transform& transform)
 		DrawMeshShading(mesh, transform);
 		return;
 	}
-	const SphereCollider& boundingSphere = FrustumCulling::GetOrCreateMeshBoundingSphere(sourceMeshData).ApplyTransform(transform);
+
+	const SphereCollider boundingSphere = mesh.GetBoundingSphere().ApplyTransform(transform);
 	if (!FrustumCulling::IsSphereVisible(boundingSphere, sharedGpuData.cameraPosition))
 		return;
-	if (debugConfig.frustumCullingSpheres)
-		Debug::AddFrustumCullingSphere(boundingSphere);
+	if (debugConfig.meshBoundingSpheres)
+		Debug::AddMeshBoundingSphere(boundingSphere);
 	float meshCamDis2 = glm::distance2(boundingSphere.center, sharedGpuData.cameraPosition);
 	const MeshData* meshData = mesh.GetMeshData(meshCamDis2);
 	assert(meshData != nullptr);
@@ -555,11 +556,12 @@ void sf::Renderer::DrawSkinnedMesh(const SkinnedMesh& mesh, const Transform& tra
 
 	const MeshData* sourceMeshData = mesh.GetSourceMeshData();
 	assert(sourceMeshData != nullptr && mesh.skeletonData != nullptr);
-	const SphereCollider& boundingSphere = FrustumCulling::GetOrCreateSkinnedMeshBoundingSphere(sourceMeshData, mesh.skeletonData).ApplyTransform(transform);
+
+	const SphereCollider boundingSphere = mesh.GetBoundingSphere().ApplyTransform(transform);
 	if (!FrustumCulling::IsSphereVisible(boundingSphere, sharedGpuData.cameraPosition))
 		return;
-	if (debugConfig.frustumCullingSpheres)
-		Debug::AddFrustumCullingSphere(boundingSphere);
+	if (debugConfig.skinnedMeshBoundingSpheres)
+		Debug::AddSkinnedMeshBoundingSphere(boundingSphere);
 	float meshCamDis2 = glm::distance2(boundingSphere.center, sharedGpuData.cameraPosition);
 	const MeshData* meshData  = mesh.GetMeshData(meshCamDis2);
 	assert(meshData != nullptr);
@@ -847,18 +849,6 @@ sf::Renderer::Debug::Config& sf::Renderer::AccessDebugConfig()
 	return debugConfig;
 }
 
-sf::SphereCollider sf::Renderer::GetFrustumCullingMeshSphere(const Mesh& mesh, const Transform& transform)
-{
-	const MeshData* sourceMeshData = mesh.GetSourceMeshData();
-	return FrustumCulling::GetOrCreateMeshBoundingSphere(sourceMeshData).ApplyTransform(transform);
-}
-
-sf::SphereCollider sf::Renderer::GetFrustumCullingSkinnedMeshSphere(const SkinnedMesh& mesh, const Transform& transform)
-{
-	const MeshData* sourceMeshData = mesh.GetSourceMeshData();
-	return FrustumCulling::GetOrCreateSkinnedMeshBoundingSphere(sourceMeshData, mesh.skeletonData).ApplyTransform(transform);
-}
-
 void sf::Renderer::DrawFramebuffer(const Framebuffer& framebuffer, float deltaTime)
 {
 	BindFramebufferForDraw(framebuffer);
@@ -983,9 +973,6 @@ void sf::Renderer::DrawFramebuffer(const Framebuffer& framebuffer, float deltaTi
 
 void sf::Renderer::InvalidateMeshData(const MeshData& meshData)
 {
-	uint32_t count = FrustumCulling::InvalidateMeshData(&meshData);
-	printf("[Renderer] Invalidated %u bounding spheres for mesh %p\n", count, &meshData);
-
 	if (meshGpuData.find(&meshData) == meshGpuData.end())
 		return;
 	MeshGpuData& mgd = meshGpuData[&meshData];
@@ -998,9 +985,6 @@ void sf::Renderer::InvalidateMeshData(const MeshData& meshData)
 
 void sf::Renderer::InvalidateSkeletonData(const SkeletonData& skeletonData)
 {
-	uint32_t count = FrustumCulling::InvalidateSkeletonData(&skeletonData);
-	printf("[Renderer] Invalidated %u bounding spheres for skeleton data %p\n", count, &skeletonData);
-
 	if (skeletonSsbos.find(&skeletonData) == skeletonSsbos.end())
 		return;
 	glDeleteBuffers(1, &skeletonSsbos[&skeletonData]);
@@ -1010,10 +994,7 @@ void sf::Renderer::InvalidateSkeletonData(const SkeletonData& skeletonData)
 
 void sf::Renderer::InvalidateLODGroup(const LODGroup& lodGroup)
 {
-	uint32_t count = FrustumCulling::InvalidateMeshData(lodGroup.sourceMesh);
-	printf("[Renderer] Invalidated %u bounding spheres for LOD group %p\n", count, &lodGroup);
-
-	count = 0;
+	uint32_t count = 0;
 	for (const LOD& lod : lodGroup.lods)
 	{
 		if (meshGpuData.find(lod.meshData) == meshGpuData.end())

@@ -62,6 +62,7 @@ namespace sf
 		uint32_t AddNodeSingle(const char* animationName, float speed = 1.0f);
 		uint32_t AddNodeBlendSpace1D(const std::vector<BlendSpacePoint1DCreateInfo>& points, float pos, float* weightsQuery = nullptr);
 		uint32_t AddNodeBlendSpace2D(const std::vector<BlendSpacePoint2DCreateInfo>& points, const glm::vec2& pos, float* weightsQuery = nullptr);
+		inline void SetNodeWeight(uint32_t node, float weight) { m_nodes[node].single.weight = weight; }
 
 		inline uint32_t GetBoneCount() const { return m_core.m_boneData.size(); }
 		inline const BoneData& GetBoneData(uint32_t boneIndex) const { return m_core.m_boneData[boneIndex]; }

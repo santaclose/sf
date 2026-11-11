@@ -43,6 +43,16 @@ namespace sf {
 			return lodGroup->sourceMesh;
 		}
 
+		inline const AABB& GetBoundingAABB() const
+		{
+			return GetSourceMeshData()->GetBoundingAABB();
+		}
+
+		inline const SphereCollider& GetBoundingSphere() const
+		{
+			return GetSourceMeshData()->GetBoundingSphere();
+		}
+
 		inline const MeshData* GetMeshData(float camDistance2) const
 		{
 			if (!usesLodGroup)

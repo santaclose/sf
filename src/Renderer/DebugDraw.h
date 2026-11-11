@@ -16,7 +16,8 @@ namespace sf::Renderer::Debug {
 		bool colliders = false;
 		bool skeletons = false;
 		bool skeletonsModelSpace = false;
-		bool frustumCullingSpheres = false;
+		bool meshBoundingSpheres = false;
+		bool skinnedMeshBoundingSpheres = false;
 	};
 
 	void AddLine(const glm::vec3& a, const glm::vec3& b, const glm::vec3& color);
@@ -25,9 +26,12 @@ namespace sf::Renderer::Debug {
 	void AddCapsuleCollider(const CapsuleCollider& capsuleCollider, const Transform& transform, const glm::vec3* color = nullptr);
 	void AddBoxCollider(const BoxCollider& boxCollider, const Transform& transform, const glm::vec3* color = nullptr);
 	void AddMeshCollider(const MeshCollider& meshCollider, const Transform& transform, const glm::vec3* color = nullptr);
+
 	void AddSkeleton(const SkinnedMesh& mesh, const Transform& transform);
 	void AddSkeletonModelSpace(const SkinnedMesh& mesh, const Transform& transform);
-	void AddFrustumCullingSphere(const SphereCollider& sphereCollider);
+
+	void AddMeshBoundingSphere(const SphereCollider& sphereCollider);
+	void AddSkinnedMeshBoundingSphere(const SphereCollider& sphereCollider);
 
 	void Draw(uint32_t sharedGpuDataUbo);
 	void FrameEnd();

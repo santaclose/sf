@@ -73,8 +73,8 @@ namespace sf::EntityIntersect {
 
 	bool MeshBoundingSpheres(Entity a, Entity b)
 	{
-		SphereCollider worldSpaceA = a.GetComponent<MeshCollider>().boundingSphere.ApplyTransform(a.GetComponent<Transform>());
-		return Geometry::IntersectSphereSphere(worldSpaceA.ApplyTransform(b.GetComponent<Transform>().Inverse()), b.GetComponent<MeshCollider>().boundingSphere);
+		SphereCollider worldSpaceA = a.GetComponent<MeshCollider>().GetBoundingSphere().ApplyTransform(a.GetComponent<Transform>());
+		return Geometry::IntersectSphereSphere(worldSpaceA.ApplyTransform(b.GetComponent<Transform>().Inverse()), b.GetComponent<MeshCollider>().GetBoundingSphere());
 	}
 
 	bool RayMesh(const glm::vec3& rayOrigin, const glm::vec3& rayDir, Entity meshEntity, Geometry::RayHit* out = nullptr)

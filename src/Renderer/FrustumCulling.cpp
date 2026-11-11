@@ -13,8 +13,6 @@ namespace sf::Renderer::FrustumCulling
 	glm::vec3 topPlaneNormal;
 	glm::vec3 bottomPlaneNormal;
 	glm::vec3 farPlanePos, farPlaneNormal;
-
-	std::unordered_map<uint64_t, SphereCollider> boundingSpheres;
 }
 
 bool sf::Renderer::FrustumCulling::IsSphereVisible(const SphereCollider& sphere, const glm::vec3& cameraPosition)
@@ -42,24 +40,6 @@ bool sf::Renderer::FrustumCulling::IsSphereVisible(const SphereCollider& sphere,
 	return true;
 }
 
-const sf::SphereCollider& sf::Renderer::FrustumCulling::GetOrCreateMeshBoundingSphere(const MeshData* sourceMeshData)
-{
-	uint64_t key = (uint64_t) sourceMeshData;
-	if (boundingSpheres.find(key) != boundingSpheres.end())
-		return boundingSpheres[key];
-	MeshProcessor::ComputeMeshBoundingSphere(*sourceMeshData, boundingSpheres[key]);
-	return boundingSpheres[key];
-}
-
-const sf::SphereCollider& sf::Renderer::FrustumCulling::GetOrCreateSkinnedMeshBoundingSphere(const MeshData* sourceMeshData, const SkeletonData* skeletonData)
-{
-	uint64_t key = (((uint64_t) sourceMeshData) & 0xffffffffull) | (((uint64_t) skeletonData) << 32);
-	if (boundingSpheres.find(key) != boundingSpheres.end())
-		return boundingSpheres[key];
-	MeshProcessor::ComputeSkinnedMeshBoundingSphere(*skeletonData, *sourceMeshData, boundingSpheres[key]);
-	return boundingSpheres[key];
-}
-
 void sf::Renderer::FrustumCulling::ComputePlaneNormals(float aspectRatio, const Camera& camera, const Transform& cameraTransform)
 {
 	glm::vec3 camForward = cameraTransform.Forward();
@@ -84,35 +64,4 @@ void sf::Renderer::FrustumCulling::ComputePlaneNormals(float aspectRatio, const 
 	bottomPlaneNormal = glm::normalize(cameraTransform.rotation * bottomNormalVS);
 	leftPlaneNormal = glm::normalize(cameraTransform.rotation * leftNormalVS);
 	rightPlaneNormal = glm::normalize(cameraTransform.rotation * rightNormalVS);
-}
-
-uint32_t sf::Renderer::FrustumCulling::InvalidateMeshData(const MeshData* meshData)
-{
-	uint32_t out = 0;
-	for (auto it = boundingSpheres.begin(); it != boundingSpheres.end(); )
-	{
-		if (((uint32_t) it->first) == ((uint32_t) ((uint64_t) meshData)))
-		{
-			out++;
-			it = boundingSpheres.erase(it);
-		}
-		else
-			it++;
-	}
-	return out;
-}
-uint32_t sf::Renderer::FrustumCulling::InvalidateSkeletonData(const SkeletonData* skeletonData)
-{
-	uint32_t out = 0;
-	for (auto it = boundingSpheres.begin(); it != boundingSpheres.end(); )
-	{
-		if (((uint32_t) (it->first >> 32)) == ((uint32_t) ((uint64_t) skeletonData)))
-		{
-			out++;
-			it = boundingSpheres.erase(it);
-		}
-		else
-			it++;
-	}
-	return out;
 }

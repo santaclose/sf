@@ -105,17 +105,30 @@ namespace sf
 		SkeletonData* shanyungSkeleton;
 		MeshData* shanyungMesh;
 		uint32_t shanyungBlendSpace;
+		uint32_t shanyungCrouchBlendSpace;
+		uint32_t shanyungRifleBlendSpace;
+		uint32_t shanyungRifleCrouchBlendSpace;
 		glm::vec2 shanyungBlendSpaceCurrentPos;
+		glm::vec2 shanyungRifleBlendSpaceCurrentPos;
 		std::vector<float> shanyungWeights;
-		std::vector<glm::vec2> shanyungSpeedPerAnimation;
+		std::vector<float> shanyungCrouchWeights;
+		std::vector<float> shanyungRifleWeights;
+		std::vector<float> shanyungRifleCrouchWeights;
+		std::vector<float> shanyungSpeedPerAnimation;
+		std::vector<glm::vec2> shanyungRifleSpeedPerAnimation;
 		float shanyungVerticalSpeed = 0.0f;
 		float shanyungCapsuleSeparation;
 		LODGroup shanyungLodGroup;
+		bool shanyungIsAiming = false;
+		float shanyungAimingWeight = 0.0f;
+		bool shanyungIsCrouching = false;
+		float shanyungCrouchWeight = 0.0f;
+		glm::vec3 shanyungAimCameraPosition;
 
 		SkeletonData* foxSkeleton;
 		MeshData* foxMesh;
 		uint32_t foxBlendSpace;
-		float foxBlendSpaceCurrentX;
+		float foxBlendSpaceCurrentPos;
 		std::vector<float> foxWeights;
 		std::vector<float> foxSpeedPerAnimation;
 		float foxVerticalSpeed = 0.0f;
@@ -170,6 +183,12 @@ namespace sf
 			float terrainY;
 			terrain.Sample(camT.position, terrainY);
 			camT.position.y = glm::max(camT.position.y, terrainY);
+
+			if (shanyung.IsEnabled())
+			{
+				glm::vec3 noAimPos = camT.position;
+				camT.position = glm::mix(noAimPos, shanyungAimCameraPosition, shanyungAimingWeight);
+			}
 		}
 
 		void SwitchCharacter()
@@ -183,6 +202,8 @@ namespace sf
 		float CharacterStepCastShanyung(Entity charEntity)
 		{
 			CapsuleCollider& cc = charEntity.GetComponent<CapsuleCollider>();
+			Transform& test_t = charEntity.GetComponent<Transform>();
+			CapsuleCollider cc_world = EntityIntersect::WorldSpace<CapsuleCollider>(charEntity);
 
 			bool hitMesh = false;
 			int hitMeshIndex;
@@ -196,7 +217,6 @@ namespace sf
 					break;
 				}
 			}
-			CapsuleCollider cc_world = EntityIntersect::WorldSpace<CapsuleCollider>(charEntity);
 			glm::vec3 capsuleBottom = cc_world.centerA - glm::vec3(0.0f, cc_world.radius, 0.0f);
 			float terrainY;
 			terrain.Sample(capsuleBottom, terrainY);
@@ -323,8 +343,9 @@ namespace sf
 
 		targetGimbalRotation = glm::vec3(0.0, glm::radians(180.0f), 0.0);
 		cameraDistance = 3.0;
+		shanyungRifleBlendSpaceCurrentPos = { 0.0f, 0.0f };
 		shanyungBlendSpaceCurrentPos = { 0.0f, 0.0f };
-		foxBlendSpaceCurrentX = 0.0f;
+		foxBlendSpaceCurrentPos = 0.0f;
 
 		gimbal = scene.CreateEntity();
 		cameraObject = scene.CreateEntity();
@@ -342,6 +363,7 @@ namespace sf
 		hom::Initialize(treeObjectVertexLayout);
 
 		// Houses
+		printf("Loading buildings\n");
 		{
 			bool loadSucceeded = houseLodSpec.LoadFromFile("assets/examples/building.lod");
 			assert(loadSucceeded);
@@ -379,6 +401,7 @@ namespace sf
 				ObjImporter::GenerateMeshData(objid, positionOnlyVertexLayout, *buildingColMeshes[i]);
 			}
 
+			printf("Placing buildings\n");
 			uint32_t attempts = 0;
 			while (attempts < 5000)
 			{
@@ -390,7 +413,7 @@ namespace sf
 				houses.emplace_back();
 				houses.back().type = buildingToUseIndex;
 				houses.back().entity = scene.CreateEntity();
-				float houseBoundingSphereRadius = houses.back().entity.AddComponent<MeshCollider>(buildingColMesh).boundingSphere.radius;
+				float houseBoundingSphereRadius = houses.back().entity.AddComponent<MeshCollider>(buildingColMesh).GetBoundingSphere().radius;
 
 				glm::vec2 area;
 				uint32_t numStepsX;
@@ -430,7 +453,7 @@ namespace sf
 					glm::vec3 sample = glm::vec3(areaCenter.x, 0.0f, areaCenter.y) + glm::vec3(right.x, 0.0f, right.y) + glm::vec3(forward.x, 0.0f, forward.y);
 					for (int i = 0; i < houses.size() - 1; i++) // -1 because we added one to check the bounding sphere
 					{
-						SphereCollider houseSphere = houses[i].entity.GetComponent<MeshCollider>().boundingSphere.ApplyTransform(houses[i].entity.GetComponent<Transform>());
+						SphereCollider houseSphere = houses[i].entity.GetComponent<MeshCollider>().GetBoundingSphere().ApplyTransform(houses[i].entity.GetComponent<Transform>());
 						if (glm::distance2(glm::vec2(sample.x, sample.z), glm::vec2(houseSphere.center.x, houseSphere.center.z)) < houseSphere.radius * houseSphere.radius)
 						{
 							areaIsAvailable = false;
@@ -508,6 +531,7 @@ namespace sf
 				}
 			}
 
+			printf("Placing trees\n");
 			trees.reserve(TREE_COUNT);
 			for (int i = 0; i < TREE_COUNT; i++)
 			{
@@ -541,7 +565,7 @@ namespace sf
 						continue;
 					}
 					t.rotation = glm::quat(glm::vec3(0.0f, Math::Pi * 2.0f * Random::Float(), 0.0f));
-					t.scale = Random::Float() + 1.0;
+					t.scale = 0.75 * (Random::Float() + 1.0);
 
 					for (const BuildingData& h : houses)
 					{
@@ -558,30 +582,21 @@ namespace sf
 			}
 		}
 
+		printf("Creating characters\n");
 		{
 			shanyung = scene.CreateEntity();
 			shanyung.AddComponent<Transform>();
 
 			shanyungSkeleton = new SkeletonData();
 			shanyungMesh = new MeshData();
-			int gltfid = GltfImporter::Load("assets/examples/shanyung_blendspace2d.glb");
+			int gltfid = GltfImporter::Load("/home/san/Downloads/shanyung/shanyungAnimF.glb");
 			GltfImporter::GenerateSkeleton(gltfid, *shanyungSkeleton);
 			GltfImporter::GenerateMeshData(gltfid, characterVertexLayout, *shanyungMesh);
 			MeshProcessor::RemoveUnusedBones(*shanyungMesh, *shanyungSkeleton);
 			{
-				Transform shanyungAoBakeTransform;
-				shanyungAoBakeTransform.rotation = glm::quat(glm::vec3(glm::radians(180.0f), 0.0f, 0.0f));
-				MeshProcessor::TransformMesh(*shanyungMesh, shanyungAoBakeTransform);
 				sf::VoxelVolumeData shyvv;
 				shyvv.BuildFromMesh(*shanyungMesh, 0.005);
 				sf::MeshProcessor::ComputeVertexAmbientOcclusion(*shanyungMesh, &shyvv);
-				MeshProcessor::TransformMesh(*shanyungMesh, shanyungAoBakeTransform.Inverse());
-
-				Transform shanyungImportTransform;
-				shanyungImportTransform.rotation = glm::quat(glm::vec3(glm::radians(-90.0f), 0.0f, 0.0f));
-				shanyungImportTransform.rotation *= glm::quat(glm::vec3(0.0f, 0.0f, glm::radians(180.0f)));
-				MeshProcessor::TransformMesh(*shanyungMesh, shanyungImportTransform);
-				MeshProcessor::TransformSkeleton(*shanyungSkeleton, shanyungImportTransform);
 			}
 
 
@@ -590,9 +605,9 @@ namespace sf
 			shanyungLodGroup.Create(*shanyungMesh, shanyungLodSpec);
 			SkinnedMesh& sm = shanyung.AddComponent<SkinnedMesh>(&shanyungLodGroup, shanyungSkeleton, &genericMaterial);
 			assert(sm.uniformOverrides.size() == 2);
+			sm.uniformOverrides[1]["color"].p = &skinColor;
 			sm.uniformOverrides[0]["useColorSampler"].u32 = 1;
 			sm.uniformOverrides[0]["colorSampler"].p = &eyeColorBitmap;
-			sm.uniformOverrides[1]["color"].p = &skinColor;
 
 			CapsuleCollider& e_cc = shanyung.AddComponent<CapsuleCollider>();
 			e_cc.radius = 0.3;
@@ -600,30 +615,53 @@ namespace sf
 			e_cc.centerB = glm::vec3(0.0f, 1.2f, 0.0f);
 			shanyungCapsuleSeparation = e_cc.centerA.y - e_cc.radius;
 
-			shanyungWeights.resize(10);
-			shanyungSpeedPerAnimation = { {0.0f, 0.0f}, {0.0f, 6.0f}, {-6.0f, 0.0f}, {6.0f, 0.0f}, {0.0f, 1.68f}, {0.0f, -1.08f}, {-0.763f, -0.763f}, {0.763f, -0.763f}, {-1.68f, 0.0f}, {1.68f, 0.0f} };
+			shanyungSpeedPerAnimation = { 0.0f, 1.6f, 6.0f, 0.45f, 0.8f, 0.45f, 0.8f };
+			shanyungWeights.resize(shanyungSpeedPerAnimation.size());
 			shanyungBlendSpace = shanyungSkeleton->AddNodeBlendSpace2D(
 				{
-					{"Idle", 1.0f, {0.0f, 0.0f}},
-					{"Run", 1.0f,
-					{0.0f, 1.0f}},
-					{"RunLeft", 1.0f,
-					{-1.0f, 0.0f}},
-					{"RunRight", 1.0f,
-					{1.0f, 0.0f}},
-					{"Walk", 1.0f,
-					{0.0f, 0.5f}},
-					{"WalkBack", 1.0f,
-					{0.0f, -0.5f}},
-					{"WalkBackL", 1.0f,
-					{-0.5f, -0.5f}},
-					{"WalkBackR", 1.0f,
-					{0.5f, -0.5f}},
-					{"WalkLeft", 1.0f,
-					{-0.5f, 0.0f}},
-					{"WalkRight", 1.0f, {0.5f, 0.0f}} },
+					{ "idleShort", 1.0f, { 0.0f, 0.0f } },
+					{ "walk", 1.0f, { 0.5f, 0.0f } },
+					{ "run", 1.0f, { 1.0f, 0.0f } },
+					{ "walkUp", 1.0f, { 0.5f, 1.0f } },
+					{ "runUp", 1.0f, { 1.0f, 1.0f } },
+					{ "walkDown", 1.0f, { 0.5f, -1.0f } },
+					{ "runDown", 1.0f, { 1.0f, -1.0f } },
+				},
 				{ 0.0f, 0.0f },
 				shanyungWeights.data());
+			const float base = 1.85f;
+			const float diag = glm::cos(glm::radians(45.0f)) * base;
+			shanyungRifleSpeedPerAnimation = { {0.0f, 0.0f}, {0.0f, base}, {-base, 0.0f}, {base, 0.0f}, {0.0f, -base}, {-diag, diag}, {diag, diag}, {-diag, -diag}, {diag, -diag} };
+			shanyungRifleWeights.resize(shanyungRifleSpeedPerAnimation.size());
+			shanyungRifleCrouchWeights.resize(shanyungRifleSpeedPerAnimation.size());
+			shanyungRifleBlendSpace = shanyungSkeleton->AddNodeBlendSpace2D(
+				{
+					{"rifleIdle", 1.0f, {0.0f, 0.0f}},
+					{"rifleForward", 1.0f, {0.0f, 1.0f}},
+					{"rifleLeft", 1.0f, {-1.0f, 0.0f}},
+					{"rifleRight", 1.0f, {1.0f, 0.0f}},
+					{"rifleBackward", 1.75f, {0.0f, -1.0f}},
+					{"rifleForwardLeft", 1.0f, {-1.0f, 1.0f}},
+					{"rifleForwardRight", 1.0f, {1.0f, 1.0f}},
+					{"rifleBackwardLeft", 1.0f, {-1.0f, -1.0f}},
+					{"rifleBackwardRight", 1.0f, {1.0f, -1.0f}}
+				},
+				{ 0.0f, 0.0f },
+				shanyungRifleWeights.data());
+			shanyungRifleCrouchBlendSpace = shanyungSkeleton->AddNodeBlendSpace2D(
+				{
+					{"rifleCrouchIdle", 1.0f, {0.0f, 0.0f}},
+					{"rifleCrouchForward", 1.0f, {0.0f, 1.0f}},
+					{"rifleCrouchLeft", 1.0f, {-1.0f, 0.0f}},
+					{"rifleCrouchRight", 1.0f, {1.0f, 0.0f}},
+					{"rifleCrouchBackward", 1.0f, {0.0f, -1.0f}},
+					{"rifleCrouchForwardLeft", 1.0f, {-1.0f, 1.0f}},
+					{"rifleCrouchForwardRight", 1.0f, {1.0f, 1.0f}},
+					{"rifleCrouchBackwardLeft", 1.0f, {-1.0f, -1.0f}},
+					{"rifleCrouchBackwardRight", 1.0f, {1.0f, -1.0f}}
+				},
+				{ 0.0f, 0.0f },
+				shanyungRifleCrouchWeights.data());
 			shanyungSkeleton->SetAnimate(true);
 		}
 		{
@@ -692,28 +730,87 @@ namespace sf
 		if (Input::KeyDown(Input::KeyCode::Left) || Input::KeyDown(Input::KeyCode::Right))
 			SwitchCharacter();
 
+		glm::vec2 inputVector = { 0.0f, 0.0f };
+		if (Input::Key(Input::KeyCode::A))
+			inputVector.x = -1.0f;
+		if (Input::Key(Input::KeyCode::D))
+			inputVector.x = 1.0f;
+		if (Input::Key(Input::KeyCode::S))
+			inputVector.y = -1.0f;
+		if (Input::Key(Input::KeyCode::W))
+			inputVector.y = 1.0f;
+		if (inputVector.x != 0.0f || inputVector.y != 0.0f)
+			inputVector = glm::normalize(inputVector);
+
+		bool inputVectorEnoughToRotate = glm::abs(inputVector.x) > 0.2f | glm::abs(inputVector.y) > 0.2f;
+
 		if (shanyung.IsEnabled())
 		{
-			glm::vec2 targetBlendSpacePos = { 0.0f, 0.0f };
-			if (Input::Key(Input::KeyCode::D))
-				targetBlendSpacePos += glm::vec2(0.5f, 0.0f);
-			if (Input::Key(Input::KeyCode::A))
-				targetBlendSpacePos -= glm::vec2(0.5f, 0.0f);
-			if (Input::Key(Input::KeyCode::W))
-				targetBlendSpacePos += glm::vec2(0.0f, 0.5f);
-			if (Input::Key(Input::KeyCode::S))
-				targetBlendSpacePos -= glm::vec2(0.0f, 0.5f);
-			if (Input::Key(Input::KeyCode::LeftShift) && targetBlendSpacePos.y >= 0.0f)
-				targetBlendSpacePos *= 2.0f;
+			shanyungIsAiming = Input::MouseButton(1);
 
-			shanyungBlendSpaceCurrentPos = glm::mix(shanyungBlendSpaceCurrentPos, targetBlendSpacePos, deltaTime * 7.0f);
+			if (shanyungIsAiming)
+			{
+				glm::vec2 targetRifleBlendSpacePos = { 0.0f, 0.0f };
+				if (Input::Key(Input::KeyCode::D))
+					targetRifleBlendSpacePos += glm::vec2(1.0f, 0.0f);
+				if (Input::Key(Input::KeyCode::A))
+					targetRifleBlendSpacePos -= glm::vec2(1.0f, 0.0f);
+				if (Input::Key(Input::KeyCode::W))
+					targetRifleBlendSpacePos += glm::vec2(0.0f, 1.0f);
+				if (Input::Key(Input::KeyCode::S))
+					targetRifleBlendSpacePos -= glm::vec2(0.0f, 1.0f);
+
+				if (Input::KeyDown(Input::KeyCode::C))
+					shanyungIsCrouching = !shanyungIsCrouching;
+
+				shanyungRifleBlendSpaceCurrentPos = glm::mix(shanyungRifleBlendSpaceCurrentPos, targetRifleBlendSpacePos, deltaTime * 7.0f);
+			}
+			else
+			{
+				shanyungIsCrouching = false;
+				float targetBlendSpacePos = 0.0f;
+				if (Input::Key(Input::KeyCode::A) || Input::Key(Input::KeyCode::D) || Input::Key(Input::KeyCode::W) || Input::Key(Input::KeyCode::S))
+					targetBlendSpacePos += 0.5;
+				if (Input::Key(Input::KeyCode::LeftShift))
+					targetBlendSpacePos *= 2.0f;
+
+				shanyungBlendSpaceCurrentPos.x = glm::mix(shanyungBlendSpaceCurrentPos.x, targetBlendSpacePos, deltaTime * 7.0f);
+			}
+
+			shanyungAimingWeight = glm::mix(shanyungAimingWeight, shanyungIsAiming ? 1.0f : 0.0f, deltaTime * 7.0f);
+			shanyungCrouchWeight = glm::mix(shanyungCrouchWeight, shanyungIsCrouching ? 1.0f : 0.0f, deltaTime * 7.0f);
+
+			shanyungSkeleton->SetNodeWeight(shanyungBlendSpace, 1.0f - shanyungAimingWeight);
+			shanyungSkeleton->SetNodeWeight(shanyungRifleBlendSpace, shanyungAimingWeight * (1.0f - shanyungCrouchWeight));
+			shanyungSkeleton->SetNodeWeight(shanyungRifleCrouchBlendSpace, shanyungAimingWeight * shanyungCrouchWeight);
+
 			shanyungSkeleton->SetBlendSpace2DPosition(shanyungBlendSpace, shanyungBlendSpaceCurrentPos);
+			shanyungSkeleton->SetBlendSpace2DPosition(shanyungRifleBlendSpace, shanyungRifleBlendSpaceCurrentPos);
+			shanyungSkeleton->SetBlendSpace2DPosition(shanyungRifleCrouchBlendSpace, shanyungRifleBlendSpaceCurrentPos);
 			shanyungSkeleton->UpdateAnimation(deltaTime);
 			Transform& e_t = shanyung.GetComponent<Transform>();
-			glm::vec2 targetSpeed;
+
+			float targetSpeed;
+			glm::vec2 targetSpeedRifle;
 			Math::WeightedBlend(shanyungSpeedPerAnimation.data(), shanyungWeights.data(), shanyungWeights.size(), targetSpeed);
-			e_t.rotation = glm::slerp(e_t.rotation, glm::quat(glm::vec3(0.0f, glm::radians(180.0f) + targetGimbalRotation.y, 0.0f)), deltaTime * (glm::length(targetSpeed) > 0.01f ? 1.0f : 0.0f) * 4.0f);
-			glm::vec3 disp = (e_t.Forward() * targetSpeed.y + e_t.Right() * targetSpeed.x) * deltaTime;
+			Math::WeightedBlend(shanyungRifleSpeedPerAnimation.data(), shanyungRifleWeights.data(), shanyungRifleWeights.size(), targetSpeedRifle);
+
+			glm::vec3 disp;
+			if (shanyungIsAiming)
+			{
+				e_t.rotation = glm::slerp(e_t.rotation, glm::quat(glm::vec3(0.0f, targetGimbalRotation.y, 0.0f)), deltaTime * 8.0f);
+				disp = (-e_t.Forward() * targetSpeedRifle.y - e_t.Right() * targetSpeedRifle.x) * deltaTime;
+			}
+			else
+			{
+				glm::vec3 camForwardFlat = cameraObject.GetComponent<Transform>().Forward();
+				camForwardFlat.y = 0;
+				camForwardFlat = glm::normalize(camForwardFlat);
+				glm::vec3 camRightFlat = glm::cross(camForwardFlat, glm::vec3(0.0f, 1.0f, 0.0f));
+				glm::vec3 lookDir = -inputVector.y * camForwardFlat - inputVector.x * camRightFlat;
+				e_t.rotation = glm::slerp(e_t.rotation, glm::quatLookAt(lookDir, glm::vec3(0.0f, 1.0f, 0.0f)), deltaTime * (inputVectorEnoughToRotate ? 1.0f : 0.0f) * 4.0f);
+				disp = -e_t.Forward() * targetSpeed * deltaTime;
+			}
 
 			uint32_t outNCount;
 			Geometry::ContactData outCd[4];
@@ -765,6 +862,22 @@ namespace sf
 			e_t.position += disp;
 
 			float outT = CharacterStepCastShanyung(shanyung);
+			glm::vec3 temp = e_t.position;
+			float heightA = outT;
+			e_t.position += e_t.Forward() * 0.001f;
+			float heightB = CharacterStepCastShanyung(shanyung);
+			float heightDiff = heightB - heightA;
+			float targetBlendSpacePos = glm::clamp(glm::atan(heightDiff, 0.001f) / glm::radians(40.0f), -1.0f, 1.0f);
+			targetBlendSpacePos *= targetBlendSpacePos;
+			if (heightDiff < 0.0f)
+				targetBlendSpacePos = -targetBlendSpacePos;
+			shanyungBlendSpaceCurrentPos.y = glm::mix(shanyungBlendSpaceCurrentPos.y, targetBlendSpacePos, deltaTime * 7.0f);
+			if (shanyungBlendSpaceCurrentPos.x < 0.5f)
+			{
+				shanyungBlendSpaceCurrentPos.y *= (shanyungBlendSpaceCurrentPos.x * 2.0f);
+			}
+			e_t.position = temp;
+
 			if (outT <= (shanyungVerticalSpeed != 0.0f ? shanyungCapsuleSeparation : (shanyungCapsuleSeparation + 0.3f)))
 			{
 				e_t.position.y += shanyungCapsuleSeparation - outT;
@@ -775,29 +888,22 @@ namespace sf
 				shanyungVerticalSpeed += 9.8f * deltaTime;
 				e_t.position.y -= shanyungVerticalSpeed * deltaTime;
 			}
+			float aimCameraHeight = shanyungCrouchWeight * 0.75f + (1.0f - shanyungCrouchWeight) * 1.15f;
+			shanyungAimCameraPosition = e_t.position + e_t.Up() * aimCameraHeight - e_t.Right() * 0.6f + e_t.Forward() * 0.5f;
+			// Renderer::Debug::AddLine(shanyungAimCameraPosition, shanyungAimCameraPosition + glm::vec3(0.0f, 0.2f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 
 			UpdateCamera(deltaTime, shanyung, GIMBAL_OFFSET_SHANYUNG);
 		}
 		else if (fox.IsEnabled())
 		{
-			glm::vec2 inputVector = { 0.0f, 0.0f };
-			if (Input::Key(Input::KeyCode::A))
-				inputVector.x = -1.0f;
-			if (Input::Key(Input::KeyCode::D))
-				inputVector.x = 1.0f;
-			if (Input::Key(Input::KeyCode::S))
-				inputVector.y = -1.0f;
-			if (Input::Key(Input::KeyCode::W))
-				inputVector.y = 1.0f;
-			glm::normalize(inputVector);
 			float targetBlendSpaceX = 0.0f;
 			if (Input::Key(Input::KeyCode::A) || Input::Key(Input::KeyCode::D) || Input::Key(Input::KeyCode::W) || Input::Key(Input::KeyCode::S))
 				targetBlendSpaceX += 0.5;
 			if (Input::Key(Input::KeyCode::LeftShift))
 				targetBlendSpaceX *= 2.0f;
 
-			foxBlendSpaceCurrentX = glm::mix(foxBlendSpaceCurrentX, targetBlendSpaceX, deltaTime * 7.0f);
-			foxSkeleton->SetBlendSpace1DPosition(foxBlendSpace, foxBlendSpaceCurrentX);
+			foxBlendSpaceCurrentPos = glm::mix(foxBlendSpaceCurrentPos, targetBlendSpaceX, deltaTime * 7.0f);
+			foxSkeleton->SetBlendSpace1DPosition(foxBlendSpace, foxBlendSpaceCurrentPos);
 			foxSkeleton->UpdateAnimation(deltaTime);
 			Transform& e_t = fox.GetComponent<Transform>();
 
@@ -805,7 +911,7 @@ namespace sf
 			Math::WeightedBlend(foxSpeedPerAnimation.data(), foxWeights.data(), foxWeights.size(), targetSpeed);
 			glm::vec3 camForwardFlat = cameraObject.GetComponent<Transform>().Forward();
 			camForwardFlat.y = 0;
-			glm::normalize(camForwardFlat);
+			camForwardFlat = glm::normalize(camForwardFlat);
 			glm::vec3 camRightFlat = glm::cross(camForwardFlat, glm::vec3(0.0f, 1.0f, 0.0f));
 			glm::vec3 disp = e_t.Forward() * targetSpeed * deltaTime;
 
@@ -879,7 +985,7 @@ namespace sf
 				if (collidedWithWall)
 					deltaForward.y = 0.0f;
 
-				if (targetBlendSpaceX > 0.00001f)
+				if (inputVectorEnoughToRotate)
 					e_t.rotation = glm::slerp(e_t.rotation,
 						glm::quatLookAt(camForwardFlat * inputVector.y + camRightFlat * inputVector.x, glm::vec3(0.0f, 1.0f, 0.0f)) *
 						glm::quatLookAt(glm::normalize(glm::vec3(0.0f, deltaForward.y, -0.001f)),

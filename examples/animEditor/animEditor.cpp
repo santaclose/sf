@@ -384,7 +384,7 @@ namespace sf
 				ImGui::PushID("singleSection");
 				ImGui::Combo("Animation", &animSelection, inputAnimNames.data(), inputAnimNames.size());
 				if (ImGui::Button("Add single animation node"))
-					inputModelSkeleton->AddNodeSingle((uint32_t)animSelection, 1.0f);
+					inputModelSkeleton->AddNodeSingle(inputAnimNames[animSelection], 1.0f);
 				ImGui::PopID();
 			}
 
@@ -430,7 +430,7 @@ namespace sf
 				ImGui::PushID("singleSection");
 				ImGui::Combo("Animation", &animSelection, outputAnimNames.data(), outputAnimNames.size());
 				if (ImGui::Button("Add single animation node"))
-					outputModelSkeleton->AddNodeSingle((uint32_t)animSelection, 1.0f);
+					outputModelSkeleton->AddNodeSingle(outputAnimNames[animSelection], 1.0f);
 				ImGui::PopID();
 			}
 

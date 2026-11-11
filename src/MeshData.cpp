@@ -4,6 +4,8 @@
 #include <cassert>
 #include <fstream>
 
+#include <glm/gtx/norm.hpp>
+
 void sf::MeshData::Create(
 	Buffer::Layout vertexBufferLayout,
 	uint8_t* vertexBuffer,
@@ -43,6 +45,8 @@ void sf::MeshData::Create(
 
 	this->vertexCountPerPrimitive = vertexCountPerPrimitive;
 	this->usesExternalVertexBuffer = false;
+
+	ComputeBoundingGeometry();
 }
 
 void sf::MeshData::Destroy()
@@ -86,6 +90,30 @@ void sf::MeshData::ChangeVertexBufferLayout(Buffer::Layout newLayout)
 	delete[] this->vertexBuffer;
 	this->vertexBufferLayout = newLayout;
 	this->vertexBuffer = newVertexBuffer;
+}
+
+void sf::MeshData::ComputeBoundingGeometry()
+{
+	boundingAABB.min = glm::vec3(std::numeric_limits<float>::max());
+	boundingAABB.max = glm::vec3(-std::numeric_limits<float>::max());
+	for (uint32_t i = 0; i < vertexCount; i++)
+	{
+		const glm::vec3* vertexPos = ReadVertexComponent<glm::vec3>(Buffer::Component::Position, i);
+		boundingAABB.min = glm::min(boundingAABB.min, *vertexPos);
+		boundingAABB.max = glm::max(boundingAABB.max, *vertexPos);
+	}
+
+	boundingSphere.center = (boundingAABB.min + boundingAABB.max) * 0.5f;
+	float maxDistanceSq = 0.0f;
+	for (uint32_t i = 0; i < vertexCount; i++)
+	{
+		const glm::vec3* vertexPos = ReadVertexComponent<glm::vec3>(Buffer::Component::Position, i);
+		float distSq = glm::distance2(boundingSphere.center, *vertexPos);
+		if (distSq > maxDistanceSq)
+			maxDistanceSq = distSq;
+	}
+
+	boundingSphere.radius = glm::sqrt(maxDistanceSq);
 }
 
 bool sf::MeshData::SaveToFile(const char* targetFile)
@@ -156,6 +184,8 @@ bool sf::MeshData::LoadFromFile(const char* targetFile)
 	file.read((char*) vertexBuffer, vertexBufferSizeInBytes);
 
 	file.close();
+
+	ComputeBoundingGeometry();
 
 	return true;
 }

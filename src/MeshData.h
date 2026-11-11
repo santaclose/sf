@@ -2,7 +2,11 @@
 
 #include <vector>
 #include <string>
+#include <limits>
 #include <BufferLayout.h>
+
+#include <Components/SphereCollider.h>
+#include <Geometry/AABB.h>
 
 namespace sf {
 
@@ -18,6 +22,9 @@ namespace sf {
 		uint32_t pieceCount = 0;
 		uint8_t vertexCountPerPrimitive = 3;
 		bool usesExternalVertexBuffer = false;
+
+		AABB boundingAABB;
+		SphereCollider boundingSphere;
 
 		MeshData() = default;
 		void Create(
@@ -64,6 +71,10 @@ namespace sf {
 				outEnd = pieceCount > i + 1 ? pieces[i + 1] : indexCount;
 			}
 		}
+
+		void ComputeBoundingGeometry();
+		inline const AABB& GetBoundingAABB() const { return boundingAABB; }
+		inline const SphereCollider& GetBoundingSphere() const { return boundingSphere; }
 
 		bool SaveToFile(const char* targetFile);
 		bool LoadFromFile(const char* targetFile);

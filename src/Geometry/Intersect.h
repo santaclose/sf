@@ -191,7 +191,7 @@ namespace sf::Geometry
 		const MeshCollider& meshCollider,
 		uint32_t outMax = 0, uint32_t* outCount = nullptr, ContactData* out = nullptr)
 	{
-		if (!IntersectSphereSphere(meshCollider.boundingSphere, sphere))
+		if (!IntersectSphereSphere(meshCollider.GetBoundingSphere(), sphere))
 			return false;
 
 		if (outMax > 0)
@@ -227,7 +227,7 @@ namespace sf::Geometry
 		const MeshCollider& meshCollider,
 		uint32_t outMax = 0, uint32_t* outCount = nullptr, ContactData* out = nullptr)
 	{
-		if (!IntersectSphereCapsule(meshCollider.boundingSphere, capsule))
+		if (!IntersectSphereCapsule(meshCollider.GetBoundingSphere(), capsule))
 			return false;
 
 		if (outMax > 0)
@@ -475,7 +475,7 @@ namespace sf::Geometry
 	}
 	inline bool IntersectBoxMesh(const BoxCollider& box, const MeshCollider& meshCollider)
 	{
-		if (!IntersectSphereBox(meshCollider.boundingSphere, box))
+		if (!IntersectSphereBox(meshCollider.GetBoundingSphere(), box))
 			return false;
 
 		uint32_t j;

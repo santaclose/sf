@@ -36,10 +36,6 @@ namespace sf {
 		static void Remesh(const MeshData& inputMesh, MeshData& outputMesh, int resolution);
 		static void TransformMesh(MeshData& mesh, const Transform& transform);
 		static void TransformSkeleton(SkeletonData& skeleton, const Transform& transform);
-		static void ApplySkeleton(const glm::mat4* skinMatrixBuffer, const MeshData& inputMesh, MeshData& outputMesh);
-		static void ComputeMeshAABB(const MeshData& inputMesh, glm::vec3& outMin, glm::vec3& outMax);
-		static void ComputeMeshBoundingSphere(const MeshData& inputMesh, SphereCollider& outputSphere);
-		static void ComputeSkinnedMeshBoundingSphere(const SkeletonData& inputSkeleton, const MeshData& inputMesh, SphereCollider& outputSphere);
 		static void TransferVertexAttributesFromClosest(const MeshData& inputMesh, MeshData& outputMesh);
 		static void TransferVertexAttributesInterpolatingBlendMatrix(const MeshData& inputMesh, MeshData& outputMesh, uint32_t maxVertices = 20);
 	};

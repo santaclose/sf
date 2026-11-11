@@ -180,7 +180,8 @@ void sf::ImGuiController::Tick(float deltaTime)
 				ImGui::MenuItem("Debug draw colliders", NULL, &Renderer::AccessDebugConfig().colliders);
 				ImGui::MenuItem("Debug draw skeletons", NULL, &Renderer::AccessDebugConfig().skeletons);
 				ImGui::MenuItem("Debug draw skeletons model space", NULL, &Renderer::AccessDebugConfig().skeletonsModelSpace);
-				ImGui::MenuItem("Debug draw frustum culling spheres", NULL, &Renderer::AccessDebugConfig().frustumCullingSpheres);
+				ImGui::MenuItem("Debug draw mesh bounding spheres", NULL, &Renderer::AccessDebugConfig().meshBoundingSpheres);
+				ImGui::MenuItem("Debug draw skinned mesh bounding spheres", NULL, &Renderer::AccessDebugConfig().skinnedMeshBoundingSpheres);
 				// if (ImGui::MenuItem("Debug Draw", NULL, &debugDrawEnabled))
 					// Renderer::SetDebugDrawEnabled(debugDrawEnabled);
 				if (ImGui::MenuItem("Menu bar", "Esc", window->GetToolBarEnabled()))

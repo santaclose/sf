@@ -378,17 +378,6 @@ void sf::MeshProcessor::AmbientOcclusionBitmapFromVoxelVolume(const VoxelVolumeD
 					float average = sum / (float) count;
 					*bitmap.AccessPixel({i, j, k}) = (uint8_t) glm::mix((float) *bitmap.AccessPixel({i, j, k}), average, config->denoiseWeight);
 				}
-		// for (int i = 0; i < mesh.indexCount; i += 3)
-		// {
-		// 	float average =
-		// 		(*mesh.ReadVertexComponent<float>(Buffer::Component::AO, mesh.indexBuffer[i + 0]) +
-		// 			*mesh.ReadVertexComponent<float>(Buffer::Component::AO, mesh.indexBuffer[i + 1]) +
-		// 			*mesh.ReadVertexComponent<float>(Buffer::Component::AO, mesh.indexBuffer[i + 2])) / 3.0f;
-
-		// 	*mesh.AccessVertexComponent<float>(Buffer::Component::AO, mesh.indexBuffer[i + 0]) = glm::mix(*mesh.ReadVertexComponent<float>(Buffer::Component::AO, mesh.indexBuffer[i + 0]), average, config->denoiseWeight);
-		// 	*mesh.AccessVertexComponent<float>(Buffer::Component::AO, mesh.indexBuffer[i + 1]) = glm::mix(*mesh.ReadVertexComponent<float>(Buffer::Component::AO, mesh.indexBuffer[i + 1]), average, config->denoiseWeight);
-		// 	*mesh.AccessVertexComponent<float>(Buffer::Component::AO, mesh.indexBuffer[i + 2]) = glm::mix(*mesh.ReadVertexComponent<float>(Buffer::Component::AO, mesh.indexBuffer[i + 2]), average, config->denoiseWeight);
-		// }
 	}
 }
 
@@ -746,6 +735,7 @@ void sf::MeshProcessor::TransformMesh(MeshData& mesh, const Transform& transform
 			*targetPointer = transform.ApplyToDirection(*targetPointer);
 		}
 	}
+	mesh.ComputeBoundingGeometry();
 }
 
 void sf::MeshProcessor::TransformSkeleton(SkeletonData& skeleton, const Transform& transform)
@@ -795,135 +785,6 @@ void sf::MeshProcessor::TransformSkeleton(SkeletonData& skeleton, const Transfor
 			}
 		}
 	}
-}
-
-void sf::MeshProcessor::ApplySkeleton(const glm::mat4* skinMatrixBuffer, const MeshData& inputMesh, MeshData& outputMesh)
-{
-	assert(inputMesh.vertexBufferLayout.GetComponentInfo(Buffer::Component::BoneIndices) != nullptr);
-	assert(inputMesh.vertexBufferLayout.GetComponentInfo(Buffer::Component::BoneWeights) != nullptr);
-	assert(outputMesh.vertexBufferLayout.GetComponentInfo(Buffer::Component::Position) != nullptr);
-
-	for (uint32_t i = 0; i < inputMesh.vertexCount; i++)
-	{
-		const glm::vec4* indices = inputMesh.ReadVertexComponent<glm::vec4>(Buffer::Component::BoneIndices, i);
-		const glm::vec4* weights = inputMesh.ReadVertexComponent<glm::vec4>(Buffer::Component::BoneWeights, i);
-
-		const glm::mat4* matA = &skinMatrixBuffer[(uint32_t) indices->x];
-		const glm::mat4* matB = &skinMatrixBuffer[(uint32_t) indices->y];
-		const glm::mat4* matC = &skinMatrixBuffer[(uint32_t) indices->z];
-		const glm::mat4* matD = &skinMatrixBuffer[(uint32_t) indices->w];
-
-		glm::mat4 skinMatrix = weights->x * *matA + weights->y * *matB + weights->z * *matC + weights->w * *matD;
-
-		const glm::vec3* inPos = inputMesh.ReadVertexComponent<glm::vec3>(Buffer::Component::Position, i);
-		glm::vec3* outPos = outputMesh.AccessVertexComponent<glm::vec3>(Buffer::Component::Position, i);
-
-		*outPos = skinMatrix * glm::vec4(inPos->x, inPos->y, inPos->z, 1.0f);
-	}
-}
-
-void sf::MeshProcessor::ComputeMeshAABB(const MeshData& inputMesh, glm::vec3& outMin, glm::vec3& outMax)
-{
-	outMin = glm::vec3(std::numeric_limits<float>::max());
-	outMax = glm::vec3(-std::numeric_limits<float>::max());
-	for (uint32_t i = 0; i < inputMesh.vertexCount; i++)
-	{
-		const glm::vec3* vertexPos = inputMesh.ReadVertexComponent<glm::vec3>(Buffer::Component::Position, i);
-		outMin = glm::min(outMin, *vertexPos);
-		outMax = glm::max(outMax, *vertexPos);
-	}
-}
-
-void sf::MeshProcessor::ComputeMeshBoundingSphere(const MeshData& inputMesh, SphereCollider& outputSphere)
-{
-	glm::vec3 min, max;
-	ComputeMeshAABB(inputMesh, min, max);
-	outputSphere.center = (min + max) * 0.5f;
-
-	float maxDistanceSq = 0.0f;
-	for (uint32_t i = 0; i < inputMesh.vertexCount; i++)
-	{
-		const glm::vec3* vertexPos = inputMesh.ReadVertexComponent<glm::vec3>(Buffer::Component::Position, i);
-		float distSq = glm::distance2(outputSphere.center, *vertexPos);
-		if (distSq > maxDistanceSq)
-			maxDistanceSq = distSq;
-	}
-
-	outputSphere.radius = glm::sqrt(maxDistanceSq);
-}
-
-void sf::MeshProcessor::ComputeSkinnedMeshBoundingSphere(const SkeletonData& inputSkeleton, const MeshData& inputMesh, SphereCollider& outputSphere)
-{
-	static const Buffer::Layout positionOnlyVertexLayout = Buffer::Layout({
-		Buffer::Component::Position
-	});
-	MeshData tempM;
-	tempM.vertexBufferLayout = positionOnlyVertexLayout;
-	tempM.vertexCount = inputMesh.vertexCount;
-	tempM.vertexBuffer = new uint8_t[sizeof(glm::vec3) * inputMesh.vertexCount];
-	SkeletonCoreData tempS = inputSkeleton.m_core;
-	const std::vector<Animation::SkeletalAnimation>& animations = inputSkeleton.m_animations;
-
-	/* Get keyframes */
-	std::vector<std::unordered_set<float>> allKeyFrameTimesPerAnimation(animations.size());
-	for (uint32_t i = 0; i < animations.size(); i++)
-	{
-		const Animation::SkeletalAnimation& anim = animations[i];
-		for (const Animation::Channel& channel : anim.channels)
-		{
-			const Animation::Sampler& sampler = anim.samplers[channel.samplerIndex];
-			if (sampler.inputs.size() > sampler.outputsVec4.size())
-				continue;
-
-			for (float samplerInput : sampler.inputs)
-				allKeyFrameTimesPerAnimation[i].insert(samplerInput);
-		}
-	}
-
-	/* Bounding box containing every animation */
-	glm::vec3 min(std::numeric_limits<float>::max());
-	glm::vec3 max(-std::numeric_limits<float>::max());
-	for (uint32_t i = 0; i < animations.size(); i++)
-	{
-		const Animation::SkeletalAnimation& anim = animations[i];
-		for (float kf : allKeyFrameTimesPerAnimation[i])
-		{
-			Animation::SampleToBones(anim, tempS.m_boneLocalTransforms.data(), kf);
-			tempS.PropagateLocalTransforms(nullptr, true);
-
-			ApplySkeleton(tempS.m_skinningMatrices.data(), inputMesh, tempM);
-			for (uint32_t vi = 0; vi < tempM.vertexCount; vi++)
-			{
-				const glm::vec3* vertexPos = tempM.ReadVertexComponent<glm::vec3>(Buffer::Component::Position, vi);
-				min = glm::min(min, *vertexPos);
-				max = glm::max(max, *vertexPos);
-			}
-		}
-	}
-
-	/* Bounding sphere containing every animation */
-	outputSphere.center = (min + max) * 0.5f;
-	float maxDistanceSq = 0.0f;
-	for (uint32_t i = 0; i < animations.size(); i++)
-	{
-		const Animation::SkeletalAnimation& anim = animations[i];
-		for (float kf : allKeyFrameTimesPerAnimation[i])
-		{
-			Animation::SampleToBones(anim, tempS.m_boneLocalTransforms.data(), kf);
-			tempS.PropagateLocalTransforms(nullptr, true);
-
-			ApplySkeleton(tempS.m_skinningMatrices.data(), inputMesh, tempM);
-			for (uint32_t vi = 0; vi < tempM.vertexCount; vi++)
-			{
-				const glm::vec3* vertexPos = tempM.ReadVertexComponent<glm::vec3>(Buffer::Component::Position, vi);
-				float distSq = glm::distance2(outputSphere.center, *vertexPos);
-				if (distSq > maxDistanceSq)
-					maxDistanceSq = distSq;
-			}
-		}
-	}
-	outputSphere.radius = glm::sqrt(maxDistanceSq);
-	tempM.Destroy();
 }
 
 void sf::MeshProcessor::TransferVertexAttributesFromClosest(const MeshData& inputMesh, MeshData& outputMesh)
